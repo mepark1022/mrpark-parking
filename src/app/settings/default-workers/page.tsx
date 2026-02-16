@@ -104,7 +104,7 @@ export default function DefaultWorkersPage() {
           <h4 className="font-semibold text-dark">{title}</h4>
           <button
             onClick={() => addWorker(dayType)}
-            className="px-3 py-1 bg-primary text-white rounded-lg text-sm hover:bg-primary-dark"
+           className="px-3 py-1.5 bg-gold text-dark font-semibold rounded-lg text-sm hover:bg-yellow-400 shadow-sm"
           >
             + 추가
           </button>
