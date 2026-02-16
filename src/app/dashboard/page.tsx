@@ -233,7 +233,7 @@ export default function DashboardPage() {
           {period === "custom" && (
             <div className="flex items-center gap-2">
               <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="px-2 py-1 border border-light-gray rounded-lg text-sm" />
-              <span className="text-sm text-mr-gray">~</span>
+              <span className="text-sm text-gray-600 font-medium">~</span>
               <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="px-2 py-1 border border-light-gray rounded-lg text-sm" />
             </div>
           )}
@@ -245,20 +245,20 @@ export default function DashboardPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-4 gap-4">
               <div className="bg-white rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-mr-gray">총 입차량</p>
-                <p className="text-2xl font-bold text-dark mt-1">{kpi.totalCars.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">대</span></p>
+                <p className="text-sm text-gray-600 font-medium">총 입차량</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.totalCars.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">대</span></p>
               </div>
               <div className="bg-white rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-mr-gray">발렛 매출</p>
-                <p className="text-2xl font-bold text-dark mt-1">{kpi.totalValet.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
+                <p className="text-sm text-gray-600 font-medium">발렛 매출</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.totalValet.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
               </div>
               <div className="bg-white rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-mr-gray">근무 인원</p>
-                <p className="text-2xl font-bold text-dark mt-1">{kpi.workerCount}<span className="text-sm font-normal text-mr-gray ml-1">명</span></p>
+                <p className="text-sm text-gray-600 font-medium">근무 인원</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.workerCount}<span className="text-sm font-normal text-mr-gray ml-1">명</span></p>
               </div>
               <div className="bg-white rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-mr-gray">{selectedStore ? "월주차 계약" : "운영 매장"}</p>
-                <p className="text-2xl font-bold text-dark mt-1">
+                <p className="text-sm text-gray-600 font-medium">{selectedStore ? "월주차 계약" : "운영 매장"}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
                   {selectedStore ? kpi.activeContracts : stores.length}
                   <span className="text-sm font-normal text-mr-gray ml-1">{selectedStore ? "건" : "개"}</span>
                 </p>
