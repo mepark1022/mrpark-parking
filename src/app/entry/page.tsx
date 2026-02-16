@@ -49,19 +49,21 @@ export default function EntryPage() {
     }
   }, [selectedStore, selectedDate]);
 
-  async function loadInitial() {
+    async function loadInitial() {
     setLoading(true);
     const [storesRes, workersRes] = await Promise.all([
       supabase.from("stores").select("*").eq("is_active", true).order("name"),
       supabase.from("workers").select("*").eq("status", "active").order("name"),
     ]);
     if (storesRes.data) {
-      setStores(storesRes.data);
-      if (storesRes.data.length > 0) setSelectedStore(storesRes.data[0].id);
+      const storeData = storesRes.data as Store[];
+      setStores(storeData);
+      if (storeData.length > 0) setSelectedStore(storeData[0].id);
     }
-    if (workersRes.data) setAllWorkers(workersRes.data);
+    if (workersRes.data) setAllWorkers(workersRes.data as Worker[]);
     setLoading(false);
   }
+
 
   async function loadDefaultWorkers() {
     const dayOfWeek = new Date(selectedDate).getDay();
