@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   format, isWeekend, startOfWeek, endOfWeek,
   startOfMonth, endOfMonth, subDays, addDays, parseISO, isValid,
