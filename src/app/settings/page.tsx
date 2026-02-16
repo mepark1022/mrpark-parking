@@ -2,178 +2,159 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 import AppLayout from "@/components/layout/AppLayout";
-import type { Store, Worker } from "@/lib/types/database";
+import { createClient } from "@/lib/supabase/client";
 
-type DefaultWorkerRow = {
-  id: string;
-  worker_id: string;
-  day_type: string;
-  sort_order: number;
-  workers: { id: string; name: string } | null;
-};
-
-export default function DefaultWorkersPage() {
-  const supabase = createClient();
-  const [stores, setStores] = useState<Store[]>([]);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+export default function SettingsPage() {
+  const [stores, setStores] = useState([]);
+  const [workers, setWorkers] = useState([]);
   const [selectedStore, setSelectedStore] = useState("");
-  const [weekdayWorkers, setWeekdayWorkers] = useState<DefaultWorkerRow[]>([]);
-  const [weekendWorkers, setWeekendWorkers] = useState<DefaultWorkerRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [weekdayWorkers, setWeekdayWorkers] = useState([]);
+  const [weekendWorkers, setWeekendWorkers] = useState([]);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    loadStoresAndWorkers();
+    loadData();
   }, []);
 
   useEffect(() => {
     if (selectedStore) loadDefaultWorkers();
   }, [selectedStore]);
 
-  async function loadStoresAndWorkers() {
-    const [storesRes, workersRes] = await Promise.all([
-      supabase.from("stores").select("*").eq("is_active", true).order("name"),
-      supabase.from("workers").select("*").eq("status", "active").order("name"),
-    ]);
-    if (storesRes.data) {
-      setStores(storesRes.data);
-      if (storesRes.data.length > 0) setSelectedStore(storesRes.data[0].id);
+  const loadData = async () => {
+    const supabase = createClient();
+    const { data: storeData } = await supabase.from("stores").select("id, name").eq("is_active", true).order("name");
+    const { data: workerData } = await supabase.from("workers").select("id, name").eq("status", "active").order("name");
+    if (storeData) {
+      setStores(storeData);
+      if (storeData.length > 0) setSelectedStore(storeData[0].id);
     }
-    if (workersRes.data) setWorkers(workersRes.data);
-    setLoading(false);
-  }
+    if (workerData) setWorkers(workerData);
+  };
 
-  async function loadDefaultWorkers() {
+  const loadDefaultWorkers = async () => {
+    const supabase = createClient();
     const { data } = await supabase
       .from("store_default_workers")
-      .select("*, workers(id, name)")
+      .select("*, workers(name)")
       .eq("store_id", selectedStore)
-      .order("sort_order");
-
+      .order("display_order");
     if (data) {
-      setWeekdayWorkers(data.filter((d: DefaultWorkerRow) => d.day_type === "weekday"));
-      setWeekendWorkers(data.filter((d: DefaultWorkerRow) => d.day_type === "weekend"));
+      setWeekdayWorkers(data.filter(d => d.day_type === "weekday"));
+      setWeekendWorkers(data.filter(d => d.day_type === "weekend"));
     }
-  }
+  };
 
-  async function addWorker(dayType: "weekday" | "weekend") {
-    const current = dayType === "weekday" ? weekdayWorkers : weekendWorkers;
-    const usedIds = current.map((w) => w.worker_id);
-    const available = workers.filter((w) => !usedIds.includes(w.id));
-
+  const addDefaultWorker = async (dayType) => {
+    const existing = dayType === "weekday" ? weekdayWorkers : weekendWorkers;
+    const existingIds = existing.map(w => w.worker_id);
+    const available = workers.filter(w => !existingIds.includes(w.id));
     if (available.length === 0) {
-      alert("추가할 수 있는 근무자가 없습니다.");
+      setMessage("추가할 수 있는 근무자가 없습니다");
+      setTimeout(() => setMessage(""), 2000);
       return;
     }
-
-    const workerId = available[0].id;
+    const supabase = createClient();
     await supabase.from("store_default_workers").insert({
       store_id: selectedStore,
-      worker_id: workerId,
+      worker_id: available[0].id,
       day_type: dayType,
-      sort_order: current.length,
+      display_order: existing.length + 1,
     });
     loadDefaultWorkers();
-  }
+  };
 
-  async function removeWorker(id: string) {
+  const removeDefaultWorker = async (id) => {
+    const supabase = createClient();
     await supabase.from("store_default_workers").delete().eq("id", id);
     loadDefaultWorkers();
-  }
+  };
 
-  async function changeWorker(id: string, newWorkerId: string) {
+  const changeWorker = async (id, newWorkerId) => {
+    const supabase = createClient();
     await supabase.from("store_default_workers").update({ worker_id: newWorkerId }).eq("id", id);
     loadDefaultWorkers();
-  }
+  };
 
-  function WorkerList({
-    title,
-    dayType,
-    list,
-  }: {
-    title: string;
-    dayType: "weekday" | "weekend";
-    list: DefaultWorkerRow[];
-  }) {
-    const usedIds = list.map((w) => w.worker_id);
-
-    return (
-      <div className="bg-white rounded-xl p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="font-semibold text-dark">{title}</h4>
-          <button
-            onClick={() => addWorker(dayType)}
-            className="px-3 py-1 bg-primary text-white rounded-lg text-sm hover:bg-primary-dark"
-          >
-            + 추가
-          </button>
+  const renderWorkerList = (list, dayType) => (
+    <div style={{ background: "#fff", borderRadius: 14, padding: 20, border: "1px solid #e2e8f0", flex: 1 }}>
+      <div className="flex justify-between items-center mb-4">
+        <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
+          {dayType === "weekday" ? "평일 근무자 (월~금)" : "주말 근무자 (토~일)"}
         </div>
-
-        {list.length === 0 ? (
-          <p className="text-sm text-mr-gray py-4 text-center">
-            배정된 근무자가 없습니다
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {list.map((item, idx) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
-              >
-                <span className="text-sm text-mr-gray w-6">{idx + 1}</span>
-                <select
-                  value={item.worker_id}
-                  onChange={(e) => changeWorker(item.id, e.target.value)}
-                  className="flex-1 px-3 py-2 border border-light-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  {workers
-                    .filter((w) => w.id === item.worker_id || !usedIds.includes(w.id))
-                    .map((w) => (
-                      <option key={w.id} value={w.id}>{w.name}</option>
-                    ))}
-                </select>
-                <button
-                  onClick={() => removeWorker(item.id)}
-                  className="text-error hover:bg-red-50 rounded-lg p-2 text-sm"
-                >
-                  X
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <button
+          onClick={() => addDefaultWorker(dayType)}
+          className="cursor-pointer"
+          style={{
+            padding: "6px 16px", borderRadius: 8, border: "none",
+            background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700,
+          }}
+        >+ 추가</button>
       </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <AppLayout>
-        <div className="text-center py-10 text-mr-gray">로딩 중...</div>
-      </AppLayout>
-    );
-  }
+      {list.length === 0 ? (
+        <div className="text-center py-6" style={{ color: "#94a3b8", fontSize: 14 }}>배정된 근무자가 없습니다</div>
+      ) : (
+        list.map((dw, i) => (
+          <div key={dw.id} className="flex items-center gap-3 mb-2" style={{
+            padding: "10px 14px", borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0",
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#94a3b8", width: 24 }}>{i + 1}</span>
+            <select
+              value={dw.worker_id}
+              onChange={e => changeWorker(dw.id, e.target.value)}
+              className="flex-1"
+              style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600 }}
+            >
+              {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
+            <button
+              onClick={() => removeDefaultWorker(dw.id)}
+              className="cursor-pointer"
+              style={{
+                width: 32, height: 32, borderRadius: 8, border: "none",
+                background: "#fee2e2", color: "#dc2626", fontSize: 16, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >×</button>
+          </div>
+        ))
+      )}
+    </div>
+  );
 
   return (
     <AppLayout>
-      <div className="max-w-4xl">
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-dark mb-2">매장 선택</label>
-          <select
-            value={selectedStore}
-            onChange={(e) => setSelectedStore(e.target.value)}
-            className="w-64 px-3 py-2 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-          >
-            {stores.map((store) => (
-              <option key={store.id} value={store.id}>{store.name}</option>
-            ))}
-          </select>
-        </div>
+      <div className="max-w-5xl mx-auto">
+        <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 20 }}>기본 근무자 설정</div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <WorkerList title="평일 근무자 (월~금)" dayType="weekday" list={weekdayWorkers} />
-          <WorkerList title="주말 근무자 (토~일)" dayType="weekend" list={weekendWorkers} />
+          {/* 매장 선택 */}
+          <div className="mb-6">
+            <label className="block mb-2" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>매장 선택</label>
+            <select
+              value={selectedStore}
+              onChange={e => setSelectedStore(e.target.value)}
+              style={{
+                padding: "12px 16px", borderRadius: 10, border: "1px solid #e2e8f0",
+                fontSize: 14, fontWeight: 600, color: "#1e293b", minWidth: 280,
+              }}
+            >
+              {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+
+          {message && (
+            <div className="mb-4" style={{
+              padding: "10px 16px", borderRadius: 10, background: "#fee2e2",
+              color: "#dc2626", fontSize: 13, fontWeight: 600,
+            }}>{message}</div>
+          )}
+
+          {/* 평일/주말 */}
+          <div className="flex gap-4">
+            {renderWorkerList(weekdayWorkers, "weekday")}
+            {renderWorkerList(weekendWorkers, "weekend")}
+          </div>
         </div>
       </div>
     </AppLayout>
