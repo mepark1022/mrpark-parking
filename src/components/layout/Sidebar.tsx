@@ -84,8 +84,8 @@ export default function Sidebar() {
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-150 relative"
               style={{
                 background: isActive ? "rgba(255,255,255,0.15)" : undefined,
-                color: isActive ? "#ffffff" : "rgba(255,255,255,0.7)",
-                fontWeight: isActive ? 700 : 500,
+                color: "#ffffff",
+                fontWeight: isActive ? 700 : 600,
                 fontSize: 14,
               }}
             >
