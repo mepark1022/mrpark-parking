@@ -199,7 +199,7 @@ export default function AnalyticsPage() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip formatter={(value: string | number) => Number(value).toLocaleString()} />
+                    <Tooltip />
                     <Bar dataKey="revenue" fill="#1428A0" radius={[4, 4, 0, 0]} name="발렛매출(원)" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -235,7 +235,7 @@ export default function AnalyticsPage() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => v.toLocaleString()} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
-                    <Tooltip formatter={(value: string | number) => Number(value).toLocaleString() + "원"} />
+                    <Tooltip />
                     <Bar dataKey="revenue" fill="#F5B731" radius={[0, 4, 4, 0]} name="발렛매출" />
                   </BarChart>
                 </ResponsiveContainer>
