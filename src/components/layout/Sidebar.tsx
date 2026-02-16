@@ -16,24 +16,23 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-60 bg-primary min-h-screen flex flex-col">
-      <div className="p-6">
-        <h1 className="text-xl font-bold text-white">Mr. Park</h1>
-        <p className="text-sm text-white/60 mt-1">주차 관리 시스템</p>
+    <aside className="w-60 min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, #0f1d6b 0%, #1428A0 50%, #1e3abf 100%)" }}>
+      <div className="p-6 pb-8">
+        <h1 className="text-2xl font-extrabold text-white tracking-tight">Mr. Park</h1>
+        <p className="text-xs text-blue-200/70 mt-1 tracking-wide">주차 관리 시스템</p>
       </div>
 
-      <nav className="flex-1 px-3">
+      <nav className="flex-1 px-3 space-y-1">
         {menuItems.map((item) => {
-          const isActive =
-            pathname === item.href || pathname.startsWith(item.href + "/");
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                 isActive
-                  ? "bg-white/20 text-white font-medium"
-                  : "text-white/70 hover:bg-white/10 hover:text-white"
+                  ? "bg-white text-primary font-semibold shadow-md shadow-black/10"
+                  : "text-white/80 hover:bg-white/15 hover:text-white"
               }`}
             >
               <span className="text-lg">{item.icon}</span>
@@ -43,8 +42,8 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-white/10">
-        <p className="text-xs text-white/40 text-center">v1.0 Beta</p>
+      <div className="p-4 mx-3 mb-3 rounded-xl bg-white/10 backdrop-blur-sm">
+        <p className="text-xs text-blue-200/60 text-center">v1.0 Beta</p>
       </div>
     </aside>
   );
