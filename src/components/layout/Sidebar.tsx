@@ -16,10 +16,10 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-60 min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, #0f1d6b 0%, #1428A0 50%, #1e3abf 100%)" }}>
-      <div className="p-6 pb-8">
-        <h1 className="text-2xl font-extrabold text-white tracking-tight">Mr. Park</h1>
-        <p className="text-xs text-blue-200/70 mt-1 tracking-wide">주차 관리 시스템</p>
+    <aside className="w-56 min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, #0f1d6b 0%, #1428A0 50%, #1e3abf 100%)" }}>
+      <div className="p-5 pb-6">
+        <h1 className="text-xl font-extrabold text-white tracking-tight">Mr. Park</h1>
+        <p className="text-xs text-blue-200 mt-1 tracking-wide">주차 관리 시스템</p>
       </div>
 
       <nav className="flex-1 px-3 space-y-1">
@@ -31,19 +31,19 @@ export default function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                 isActive
-                  ? "bg-white text-primary font-semibold shadow-md shadow-black/10"
-                  : "text-white/80 hover:bg-white/15 hover:text-white"
+                  ? "bg-white text-primary font-bold shadow-md"
+                  : "text-white hover:bg-white/15"
               }`}
             >
               <span className="text-lg">{item.icon}</span>
-              <span className="text-sm">{item.label}</span>
+              <span className="text-[15px] font-semibold">{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-4 mx-3 mb-3 rounded-xl bg-white/10 backdrop-blur-sm">
-        <p className="text-xs text-blue-200/60 text-center">v1.0 Beta</p>
+      <div className="p-4 mx-3 mb-3 rounded-xl bg-white/10">
+        <p className="text-xs text-blue-200 text-center">v1.0 Beta</p>
       </div>
     </aside>
   );

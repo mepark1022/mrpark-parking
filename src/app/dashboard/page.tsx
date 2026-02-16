@@ -246,19 +246,19 @@ export default function DashboardPage() {
             <div className="grid grid-cols-4 gap-4">
               <div className="bg-white rounded-xl p-5 shadow-sm">
                 <p className="text-sm text-gray-600 font-medium">총 입차량</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.totalCars.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">대</span></p>
+                <p className="text-3xl font-extrabold text-gray-900 mt-1">{kpi.totalCars.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">대</span></p>
               </div>
               <div className="bg-white rounded-xl p-5 shadow-sm">
                 <p className="text-sm text-gray-600 font-medium">발렛 매출</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.totalValet.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
+                <p className="text-3xl font-extrabold text-gray-900 mt-1">{kpi.totalValet.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
               </div>
               <div className="bg-white rounded-xl p-5 shadow-sm">
                 <p className="text-sm text-gray-600 font-medium">근무 인원</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.workerCount}<span className="text-sm font-normal text-mr-gray ml-1">명</span></p>
+                <p className="text-3xl font-extrabold text-gray-900 mt-1">{kpi.workerCount}<span className="text-sm font-normal text-mr-gray ml-1">명</span></p>
               </div>
               <div className="bg-white rounded-xl p-5 shadow-sm">
                 <p className="text-sm text-gray-600 font-medium">{selectedStore ? "월주차 계약" : "운영 매장"}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
+                <p className="text-3xl font-extrabold text-gray-900 mt-1">
                   {selectedStore ? kpi.activeContracts : stores.length}
                   <span className="text-sm font-normal text-mr-gray ml-1">{selectedStore ? "건" : "개"}</span>
                 </p>
@@ -266,7 +266,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl p-6 shadow-sm">
+              <div className="bg-white rounded-xl p-7 shadow-sm">
                 <h3 className="font-semibold text-dark mb-4">시간대별 입차량</h3>
                 {hourlyChartData.some((d) => d.count > 0) ? (
                   <ResponsiveContainer width="100%" height={250}>
@@ -283,7 +283,7 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              <div className="bg-white rounded-xl p-6 shadow-sm">
+              <div className="bg-white rounded-xl p-7 shadow-sm">
                 <h3 className="font-semibold text-dark mb-4">일별 추이</h3>
                 {dailyTrendData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={250}>
@@ -305,7 +305,7 @@ export default function DashboardPage() {
             </div>
 
             {!selectedStore && storeRankData.length > 0 && (
-              <div className="bg-white rounded-xl p-6 shadow-sm">
+              <div className="bg-white rounded-xl p-7 shadow-sm">
                 <h3 className="font-semibold text-dark mb-4">매장 랭킹 (입차량 TOP 10)</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={storeRankData} layout="vertical">
@@ -320,7 +320,7 @@ export default function DashboardPage() {
             )}
 
             <div className="grid grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl p-6 shadow-sm">
+              <div className="bg-white rounded-xl p-7 shadow-sm">
                 <h3 className="font-semibold text-dark mb-4">월주차 현황</h3>
                 {monthlyPieData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={200}>
@@ -342,7 +342,7 @@ export default function DashboardPage() {
               </div>
 
               {selectedStore ? (
-                <div className="bg-white rounded-xl p-6 shadow-sm">
+                <div className="bg-white rounded-xl p-7 shadow-sm">
                   <h3 className="font-semibold text-dark mb-4">근무자 현황</h3>
                   {workerSummary.length > 0 ? (
                     <div className="space-y-2">
@@ -358,7 +358,7 @@ export default function DashboardPage() {
                   )}
                 </div>
               ) : (
-                <div className="bg-white rounded-xl p-6 shadow-sm">
+                <div className="bg-white rounded-xl p-7 shadow-sm">
                   <h3 className="font-semibold text-dark mb-4">미입력 매장</h3>
                   {records.length === 0 ? (
                     <div className="h-48 flex items-center justify-center text-mr-gray text-sm">선택된 기간에 입력된 데이터가 없습니다</div>
