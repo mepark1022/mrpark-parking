@@ -2,18 +2,29 @@
 
 @theme {
   --color-primary: #1428A0;
-  --color-primary-dark: #0f1d6b;
+  --color-primary-dark: #0a1352;
+  --color-primary-light: #1e3a8a;
   --color-gold: #F5B731;
-  --color-success: #43A047;
-  --color-error: #E53935;
-  --color-dark: #1a1a1a;
-  --color-mr-gray: #4a4a4a;
-  --color-light-gray: #E0E0E0;
+  --color-gold-light: #fef3c7;
+  --color-success: #16a34a;
+  --color-success-light: #dcfce7;
+  --color-error: #dc2626;
+  --color-error-light: #fee2e2;
+  --color-warning: #ea580c;
+  --color-warning-light: #fff7ed;
+  --color-dark: #0f172a;
+  --color-text: #1e293b;
+  --color-text-sub: #475569;
+  --color-text-muted: #94a3b8;
+  --color-mr-border: #e2e8f0;
+  --color-mr-gray: #333333;
+  --color-light-gray: #D5D5D5;
   --color-blue: #156082;
-  --color-skyBlue: #0F9ED5;
-  --color-orange: #E97132;
-  --color-purple: #7B1FA2;
-  --color-bg: #F5F6FA;
+  --color-skyBlue: #0ea5e9;
+  --color-orange: #ea580c;
+  --color-purple: #7c3aed;
+  --color-purple-light: #ede9fe;
+  --color-bg: #f8fafc;
   --font-pretendard: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -21,42 +32,40 @@
   body {
     font-family: var(--font-pretendard);
     background-color: var(--color-bg);
-    color: var(--color-dark);
+    color: #1e293b;
     font-size: 15px;
-    line-height: 1.6;
+    line-height: 1.65;
+    letter-spacing: -0.01em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, h4 {
-    color: #111111;
-    font-weight: 700;
-  }
+  h1 { font-size: 28px; font-weight: 800; color: #0f172a; }
+  h2 { font-size: 22px; font-weight: 700; color: #0f172a; }
+  h3 { font-size: 18px; font-weight: 700; color: #0f172a; }
+  h4 { font-size: 16px; font-weight: 600; color: #1e293b; }
 
-  p, span, td, th, label {
-    color: #333333;
-  }
+  p, span, div { color: #1e293b; }
+  
+  td, th { color: #1e293b; font-size: 14px; }
+  th { font-weight: 700; color: #64748b; }
 
-  input, select, textarea, button {
-    font-family: inherit;
-    font-size: 14px;
-  }
+  label { color: #1e293b; font-weight: 600; font-size: 14px; }
 
   input, select, textarea {
-    color: #111111;
+    font-family: inherit;
+    font-size: 14px;
+    color: #1e293b;
   }
 
-  input::placeholder {
-    color: #999999;
-  }
-
-  table th {
+  button {
+    font-family: inherit;
+    font-size: 14px;
     font-weight: 600;
-    color: #444444;
   }
 
-  table td {
-    color: #222222;
+  input::placeholder, textarea::placeholder {
+    color: #94a3b8;
   }
 
   input[type="number"]::-webkit-inner-spin-button,

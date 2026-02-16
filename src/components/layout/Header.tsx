@@ -1,88 +1,92 @@
 // @ts-nocheck
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
-const PAGE_TITLES: Record<string, string> = {
-  "/dashboard": "대시보드",
-  "/entry": "데이터 입력",
-  "/monthly": "월주차 관리",
-  "/monthly/register": "월주차 관리",
-  "/analytics": "매출 분석",
-  "/settings": "설정",
-  "/settings/stores": "설정",
-  "/settings/workers": "설정",
-  "/settings/default-workers": "설정",
-  "/settings/team": "설정",
+const pageTitles: Record<string, { title: string; subtitle: string }> = {
+  "/dashboard": { title: "대시보드", subtitle: "전사 주차 운영 현황을 한눈에 확인하세요" },
+  "/entry": { title: "데이터 입력", subtitle: "매장별 일일 주차 데이터를 입력합니다" },
+  "/monthly": { title: "월주차 관리", subtitle: "월주차 계약을 등록하고 관리합니다" },
+  "/analytics": { title: "매출 분석", subtitle: "발렛 매출과 주차 매출을 분석합니다" },
+  "/workers": { title: "근무자 관리", subtitle: "출퇴근, 명부, 근태, 연차를 관리합니다" },
+  "/stores": { title: "매장 관리", subtitle: "매장 정보와 운영 설정을 관리합니다" },
+  "/team": { title: "팀원 초대", subtitle: "팀원을 초대하고 권한을 관리합니다" },
+  "/accident": { title: "사고보고", subtitle: "현장 사고를 보고하고 처리합니다" },
+  "/settings": { title: "설정", subtitle: "시스템 설정을 관리합니다" },
 };
 
 export default function Header() {
-  const supabase = createClient();
   const pathname = usePathname();
   const router = useRouter();
-  const [userName, setUserName] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { loadProfile(); }, []);
+  const matchedKey = Object.keys(pageTitles).find(
+    (key) => pathname === key || pathname.startsWith(key + "/")
+  );
+  const { title, subtitle } = pageTitles[matchedKey || "/dashboard"] || { title: "VALETMAN", subtitle: "" };
 
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  async function loadProfile() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase.from("profiles").select("name, email").eq("id", user.id).single();
-      setUserName(profile?.name || profile?.email?.split("@")[0] || "사용자");
-      setUserEmail(profile?.email || user.email || "");
-    }
-  }
-
-  async function handleLogout() {
+  const handleLogout = async () => {
+    const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/login");
-  }
-
-  const title = PAGE_TITLES[pathname] || "Mr. Park";
+  };
 
   return (
-    <header className="h-14 border-b border-gray-200 bg-white flex items-center justify-between px-6">
-      <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-      <div className="relative" ref={menuRef}>
-        <button
-          onClick={() => setShowMenu(!showMenu)}
-          className="flex items-center gap-2.5 hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors"
+    <header
+      className="flex items-center justify-between px-8 py-5"
+      style={{ background: "#ffffff", borderBottom: "1px solid #e2e8f0" }}
+    >
+      <div>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-0.01em" }}>{title}</h1>
+        {subtitle && <p style={{ fontSize: 13, color: "#94a3b8", margin: "4px 0 0", fontWeight: 500 }}>{subtitle}</p>}
+      </div>
+
+      <div className="flex items-center gap-3">
+        {/* Search */}
+        <div
+          className="flex items-center gap-2"
+          style={{
+            background: "#f8fafc", borderRadius: 10, padding: "8px 14px",
+            border: "1px solid #e2e8f0",
+          }}
         >
-          <span className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: "linear-gradient(135deg, #1428A0 0%, #1e3abf 100%)" }}>
-            {userName.charAt(0).toUpperCase()}
-          </span>
-          <span className="text-sm font-medium text-gray-700">{userName}</span>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-gray-400">
-            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input
+            placeholder="검색..."
+            className="border-0 bg-transparent outline-none"
+            style={{ fontSize: 13, color: "#1e293b", width: 140 }}
+          />
+        </div>
+
+        {/* Bell */}
+        <div
+          className="relative flex items-center justify-center cursor-pointer"
+          style={{
+            width: 40, height: 40, borderRadius: 10, background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <div
+            className="absolute"
+            style={{
+              top: 8, right: 8, width: 8, height: 8, borderRadius: 4,
+              background: "#dc2626", border: "2px solid #fff",
+            }}
+          />
+        </div>
+
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          className="flex items-center justify-center cursor-pointer"
+          style={{
+            width: 40, height: 40, borderRadius: 10, background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
-        {showMenu && (
-          <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-xl shadow-xl py-1 w-48 z-50">
-            <div className="px-4 py-2.5 border-b border-gray-100">
-              <p className="text-sm font-medium text-gray-900">{userName}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{userEmail}</p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-            >
-              로그아웃
-            </button>
-          </div>
-        )}
       </div>
     </header>
   );
