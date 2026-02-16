@@ -71,7 +71,7 @@ export default function Sidebar() {
       </div>
 
       {/* Menu Label */}
-      <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.3)", padding: "12px 24px 6px", letterSpacing: "0.08em", textTransform: "uppercase" }}>메뉴</div>
+      <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.5)", padding: "12px 24px 6px", letterSpacing: "0.08em", textTransform: "uppercase" }}>메뉴</div>
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-0.5">
@@ -84,7 +84,7 @@ export default function Sidebar() {
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-150 relative"
               style={{
                 background: isActive ? "rgba(255,255,255,0.15)" : undefined,
-                color: "#ffffff",
+                color: isActive ? "#ffffff" : "rgba(255,255,255,0.9)",
                 fontWeight: isActive ? 700 : 600,
                 fontSize: 14,
               }}
