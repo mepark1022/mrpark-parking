@@ -40,7 +40,7 @@ export default function Sidebar() {
   return (
     <aside
       className="w-60 min-h-screen flex flex-col relative overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #070e3a 0%, #0f1d6b 30%, #1428A0 70%, #1e3a8a 100%)" }}
+      style={{ background: "linear-gradient(180deg, #020617 0%, #0a1352 30%, #0f1d6b 70%, #162050 100%)" }}
     >
       {/* Decorative glow */}
       <div
@@ -84,9 +84,9 @@ export default function Sidebar() {
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-150 relative"
               style={{
                 background: isActive ? "rgba(255,255,255,0.15)" : undefined,
-                color: isActive ? "#ffffff" : "rgba(255,255,255,0.9)",
+                color: "#fff",
                 fontWeight: isActive ? 700 : 600,
-                fontSize: 14,
+                fontSize: 15,
               }}
             >
               {isActive && (
@@ -118,7 +118,7 @@ export default function Sidebar() {
           className="flex items-center justify-center"
           style={{
             width: 36, height: 36, borderRadius: 10,
-            background: "#F5B731", fontSize: 14, fontWeight: 800, color: "#0a1352",
+            background: "#F5B731", fontSize: 15, fontWeight: 800, color: "#0a1352",
           }}
         >이</div>
         <div className="flex-1">
