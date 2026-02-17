@@ -196,35 +196,3 @@ export default function LeaveTab() {
     </div>
   );
 }
-```
-
----
-
-### 수정: `src/app/workers/page.tsx`
-
-파일 상단에 import 추가. **Ctrl+H**:
-
-**찾기:**
-```
-import { createClient } from "@/lib/supabase/client";
-```
-
-**바꾸기:**
-```
-import { createClient } from "@/lib/supabase/client";
-import LeaveTab from "./LeaveTab";
-```
-
-그리고 연차 탭 연결. **Ctrl+H**:
-
-**찾기:**
-```
-        {!["attendance", "roster", "schedule"].includes(tab) && (
-```
-
-**바꾸기:**
-```
-        {tab === "leave" && <LeaveTab />}
-
-        {!["attendance", "roster", "schedule", "leave"].includes(tab) && (
-```
