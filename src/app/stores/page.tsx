@@ -12,6 +12,8 @@ const storeTabs = [
   { id: "late", label: "지각판별" },
 ];
 
+const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+
 export default function StoresPage() {
   const [tab, setTab] = useState("list");
   const [stores, setStores] = useState([]);
@@ -23,15 +25,27 @@ export default function StoresPage() {
   });
   const [message, setMessage] = useState("");
 
+  // 운영시간
+  const [selectedStore, setSelectedStore] = useState("");
+  const [hours, setHours] = useState([]);
+  const [hoursMessage, setHoursMessage] = useState("");
+
   useEffect(() => {
     loadStores();
     loadRegions();
   }, []);
 
+  useEffect(() => {
+    if (selectedStore && tab === "hours") loadHours();
+  }, [selectedStore, tab]);
+
   const loadStores = async () => {
     const supabase = createClient();
     const { data } = await supabase.from("stores").select("*, regions(name)").order("name");
-    if (data) setStores(data);
+    if (data) {
+      setStores(data);
+      if (data.length > 0 && !selectedStore) setSelectedStore(data[0].id);
+    }
   };
 
   const loadRegions = async () => {
@@ -40,6 +54,71 @@ export default function StoresPage() {
     if (data) setRegions(data);
   };
 
+  const loadHours = async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("store_operating_hours")
+      .select("*")
+      .eq("store_id", selectedStore)
+      .order("day_of_week");
+
+    if (data && data.length > 0) {
+      setHours(data);
+    } else {
+      // 기본값 생성
+      const defaults = Array.from({ length: 7 }, (_, i) => ({
+        id: null,
+        store_id: selectedStore,
+        day_of_week: i,
+        open_time: "09:00",
+        close_time: "22:00",
+        is_closed: false,
+      }));
+      setHours(defaults);
+    }
+  };
+
+  const updateHour = (index, field, value) => {
+    const updated = [...hours];
+    updated[index] = { ...updated[index], [field]: value };
+    setHours(updated);
+  };
+
+  const saveHours = async () => {
+    const supabase = createClient();
+    for (const h of hours) {
+      const payload = {
+        store_id: selectedStore,
+        day_of_week: h.day_of_week,
+        open_time: h.open_time,
+        close_time: h.close_time,
+        is_closed: h.is_closed,
+      };
+      if (h.id) {
+        await supabase.from("store_operating_hours").update(payload).eq("id", h.id);
+      } else {
+        await supabase.from("store_operating_hours").upsert(payload, { onConflict: "store_id,day_of_week" });
+      }
+    }
+    setHoursMessage("운영시간이 저장되었습니다!");
+    setTimeout(() => setHoursMessage(""), 2000);
+    loadHours();
+  };
+
+  const applyToAll = () => {
+    if (hours.length === 0) return;
+    const first = hours.find(h => !h.is_closed);
+    if (!first) return;
+    const updated = hours.map(h => ({
+      ...h,
+      open_time: first.open_time,
+      close_time: first.close_time,
+      is_closed: false,
+    }));
+    setHours(updated);
+  };
+
+  // 매장 CRUD
   const handleSave = async () => {
     if (!formData.name) { setMessage("매장명을 입력하세요"); return; }
     const supabase = createClient();
@@ -92,7 +171,7 @@ export default function StoresPage() {
           ))}
         </div>
 
-        {/* 매장 목록 */}
+        {/* ===== 매장 목록 탭 ===== */}
         {tab === "list" && (
           <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
             <div className="flex justify-between items-center mb-5">
@@ -184,8 +263,101 @@ export default function StoresPage() {
           </div>
         )}
 
-        {/* 나머지 탭 */}
-        {tab !== "list" && (
+        {/* ===== 운영시간 탭 ===== */}
+        {tab === "hours" && (
+          <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
+            <div className="flex justify-between items-center mb-5">
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>운영시간 설정</div>
+              <div className="flex gap-2">
+                <button onClick={applyToAll} className="cursor-pointer" style={{
+                  padding: "8px 16px", borderRadius: 8, border: "1px solid #e2e8f0",
+                  background: "#fff", fontSize: 13, fontWeight: 600, color: "#475569",
+                }}>첫째 행 전체 적용</button>
+                <button onClick={saveHours} className="cursor-pointer" style={{
+                  padding: "8px 20px", borderRadius: 8, border: "none",
+                  background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700,
+                }}>저장</button>
+              </div>
+            </div>
+
+            {/* 매장 선택 */}
+            <div className="mb-5">
+              <label className="block mb-1.5" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>매장 선택</label>
+              <select
+                value={selectedStore}
+                onChange={e => setSelectedStore(e.target.value)}
+                style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600, minWidth: 250 }}
+              >
+                {stores.filter(s => s.is_active).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+
+            {hoursMessage && (
+              <div className="mb-4" style={{ padding: "10px 16px", borderRadius: 10, background: "#dcfce7", color: "#15803d", fontSize: 13, fontWeight: 600 }}>{hoursMessage}</div>
+            )}
+
+            {/* 요일별 시간 */}
+            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 4px" }}>
+              <thead>
+                <tr>
+                  {["요일", "오픈 시간", "마감 시간", "휴무"].map(h => (
+                    <th key={h} style={{ padding: "10px 16px", fontSize: 13, fontWeight: 700, color: "#94a3b8", textAlign: "left", borderBottom: "2px solid #e2e8f0" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {hours.map((h, i) => (
+                  <tr key={i} style={{ background: i % 2 === 0 ? "#f8fafc" : "#fff" }}>
+                    <td style={{ padding: "12px 16px", fontSize: 14, fontWeight: 700, color: h.day_of_week === 0 ? "#dc2626" : h.day_of_week === 6 ? "#1428A0" : "#1e293b" }}>
+                      {dayNames[h.day_of_week]}요일
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <input
+                        type="time"
+                        value={h.open_time}
+                        onChange={e => updateHour(i, "open_time", e.target.value)}
+                        disabled={h.is_closed}
+                        style={{
+                          padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0",
+                          fontSize: 14, color: h.is_closed ? "#94a3b8" : "#1e293b",
+                          background: h.is_closed ? "#f1f5f9" : "#fff",
+                        }}
+                      />
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <input
+                        type="time"
+                        value={h.close_time}
+                        onChange={e => updateHour(i, "close_time", e.target.value)}
+                        disabled={h.is_closed}
+                        style={{
+                          padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0",
+                          fontSize: 14, color: h.is_closed ? "#94a3b8" : "#1e293b",
+                          background: h.is_closed ? "#f1f5f9" : "#fff",
+                        }}
+                      />
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <button
+                        onClick={() => updateHour(i, "is_closed", !h.is_closed)}
+                        className="cursor-pointer"
+                        style={{
+                          padding: "6px 16px", borderRadius: 8, border: "none",
+                          fontSize: 12, fontWeight: 700,
+                          background: h.is_closed ? "#fee2e2" : "#f1f5f9",
+                          color: h.is_closed ? "#dc2626" : "#94a3b8",
+                        }}
+                      >{h.is_closed ? "휴무" : "영업"}</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ===== 나머지 탭 ===== */}
+        {!["list", "hours"].includes(tab) && (
           <div style={{ background: "#fff", borderRadius: 16, padding: 64, border: "1px solid #e2e8f0", textAlign: "center" }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>🚧</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>{storeTabs.find(t => t.id === tab)?.label} 설정</div>
