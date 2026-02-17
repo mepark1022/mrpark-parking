@@ -9,6 +9,8 @@ const periods = [
   { id: "today", label: "오늘" },
   { id: "month", label: "월별" },
   { id: "quarter", label: "분기" },
+  { id: "year", label: "연간" },
+  { id: "custom", label: "지정날짜" },
 ];
 
 export default function AnalyticsPage() {
@@ -17,11 +19,14 @@ export default function AnalyticsPage() {
   const [selectedStore, setSelectedStore] = useState("all");
   const [selectedMonth, setSelectedMonth] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
   const [selectedQuarter, setSelectedQuarter] = useState(() => { const d = new Date(); return `${d.getFullYear()}-Q${Math.ceil((d.getMonth() + 1) / 3)}`; });
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [data, setData] = useState([]);
   const [summary, setSummary] = useState({ total_revenue: 0, total_cars: 0, total_valet: 0, avg_revenue: 0 });
 
   useEffect(() => { loadStores(); }, []);
-  useEffect(() => { loadData(); }, [period, selectedStore, selectedMonth, selectedQuarter]);
+  useEffect(() => { loadData(); }, [period, selectedStore, selectedMonth, selectedQuarter, selectedYear, customStart, customEnd]);
 
   const loadStores = async () => {
     const supabase = createClient();
@@ -38,19 +43,25 @@ export default function AnalyticsPage() {
       const [y, m] = selectedMonth.split("-");
       const lastDay = new Date(Number(y), Number(m), 0).getDate();
       return { start: `${y}-${m}-01`, end: `${y}-${m}-${lastDay}` };
-    } else {
+    } else if (period === "quarter") {
       const [y, q] = selectedQuarter.split("-Q");
       const qNum = Number(q);
       const startMonth = (qNum - 1) * 3 + 1;
       const endMonth = qNum * 3;
       const lastDay = new Date(Number(y), endMonth, 0).getDate();
       return { start: `${y}-${String(startMonth).padStart(2, "0")}-01`, end: `${y}-${String(endMonth).padStart(2, "0")}-${lastDay}` };
+    } else if (period === "year") {
+      return { start: `${selectedYear}-01-01`, end: `${selectedYear}-12-31` };
+    } else {
+      if (!customStart || !customEnd) return { start: "", end: "" };
+      return { start: customStart, end: customEnd };
     }
   };
 
   const loadData = async () => {
     const supabase = createClient();
     const { start, end } = getDateRange();
+    if (!start || !end) { setData([]); setSummary({ total_revenue: 0, total_cars: 0, total_valet: 0, avg_revenue: 0 }); return; }
     let query = supabase.from("parking_records").select("*, stores(name)").gte("date", start).lte("date", end).order("date", { ascending: false });
     if (selectedStore !== "all") query = query.eq("store_id", selectedStore);
     const { data: records } = await query;
@@ -137,6 +148,29 @@ export default function AnalyticsPage() {
                   <option key={`${y}-Q${q}`} value={`${y}-Q${q}`}>{y}년 {q}분기</option>
                 )))}
               </select>
+            </div>
+          )}
+
+          {period === "year" && (
+            <div>
+              <label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>연도 선택</label>
+              <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600 }}>
+                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}년</option>)}
+              </select>
+            </div>
+          )}
+
+          {period === "custom" && (
+            <div className="flex gap-2 items-end">
+              <div>
+                <label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>시작일</label>
+                <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600 }} />
+              </div>
+              <span style={{ fontSize: 14, color: "#94a3b8", paddingBottom: 8 }}>~</span>
+              <div>
+                <label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>종료일</label>
+                <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600 }} />
+              </div>
             </div>
           )}
         </div>
