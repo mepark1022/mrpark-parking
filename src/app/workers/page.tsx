@@ -1,6 +1,6 @@
 // @ts-nocheck
 "use client";
-
+import LeaveTab from "./LeaveTab";
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
@@ -292,7 +292,9 @@ export default function WorkersPage() {
         {tab === "schedule" && <ScheduleTab />}
 
         {/* 나머지 탭 */}
-        {!["attendance", "roster", "schedule"].includes(tab) && (
+        {tab === "leave" && <LeaveTab />}
+
+        {!["attendance", "roster", "schedule", "leave"].includes(tab) && (
           <div style={{ background: "#fff", borderRadius: 16, padding: 64, border: "1px solid #e2e8f0", textAlign: "center" }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>🚧</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>{tabs.find(t => t.id === tab)?.label} 관리</div>
