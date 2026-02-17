@@ -85,10 +85,7 @@ export default function SettingsPage() {
         <button
           onClick={() => addDefaultWorker(dayType)}
           className="cursor-pointer"
-          style={{
-            padding: "6px 16px", borderRadius: 8, border: "none",
-            background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700,
-          }}
+          style={{ padding: "6px 16px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700 }}
         >+ 추가</button>
       </div>
       {list.length === 0 ? (
@@ -128,29 +125,21 @@ export default function SettingsPage() {
         <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 20 }}>기본 근무자 설정</div>
 
-          {/* 매장 선택 */}
           <div className="mb-6">
             <label className="block mb-2" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>매장 선택</label>
             <select
               value={selectedStore}
               onChange={e => setSelectedStore(e.target.value)}
-              style={{
-                padding: "12px 16px", borderRadius: 10, border: "1px solid #e2e8f0",
-                fontSize: 14, fontWeight: 600, color: "#1e293b", minWidth: 280,
-              }}
+              style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600, color: "#1e293b", minWidth: 280 }}
             >
               {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
 
           {message && (
-            <div className="mb-4" style={{
-              padding: "10px 16px", borderRadius: 10, background: "#fee2e2",
-              color: "#dc2626", fontSize: 13, fontWeight: 600,
-            }}>{message}</div>
+            <div className="mb-4" style={{ padding: "10px 16px", borderRadius: 10, background: "#fee2e2", color: "#dc2626", fontSize: 13, fontWeight: 600 }}>{message}</div>
           )}
 
-          {/* 평일/주말 */}
           <div className="flex gap-4">
             {renderWorkerList(weekdayWorkers, "weekday")}
             {renderWorkerList(weekendWorkers, "weekend")}
