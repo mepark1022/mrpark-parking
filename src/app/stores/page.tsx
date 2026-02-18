@@ -281,7 +281,7 @@ export default function StoresPage() {
   const [regions, setRegions] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [formData, setFormData] = useState({ name: "", region_id: "", has_valet: true, valet_fee: 5000, address: "" });
+  const [formData, setFormData] = useState({ name: "", region_id: "", has_valet: true, valet_fee: 5000, address: "", detail_address: "", manager_name: "", manager_phone: "" });
   const [message, setMessage] = useState("");
   const [selectedStore, setSelectedStore] = useState("");
   const [hours, setHours] = useState([]);
@@ -342,10 +342,10 @@ export default function StoresPage() {
   const handleSave = async () => {
     if (!formData.name) { setMessage("매장명을 입력하세요"); return; }
     const supabase = createClient();
-    const payload = { name: formData.name, region_id: formData.region_id || null, has_valet: formData.has_valet, valet_fee: formData.has_valet ? Number(formData.valet_fee) || 0 : 0, address: formData.address || null };
+    const payload = { name: formData.name, region_id: formData.region_id || null, has_valet: formData.has_valet, valet_fee: formData.has_valet ? Number(formData.valet_fee) || 0 : 0, address: formData.address || null, detail_address: formData.detail_address || null, manager_name: formData.manager_name || null, manager_phone: formData.manager_phone || null };
     if (editItem) await supabase.from("stores").update(payload).eq("id", editItem.id);
     else await supabase.from("stores").insert({ ...payload, is_active: true });
-    setShowForm(false); setEditItem(null); setFormData({ name: "", region_id: "", has_valet: true, valet_fee: 5000, address: "" }); setMessage(""); loadStores();
+    setShowForm(false); setEditItem(null); setFormData({ name: "", region_id: "", has_valet: true, valet_fee: 5000, address: "", detail_address: "", manager_name: "", manager_phone: "" }); setMessage(""); loadStores();
   };
   const toggleStatus = async (store) => { const supabase = createClient(); await supabase.from("stores").update({ is_active: !store.is_active }).eq("id", store.id); loadStores(); };
 
@@ -367,7 +367,7 @@ export default function StoresPage() {
           <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
             <div className="flex justify-between items-center mb-5">
               <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>전체 매장 ({stores.length})</div>
-              <button onClick={() => { setEditItem(null); setFormData({ name: "", region_id: "", has_valet: true, valet_fee: 5000, address: "" }); setShowForm(true); }} className="cursor-pointer" style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: "#1428A0", color: "#fff", fontSize: 14, fontWeight: 700 }}>+ 매장 추가</button>
+              <button onClick={() => { setEditItem(null); setFormData({ name: "", region_id: "", has_valet: true, valet_fee: 5000, address: "", detail_address: "", manager_name: "", manager_phone: "" }); setShowForm(true); }} className="cursor-pointer" style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: "#1428A0", color: "#fff", fontSize: 14, fontWeight: 700 }}>+ 매장 추가</button>
             </div>
             {showForm && (
               <div style={{ background: "#f8fafc", borderRadius: 14, padding: 24, marginBottom: 20, border: "1px solid #e2e8f0" }}>
@@ -375,7 +375,59 @@ export default function StoresPage() {
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>매장명 *</label><input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="매장명" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
                   <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>지역</label><select value={formData.region_id} onChange={e => setFormData({ ...formData, region_id: e.target.value })} className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }}><option value="">선택</option>{regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
-                  <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>주소</label><input value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="주소" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
+                </div>
+                {/* 도로명 주소 검색 */}
+                <div className="mb-4">
+                  <label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>도로명 주소 *</label>
+                  <div className="flex gap-2">
+                    <input value={formData.address} readOnly placeholder="주소 검색을 클릭하세요" className="flex-1" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, background: "#fff", cursor: "pointer" }}
+                      onClick={() => {
+                        if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
+                          new (window as any).daum.Postcode({
+                            oncomplete: (data: any) => { setFormData(prev => ({ ...prev, address: data.roadAddress || data.jibunAddress })); }
+                          }).open();
+                        } else {
+                          const script = document.createElement("script");
+                          script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+                          script.onload = () => {
+                            new (window as any).daum.Postcode({
+                              oncomplete: (data: any) => { setFormData(prev => ({ ...prev, address: data.roadAddress || data.jibunAddress })); }
+                            }).open();
+                          };
+                          document.head.appendChild(script);
+                        }
+                      }}
+                    />
+                    <button type="button" className="cursor-pointer" onClick={() => {
+                      if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
+                        new (window as any).daum.Postcode({
+                          oncomplete: (data: any) => { setFormData(prev => ({ ...prev, address: data.roadAddress || data.jibunAddress })); }
+                        }).open();
+                      } else {
+                        const script = document.createElement("script");
+                        script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+                        script.onload = () => {
+                          new (window as any).daum.Postcode({
+                            oncomplete: (data: any) => { setFormData(prev => ({ ...prev, address: data.roadAddress || data.jibunAddress })); }
+                          }).open();
+                        };
+                        document.head.appendChild(script);
+                      }
+                    }} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>🔍 주소 검색</button>
+                  </div>
+                  {formData.address && (
+                    <div style={{ marginTop: 6, padding: "8px 12px", borderRadius: 8, background: "#dcfce7", display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 12 }}>✅</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "#15803d" }}>{formData.address}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>상세 주소</label><input value={formData.detail_address} onChange={e => setFormData({ ...formData, detail_address: e.target.value })} placeholder="동, 호수, 층 등" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
+                  <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>담당자</label><input value={formData.manager_name} onChange={e => setFormData({ ...formData, manager_name: e.target.value })} placeholder="담당자명" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
+                  <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>연락처</label><input value={formData.manager_phone} onChange={e => setFormData({ ...formData, manager_phone: e.target.value })} placeholder="010-0000-0000" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
                   <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>발렛비</label><input type="number" value={formData.valet_fee} onChange={e => setFormData({ ...formData, valet_fee: e.target.value })} className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
                 </div>
                 {message && <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 8 }}>{message}</p>}
@@ -395,7 +447,7 @@ export default function StoresPage() {
                   <td style={{ padding: "12px 16px", fontSize: 14, fontWeight: 600, color: "#1e293b" }}>₩{(s.valet_fee || 0).toLocaleString()}</td>
                   <td style={{ padding: "12px 16px" }}><span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: s.is_active ? "#dcfce7" : "#fff7ed", color: s.is_active ? "#15803d" : "#c2410c" }}>{s.is_active ? "운영중" : "일시중지"}</span></td>
                   <td style={{ padding: "12px 16px" }}><div className="flex gap-2">
-                    <button onClick={() => { setEditItem(s); setFormData({ name: s.name, region_id: s.region_id || "", has_valet: s.has_valet, valet_fee: s.valet_fee || 0, address: s.address || "" }); setShowForm(true); }} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569" }}>수정</button>
+                    <button onClick={() => { setEditItem(s); setFormData({ name: s.name, region_id: s.region_id || "", has_valet: s.has_valet, valet_fee: s.valet_fee || 0, address: s.address || "", detail_address: s.detail_address || "", manager_name: s.manager_name || "", manager_phone: s.manager_phone || "" }); setShowForm(true); }} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569" }}>수정</button>
                     <button onClick={() => toggleStatus(s)} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, background: s.is_active ? "#fff7ed" : "#dcfce7", color: s.is_active ? "#c2410c" : "#15803d" }}>{s.is_active ? "중지" : "운영"}</button>
                   </div></td>
                 </tr>))}</tbody>
