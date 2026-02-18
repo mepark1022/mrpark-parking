@@ -297,11 +297,11 @@ export default function DashboardPage() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: 3, background: "#EA580C" }} />
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "#EA580C" }}>주차</span>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: showParking ? "#EA580C" : "#cbd5e1" }}>{(kpi.totalParking || 0).toLocaleString()}원</span>
+                      <span style={{ width: 6, height: 6, borderRadius: 3, background: "#F5B731" }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#b45309" }}>주차</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: showParking ? "#b45309" : "#cbd5e1" }}>{(kpi.totalParking || 0).toLocaleString()}원</span>
                     </div>
-                    <button onClick={() => setShowParking(!showParking)} style={{ width: 36, height: 20, borderRadius: 10, border: "none", background: showParking ? "#EA580C" : "#e2e8f0", position: "relative", cursor: "pointer", transition: "background 0.2s" }}>
+                    <button onClick={() => setShowParking(!showParking)} style={{ width: 36, height: 20, borderRadius: 10, border: "none", background: showParking ? "#F5B731" : "#e2e8f0", position: "relative", cursor: "pointer", transition: "background 0.2s" }}>
                       <div style={{ width: 16, height: 16, borderRadius: 8, background: "#fff", position: "absolute", top: 2, left: showParking ? 18 : 2, transition: "left 0.2s", boxShadow: "0 1px 2px rgba(0,0,0,0.2)" }} />
                     </button>
                   </div>
