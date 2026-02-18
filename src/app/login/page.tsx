@@ -103,7 +103,6 @@ function LoginContent() {
   return (
     <div className="min-h-screen bg-page-bg flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* 로고 */}
         <div className="text-center mb-8 flex flex-col items-center gap-3">
           <LogoHero theme="light" />
           <div style={{ fontSize: 13, fontWeight: 500, color: "#94a3b8", letterSpacing: "0.08em" }}>주차운영 시스템</div>
@@ -150,6 +149,7 @@ function LoginContent() {
                     </button>
                   ))}
                 </div>
+              )}
 
               {/* 구분선 */}
               {!isSignup && !showEmailForm && (
@@ -158,6 +158,7 @@ function LoginContent() {
                   <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 500 }}>또는</span>
                   <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
                 </div>
+              )}
 
               {/* 이메일 로그인 토글 버튼 */}
               {!isSignup && !showEmailForm && (
@@ -180,7 +181,7 @@ function LoginContent() {
 
               {/* 이메일/비밀번호 폼 */}
               {(showEmailForm || isSignup) && (
-                <form action={handleSubmit} className="space-y-4" style={{ marginTop: isSignup ? 0 : 0 }}>
+                <form action={handleSubmit} className="space-y-4">
                   {isSignup && (
                     <div>
                       <label className="block text-sm font-medium text-dark mb-1">이름</label>
@@ -221,7 +222,6 @@ function LoginContent() {
             </>
           )}
 
-          {/* 회원가입/로그인 전환 */}
           {!signupSuccess && (
             <div className="mt-6 text-center">
               <button
