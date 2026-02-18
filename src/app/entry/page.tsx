@@ -318,19 +318,55 @@ export default function EntryPage() {
               />
             </div>
 
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="w-full py-3.5 bg-primary text-white rounded-xl text-base font-bold hover:bg-primary-dark disabled:opacity-50 shadow-md transition-all"
-            >
-              {saving ? "저장 중..." : existingRecordId ? "수정 저장" : "저장"}
-            </button>
-            {message && (
-              <p className={`text-center text-sm font-bold mt-2 ${message.includes("완료") ? "text-green-600" : "text-red-600"}`}>{message}</p>
-            )}
+            {/* PC 저장 버튼 */}
+            <div className="hidden md:block">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="w-full py-3.5 bg-primary text-white rounded-xl text-base font-bold hover:bg-primary-dark disabled:opacity-50 shadow-md transition-all"
+              >
+                {saving ? "저장 중..." : existingRecordId ? "수정 저장" : "저장"}
+              </button>
+            </div>
+            {/* 모바일 하단 여백 확보 */}
+            <div className="md:hidden" style={{ height: 80 }} />
           </div>
         </div>
       </div>
+
+      {/* 모바일 하단 고정 저장 버튼 */}
+      <div className="md:hidden" style={{
+        position: "fixed", bottom: 60, left: 0, right: 0, zIndex: 150,
+        padding: "10px 16px", background: "#fff",
+        borderTop: "1px solid #e2e8f0",
+        boxShadow: "0 -2px 10px rgba(0,0,0,0.06)",
+      }}>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{
+            width: "100%", padding: "14px 0", borderRadius: 12,
+            background: saving ? "#94a3b8" : "#1428A0", color: "#fff",
+            fontSize: 16, fontWeight: 700, border: "none", cursor: "pointer",
+          }}
+        >
+          {saving ? "저장 중..." : existingRecordId ? "수정 저장" : "저장"}
+        </button>
+      </div>
+
+      {/* 토스트 알림 */}
+      {message && (
+        <div style={{
+          position: "fixed", top: 80, left: "50%", transform: "translateX(-50%)",
+          zIndex: 9999, padding: "14px 28px", borderRadius: 12,
+          background: message.includes("완료") ? "#15803d" : "#dc2626",
+          color: "#fff", fontSize: 15, fontWeight: 700,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+          animation: "fadeIn 0.3s ease",
+        }}>
+          {message.includes("완료") ? "✅ " : "❌ "}{message}
+        </div>
+      )}
     </AppLayout>
   );
 }
