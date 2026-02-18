@@ -72,12 +72,10 @@ function ScheduleTab() {
     loadRecords();
   };
 
-  // 해당 월의 날짜 목록
   const [y, m] = selectedMonth.split("-");
   const daysInMonth = new Date(Number(y), Number(m), 0).getDate();
   const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
 
-  // 통계
   const stats = {
     present: records.filter(r => r.status === "present").length,
     late: records.filter(r => r.status === "late").length,
@@ -90,89 +88,132 @@ function ScheduleTab() {
     <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
       <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>월별 근태 현황</div>
 
-      <div className="flex gap-4 mb-5">
+      <div className="flex flex-col md:flex-row gap-4 mb-5">
         <div>
           <label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>근무자</label>
-          <select value={selectedWorker} onChange={e => setSelectedWorker(e.target.value)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600, minWidth: 160 }}>
+          <select value={selectedWorker} onChange={e => setSelectedWorker(e.target.value)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600, minWidth: 160, width: "100%" }}>
             {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
         </div>
         <div>
           <label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>월 선택</label>
-          <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600 }} />
+          <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600, width: "100%" }} />
         </div>
       </div>
 
-      {/* 통계 */}
-      <div className="flex gap-3 mb-5">
+      {/* 통계 - 모바일에서 줄바꿈 */}
+      <div className="flex flex-wrap gap-2 md:gap-3 mb-5">
         {Object.entries(statusMap).map(([key, val]) => (
-          <div key={key} style={{ padding: "8px 16px", borderRadius: 10, background: val.bg, display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: val.color }}>{val.label}</span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: val.color }}>{stats[key] || 0}</span>
+          <div key={key} style={{ padding: "6px 12px", borderRadius: 10, background: val.bg, display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: val.color }}>{val.label}</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: val.color }}>{stats[key] || 0}</span>
           </div>
         ))}
-        <div style={{ padding: "8px 16px", borderRadius: 10, background: "#1428A010" }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#1428A0" }}>총 {records.length}일</span>
+        <div style={{ padding: "6px 12px", borderRadius: 10, background: "#1428A010" }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#1428A0" }}>총 {records.length}일</span>
         </div>
       </div>
 
-      {/* 캘린더 형식 */}
-      <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 2px" }}>
-        <thead>
-          <tr>
-            {["날짜", "요일", "상태", "출근", "퇴근", "매장", "비고", "관리"].map(h => (
-              <th key={h} style={{ padding: "8px 12px", fontSize: 12, fontWeight: 700, color: "#94a3b8", textAlign: "left", borderBottom: "2px solid #e2e8f0" }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: daysInMonth }, (_, i) => {
-            const date = `${y}-${m}-${String(i + 1).padStart(2, "0")}`;
-            const dayOfWeek = new Date(date).getDay();
-            const record = records.find(r => r.date === date);
-            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      {/* PC: 테이블 */}
+      <div className="hidden md:block">
+        <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 2px" }}>
+          <thead>
+            <tr>
+              {["날짜", "요일", "상태", "출근", "퇴근", "매장", "비고", "관리"].map(h => (
+                <th key={h} style={{ padding: "8px 12px", fontSize: 12, fontWeight: 700, color: "#94a3b8", textAlign: "left", borderBottom: "2px solid #e2e8f0" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: daysInMonth }, (_, i) => {
+              const date = `${y}-${m}-${String(i + 1).padStart(2, "0")}`;
+              const dayOfWeek = new Date(date).getDay();
+              const record = records.find(r => r.date === date);
+              const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+              return (
+                <tr key={date} style={{ background: isWeekend ? "#f8fafc" : "#fff" }}>
+                  <td style={{ padding: "8px 12px", fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{i + 1}일</td>
+                  <td style={{ padding: "8px 12px", fontSize: 13, fontWeight: 600, color: dayOfWeek === 0 ? "#dc2626" : dayOfWeek === 6 ? "#1428A0" : "#475569" }}>{dayNames[dayOfWeek]}</td>
+                  <td style={{ padding: "8px 12px" }}>
+                    {record ? (
+                      <select value={record.status} onChange={e => updateRecord(record.id, "status", e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600, background: statusMap[record.status]?.bg, color: statusMap[record.status]?.color }}>
+                        {Object.entries(statusMap).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                      </select>
+                    ) : <span style={{ fontSize: 12, color: "#d1d5db" }}>-</span>}
+                  </td>
+                  <td style={{ padding: "8px 12px" }}>
+                    {record && !["absent", "dayoff", "vacation"].includes(record.status) ? (
+                      <input type="time" value={record.check_in || ""} onChange={e => updateRecord(record.id, "check_in", e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, width: 90 }} />
+                    ) : <span style={{ fontSize: 12, color: "#d1d5db" }}>-</span>}
+                  </td>
+                  <td style={{ padding: "8px 12px" }}>
+                    {record && !["absent", "dayoff", "vacation"].includes(record.status) ? (
+                      <input type="time" value={record.check_out || ""} onChange={e => updateRecord(record.id, "check_out", e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, width: 90 }} />
+                    ) : <span style={{ fontSize: 12, color: "#d1d5db" }}>-</span>}
+                  </td>
+                  <td style={{ padding: "8px 12px", fontSize: 12, color: "#475569" }}>{record?.stores?.name || "-"}</td>
+                  <td style={{ padding: "8px 12px" }}>
+                    {record ? <input value={record.note || ""} onChange={e => updateRecord(record.id, "note", e.target.value)} placeholder="메모" style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, width: 100 }} /> : <span style={{ fontSize: 12, color: "#d1d5db" }}>-</span>}
+                  </td>
+                  <td style={{ padding: "8px 12px" }}>
+                    {record ? (
+                      <button onClick={() => deleteRecord(record.id)} className="cursor-pointer" style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "#fee2e2", color: "#dc2626", fontSize: 11, fontWeight: 600 }}>삭제</button>
+                    ) : (
+                      <button onClick={() => addRecord(date)} className="cursor-pointer" style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "#1428A015", color: "#1428A0", fontSize: 11, fontWeight: 600 }}>추가</button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
-            return (
-              <tr key={date} style={{ background: isWeekend ? "#f8fafc" : "#fff" }}>
-                <td style={{ padding: "8px 12px", fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{i + 1}일</td>
-                <td style={{ padding: "8px 12px", fontSize: 13, fontWeight: 600, color: dayOfWeek === 0 ? "#dc2626" : dayOfWeek === 6 ? "#1428A0" : "#475569" }}>{dayNames[dayOfWeek]}</td>
-                <td style={{ padding: "8px 12px" }}>
-                  {record ? (
-                    <select value={record.status} onChange={e => updateRecord(record.id, "status", e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600, background: statusMap[record.status]?.bg, color: statusMap[record.status]?.color }}>
-                      {Object.entries(statusMap).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                    </select>
-                  ) : (
-                    <span style={{ fontSize: 12, color: "#d1d5db" }}>-</span>
+      {/* 모바일: 카드형 리스트 */}
+      <div className="md:hidden space-y-2">
+        {Array.from({ length: daysInMonth }, (_, i) => {
+          const date = `${y}-${m}-${String(i + 1).padStart(2, "0")}`;
+          const dayOfWeek = new Date(date).getDay();
+          const record = records.find(r => r.date === date);
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+          const st = record ? statusMap[record.status] : null;
+          return (
+            <div key={date} style={{ background: isWeekend ? "#f8fafc" : "#fff", borderRadius: 12, padding: "12px 14px", border: "1px solid #e2e8f0" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: record ? 8 : 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#1e293b" }}>{i + 1}일</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: dayOfWeek === 0 ? "#dc2626" : dayOfWeek === 6 ? "#1428A0" : "#94a3b8" }}>({dayNames[dayOfWeek]})</span>
+                  {st && <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: st.bg, color: st.color }}>{st.label}</span>}
+                </div>
+                {record ? (
+                  <button onClick={() => deleteRecord(record.id)} className="cursor-pointer" style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "#fee2e2", color: "#dc2626", fontSize: 11, fontWeight: 600 }}>삭제</button>
+                ) : (
+                  <button onClick={() => addRecord(date)} className="cursor-pointer" style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "#1428A015", color: "#1428A0", fontSize: 11, fontWeight: 600 }}>추가</button>
+                )}
+              </div>
+              {record && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                  {!["absent", "dayoff", "vacation"].includes(record.status) && (
+                    <>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ fontSize: 11, color: "#94a3b8" }}>출근</span>
+                        <input type="time" value={record.check_in || ""} onChange={e => updateRecord(record.id, "check_in", e.target.value)} style={{ padding: "3px 6px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, width: 80 }} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ fontSize: 11, color: "#94a3b8" }}>퇴근</span>
+                        <input type="time" value={record.check_out || ""} onChange={e => updateRecord(record.id, "check_out", e.target.value)} style={{ padding: "3px 6px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, width: 80 }} />
+                      </div>
+                    </>
                   )}
-                </td>
-                <td style={{ padding: "8px 12px" }}>
-                  {record && !["absent", "dayoff", "vacation"].includes(record.status) ? (
-                    <input type="time" value={record.check_in || ""} onChange={e => updateRecord(record.id, "check_in", e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, width: 90 }} />
-                  ) : <span style={{ fontSize: 12, color: "#d1d5db" }}>-</span>}
-                </td>
-                <td style={{ padding: "8px 12px" }}>
-                  {record && !["absent", "dayoff", "vacation"].includes(record.status) ? (
-                    <input type="time" value={record.check_out || ""} onChange={e => updateRecord(record.id, "check_out", e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, width: 90 }} />
-                  ) : <span style={{ fontSize: 12, color: "#d1d5db" }}>-</span>}
-                </td>
-                <td style={{ padding: "8px 12px", fontSize: 12, color: "#475569" }}>{record?.stores?.name || "-"}</td>
-                <td style={{ padding: "8px 12px" }}>
-                  {record ? (
-                    <input value={record.note || ""} onChange={e => updateRecord(record.id, "note", e.target.value)} placeholder="메모" style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, width: 100 }} />
-                  ) : <span style={{ fontSize: 12, color: "#d1d5db" }}>-</span>}
-                </td>
-                <td style={{ padding: "8px 12px" }}>
-                  {record ? (
-                    <button onClick={() => deleteRecord(record.id)} className="cursor-pointer" style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "#fee2e2", color: "#dc2626", fontSize: 11, fontWeight: 600 }}>삭제</button>
-                  ) : (
-                    <button onClick={() => addRecord(date)} className="cursor-pointer" style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "#1428A015", color: "#1428A0", fontSize: 11, fontWeight: 600 }}>추가</button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  <select value={record.status} onChange={e => updateRecord(record.id, "status", e.target.value)} style={{ padding: "3px 6px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 11, fontWeight: 600, background: st?.bg, color: st?.color }}>
+                    {Object.entries(statusMap).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -216,13 +257,14 @@ export default function WorkersPage() {
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto">
-        <div className="flex gap-1 mb-6 flex-wrap" style={{ background: "#f8fafc", borderRadius: 12, padding: 4, border: "1px solid #e2e8f0" }}>
+        {/* 탭 - 모바일에서 스크롤 */}
+        <div className="flex gap-1 mb-6 overflow-x-auto" style={{ background: "#f8fafc", borderRadius: 12, padding: 4, border: "1px solid #e2e8f0" }}>
           {tabs.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} className="cursor-pointer" style={{
-              padding: "10px 20px", borderRadius: 10, border: "none", fontSize: 14,
+            <button key={t.id} onClick={() => setTab(t.id)} className="cursor-pointer whitespace-nowrap" style={{
+              padding: "10px 16px", borderRadius: 10, border: "none", fontSize: 13,
               fontWeight: tab === t.id ? 700 : 500, background: tab === t.id ? "#fff" : "transparent",
               color: tab === t.id ? "#1428A0" : "#475569", boxShadow: tab === t.id ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-              transition: "all 0.15s",
+              transition: "all 0.15s", flexShrink: 0,
             }}>{t.label}</button>
           ))}
         </div>
@@ -230,23 +272,41 @@ export default function WorkersPage() {
         {/* 출퇴근 */}
         {tab === "attendance" && (
           <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
-            <div className="flex justify-between items-center mb-5">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3">
               <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>오늘의 출퇴근 현황</div>
               <div className="flex gap-2">
                 <span style={{ padding: "4px 12px", borderRadius: 8, background: "#dcfce7", color: "#15803d", fontSize: 13, fontWeight: 700 }}>출근 {activeWorkers.length}명</span>
                 <span style={{ padding: "4px 12px", borderRadius: 8, background: "#fee2e2", color: "#b91c1c", fontSize: 13, fontWeight: 700 }}>미출근 0명</span>
               </div>
             </div>
-            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 4px" }}>
-              <thead><tr>{["이름", "지역", "연락처", "상태"].map(h => (<th key={h} style={{ padding: "10px 16px", fontSize: 13, fontWeight: 700, color: "#94a3b8", textAlign: "left", borderBottom: "2px solid #e2e8f0" }}>{h}</th>))}</tr></thead>
-              <tbody>{activeWorkers.map((w, i) => (
-                <tr key={w.id} style={{ background: i % 2 === 0 ? "#f8fafc" : "#fff" }}>
-                  <td style={{ padding: "12px 16px", fontSize: 14, fontWeight: 600, color: "#1e293b" }}>{w.name}</td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{w.regions?.name || "-"}</td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{w.phone || "-"}</td>
-                  <td style={{ padding: "12px 16px" }}><span style={{ padding: "3px 10px", borderRadius: 6, background: "#dcfce7", color: "#15803d", fontSize: 12, fontWeight: 600 }}>활성</span></td>
-                </tr>))}</tbody>
-            </table>
+
+            {/* PC: 테이블 */}
+            <div className="hidden md:block">
+              <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 4px" }}>
+                <thead><tr>{["이름", "지역", "연락처", "상태"].map(h => (<th key={h} style={{ padding: "10px 16px", fontSize: 13, fontWeight: 700, color: "#94a3b8", textAlign: "left", borderBottom: "2px solid #e2e8f0" }}>{h}</th>))}</tr></thead>
+                <tbody>{activeWorkers.map((w, i) => (
+                  <tr key={w.id} style={{ background: i % 2 === 0 ? "#f8fafc" : "#fff" }}>
+                    <td style={{ padding: "12px 16px", fontSize: 14, fontWeight: 600, color: "#1e293b" }}>{w.name}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{w.regions?.name || "-"}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{w.phone || "-"}</td>
+                    <td style={{ padding: "12px 16px" }}><span style={{ padding: "3px 10px", borderRadius: 6, background: "#dcfce7", color: "#15803d", fontSize: 12, fontWeight: 600 }}>활성</span></td>
+                  </tr>))}</tbody>
+              </table>
+            </div>
+
+            {/* 모바일: 카드형 */}
+            <div className="md:hidden space-y-2">
+              {activeWorkers.map(w => (
+                <div key={w.id} style={{ background: "#f8fafc", borderRadius: 12, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>{w.name}</div>
+                    <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>{w.regions?.name || "-"} · {w.phone || "-"}</div>
+                  </div>
+                  <span style={{ padding: "3px 10px", borderRadius: 6, background: "#dcfce7", color: "#15803d", fontSize: 12, fontWeight: 600 }}>활성</span>
+                </div>
+              ))}
+            </div>
+
             {activeWorkers.length === 0 && <div className="text-center py-10" style={{ color: "#94a3b8", fontSize: 14 }}>등록된 근무자가 없습니다</div>}
           </div>
         )}
@@ -254,14 +314,14 @@ export default function WorkersPage() {
         {/* 명부 */}
         {tab === "roster" && (
           <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
-            <div className="flex justify-between items-center mb-5">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3">
               <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>근무자 명부 ({workers.length}명)</div>
               <button onClick={() => { setEditItem(null); setFormData({ name: "", phone: "", region_id: "" }); setShowForm(true); }} className="cursor-pointer" style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: "#1428A0", color: "#fff", fontSize: 14, fontWeight: 700 }}>+ 근무자 추가</button>
             </div>
             {showForm && (
               <div style={{ background: "#f8fafc", borderRadius: 14, padding: 24, marginBottom: 20, border: "1px solid #e2e8f0" }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>{editItem ? "근무자 수정" : "근무자 추가"}</div>
-                <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>이름 *</label><input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="이름" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
                   <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>연락처</label><input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="010-0000-0000" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
                   <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>지역</label><select value={formData.region_id} onChange={e => setFormData({ ...formData, region_id: e.target.value })} className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }}><option value="">선택</option>{regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
@@ -273,27 +333,49 @@ export default function WorkersPage() {
                 </div>
               </div>
             )}
-            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 4px" }}>
-              <thead><tr>{["이름", "지역", "연락처", "상태", "관리"].map(h => (<th key={h} style={{ padding: "10px 16px", fontSize: 13, fontWeight: 700, color: "#94a3b8", textAlign: "left", borderBottom: "2px solid #e2e8f0" }}>{h}</th>))}</tr></thead>
-              <tbody>{workers.map((w, i) => (
-                <tr key={w.id} style={{ background: i % 2 === 0 ? "#f8fafc" : "#fff" }}>
-                  <td style={{ padding: "12px 16px", fontSize: 14, fontWeight: 600, color: "#1e293b" }}>{w.name}</td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{w.regions?.name || "-"}</td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{w.phone || "-"}</td>
-                  <td style={{ padding: "12px 16px" }}><span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: w.status === "active" ? "#dcfce7" : "#fee2e2", color: w.status === "active" ? "#15803d" : "#b91c1c" }}>{w.status === "active" ? "활성" : "비활성"}</span></td>
-                  <td style={{ padding: "12px 16px" }}><div className="flex gap-2">
-                    <button onClick={() => { setEditItem(w); setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "" }); setShowForm(true); }} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569" }}>수정</button>
-                    <button onClick={() => toggleStatus(w)} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, background: w.status === "active" ? "#fee2e2" : "#dcfce7", color: w.status === "active" ? "#b91c1c" : "#15803d" }}>{w.status === "active" ? "비활성" : "활성화"}</button>
-                  </div></td>
-                </tr>))}</tbody>
-            </table>
+
+            {/* PC: 테이블 */}
+            <div className="hidden md:block">
+              <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 4px" }}>
+                <thead><tr>{["이름", "지역", "연락처", "상태", "관리"].map(h => (<th key={h} style={{ padding: "10px 16px", fontSize: 13, fontWeight: 700, color: "#94a3b8", textAlign: "left", borderBottom: "2px solid #e2e8f0" }}>{h}</th>))}</tr></thead>
+                <tbody>{workers.map((w, i) => (
+                  <tr key={w.id} style={{ background: i % 2 === 0 ? "#f8fafc" : "#fff" }}>
+                    <td style={{ padding: "12px 16px", fontSize: 14, fontWeight: 600, color: "#1e293b" }}>{w.name}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{w.regions?.name || "-"}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{w.phone || "-"}</td>
+                    <td style={{ padding: "12px 16px" }}><span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: w.status === "active" ? "#dcfce7" : "#fee2e2", color: w.status === "active" ? "#15803d" : "#b91c1c" }}>{w.status === "active" ? "활성" : "비활성"}</span></td>
+                    <td style={{ padding: "12px 16px" }}><div className="flex gap-2">
+                      <button onClick={() => { setEditItem(w); setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "" }); setShowForm(true); }} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569" }}>수정</button>
+                      <button onClick={() => toggleStatus(w)} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, background: w.status === "active" ? "#fee2e2" : "#dcfce7", color: w.status === "active" ? "#b91c1c" : "#15803d" }}>{w.status === "active" ? "비활성" : "활성화"}</button>
+                    </div></td>
+                  </tr>))}</tbody>
+              </table>
+            </div>
+
+            {/* 모바일: 카드형 */}
+            <div className="md:hidden space-y-2">
+              {workers.map(w => (
+                <div key={w.id} style={{ background: "#f8fafc", borderRadius: 12, padding: "14px", border: "1px solid #e2e8f0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "#1e293b" }}>{w.name}</span>
+                      <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: w.status === "active" ? "#dcfce7" : "#fee2e2", color: w.status === "active" ? "#15803d" : "#b91c1c" }}>{w.status === "active" ? "활성" : "비활성"}</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 13, color: "#475569", marginBottom: 10 }}>
+                    {w.regions?.name || "지역 없음"} · {w.phone || "연락처 없음"}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => { setEditItem(w); setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "" }); setShowForm(true); }} className="cursor-pointer" style={{ flex: 1, padding: "8px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569", textAlign: "center" }}>수정</button>
+                    <button onClick={() => toggleStatus(w)} className="cursor-pointer" style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, textAlign: "center", background: w.status === "active" ? "#fee2e2" : "#dcfce7", color: w.status === "active" ? "#b91c1c" : "#15803d" }}>{w.status === "active" ? "비활성" : "활성화"}</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* 근태 */}
         {tab === "schedule" && <ScheduleTab />}
-
-        {/* 나머지 탭 */}
         {tab === "leave" && <LeaveTab />}
         {tab === "review" && <ReviewTab />}
         {tab === "report" && <ReportTab />}
