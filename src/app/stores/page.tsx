@@ -10,7 +10,6 @@ const storeTabs = [
   { id: "hours", label: "운영시간" },
   { id: "shifts", label: "근무조" },
   { id: "late", label: "정상출근체크" },
-  { id: "pricing", label: "요금설정" },
 ];
 
 const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
@@ -932,7 +931,6 @@ export default function StoresPage() {
         {/* 정상출근체크 */}
         {tab === "late" && <LateRuleTab selectedStore={selectedStore} stores={stores} onStoreChange={setSelectedStore} />}
 
-        {tab === "pricing" && <PricingTab selectedStore={selectedStore} stores={stores} onStoreChange={setSelectedStore} />}
       </div>
     </AppLayout>
   );
