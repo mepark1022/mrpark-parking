@@ -63,6 +63,8 @@ export default function DashboardPage() {
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [monthlyContracts, setMonthlyContracts] = useState<MonthlyContract[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showValet, setShowValet] = useState(true);
+  const [showParking, setShowParking] = useState(true);
   const [parkingStatus, setParkingStatus] = useState([]);
 
   useEffect(() => { loadStores(); }, []);
@@ -280,16 +282,30 @@ export default function DashboardPage() {
                 <p className="text-3xl font-extrabold text-gray-900 mt-1">{kpi.totalCars.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">대</span></p>
               </div>
               <div className="bg-white rounded-xl p-5 shadow-sm">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span style={{ width: 6, height: 6, borderRadius: 3, background: "#1428A0" }} />
-                  <p className="text-sm font-medium" style={{ color: "#1428A0" }}>발렛 매출</p>
+                <p className="text-sm text-gray-600 font-medium">총 매출</p>
+                <p className="text-2xl font-extrabold text-gray-900 mt-0.5">{((showValet ? kpi.totalValet : 0) + (showParking ? (kpi.totalParking || 0) : 0)).toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
+                <div style={{ borderTop: "1px solid #f1f5f9", marginTop: 8, paddingTop: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: 3, background: "#1428A0" }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#1428A0" }}>발렛</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: showValet ? "#1428A0" : "#cbd5e1" }}>{kpi.totalValet.toLocaleString()}원</span>
+                    </div>
+                    <button onClick={() => setShowValet(!showValet)} style={{ width: 36, height: 20, borderRadius: 10, border: "none", background: showValet ? "#1428A0" : "#e2e8f0", position: "relative", cursor: "pointer", transition: "background 0.2s" }}>
+                      <div style={{ width: 16, height: 16, borderRadius: 8, background: "#fff", position: "absolute", top: 2, left: showValet ? 18 : 2, transition: "left 0.2s", boxShadow: "0 1px 2px rgba(0,0,0,0.2)" }} />
+                    </button>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: 3, background: "#EA580C" }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#EA580C" }}>주차</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: showParking ? "#EA580C" : "#cbd5e1" }}>{(kpi.totalParking || 0).toLocaleString()}원</span>
+                    </div>
+                    <button onClick={() => setShowParking(!showParking)} style={{ width: 36, height: 20, borderRadius: 10, border: "none", background: showParking ? "#EA580C" : "#e2e8f0", position: "relative", cursor: "pointer", transition: "background 0.2s" }}>
+                      <div style={{ width: 16, height: 16, borderRadius: 8, background: "#fff", position: "absolute", top: 2, left: showParking ? 18 : 2, transition: "left 0.2s", boxShadow: "0 1px 2px rgba(0,0,0,0.2)" }} />
+                    </button>
+                  </div>
                 </div>
-                <p className="text-2xl font-extrabold mt-0.5" style={{ color: "#1428A0" }}>{kpi.totalValet.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
-                <div className="flex items-center gap-1.5 mt-2 pt-2" style={{ borderTop: "1px solid #f1f5f9" }}>
-                  <span style={{ width: 6, height: 6, borderRadius: 3, background: "#EA580C" }} />
-                  <p className="text-sm font-medium" style={{ color: "#EA580C" }}>주차 매출</p>
-                </div>
-                <p className="text-2xl font-extrabold mt-0.5" style={{ color: "#EA580C" }}>{(kpi.totalParking || 0).toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
               </div>
               <div className="bg-white rounded-xl p-5 shadow-sm">
                 <p className="text-sm text-gray-600 font-medium">근무 인원</p>
