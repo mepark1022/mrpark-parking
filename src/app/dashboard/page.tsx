@@ -62,9 +62,37 @@ export default function DashboardPage() {
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [monthlyContracts, setMonthlyContracts] = useState<MonthlyContract[]>([]);
   const [loading, setLoading] = useState(true);
+  const [parkingStatus, setParkingStatus] = useState([]);
 
   useEffect(() => { loadStores(); }, []);
   useEffect(() => { loadData(); }, [selectedStore, period, customStart, customEnd]);
+  useEffect(() => { loadParkingStatus(); }, [selectedStore, stores]);
+
+  async function loadParkingStatus() {
+    // 모든 매장 or 선택된 매장의 주차장 정보 로드
+    let lotQuery = supabase.from("parking_lots").select("*, stores(name)");
+    if (selectedStore) lotQuery = lotQuery.eq("store_id", selectedStore);
+    const { data: lots } = await lotQuery;
+    if (!lots || lots.length === 0) { setParkingStatus([]); return; }
+
+    // 오늘 입차량으로 현재 주차대수 추정 (daily_records 기준)
+    const today = new Date().toISOString().split("T")[0];
+    let recQuery = supabase.from("daily_records").select("store_id, total_cars").eq("date", today);
+    if (selectedStore) recQuery = recQuery.eq("store_id", selectedStore);
+    const { data: todayRecs } = await recQuery;
+
+    const carsMap = {};
+    (todayRecs || []).forEach(r => { carsMap[r.store_id] = (carsMap[r.store_id] || 0) + r.total_cars; });
+
+    // 매장별로 주차장 그룹핑
+    const storeMap = {};
+    lots.forEach(lot => {
+      if (!storeMap[lot.store_id]) storeMap[lot.store_id] = { storeName: lot.stores?.name || "알 수 없음", lots: [], totalSpaces: 0, currentCars: carsMap[lot.store_id] || 0 };
+      storeMap[lot.store_id].lots.push(lot);
+      storeMap[lot.store_id].totalSpaces += lot.total_spaces || 0;
+    });
+    setParkingStatus(Object.values(storeMap));
+  }
 
   async function loadStores() {
     const { data } = await supabase.from("stores").select("*").eq("is_active", true).order("name");
@@ -264,6 +292,73 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
+
+            {/* 잔여면수 현황 */}
+            {parkingStatus.length > 0 && (
+              <div style={{ background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div style={{ width: 4, height: 24, borderRadius: 2, background: "#1428A0" }} />
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>🅿️ 주차장 현황</h3>
+                </div>
+                <div className="space-y-4">
+                  {parkingStatus.map((store, si) => {
+                    const remaining = store.totalSpaces - store.currentCars;
+                    const occupancy = store.totalSpaces > 0 ? Math.round((store.currentCars / store.totalSpaces) * 100) : 0;
+                    const isOver = remaining < 0;
+                    return (
+                      <div key={si} style={{ border: "1px solid #e2e8f0", borderRadius: 14, padding: 16 }}>
+                        {/* 매장 이름 + 전체 요약 */}
+                        <div className="flex justify-between items-center mb-3">
+                          <span style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{store.storeName}</span>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                              <span style={{ fontSize: 12, color: "#475569" }}>총면수</span>
+                              <span style={{ fontSize: 16, fontWeight: 800, color: "#1428A0" }}>{store.totalSpaces}</span>
+                            </div>
+                            <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+                            <div className="flex items-center gap-1.5">
+                              <span style={{ fontSize: 12, color: "#475569" }}>현재</span>
+                              <span style={{ fontSize: 16, fontWeight: 800, color: store.currentCars > store.totalSpaces ? "#dc2626" : "#0f172a" }}>{store.currentCars}대</span>
+                            </div>
+                            <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+                            <div className="flex items-center gap-1.5">
+                              <span style={{ fontSize: 12, color: "#475569" }}>잔여</span>
+                              <span style={{ fontSize: 16, fontWeight: 800, color: isOver ? "#dc2626" : remaining <= 5 ? "#EA580C" : "#15803d" }}>{remaining}면</span>
+                            </div>
+                            {isOver && <span style={{ padding: "3px 10px", borderRadius: 8, background: "#fee2e2", fontSize: 12, fontWeight: 700, color: "#dc2626" }}>이중주차 {Math.abs(remaining)}대</span>}
+                          </div>
+                        </div>
+                        {/* 점유율 바 */}
+                        <div style={{ background: "#f1f5f9", borderRadius: 8, height: 12, marginBottom: 12, overflow: "hidden" }}>
+                          <div style={{ width: `${Math.min(occupancy, 100)}%`, height: "100%", borderRadius: 8, background: occupancy > 100 ? "#dc2626" : occupancy > 80 ? "#EA580C" : "#1428A0", transition: "width 0.5s ease" }} />
+                        </div>
+                        {/* 개별 주차장 */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          {store.lots.map(lot => {
+                            const lotTotal = (lot.self_spaces || 0) + (lot.mechanical_normal || 0) + (lot.mechanical_suv || 0);
+                            return (
+                              <div key={lot.id} style={{ background: "#f8fafc", borderRadius: 10, padding: "10px 14px", border: "1px solid #e2e8f0" }}>
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                  <span style={{ fontSize: 14 }}>{lot.lot_type === "internal" ? "🏢" : "🅿️"}</span>
+                                  <span style={{ padding: "1px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700, background: lot.lot_type === "internal" ? "#1428A010" : "#FFF7ED", color: lot.lot_type === "internal" ? "#1428A0" : "#EA580C" }}>({lot.lot_tag || (lot.lot_type === "internal" ? "본관" : "외부")})</span>
+                                  <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{lot.name}</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  <span style={{ padding: "2px 8px", borderRadius: 6, background: "#1428A010", fontSize: 11, fontWeight: 700, color: "#1428A0" }}>총 {lotTotal}면</span>
+                                  {(lot.self_spaces > 0) && <span style={{ padding: "2px 6px", borderRadius: 6, background: "#f1f5f9", fontSize: 10, color: "#1428A0" }}>자주식 {lot.self_spaces}</span>}
+                                  {(lot.mechanical_normal > 0) && <span style={{ padding: "2px 6px", borderRadius: 6, background: "#FFF7ED", fontSize: 10, color: "#EA580C" }}>기계일반 {lot.mechanical_normal}</span>}
+                                  {(lot.mechanical_suv > 0) && <span style={{ padding: "2px 6px", borderRadius: 6, background: "#F3E8FF", fontSize: 10, color: "#7C3AED" }}>기계SUV {lot.mechanical_suv}</span>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="bg-white rounded-xl p-7 shadow-sm">
