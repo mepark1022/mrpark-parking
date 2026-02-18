@@ -291,12 +291,34 @@ export default function StoresPage() {
   const [editShift, setEditShift] = useState(null);
   const [shiftForm, setShiftForm] = useState({ shift_name: "", start_time: "09:00", end_time: "18:00", day_type: "all", min_workers: 1 });
   const [shiftMessage, setShiftMessage] = useState("");
+  // 방문지 관리
+  const [visitPlaces, setVisitPlaces] = useState([]);
+  const [showVPForm, setShowVPForm] = useState(false);
+  const [editVP, setEditVP] = useState(null);
+  const [vpForm, setVPForm] = useState({ name: "", floor: "", free_minutes: 0, base_fee: 0, base_minutes: 30, extra_fee: 0, daily_max: 0, valet_fee: 0, monthly_fee: 0 });
 
   useEffect(() => { loadStores(); loadRegions(); }, []);
   useEffect(() => {
     if (selectedStore && tab === "hours") loadHours();
     if (selectedStore && tab === "shifts") loadShifts();
   }, [selectedStore, tab]);
+  // 방문지: editItem 변경 시 로드
+  useEffect(() => { if (editItem) loadVisitPlaces(editItem.id); else setVisitPlaces([]); }, [editItem]);
+  const loadVisitPlaces = async (storeId) => {
+    const supabase = createClient();
+    const { data } = await supabase.from("visit_places").select("*").eq("store_id", storeId).order("floor,name");
+    if (data) setVisitPlaces(data);
+  };
+  const handleVPSave = async () => {
+    if (!vpForm.name || !editItem) return;
+    const supabase = createClient();
+    const payload = { store_id: editItem.id, name: vpForm.name, floor: vpForm.floor || null, free_minutes: Number(vpForm.free_minutes) || 0, base_fee: Number(vpForm.base_fee) || 0, base_minutes: Number(vpForm.base_minutes) || 30, extra_fee: Number(vpForm.extra_fee) || 0, daily_max: Number(vpForm.daily_max) || 0, valet_fee: Number(vpForm.valet_fee) || 0, monthly_fee: Number(vpForm.monthly_fee) || 0 };
+    if (editVP) await supabase.from("visit_places").update(payload).eq("id", editVP.id);
+    else await supabase.from("visit_places").insert(payload);
+    setShowVPForm(false); setEditVP(null); setVPForm({ name: "", floor: "", free_minutes: 0, base_fee: 0, base_minutes: 30, extra_fee: 0, daily_max: 0, valet_fee: 0, monthly_fee: 0 });
+    loadVisitPlaces(editItem.id);
+  };
+  const deleteVP = async (id) => { const supabase = createClient(); await supabase.from("visit_places").delete().eq("id", id); loadVisitPlaces(editItem.id); };
 
   const loadStores = async () => {
     const supabase = createClient();
@@ -435,6 +457,81 @@ export default function StoresPage() {
                   <button onClick={handleSave} className="cursor-pointer" style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 14, fontWeight: 700 }}>{editItem ? "수정" : "추가"}</button>
                   <button onClick={() => { setShowForm(false); setMessage(""); }} className="cursor-pointer" style={{ padding: "10px 24px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: 14, fontWeight: 600 }}>취소</button>
                 </div>
+              </div>
+            )}
+            {/* ─── 방문지 관리 (매장 수정 시에만) ─── */}
+            {editItem && showForm && (
+              <div style={{ borderTop: "2px dashed #e2e8f0", paddingTop: 16, marginBottom: 20 }}>
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div style={{ width: 4, height: 24, borderRadius: 2, background: "#1428A0" }} />
+                    <span style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>방문지 관리</span>
+                    <span style={{ padding: "2px 10px", borderRadius: 10, background: "#1428A010", fontSize: 12, fontWeight: 700, color: "#1428A0" }}>{visitPlaces.length}</span>
+                  </div>
+                  <button onClick={() => { setEditVP(null); setVPForm({ name: "", floor: "", free_minutes: 0, base_fee: 0, base_minutes: 30, extra_fee: 0, daily_max: 0, valet_fee: 0, monthly_fee: 0 }); setShowVPForm(true); }} className="cursor-pointer" style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700 }}>+ 방문지 추가</button>
+                </div>
+                {showVPForm && (
+                  <div style={{ background: "#f8fafc", borderRadius: 14, padding: 20, marginBottom: 12, border: "1px solid #e2e8f0" }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 12 }}>{editVP ? "방문지 수정" : "새 방문지 추가"}</div>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div><label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>방문지명 *</label><input value={vpForm.name} onChange={e => setVPForm({ ...vpForm, name: e.target.value })} placeholder="예: 1층 내과" className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }} /></div>
+                      <div><label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>층</label><input value={vpForm.floor} onChange={e => setVPForm({ ...vpForm, floor: e.target.value })} placeholder="예: 1층, B1" className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }} /></div>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1428A0", marginBottom: 8 }}>💰 요금 체계</div>
+                    <div className="grid grid-cols-4 gap-3 mb-3">
+                      {[
+                        { key: "free_minutes", label: "무료시간", unit: "분" },
+                        { key: "base_fee", label: "기본요금", unit: "원" },
+                        { key: "base_minutes", label: "기본시간", unit: "분" },
+                        { key: "extra_fee", label: "추가요금", unit: "원/10분" },
+                        { key: "daily_max", label: "일 최대", unit: "원" },
+                        { key: "valet_fee", label: "발렛비", unit: "원" },
+                        { key: "monthly_fee", label: "월주차비", unit: "원/월" },
+                      ].map(f => (
+                        <div key={f.key}>
+                          <label className="block mb-1" style={{ fontSize: 11, fontWeight: 600, color: "#475569" }}>{f.label}</label>
+                          <div style={{ position: "relative" }}>
+                            <input type="number" value={vpForm[f.key]} onChange={e => setVPForm({ ...vpForm, [f.key]: e.target.value })} className="w-full" style={{ padding: "8px 10px", paddingRight: 40, borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                            <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 10, color: "#94a3b8" }}>{f.unit}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={handleVPSave} className="cursor-pointer" style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700 }}>{editVP ? "수정" : "추가"}</button>
+                      <button onClick={() => { setShowVPForm(false); setEditVP(null); }} className="cursor-pointer" style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: 13, fontWeight: 600 }}>취소</button>
+                    </div>
+                  </div>
+                )}
+                {visitPlaces.length === 0 ? (
+                  <div className="text-center py-6" style={{ color: "#94a3b8", fontSize: 13 }}>등록된 방문지가 없습니다</div>
+                ) : (
+                  <div className="space-y-2">
+                    {visitPlaces.map(vp => (
+                      <div key={vp.id} style={{ background: "#fff", borderRadius: 12, padding: "12px 16px", border: "1px solid #e2e8f0" }}>
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center gap-2">
+                            {vp.floor && <span style={{ padding: "2px 8px", borderRadius: 6, background: "#1428A010", color: "#1428A0", fontSize: 11, fontWeight: 700 }}>{vp.floor}</span>}
+                            <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{vp.name}</span>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <button onClick={() => { setEditVP(vp); setVPForm({ name: vp.name, floor: vp.floor || "", free_minutes: vp.free_minutes || 0, base_fee: vp.base_fee || 0, base_minutes: vp.base_minutes || 30, extra_fee: vp.extra_fee || 0, daily_max: vp.daily_max || 0, valet_fee: vp.valet_fee || 0, monthly_fee: vp.monthly_fee || 0 }); setShowVPForm(true); }} className="cursor-pointer" style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", fontSize: 11, fontWeight: 600, color: "#475569" }}>수정</button>
+                            <button onClick={() => deleteVP(vp.id)} className="cursor-pointer" style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "#fee2e2", fontSize: 11, fontWeight: 600, color: "#dc2626" }}>삭제</button>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            `무료 ${vp.free_minutes || 0}분`, `기본 ₩${(vp.base_fee || 0).toLocaleString()}/${vp.base_minutes || 30}분`,
+                            `추가 ₩${(vp.extra_fee || 0).toLocaleString()}/10분`, `일최대 ₩${(vp.daily_max || 0).toLocaleString()}`,
+                            `발렛 ₩${(vp.valet_fee || 0).toLocaleString()}`, `월주차 ₩${(vp.monthly_fee || 0).toLocaleString()}`,
+                          ].map((tag, i) => (
+                            <span key={i} style={{ padding: "3px 8px", borderRadius: 6, background: "#f8fafc", fontSize: 11, color: "#475569", fontWeight: 500 }}>{tag}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 4px" }}>
