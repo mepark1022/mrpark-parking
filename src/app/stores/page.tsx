@@ -301,10 +301,16 @@ export default function StoresPage() {
   const [showPLForm, setShowPLForm] = useState(false);
   const [editPL, setEditPL] = useState(null);
   const [plForm, setPLForm] = useState({ name: "", lot_type: "internal", parking_type: ["self"], road_address: "", total_spaces: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00" });
+  // 특별추가근무
+  const [overtimeShifts, setOvertimeShifts] = useState([]);
+  const [showOTForm, setShowOTForm] = useState(false);
+  const [editOT, setEditOT] = useState(null);
+  const [otForm, setOTForm] = useState({ date: "", start_time: "", end_time: "", worker_id: "", note: "" });
+  const [workers, setWorkers] = useState([]);
 
   useEffect(() => { loadStores(); loadRegions(); }, []);
   useEffect(() => {
-    if (selectedStore && tab === "hours") loadHours();
+    if (selectedStore && tab === "hours") { loadHours(); loadOvertimeShifts(); loadWorkers(); }
     if (selectedStore && tab === "shifts") loadShifts();
   }, [selectedStore, tab]);
   // 방문지: editItem 변경 시 로드
@@ -347,6 +353,27 @@ export default function StoresPage() {
     else setPLForm({ ...plForm, parking_type: [...cur, type] });
   };
   const toggleDay = (day) => { setPLForm({ ...plForm, operating_days: { ...plForm.operating_days, [day]: !plForm.operating_days[day] } }); };
+  // 특별추가근무 CRUD
+  const loadWorkers = async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from("workers").select("id, name").eq("status", "active").order("name");
+    if (data) setWorkers(data);
+  };
+  const loadOvertimeShifts = async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from("overtime_shifts").select("*, workers(name)").eq("store_id", selectedStore).order("date", { ascending: false });
+    if (data) setOvertimeShifts(data);
+  };
+  const handleOTSave = async () => {
+    if (!otForm.date || !otForm.start_time || !otForm.end_time || !otForm.worker_id) return;
+    const supabase = createClient();
+    const payload = { store_id: selectedStore, worker_id: otForm.worker_id, date: otForm.date, start_time: otForm.start_time, end_time: otForm.end_time, note: otForm.note || null };
+    if (editOT) await supabase.from("overtime_shifts").update(payload).eq("id", editOT.id);
+    else await supabase.from("overtime_shifts").insert(payload);
+    setShowOTForm(false); setEditOT(null); setOTForm({ date: "", start_time: "", end_time: "", worker_id: "", note: "" });
+    loadOvertimeShifts();
+  };
+  const deleteOT = async (id) => { const supabase = createClient(); await supabase.from("overtime_shifts").delete().eq("id", id); loadOvertimeShifts(); };
 
   const loadStores = async () => {
     const supabase = createClient();
@@ -751,6 +778,56 @@ export default function StoresPage() {
                   <td style={{ padding: "12px 16px" }}><button onClick={() => updateHour(i, "is_closed", !h.is_closed)} className="cursor-pointer" style={{ padding: "6px 16px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 700, background: h.is_closed ? "#fee2e2" : "#f1f5f9", color: h.is_closed ? "#dc2626" : "#94a3b8" }}>{h.is_closed ? "휴무" : "영업"}</button></td>
                 </tr>))}</tbody>
             </table>
+            {/* ─── 특별추가근무 ─── */}
+            <div style={{ borderTop: "2px dashed #e2e8f0", marginTop: 24, paddingTop: 20 }}>
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2.5">
+                  <div style={{ width: 4, height: 24, borderRadius: 2, background: "#EA580C" }} />
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>특별추가근무</span>
+                  <span style={{ fontSize: 12, color: "#94a3b8" }}>운영시간 외 근무</span>
+                </div>
+                <button onClick={() => { setEditOT(null); setOTForm({ date: "", start_time: "", end_time: "", worker_id: "", note: "" }); setShowOTForm(true); }} className="cursor-pointer" style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#EA580C", color: "#fff", fontSize: 13, fontWeight: 700 }}>+ 추가근무 등록</button>
+              </div>
+              {showOTForm && (
+                <div style={{ background: "#FFF7ED", borderRadius: 14, padding: 20, marginBottom: 12, border: "1px solid #FED7AA" }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 12 }}>{editOT ? "추가근무 수정" : "새 추가근무 등록"}</div>
+                  <div className="grid grid-cols-4 gap-3 mb-3">
+                    <div><label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>날짜 *</label><input type="date" value={otForm.date} onChange={e => setOTForm({ ...otForm, date: e.target.value })} className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
+                    <div><label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>시작 시간 *</label><input type="time" value={otForm.start_time} onChange={e => setOTForm({ ...otForm, start_time: e.target.value })} className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
+                    <div><label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>종료 시간 *</label><input type="time" value={otForm.end_time} onChange={e => setOTForm({ ...otForm, end_time: e.target.value })} className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
+                    <div><label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>근무자 *</label><select value={otForm.worker_id} onChange={e => setOTForm({ ...otForm, worker_id: e.target.value })} className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }}><option value="">선택</option>{workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}</select></div>
+                  </div>
+                  <div className="mb-3"><label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>사유</label><input value={otForm.note} onChange={e => setOTForm({ ...otForm, note: e.target.value })} placeholder="예: 야간 행사, 조기 오픈" className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
+                  <div style={{ padding: "8px 12px", borderRadius: 8, background: "#FEF3C7", marginBottom: 12, fontSize: 12, color: "#92400e" }}>⚠️ 등록된 특별추가근무는 <b>근무자 관리의 근태, 근무리뷰에 자동 반영</b>됩니다.</div>
+                  <div className="flex gap-2">
+                    <button onClick={handleOTSave} className="cursor-pointer" style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#EA580C", color: "#fff", fontSize: 13, fontWeight: 700 }}>{editOT ? "수정" : "등록"}</button>
+                    <button onClick={() => { setShowOTForm(false); setEditOT(null); }} className="cursor-pointer" style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: 13, fontWeight: 600 }}>취소</button>
+                  </div>
+                </div>
+              )}
+              {overtimeShifts.length === 0 ? (
+                <div className="text-center py-6" style={{ color: "#94a3b8", fontSize: 13 }}>등록된 특별추가근무가 없습니다</div>
+              ) : (
+                <div className="space-y-2">
+                  {overtimeShifts.map(ot => (
+                    <div key={ot.id} style={{ background: "#fff", borderRadius: 12, padding: "12px 16px", border: "1px solid #e2e8f0" }}>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{ot.date}</span>
+                          <span style={{ padding: "3px 10px", borderRadius: 6, background: "#FFF7ED", fontSize: 11, fontWeight: 700, color: "#EA580C" }}>{ot.start_time?.slice(0, 5)} ~ {ot.end_time?.slice(0, 5)}</span>
+                          <span style={{ padding: "3px 8px", borderRadius: 6, background: "#1428A010", fontSize: 11, fontWeight: 600, color: "#1428A0" }}>{ot.workers?.name || "미지정"}</span>
+                          {ot.note && <span style={{ fontSize: 12, color: "#94a3b8" }}>{ot.note}</span>}
+                        </div>
+                        <div className="flex gap-1.5">
+                          <button onClick={() => { setEditOT(ot); setOTForm({ date: ot.date, start_time: ot.start_time?.slice(0, 5) || "", end_time: ot.end_time?.slice(0, 5) || "", worker_id: ot.worker_id || "", note: ot.note || "" }); setShowOTForm(true); }} className="cursor-pointer" style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", fontSize: 11, fontWeight: 600, color: "#475569" }}>수정</button>
+                          <button onClick={() => deleteOT(ot.id)} className="cursor-pointer" style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "#fee2e2", fontSize: 11, fontWeight: 600, color: "#dc2626" }}>삭제</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
