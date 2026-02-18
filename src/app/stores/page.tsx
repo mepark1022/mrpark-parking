@@ -321,7 +321,7 @@ export default function StoresPage() {
   useEffect(() => { if (editItem) loadInlineHours(editItem.id); }, [editItem]);
   const loadVisitPlaces = async (storeId) => {
     const supabase = createClient();
-    const { data } = await supabase.from("visit_places").select("*").eq("store_id", storeId).order("floor,name");
+    const { data } = await supabase.from("visit_places").select("*").eq("store_id", storeId).order("display_order").order("created_at");
     if (data) setVisitPlaces(data);
   };
   const handleVPSave = async () => {
@@ -334,10 +334,21 @@ export default function StoresPage() {
     loadVisitPlaces(editItem.id);
   };
   const deleteVP = async (id) => { const supabase = createClient(); await supabase.from("visit_places").delete().eq("id", id); loadVisitPlaces(editItem.id); };
+  const moveVP = async (index, direction) => {
+    const items = [...visitPlaces];
+    const targetIdx = index + direction;
+    if (targetIdx < 0 || targetIdx >= items.length) return;
+    [items[index], items[targetIdx]] = [items[targetIdx], items[index]];
+    const supabase = createClient();
+    for (let i = 0; i < items.length; i++) {
+      await supabase.from("visit_places").update({ display_order: i }).eq("id", items[i].id);
+    }
+    loadVisitPlaces(editItem.id);
+  };
   // 주차장 CRUD
   const loadParkingLots = async (storeId) => {
     const supabase = createClient();
-    const { data } = await supabase.from("parking_lots").select("*").eq("store_id", storeId).order("lot_type,name");
+    const { data } = await supabase.from("parking_lots").select("*").eq("store_id", storeId).order("display_order").order("created_at");
     if (data) setParkingLots(data);
   };
   const [plMessage, setPLMessage] = useState("");
@@ -354,6 +365,17 @@ export default function StoresPage() {
     loadParkingLots(editItem.id);
   };
   const deletePL = async (id) => { const supabase = createClient(); await supabase.from("parking_lots").delete().eq("id", id); loadParkingLots(editItem.id); };
+  const movePL = async (index, direction) => {
+    const items = [...parkingLots];
+    const targetIdx = index + direction;
+    if (targetIdx < 0 || targetIdx >= items.length) return;
+    [items[index], items[targetIdx]] = [items[targetIdx], items[index]];
+    const supabase = createClient();
+    for (let i = 0; i < items.length; i++) {
+      await supabase.from("parking_lots").update({ display_order: i }).eq("id", items[i].id);
+    }
+    loadParkingLots(editItem.id);
+  };
   const toggleParkingType = (type) => {
     const cur = plForm.parking_type || [];
     if (cur.includes(type)) { if (cur.length > 1) setPLForm({ ...plForm, parking_type: cur.filter(t => t !== type) }); }
@@ -609,10 +631,14 @@ export default function StoresPage() {
                   <div className="text-center py-6" style={{ color: "#94a3b8", fontSize: 13 }}>등록된 방문지가 없습니다</div>
                 ) : (
                   <div className="space-y-2">
-                    {visitPlaces.map(vp => (
+                    {visitPlaces.map((vp, vpIdx) => (
                       <div key={vp.id} style={{ background: "#fff", borderRadius: 12, padding: "12px 16px", border: "1px solid #e2e8f0" }}>
                         <div className="flex justify-between items-center mb-2">
                           <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-0.5">
+                              <button onClick={() => moveVP(vpIdx, -1)} disabled={vpIdx === 0} className="cursor-pointer" style={{ padding: "0 4px", border: "none", background: "transparent", fontSize: 10, color: vpIdx === 0 ? "#e2e8f0" : "#475569", lineHeight: 1 }}>▲</button>
+                              <button onClick={() => moveVP(vpIdx, 1)} disabled={vpIdx === visitPlaces.length - 1} className="cursor-pointer" style={{ padding: "0 4px", border: "none", background: "transparent", fontSize: 10, color: vpIdx === visitPlaces.length - 1 ? "#e2e8f0" : "#475569", lineHeight: 1 }}>▼</button>
+                            </div>
                             {vp.floor && <span style={{ padding: "2px 8px", borderRadius: 6, background: "#1428A010", color: "#1428A0", fontSize: 11, fontWeight: 700 }}>{vp.floor}</span>}
                             <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{vp.name}</span>
                           </div>
@@ -772,7 +798,7 @@ export default function StoresPage() {
                   <div className="text-center py-6" style={{ color: "#94a3b8", fontSize: 13 }}>등록된 주차장이 없습니다</div>
                 ) : (
                   <div className="space-y-2">
-                    {parkingLots.map(pl => {
+                    {parkingLots.map((pl, plIdx) => {
                       const days = pl.operating_days || {};
                       const dayLabels = { mon: "월", tue: "화", wed: "수", thu: "목", fri: "금", sat: "토", sun: "일" };
                       const activeDays = Object.entries(dayLabels).filter(([k]) => days[k]).map(([, v]) => v).join(" ");
@@ -780,6 +806,10 @@ export default function StoresPage() {
                         <div key={pl.id} style={{ background: "#fff", borderRadius: 12, padding: "12px 16px", border: "1px solid #e2e8f0" }}>
                           <div className="flex justify-between items-center mb-2">
                             <div className="flex items-center gap-2">
+                              <div className="flex flex-col gap-0.5">
+                                <button onClick={() => movePL(plIdx, -1)} disabled={plIdx === 0} className="cursor-pointer" style={{ padding: "0 4px", border: "none", background: "transparent", fontSize: 10, color: plIdx === 0 ? "#e2e8f0" : "#475569", lineHeight: 1 }}>▲</button>
+                                <button onClick={() => movePL(plIdx, 1)} disabled={plIdx === parkingLots.length - 1} className="cursor-pointer" style={{ padding: "0 4px", border: "none", background: "transparent", fontSize: 10, color: plIdx === parkingLots.length - 1 ? "#e2e8f0" : "#475569", lineHeight: 1 }}>▼</button>
+                              </div>
                               <span style={{ fontSize: 16 }}>{pl.lot_type === "internal" ? "🏢" : "🅿️"}</span>
                               <span style={{ padding: "2px 10px", borderRadius: 12, background: pl.lot_type === "internal" ? "#1428A010" : "#FFF7ED", fontSize: 12, fontWeight: 700, color: pl.lot_type === "internal" ? "#1428A0" : "#EA580C" }}>({pl.lot_tag || (pl.lot_type === "internal" ? "본관" : "외부")})</span>
                               <span style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{pl.name}</span>
