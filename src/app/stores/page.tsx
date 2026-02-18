@@ -337,8 +337,11 @@ export default function StoresPage() {
     const { data } = await supabase.from("parking_lots").select("*").eq("store_id", storeId).order("lot_type,name");
     if (data) setParkingLots(data);
   };
+  const [plMessage, setPLMessage] = useState("");
   const handlePLSave = async () => {
-    if (!plForm.name || !editItem) return;
+    if (!plForm.name) { setPLMessage("주차장 이름을 입력하세요"); setTimeout(() => setPLMessage(""), 2000); return; }
+    if (!editItem) return;
+    setPLMessage("");
     const supabase = createClient();
     const calcTotal = (Number(plForm.self_spaces) || 0) + (Number(plForm.mechanical_normal) || 0) + (Number(plForm.mechanical_suv) || 0);
     const payload = { store_id: editItem.id, name: plForm.name, lot_type: plForm.lot_type, parking_type: plForm.parking_type, road_address: plForm.road_address || null, total_spaces: calcTotal, self_spaces: Number(plForm.self_spaces) || 0, mechanical_normal: Number(plForm.mechanical_normal) || 0, mechanical_suv: Number(plForm.mechanical_suv) || 0, operating_days: plForm.operating_days, open_time: plForm.open_time, close_time: plForm.close_time };
@@ -626,10 +629,40 @@ export default function StoresPage() {
                 {showPLForm && (
                   <div style={{ background: "#FFFBEB", borderRadius: 14, padding: 20, marginBottom: 12, border: "1px solid #FED7AA" }}>
                     <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 14 }}>{editPL ? "주차장 수정" : "새 주차장 추가"}</div>
-                    {/* 주차장 이름 */}
-                    <div className="mb-3">
-                      <label className="block mb-1" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>주차장 이름 *</label>
-                      <input value={plForm.name} onChange={e => setPLForm({ ...plForm, name: e.target.value })} placeholder="예: 본관 주차장" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 15, background: "#fff" }} />
+                    {/* 주차장 이름 + 도로명 주소 (한줄) */}
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label className="block mb-1" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>주차장 이름 *</label>
+                        <div className="flex gap-2 mb-2">
+                          {["본관", "추가주차장"].map(preset => (
+                            <button key={preset} type="button" onClick={() => setPLForm({ ...plForm, name: preset, lot_type: preset === "본관" ? "internal" : "external" })} className="cursor-pointer" style={{
+                              padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                              border: plForm.name === preset ? "2px solid #1428A0" : "1px solid #e2e8f0",
+                              background: plForm.name === preset ? "#1428A010" : "#fff",
+                              color: plForm.name === preset ? "#1428A0" : "#475569"
+                            }}>{preset}</button>
+                          ))}
+                        </div>
+                        <input value={plForm.name} onChange={e => setPLForm({ ...plForm, name: e.target.value })} placeholder="직접 입력 가능" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 15, background: "#fff" }} />
+                      </div>
+                      <div>
+                        <label className="block mb-1" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>도로명 주소</label>
+                        <div className="flex gap-2" style={{ marginTop: 34 }}>
+                          <input value={plForm.road_address} readOnly placeholder="주소 검색 클릭" className="flex-1" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, background: "#fff", cursor: "pointer" }}
+                            onClick={() => {
+                              const openPostcode = () => { new (window as any).daum.Postcode({ oncomplete: (data: any) => { setPLForm(prev => ({ ...prev, road_address: data.roadAddress || data.jibunAddress })); } }).open(); };
+                              if (typeof window !== "undefined" && (window as any).daum?.Postcode) openPostcode();
+                              else { const s = document.createElement("script"); s.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"; s.onload = openPostcode; document.head.appendChild(s); }
+                            }}
+                          />
+                          <button type="button" className="cursor-pointer" onClick={() => {
+                            const openPostcode = () => { new (window as any).daum.Postcode({ oncomplete: (data: any) => { setPLForm(prev => ({ ...prev, road_address: data.roadAddress || data.jibunAddress })); } }).open(); };
+                            if (typeof window !== "undefined" && (window as any).daum?.Postcode) openPostcode();
+                            else { const s = document.createElement("script"); s.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"; s.onload = openPostcode; document.head.appendChild(s); }
+                          }} style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>🔍 검색</button>
+                        </div>
+                        {plForm.road_address && <div style={{ marginTop: 4, padding: "6px 10px", borderRadius: 6, background: "#dcfce7", display: "flex", alignItems: "center", gap: 4 }}><span style={{ fontSize: 11 }}>✅</span><span style={{ fontSize: 13, fontWeight: 600, color: "#15803d" }}>{plForm.road_address}</span></div>}
+                      </div>
                     </div>
                     {/* 주차면 수 세분화 */}
                     <div className="mb-3">
@@ -661,25 +694,6 @@ export default function StoresPage() {
                         </div>
                       </div>
                     </div>
-                    {/* 주차장 구분 */}
-                    <div className="mb-3">
-                      <label className="block mb-1.5" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>주차장 구분</label>
-                      <div className="flex gap-3">
-                        {[
-                          { val: "internal", icon: "🏢", label: "본관 주차장", desc: "건물 내부" },
-                          { val: "external", icon: "🅿️", label: "외부 주차장", desc: "건물 외부" },
-                        ].map(t => (
-                          <button key={t.val} type="button" onClick={() => setPLForm({ ...plForm, lot_type: t.val })} className="cursor-pointer flex-1" style={{
-                            padding: "12px 16px", borderRadius: 10, border: plForm.lot_type === t.val ? "2px solid #1428A0" : "1px solid #e2e8f0",
-                            background: plForm.lot_type === t.val ? "#1428A008" : "#fff", textAlign: "center"
-                          }}>
-                            <div style={{ fontSize: 22, marginBottom: 4 }}>{t.icon}</div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: plForm.lot_type === t.val ? "#1428A0" : "#0f172a" }}>{t.label}</div>
-                            <div style={{ fontSize: 11, color: "#94a3b8" }}>{t.desc}</div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                     {/* 주차 방식 */}
                     <div className="mb-3">
                       <label className="block mb-1.5" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>주차 방식 (복수 선택)</label>
@@ -697,25 +711,6 @@ export default function StoresPage() {
                           </button>
                         ))}
                       </div>
-                    </div>
-                    {/* 도로명 주소 */}
-                    <div className="mb-3">
-                      <label className="block mb-1" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>도로명 주소</label>
-                      <div className="flex gap-2">
-                        <input value={plForm.road_address} readOnly placeholder="주소 검색을 클릭하세요" className="flex-1" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff", cursor: "pointer" }}
-                          onClick={() => {
-                            const openPostcode = () => { new (window as any).daum.Postcode({ oncomplete: (data: any) => { setPLForm(prev => ({ ...prev, road_address: data.roadAddress || data.jibunAddress })); } }).open(); };
-                            if (typeof window !== "undefined" && (window as any).daum?.Postcode) openPostcode();
-                            else { const s = document.createElement("script"); s.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"; s.onload = openPostcode; document.head.appendChild(s); }
-                          }}
-                        />
-                        <button type="button" className="cursor-pointer" onClick={() => {
-                          const openPostcode = () => { new (window as any).daum.Postcode({ oncomplete: (data: any) => { setPLForm(prev => ({ ...prev, road_address: data.roadAddress || data.jibunAddress })); } }).open(); };
-                          if (typeof window !== "undefined" && (window as any).daum?.Postcode) openPostcode();
-                          else { const s = document.createElement("script"); s.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"; s.onload = openPostcode; document.head.appendChild(s); }
-                        }} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>🔍 주소 검색</button>
-                      </div>
-                      {plForm.road_address && <div style={{ marginTop: 4, padding: "6px 10px", borderRadius: 6, background: "#dcfce7", display: "flex", alignItems: "center", gap: 4 }}><span style={{ fontSize: 11 }}>✅</span><span style={{ fontSize: 12, fontWeight: 600, color: "#15803d" }}>{plForm.road_address}</span></div>}
                     </div>
                     {/* 운영 요일 */}
                     <div className="mb-3">
@@ -738,6 +733,7 @@ export default function StoresPage() {
                       <div><label className="block mb-1" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>오픈 시간</label><input type="time" value={plForm.open_time} onChange={e => setPLForm({ ...plForm, open_time: e.target.value })} className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
                       <div><label className="block mb-1" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>마감 시간</label><input type="time" value={plForm.close_time} onChange={e => setPLForm({ ...plForm, close_time: e.target.value })} className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
                     </div>
+                    {plMessage && <div style={{ padding: "8px 12px", borderRadius: 8, background: "#fee2e2", color: "#dc2626", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{plMessage}</div>}
                     <div className="flex gap-2">
                       <button onClick={handlePLSave} className="cursor-pointer" style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#F5B731", color: "#fff", fontSize: 13, fontWeight: 700 }}>{editPL ? "수정" : "추가"}</button>
                       <button onClick={() => { setShowPLForm(false); setEditPL(null); }} className="cursor-pointer" style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: 13, fontWeight: 600 }}>취소</button>
