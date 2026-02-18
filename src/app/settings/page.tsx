@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 
 export default function SettingsPage() {
   const [stores, setStores] = useState([]);

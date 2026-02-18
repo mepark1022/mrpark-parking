@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 
 export default function AccidentPage() {
   const [mode, setMode] = useState("list");
@@ -19,7 +20,9 @@ export default function AccidentPage() {
 
   const loadStores = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("stores").select("id, name").eq("is_active", true).order("name");
+    const oid = await getOrgId();
+    if (!oid) return;
+    const { data } = await supabase.from("stores").select("id, name").eq("org_id", oid).eq("is_active", true).order("name");
     if (data) setStores(data);
   };
 

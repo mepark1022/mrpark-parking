@@ -3,12 +3,28 @@
 
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
+import { LogoDefault } from "@/components/Logo";
 
 const menuGroups = [
   {
     title: "주차 관리",
     items: [
+      {
+        path: "/parking-status",
+        label: "입차 현황",
+        desc: "매장별 입차 데이터를 조회합니다",
+        icon: (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="7" rx="2" />
+            <path d="M5 11l2-5h10l2 5" />
+            <circle cx="7.5" cy="15.5" r="1.5" />
+            <circle cx="16.5" cy="15.5" r="1.5" />
+          </svg>
+        ),
+        color: "#16a34a",
+      },
       {
         path: "/monthly",
         label: "월주차 관리",
@@ -163,9 +179,9 @@ export default function MorePage() {
       >로그아웃</div>
 
       {/* 하단 정보 */}
-      <div style={{ textAlign: "center", padding: "12px 0 40px" }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: "#1428A0", letterSpacing: 1 }}>VALETMAN</div>
-        <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>(주)미스터팍 · v1.0.0</div>
+      <div style={{ textAlign: "center", padding: "12px 0 40px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+        <LogoDefault theme="light" />
+        <div style={{ fontSize: 11, color: "#94a3b8" }}>(주)미스터팍 · v2.0.0</div>
       </div>
     </AppLayout>
   );

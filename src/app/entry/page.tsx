@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 
 type Store = { id: string; name: string; has_valet: boolean; valet_fee: number };
@@ -26,6 +27,7 @@ export default function EntryPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [existingRecordId, setExistingRecordId] = useState<string | null>(null);
+  const [storeHours, setStoreHours] = useState<{ open: number; close: number }>({ open: 7, close: 22 });
 
   const dayType = useMemo(() => {
     const d = new Date(selectedDate);
@@ -39,12 +41,27 @@ export default function EntryPage() {
   }, [inputMode, hourlyData, totalCarsOnly]);
 
   useEffect(() => { loadStoresAndWorkers(); }, []);
-  useEffect(() => { if (selectedStore && selectedDate) { loadDefaultWorkers(); loadExistingRecord(); } }, [selectedStore, selectedDate]);
+  useEffect(() => { if (selectedStore && selectedDate) { loadDefaultWorkers(); loadExistingRecord(); loadStoreHours(); } }, [selectedStore, selectedDate]);
+
+  async function loadStoreHours() {
+    const d = new Date(selectedDate);
+    const dow = d.getDay(); // 0=일, 1=월...6=토
+    const { data } = await supabase.from("store_operating_hours").select("open_time, close_time, is_closed").eq("store_id", selectedStore).eq("day_of_week", dow).single();
+    if (data && !data.is_closed) {
+      const open = parseInt(data.open_time?.split(":")[0] || "7");
+      const close = parseInt(data.close_time?.split(":")[0] || "22");
+      setStoreHours({ open, close });
+    } else {
+      setStoreHours({ open: 7, close: 22 }); // 기본값
+    }
+  }
 
   async function loadStoresAndWorkers() {
+    const oid = await getOrgId();
+    if (!oid) return;
     const [storesRes, workersRes] = await Promise.all([
-      supabase.from("stores").select("id, name, has_valet, valet_fee").eq("is_active", true).order("name"),
-      supabase.from("workers").select("id, name").eq("status", "active").order("name"),
+      supabase.from("stores").select("id, name, has_valet, valet_fee").eq("org_id", oid).eq("is_active", true).order("name"),
+      supabase.from("workers").select("id, name").eq("org_id", oid).eq("status", "active").order("name"),
     ]);
     if (storesRes.data) {
       setStores(storesRes.data);
@@ -135,7 +152,7 @@ export default function EntryPage() {
         await supabase.from("hourly_data").delete().eq("record_id", recordId);
         await supabase.from("worker_assignments").delete().eq("record_id", recordId);
       } else {
-        const { data } = await supabase.from("daily_records").insert(recordData).select("id").single();
+        const { data } = await supabase.from("daily_records").insert({ ...recordData, org_id: oid }).select("id").single();
         recordId = data?.id;
       }
 
@@ -224,7 +241,7 @@ export default function EntryPage() {
               </div>
             ) : (
               <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {Array.from({ length: 16 }, (_, i) => i + 7).map((hour) => (
+                {Array.from({ length: storeHours.close - storeHours.open + 1 }, (_, i) => i + storeHours.open).map((hour) => (
                   <div key={hour} className="flex items-center gap-3">
                     <span className="w-12 text-sm font-bold text-gray-700 text-right">{String(hour).padStart(2, "0")}시</span>
                     <input
@@ -304,19 +321,55 @@ export default function EntryPage() {
               />
             </div>
 
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="w-full py-3.5 bg-primary text-white rounded-xl text-base font-bold hover:bg-primary-dark disabled:opacity-50 shadow-md transition-all"
-            >
-              {saving ? "저장 중..." : existingRecordId ? "수정 저장" : "저장"}
-            </button>
-            {message && (
-              <p className={`text-center text-sm font-bold mt-2 ${message.includes("완료") ? "text-green-600" : "text-red-600"}`}>{message}</p>
-            )}
+            {/* PC 저장 버튼 */}
+            <div className="hidden md:block">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="w-full py-3.5 bg-primary text-white rounded-xl text-base font-bold hover:bg-primary-dark disabled:opacity-50 shadow-md transition-all"
+              >
+                {saving ? "저장 중..." : existingRecordId ? "수정 저장" : "저장"}
+              </button>
+            </div>
+            {/* 모바일 하단 여백 확보 */}
+            <div className="md:hidden" style={{ height: 80 }} />
           </div>
         </div>
       </div>
+
+      {/* 모바일 하단 고정 저장 버튼 */}
+      <div className="md:hidden" style={{
+        position: "fixed", bottom: 60, left: 0, right: 0, zIndex: 150,
+        padding: "10px 16px", background: "#fff",
+        borderTop: "1px solid #e2e8f0",
+        boxShadow: "0 -2px 10px rgba(0,0,0,0.06)",
+      }}>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{
+            width: "100%", padding: "14px 0", borderRadius: 12,
+            background: saving ? "#94a3b8" : "#1428A0", color: "#fff",
+            fontSize: 16, fontWeight: 700, border: "none", cursor: "pointer",
+          }}
+        >
+          {saving ? "저장 중..." : existingRecordId ? "수정 저장" : "저장"}
+        </button>
+      </div>
+
+      {/* 토스트 알림 */}
+      {message && (
+        <div style={{
+          position: "fixed", top: 80, left: "50%", transform: "translateX(-50%)",
+          zIndex: 9999, padding: "14px 28px", borderRadius: 12,
+          background: message.includes("완료") ? "#15803d" : "#dc2626",
+          color: "#fff", fontSize: 15, fontWeight: 700,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+          animation: "fadeIn 0.3s ease",
+        }}>
+          {message.includes("완료") ? "✅ " : "❌ "}{message}
+        </div>
+      )}
     </AppLayout>
   );
 }

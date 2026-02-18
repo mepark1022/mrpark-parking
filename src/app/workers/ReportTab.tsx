@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 
 const severityMap = {
   minor: { label: "경미", bg: "#fff7ed", color: "#ea580c" },
@@ -12,18 +13,20 @@ const severityMap = {
 
 export default function ReportTab() {
   const [workers, setWorkers] = useState([]);
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [selectedWorker, setSelectedWorker] = useState("");
   const [reports, setReports] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ date: "", severity: "minor", title: "", content: "" });
   const [msg, setMsg] = useState("");
 
-  useEffect(() => { loadWorkers(); }, []);
+  useEffect(() => { getOrgId().then(oid => { if (oid) setOrgId(oid); }); }, []);
+  useEffect(() => { if (orgId) loadWorkers(); }, [orgId]);
   useEffect(() => { if (selectedWorker) loadReports(); }, [selectedWorker]);
 
   const loadWorkers = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("workers").select("id, name").eq("status", "active").order("name");
+    const { data } = await supabase.from("workers").select("id, name").eq("org_id", orgId).eq("status", "active").order("name");
     if (data) { setWorkers(data); if (data.length > 0) setSelectedWorker(data[0].id); }
   };
 
@@ -36,7 +39,7 @@ export default function ReportTab() {
   const handleSave = async () => {
     if (!form.date || !form.title) { setMsg("날짜와 제목을 입력하세요"); return; }
     const supabase = createClient();
-    await supabase.from("worker_reports").insert({
+    await supabase.from("worker_reports").insert({ org_id: orgId,
       worker_id: selectedWorker, date: form.date,
       severity: form.severity, title: form.title,
       content: form.content || null,

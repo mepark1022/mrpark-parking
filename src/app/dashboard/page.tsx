@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -17,6 +18,7 @@ type DailyRecord = {
   total_cars: number;
   valet_count: number;
   valet_revenue: number;
+  daily_revenue: number;
   stores: { name: string } | null;
 };
 
@@ -62,12 +64,45 @@ export default function DashboardPage() {
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [monthlyContracts, setMonthlyContracts] = useState<MonthlyContract[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const [showValet, setShowValet] = useState(true);
+  const [showParking, setShowParking] = useState(true);
+  const [parkingStatus, setParkingStatus] = useState([]);
 
   useEffect(() => { loadStores(); }, []);
   useEffect(() => { loadData(); }, [selectedStore, period, customStart, customEnd]);
+  useEffect(() => { loadParkingStatus(); }, [selectedStore, stores]);
+
+  async function loadParkingStatus() {
+    if (!orgId) return;
+    let lotQuery = supabase.from("parking_lots").select("*, stores(name)").eq("org_id", orgId);
+    if (selectedStore) lotQuery = lotQuery.eq("store_id", selectedStore);
+    const { data: lots } = await lotQuery;
+    if (!lots || lots.length === 0) { setParkingStatus([]); return; }
+
+    const today = new Date().toISOString().split("T")[0];
+    let recQuery = supabase.from("daily_records").select("store_id, total_cars").eq("org_id", orgId).eq("date", today);
+    if (selectedStore) recQuery = recQuery.eq("store_id", selectedStore);
+    const { data: todayRecs } = await recQuery;
+
+    const carsMap = {};
+    (todayRecs || []).forEach(r => { carsMap[r.store_id] = (carsMap[r.store_id] || 0) + r.total_cars; });
+
+    // 매장별로 주차장 그룹핑
+    const storeMap = {};
+    lots.forEach(lot => {
+      if (!storeMap[lot.store_id]) storeMap[lot.store_id] = { storeName: lot.stores?.name || "알 수 없음", lots: [], totalSpaces: 0, currentCars: carsMap[lot.store_id] || 0 };
+      storeMap[lot.store_id].lots.push(lot);
+      storeMap[lot.store_id].totalSpaces += lot.total_spaces || 0;
+    });
+    setParkingStatus(Object.values(storeMap));
+  }
 
   async function loadStores() {
-    const { data } = await supabase.from("stores").select("*").eq("is_active", true).order("name");
+    const oid = await getOrgId();
+    if (!oid) return;
+    setOrgId(oid);
+    const { data } = await supabase.from("stores").select("*").eq("org_id", oid).eq("is_active", true).order("name");
     if (data) setStores(data);
   }
 
@@ -127,9 +162,11 @@ export default function DashboardPage() {
   const kpi = useMemo(() => {
     const totalCars = records.reduce((s, r) => s + r.total_cars, 0);
     const totalValet = records.reduce((s, r) => s + r.valet_revenue, 0);
+    const totalRevenue = records.reduce((s, r) => s + (r.daily_revenue || 0), 0);
+    const totalParking = totalRevenue - totalValet;
     const workerIds = new Set(assignments.map((a) => a.worker_id));
     const activeContracts = monthlyContracts.filter((c) => c.contract_status === "active").length;
-    return { totalCars, totalValet, workerCount: workerIds.size, activeContracts };
+    return { totalCars, totalValet, totalParking: totalParking > 0 ? totalParking : 0, workerCount: workerIds.size, activeContracts };
   }, [records, assignments, monthlyContracts]);
 
   const hourlyChartData = useMemo(() => {
@@ -249,8 +286,30 @@ export default function DashboardPage() {
                 <p className="text-3xl font-extrabold text-gray-900 mt-1">{kpi.totalCars.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">대</span></p>
               </div>
               <div className="bg-white rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-gray-600 font-medium">발렛 매출</p>
-                <p className="text-3xl font-extrabold text-gray-900 mt-1">{kpi.totalValet.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
+                <p className="text-sm text-gray-600 font-medium">총 매출</p>
+                <p className="text-2xl font-extrabold text-gray-900 mt-0.5">{((showValet ? kpi.totalValet : 0) + (showParking ? (kpi.totalParking || 0) : 0)).toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
+                <div style={{ borderTop: "1px solid #f1f5f9", marginTop: 8, paddingTop: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: 3, background: "#1428A0" }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#1428A0" }}>발렛</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: showValet ? "#1428A0" : "#cbd5e1" }}>{kpi.totalValet.toLocaleString()}원</span>
+                    </div>
+                    <button onClick={() => setShowValet(!showValet)} style={{ width: 36, height: 20, borderRadius: 10, border: "none", background: showValet ? "#1428A0" : "#e2e8f0", position: "relative", cursor: "pointer", transition: "background 0.2s" }}>
+                      <div style={{ width: 16, height: 16, borderRadius: 8, background: "#fff", position: "absolute", top: 2, left: showValet ? 18 : 2, transition: "left 0.2s", boxShadow: "0 1px 2px rgba(0,0,0,0.2)" }} />
+                    </button>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: 3, background: "#F5B731" }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#b45309" }}>주차</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: showParking ? "#b45309" : "#cbd5e1" }}>{(kpi.totalParking || 0).toLocaleString()}원</span>
+                    </div>
+                    <button onClick={() => setShowParking(!showParking)} style={{ width: 36, height: 20, borderRadius: 10, border: "none", background: showParking ? "#F5B731" : "#e2e8f0", position: "relative", cursor: "pointer", transition: "background 0.2s" }}>
+                      <div style={{ width: 16, height: 16, borderRadius: 8, background: "#fff", position: "absolute", top: 2, left: showParking ? 18 : 2, transition: "left 0.2s", boxShadow: "0 1px 2px rgba(0,0,0,0.2)" }} />
+                    </button>
+                  </div>
+                </div>
               </div>
               <div className="bg-white rounded-xl p-5 shadow-sm">
                 <p className="text-sm text-gray-600 font-medium">근무 인원</p>
@@ -264,6 +323,70 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
+
+            {/* 잔여면수 현황 */}
+            {parkingStatus.length > 0 && (
+              <div style={{ background: "#fff", borderRadius: 16, padding: "16px 16px 20px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <div style={{ width: 4, height: 20, borderRadius: 2, background: "#1428A0" }} />
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>🅿️ 주차장 현황</h3>
+                </div>
+                <div className="space-y-3">
+                  {parkingStatus.map((store, si) => {
+                    const remaining = store.totalSpaces - store.currentCars;
+                    const occupancy = store.totalSpaces > 0 ? Math.round((store.currentCars / store.totalSpaces) * 100) : 0;
+                    const isOver = remaining < 0;
+                    return (
+                      <div key={si} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}>
+                        {/* 매장명 + 요약 한줄 */}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "nowrap", gap: 8 }}>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0, flex: "0 1 auto" }}>{store.storeName}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                            <span style={{ fontSize: 11, color: "#94a3b8" }}>총</span>
+                            <span style={{ fontSize: 15, fontWeight: 800, color: "#1428A0" }}>{store.totalSpaces}</span>
+                            <span style={{ color: "#e2e8f0" }}>|</span>
+                            <span style={{ fontSize: 11, color: "#94a3b8" }}>현재</span>
+                            <span style={{ fontSize: 15, fontWeight: 800, color: store.currentCars > store.totalSpaces ? "#dc2626" : "#0f172a" }}>{store.currentCars}</span>
+                            <span style={{ color: "#e2e8f0" }}>|</span>
+                            <span style={{ fontSize: 11, color: "#94a3b8" }}>잔여</span>
+                            <span style={{ fontSize: 15, fontWeight: 800, color: isOver ? "#dc2626" : remaining <= 5 ? "#EA580C" : "#15803d" }}>{remaining}</span>
+                            {isOver && <span style={{ padding: "2px 6px", borderRadius: 6, background: "#fee2e2", fontSize: 10, fontWeight: 700, color: "#dc2626", whiteSpace: "nowrap" }}>이중{Math.abs(remaining)}</span>}
+                          </div>
+                        </div>
+                        {/* 점유율 바 */}
+                        <div style={{ background: "#f1f5f9", borderRadius: 6, height: 8, marginBottom: 10, overflow: "hidden" }}>
+                          <div style={{ width: `${Math.min(occupancy, 100)}%`, height: "100%", borderRadius: 6, background: occupancy > 100 ? "#dc2626" : occupancy > 80 ? "#EA580C" : "#1428A0", transition: "width 0.5s ease" }} />
+                        </div>
+                        {/* 개별 주차장 - 한줄 카드 */}
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {store.lots.map(lot => {
+                            const lotTotal = (lot.self_spaces || 0) + (lot.mechanical_normal || 0) + (lot.mechanical_suv || 0);
+                            const lotCurrent = lot.current_cars || 0;
+                            const lotRemain = lotTotal - lotCurrent;
+                            return (
+                              <div key={lot.id} style={{ background: "#f8fafc", borderRadius: 8, padding: "6px 10px", border: "1px solid #e2e8f0" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
+                                  <span style={{ fontSize: 12 }}>{lot.lot_type === "internal" ? "🏢" : "🅿️"}</span>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: "#475569" }}>{lot.name}</span>
+                                  <span style={{ fontSize: 11, fontWeight: 800, color: "#1428A0" }}>{lotTotal}면</span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                  <span style={{ fontSize: 10, color: "#94a3b8" }}>현재</span>
+                                  <span style={{ fontSize: 11, fontWeight: 800, color: lotCurrent > lotTotal ? "#dc2626" : "#0f172a" }}>{lotCurrent}대</span>
+                                  <span style={{ fontSize: 10, color: "#94a3b8" }}>잔여</span>
+                                  <span style={{ fontSize: 11, fontWeight: 800, color: lotRemain < 0 ? "#dc2626" : lotRemain <= 3 ? "#EA580C" : "#15803d" }}>{lotRemain}면</span>
+                                  <span style={{ fontSize: 10, fontWeight: 700, color: lotTotal > 0 ? (lotCurrent / lotTotal > 0.85 ? "#dc2626" : lotCurrent / lotTotal > 0.6 ? "#EA580C" : "#1428A0") : "#94a3b8", background: lotTotal > 0 ? (lotCurrent / lotTotal > 0.85 ? "#fee2e2" : lotCurrent / lotTotal > 0.6 ? "#FFF7ED" : "#1428A010") : "#f1f5f9", padding: "1px 5px", borderRadius: 4 }}>{lotTotal > 0 ? Math.round((lotCurrent / lotTotal) * 100) : 0}%</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="bg-white rounded-xl p-7 shadow-sm">

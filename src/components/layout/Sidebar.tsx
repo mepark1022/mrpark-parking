@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogoGNB } from "@/components/Logo";
 
 const menuItems = [
   { href: "/dashboard", label: "대시보드", icon: (
@@ -10,6 +11,9 @@ const menuItems = [
   )},
   { href: "/entry", label: "데이터 입력", icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+  )},
+  { href: "/parking-status", label: "입차 현황", icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="7" rx="2"/><path d="M5 11l2-5h10l2 5"/><circle cx="7.5" cy="15.5" r="1.5"/><circle cx="16.5" cy="15.5" r="1.5"/></svg>
   )},
   { href: "/monthly", label: "월주차 관리", icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/><circle cx="12" cy="15" r="1"/></svg>
@@ -53,21 +57,7 @@ className="w-60 min-h-screen flex flex-col relative overflow-hidden fixed top-0 
 
       {/* Logo */}
       <div className="p-6 pb-5">
-        <div className="flex items-center gap-3">
-          <div
-            className="flex items-center justify-center"
-            style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: "linear-gradient(135deg, #F5B731 0%, #f59e0b 100%)",
-              fontSize: 16, fontWeight: 900, color: "#0a1352",
-              boxShadow: "0 2px 8px rgba(245,183,49,0.3)",
-            }}
-          >P</div>
-          <div>
-            <div className="text-lg font-extrabold text-white tracking-tight">VALETMAN</div>
-            <div style={{ fontSize: 10, fontWeight: 500, color: "rgba(255,255,255,0.45)", letterSpacing: "0.05em" }}>주차운영 시스템</div>
-          </div>
-        </div>
+        <LogoGNB theme="dark" />
       </div>
 
       {/* Menu Label */}

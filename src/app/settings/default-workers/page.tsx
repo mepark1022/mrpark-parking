@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 import type { Store, Worker } from "@/lib/types/database";
 
@@ -22,6 +23,7 @@ export default function DefaultWorkersPage() {
   const [weekdayWorkers, setWeekdayWorkers] = useState<DefaultWorkerRow[]>([]);
   const [weekendWorkers, setWeekendWorkers] = useState<DefaultWorkerRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orgId, setOrgId] = useState<string | null>(null);
 
   useEffect(() => {
     loadStoresAndWorkers();
@@ -33,7 +35,7 @@ export default function DefaultWorkersPage() {
 
   async function loadStoresAndWorkers() {
     const [storesRes, workersRes] = await Promise.all([
-      supabase.from("stores").select("*").eq("is_active", true).order("name"),
+      supabase.from("stores").select("*").eq("org_id", oid).eq("is_active", true).order("name"),
       supabase.from("workers").select("*").eq("status", "active").order("name"),
     ]);
     if (storesRes.data) {

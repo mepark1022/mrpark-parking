@@ -3,6 +3,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
 import type { Store } from "@/lib/types/database";
@@ -15,6 +16,7 @@ function RegisterForm() {
 
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
@@ -40,7 +42,10 @@ function RegisterForm() {
   }, [editId]);
 
   async function loadStores() {
-    const { data } = await supabase.from("stores").select("*").eq("is_active", true).order("name");
+    const oid = await getOrgId();
+    if (!oid) return;
+    setOrgId(oid);
+    const { data } = await supabase.from("stores").select("*").eq("org_id", oid).eq("is_active", true).order("name");
     if (data) {
       setStores(data);
       if (!editId && data.length > 0) setForm((f) => ({ ...f, store_id: data[0].id }));
@@ -105,7 +110,7 @@ function RegisterForm() {
       if (editId) {
         await supabase.from("monthly_parking").update(data).eq("id", editId);
       } else {
-        await supabase.from("monthly_parking").insert(data);
+        await supabase.from("monthly_parking").insert({ ...data, org_id: oid });
       }
       router.push("/monthly");
     } catch (err) {

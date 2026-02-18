@@ -65,7 +65,7 @@ const tabs = [
 ];
 
 // "더보기" 메뉴에 포함될 경로들
-const moreRoutes = ["/monthly", "/analytics", "/stores", "/team", "/settings", "/more"];
+const moreRoutes = ["/parking-status", "/monthly", "/analytics", "/stores", "/team", "/settings", "/more"];
 
 export default function MobileTabBar() {
   const pathname = usePathname();

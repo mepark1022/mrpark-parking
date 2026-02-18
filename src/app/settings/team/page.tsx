@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 
 type Profile = { id: string; email: string; name: string; role: string; status: string };
@@ -13,6 +14,7 @@ export default function TeamPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("member");
@@ -23,6 +25,9 @@ export default function TeamPage() {
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
+    const oid = await getOrgId();
+    if (!oid) return;
+    setOrgId(oid);
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) setCurrentUserId(user.id);
