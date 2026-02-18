@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { login, signup } from "./actions";
-import { LogoLogin } from "@/components/Logo";
+import { LogoHero } from "@/components/Logo";
 
 export default function LoginPage() {
   const [isSignup, setIsSignup] = useState(false);
@@ -32,8 +32,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-page-bg flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <LogoLogin />
+        <div className="text-center mb-8 flex flex-col items-center gap-3">
+          <LogoHero theme="light" />
+          <div style={{ fontSize: 13, fontWeight: 500, color: "#94a3b8", letterSpacing: "0.08em" }}>주차운영 시스템</div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-8">

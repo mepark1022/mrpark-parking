@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogoFull } from "@/components/Logo";
+import { LogoGNB } from "@/components/Logo";
 
 const menuItems = [
   { href: "/dashboard", label: "대시보드", icon: (
@@ -54,7 +54,7 @@ className="w-60 min-h-screen flex flex-col relative overflow-hidden fixed top-0 
 
       {/* Logo */}
       <div className="p-6 pb-5">
-        <LogoFull size={36} theme="light" />
+        <LogoGNB theme="dark" />
       </div>
 
       {/* Menu Label */}
