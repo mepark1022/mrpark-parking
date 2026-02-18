@@ -243,7 +243,7 @@ export default function DashboardPage() {
           <div className="text-center py-10 text-mr-gray">로딩 중...</div>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <div className="bg-white rounded-xl p-5 shadow-sm">
                 <p className="text-sm text-gray-600 font-medium">총 입차량</p>
                 <p className="text-3xl font-extrabold text-gray-900 mt-1">{kpi.totalCars.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">대</span></p>
@@ -265,7 +265,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="bg-white rounded-xl p-7 shadow-sm">
                 <h3 className="font-semibold text-dark mb-4">시간대별 입차량</h3>
                 {hourlyChartData.some((d) => d.count > 0) ? (
@@ -319,7 +319,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="bg-white rounded-xl p-7 shadow-sm">
                 <h3 className="font-semibold text-dark mb-4">월주차 현황</h3>
                 {monthlyPieData.length > 0 ? (
