@@ -300,7 +300,7 @@ export default function StoresPage() {
   const [parkingLots, setParkingLots] = useState([]);
   const [showPLForm, setShowPLForm] = useState(false);
   const [editPL, setEditPL] = useState(null);
-  const [plForm, setPLForm] = useState({ name: "", lot_type: "internal", parking_type: ["self"], road_address: "", total_spaces: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00" });
+  const [plForm, setPLForm] = useState({ name: "", lot_type: "internal", parking_type: ["self"], road_address: "", total_spaces: 0, self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00" });
   // 특별추가근무
   const [overtimeShifts, setOvertimeShifts] = useState([]);
   const [showOTForm, setShowOTForm] = useState(false);
@@ -340,10 +340,11 @@ export default function StoresPage() {
   const handlePLSave = async () => {
     if (!plForm.name || !editItem) return;
     const supabase = createClient();
-    const payload = { store_id: editItem.id, name: plForm.name, lot_type: plForm.lot_type, parking_type: plForm.parking_type, road_address: plForm.road_address || null, total_spaces: Number(plForm.total_spaces) || 0, operating_days: plForm.operating_days, open_time: plForm.open_time, close_time: plForm.close_time };
+    const calcTotal = (Number(plForm.self_spaces) || 0) + (Number(plForm.mechanical_normal) || 0) + (Number(plForm.mechanical_suv) || 0);
+    const payload = { store_id: editItem.id, name: plForm.name, lot_type: plForm.lot_type, parking_type: plForm.parking_type, road_address: plForm.road_address || null, total_spaces: calcTotal, self_spaces: Number(plForm.self_spaces) || 0, mechanical_normal: Number(plForm.mechanical_normal) || 0, mechanical_suv: Number(plForm.mechanical_suv) || 0, operating_days: plForm.operating_days, open_time: plForm.open_time, close_time: plForm.close_time };
     if (editPL) await supabase.from("parking_lots").update(payload).eq("id", editPL.id);
     else await supabase.from("parking_lots").insert(payload);
-    setShowPLForm(false); setEditPL(null); setPLForm({ name: "", lot_type: "internal", parking_type: ["self"], road_address: "", total_spaces: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00" });
+    setShowPLForm(false); setEditPL(null); setPLForm({ name: "", lot_type: "internal", parking_type: ["self"], road_address: "", total_spaces: 0, self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00" });
     loadParkingLots(editItem.id);
   };
   const deletePL = async (id) => { const supabase = createClient(); await supabase.from("parking_lots").delete().eq("id", id); loadParkingLots(editItem.id); };
@@ -620,15 +621,45 @@ export default function StoresPage() {
                     <span style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>주차장 관리</span>
                     <span style={{ padding: "2px 10px", borderRadius: 10, background: "#F5B73120", fontSize: 12, fontWeight: 700, color: "#b45309" }}>{parkingLots.length}</span>
                   </div>
-                  <button onClick={() => { setEditPL(null); setPLForm({ name: "", lot_type: "internal", parking_type: ["self"], road_address: "", total_spaces: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00" }); setShowPLForm(true); }} className="cursor-pointer" style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#F5B731", color: "#fff", fontSize: 13, fontWeight: 700 }}>+ 주차장 추가</button>
+                  <button onClick={() => { setEditPL(null); setPLForm({ name: "", lot_type: "internal", parking_type: ["self"], road_address: "", total_spaces: 0, self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00" }); setShowPLForm(true); }} className="cursor-pointer" style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#F5B731", color: "#fff", fontSize: 13, fontWeight: 700 }}>+ 주차장 추가</button>
                 </div>
                 {showPLForm && (
                   <div style={{ background: "#FFFBEB", borderRadius: 14, padding: 20, marginBottom: 12, border: "1px solid #FED7AA" }}>
                     <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 14 }}>{editPL ? "주차장 수정" : "새 주차장 추가"}</div>
-                    {/* 주차장 이름 + 총 면수 */}
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div><label className="block mb-1" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>주차장 이름 *</label><input value={plForm.name} onChange={e => setPLForm({ ...plForm, name: e.target.value })} placeholder="예: 본관 주차장" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 15, background: "#fff" }} /></div>
-                      <div><label className="block mb-1" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>총 주차면 수</label><input type="number" value={plForm.total_spaces} onChange={e => setPLForm({ ...plForm, total_spaces: e.target.value })} placeholder="0" className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
+                    {/* 주차장 이름 */}
+                    <div className="mb-3">
+                      <label className="block mb-1" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>주차장 이름 *</label>
+                      <input value={plForm.name} onChange={e => setPLForm({ ...plForm, name: e.target.value })} placeholder="예: 본관 주차장" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 15, background: "#fff" }} />
+                    </div>
+                    {/* 주차면 수 세분화 */}
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <label style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>🚗 주차면 수</label>
+                        <span style={{ padding: "3px 12px", borderRadius: 8, background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700 }}>합계 {(Number(plForm.self_spaces) || 0) + (Number(plForm.mechanical_normal) || 0) + (Number(plForm.mechanical_suv) || 0)}면</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div style={{ background: "#fff", borderRadius: 10, padding: 14, border: "1px solid #e2e8f0" }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#1428A0", marginBottom: 6 }}>🅿️ 자주식</div>
+                          <div className="flex items-center gap-2">
+                            <input type="number" value={plForm.self_spaces} onChange={e => setPLForm({ ...plForm, self_spaces: e.target.value })} min="0" className="w-full" style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 16, fontWeight: 700, textAlign: "center" }} />
+                            <span style={{ fontSize: 14, color: "#475569", fontWeight: 600 }}>면</span>
+                          </div>
+                        </div>
+                        <div style={{ background: "#fff", borderRadius: 10, padding: 14, border: "1px solid #e2e8f0" }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#EA580C", marginBottom: 6 }}>⚙️ 기계식 일반</div>
+                          <div className="flex items-center gap-2">
+                            <input type="number" value={plForm.mechanical_normal} onChange={e => setPLForm({ ...plForm, mechanical_normal: e.target.value })} min="0" className="w-full" style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 16, fontWeight: 700, textAlign: "center" }} />
+                            <span style={{ fontSize: 14, color: "#475569", fontWeight: 600 }}>면</span>
+                          </div>
+                        </div>
+                        <div style={{ background: "#fff", borderRadius: 10, padding: 14, border: "1px solid #e2e8f0" }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#7C3AED", marginBottom: 6 }}>🚙 기계식 SUV</div>
+                          <div className="flex items-center gap-2">
+                            <input type="number" value={plForm.mechanical_suv} onChange={e => setPLForm({ ...plForm, mechanical_suv: e.target.value })} min="0" className="w-full" style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 16, fontWeight: 700, textAlign: "center" }} />
+                            <span style={{ fontSize: 14, color: "#475569", fontWeight: 600 }}>면</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                     {/* 주차장 구분 */}
                     <div className="mb-3">
@@ -730,14 +761,17 @@ export default function StoresPage() {
                               <span style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{pl.name}</span>
                             </div>
                             <div className="flex gap-1.5">
-                              <button onClick={() => { setEditPL(pl); setPLForm({ name: pl.name, lot_type: pl.lot_type, parking_type: pl.parking_type || ["self"], road_address: pl.road_address || "", total_spaces: pl.total_spaces || 0, operating_days: pl.operating_days || { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: pl.open_time?.slice(0, 5) || "09:00", close_time: pl.close_time?.slice(0, 5) || "22:00" }); setShowPLForm(true); }} className="cursor-pointer" style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", fontSize: 11, fontWeight: 600, color: "#475569" }}>수정</button>
+                              <button onClick={() => { setEditPL(pl); setPLForm({ name: pl.name, lot_type: pl.lot_type, parking_type: pl.parking_type || ["self"], road_address: pl.road_address || "", total_spaces: pl.total_spaces || 0, self_spaces: pl.self_spaces || 0, mechanical_normal: pl.mechanical_normal || 0, mechanical_suv: pl.mechanical_suv || 0, operating_days: pl.operating_days || { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: pl.open_time?.slice(0, 5) || "09:00", close_time: pl.close_time?.slice(0, 5) || "22:00" }); setShowPLForm(true); }} className="cursor-pointer" style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", fontSize: 11, fontWeight: 600, color: "#475569" }}>수정</button>
                               <button onClick={() => deletePL(pl.id)} className="cursor-pointer" style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "#fee2e2", fontSize: 11, fontWeight: 600, color: "#dc2626" }}>삭제</button>
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {pl.road_address && <span style={{ padding: "3px 8px", borderRadius: 6, background: "#f8fafc", fontSize: 11, color: "#475569" }}>📍 {pl.road_address}</span>}
                             {(pl.parking_type || []).map((pt, i) => <span key={i} style={{ padding: "3px 8px", borderRadius: 6, background: "#dcfce7", fontSize: 11, color: "#15803d", fontWeight: 600 }}>{pt === "self" ? "자주식" : "기계식"}</span>)}
-                            <span style={{ padding: "3px 8px", borderRadius: 6, background: "#f8fafc", fontSize: 11, color: "#475569" }}>🚗 {pl.total_spaces || 0}면</span>
+                            <span style={{ padding: "3px 8px", borderRadius: 6, background: "#1428A010", fontSize: 12, color: "#1428A0", fontWeight: 700 }}>총 {pl.total_spaces || 0}면</span>
+                            {(pl.self_spaces > 0) && <span style={{ padding: "3px 8px", borderRadius: 6, background: "#f8fafc", fontSize: 11, color: "#1428A0", fontWeight: 600 }}>🅿️자주식 {pl.self_spaces}</span>}
+                            {(pl.mechanical_normal > 0) && <span style={{ padding: "3px 8px", borderRadius: 6, background: "#FFF7ED", fontSize: 11, color: "#EA580C", fontWeight: 600 }}>⚙️일반 {pl.mechanical_normal}</span>}
+                            {(pl.mechanical_suv > 0) && <span style={{ padding: "3px 8px", borderRadius: 6, background: "#F3E8FF", fontSize: 11, color: "#7C3AED", fontWeight: 600 }}>🚙SUV {pl.mechanical_suv}</span>}
                             <span style={{ padding: "3px 8px", borderRadius: 6, background: "#f8fafc", fontSize: 11, color: "#475569" }}>⏰ {pl.open_time?.slice(0, 5)}~{pl.close_time?.slice(0, 5)}</span>
                             <span style={{ padding: "3px 8px", borderRadius: 6, background: "#f8fafc", fontSize: 11, color: "#475569" }}>📅 {activeDays}</span>
                           </div>
