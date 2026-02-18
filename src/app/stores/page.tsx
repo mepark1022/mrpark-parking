@@ -301,7 +301,7 @@ export default function StoresPage() {
   const [parkingLots, setParkingLots] = useState([]);
   const [showPLForm, setShowPLForm] = useState(false);
   const [editPL, setEditPL] = useState(null);
-  const [plForm, setPLForm] = useState({ name: "", lot_type: "internal", parking_type: ["self"], road_address: "", total_spaces: 0, self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00" });
+  const [plForm, setPLForm] = useState({ name: "", lot_type: "internal", parking_type: ["self"], road_address: "", total_spaces: 0, self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00", operation_mode: "valet", base_minutes: 120, base_fee: 3000, extra_unit: 10, extra_fee: 1000, daily_max: 30000 });
   // 특별추가근무
   const [overtimeShifts, setOvertimeShifts] = useState([]);
   const [showOTForm, setShowOTForm] = useState(false);
@@ -360,10 +360,10 @@ export default function StoresPage() {
     setPLMessage("");
     const supabase = createClient();
     const calcTotal = (Number(plForm.self_spaces) || 0) + (Number(plForm.mechanical_normal) || 0) + (Number(plForm.mechanical_suv) || 0);
-    const payload = { store_id: editItem.id, name: plForm.name, lot_type: plForm.lot_type, lot_tag: (plForm as any).lot_tag || "본관", parking_type: plForm.parking_type, road_address: plForm.road_address || null, total_spaces: calcTotal, self_spaces: Number(plForm.self_spaces) || 0, mechanical_normal: Number(plForm.mechanical_normal) || 0, mechanical_suv: Number(plForm.mechanical_suv) || 0, operating_days: plForm.operating_days, open_time: plForm.open_time, close_time: plForm.close_time };
+    const payload = { store_id: editItem.id, name: plForm.name, lot_type: plForm.lot_type, lot_tag: (plForm as any).lot_tag || "본관", parking_type: plForm.parking_type, road_address: plForm.road_address || null, total_spaces: calcTotal, self_spaces: Number(plForm.self_spaces) || 0, mechanical_normal: Number(plForm.mechanical_normal) || 0, mechanical_suv: Number(plForm.mechanical_suv) || 0, operating_days: plForm.operating_days, open_time: plForm.open_time, close_time: plForm.close_time, operation_mode: (plForm as any).operation_mode || "valet", base_minutes: Number((plForm as any).base_minutes) || 0, base_fee: Number((plForm as any).base_fee) || 0, extra_unit: Number((plForm as any).extra_unit) || 10, extra_fee: Number((plForm as any).extra_fee) || 0, daily_max: Number((plForm as any).daily_max) || 0 };
     if (editPL) await supabase.from("parking_lots").update(payload).eq("id", editPL.id);
     else await supabase.from("parking_lots").insert(payload);
-    setShowPLForm(false); setEditPL(null); setPLForm({ name: "", lot_type: "internal", lot_tag: "본관", parking_type: ["self"], road_address: "", total_spaces: 0, self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00" });
+    setShowPLForm(false); setEditPL(null); setPLForm({ name: "", lot_type: "internal", lot_tag: "본관", parking_type: ["self"], road_address: "", total_spaces: 0, self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00", operation_mode: "valet", base_minutes: 120, base_fee: 3000, extra_unit: 10, extra_fee: 1000, daily_max: 30000 });
     loadParkingLots(editItem.id);
   };
   const deletePL = async (id) => { const supabase = createClient(); await supabase.from("parking_lots").delete().eq("id", id); loadParkingLots(editItem.id); };
@@ -675,7 +675,7 @@ export default function StoresPage() {
                     <span style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>주차장 관리</span>
                     <span style={{ padding: "2px 10px", borderRadius: 10, background: "#F5B73120", fontSize: 12, fontWeight: 700, color: "#b45309" }}>{parkingLots.length}</span>
                   </div>
-                  <button onClick={() => { setEditPL(null); setPLForm({ name: "", lot_type: "internal", lot_tag: "본관", parking_type: ["self"], road_address: "", total_spaces: 0, self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00" }); setShowPLForm(true); }} className="cursor-pointer" style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#F5B731", color: "#fff", fontSize: 13, fontWeight: 700 }}>+ 주차장 추가</button>
+                  <button onClick={() => { setEditPL(null); setPLForm({ name: "", lot_type: "internal", lot_tag: "본관", parking_type: ["self"], road_address: "", total_spaces: 0, self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00", operation_mode: "valet", base_minutes: 120, base_fee: 3000, extra_unit: 10, extra_fee: 1000, daily_max: 30000 }); setShowPLForm(true); }} className="cursor-pointer" style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#F5B731", color: "#fff", fontSize: 13, fontWeight: 700 }}>+ 주차장 추가</button>
                 </div>
                 {showPLForm && (
                   <div style={{ background: "#FFFBEB", borderRadius: 14, padding: 20, marginBottom: 12, border: "1px solid #FED7AA" }}>
@@ -791,6 +791,92 @@ export default function StoresPage() {
                       <div><label className="block mb-1" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>오픈 시간</label><input type="time" value={plForm.open_time} onChange={e => setPLForm({ ...plForm, open_time: e.target.value })} className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
                       <div><label className="block mb-1" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>마감 시간</label><input type="time" value={plForm.close_time} onChange={e => setPLForm({ ...plForm, close_time: e.target.value })} className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
                     </div>
+                    {/* ─── 운영 모드 + 요금 설정 ─── */}
+                    <div style={{ background: "#fff", borderRadius: 12, padding: 16, border: "1px solid #e2e8f0", marginBottom: 12 }}>
+                      <label className="block mb-2" style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>💰 운영 모드</label>
+                      <div className="flex gap-2 mb-3">
+                        {[
+                          { val: "valet", label: "🅿️ 발렛모드", desc: "발렛비 기반 요금", color: "#1428A0", bg: "#1428A010" },
+                          { val: "paid", label: "🚗 유료주차", desc: "주차요금 기반", color: "#EA580C", bg: "#FFF7ED" },
+                        ].map(m => (
+                          <button key={m.val} type="button" onClick={() => setPLForm({ ...plForm, operation_mode: m.val })} className="cursor-pointer flex-1" style={{
+                            padding: "10px 12px", borderRadius: 10, textAlign: "center",
+                            border: (plForm as any).operation_mode === m.val ? `2px solid ${m.color}` : "1px solid #e2e8f0",
+                            background: (plForm as any).operation_mode === m.val ? m.bg : "#fff"
+                          }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: (plForm as any).operation_mode === m.val ? m.color : "#94a3b8" }}>{m.label}</div>
+                            <div style={{ fontSize: 11, color: "#94a3b8" }}>{m.desc}</div>
+                          </button>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: (plForm as any).operation_mode === "valet" ? "#1428A0" : "#EA580C", marginBottom: 8 }}>
+                        {(plForm as any).operation_mode === "valet" ? "🅿️ 발렛비 요금 설정" : "🚗 주차 요금 설정"}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 mb-2">
+                        <div>
+                          <label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>기본시간</label>
+                          <div className="flex items-center gap-1">
+                            <input type="number" value={(plForm as any).base_minutes} onChange={e => setPLForm({ ...plForm, base_minutes: e.target.value })} min="0" className="w-full" style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 15, fontWeight: 700, textAlign: "center" }} />
+                            <span style={{ fontSize: 13, color: "#475569", flexShrink: 0 }}>분</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>{(plForm as any).operation_mode === "valet" ? "발렛비" : "기본요금"}</label>
+                          <div className="flex items-center gap-1">
+                            <input type="number" value={(plForm as any).base_fee} onChange={e => setPLForm({ ...plForm, base_fee: e.target.value })} min="0" step="1000" className="w-full" style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 15, fontWeight: 700, textAlign: "center" }} />
+                            <span style={{ fontSize: 13, color: "#475569", flexShrink: 0 }}>원</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3 mb-2">
+                        <div>
+                          <label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>추가단위</label>
+                          <div className="flex items-center gap-1">
+                            <select value={(plForm as any).extra_unit} onChange={e => setPLForm({ ...plForm, extra_unit: Number(e.target.value) })} className="w-full" style={{ padding: "8px 6px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 700, textAlign: "center" }}>
+                              <option value={10}>10분</option>
+                              <option value={15}>15분</option>
+                              <option value={30}>30분</option>
+                              <option value={60}>60분</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>추가요금</label>
+                          <div className="flex items-center gap-1">
+                            <input type="number" value={(plForm as any).extra_fee} onChange={e => setPLForm({ ...plForm, extra_fee: e.target.value })} min="0" step="500" className="w-full" style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 15, fontWeight: 700, textAlign: "center" }} />
+                            <span style={{ fontSize: 13, color: "#475569", flexShrink: 0 }}>원</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>일최대</label>
+                          <div className="flex items-center gap-1">
+                            <input type="number" value={(plForm as any).daily_max} onChange={e => setPLForm({ ...plForm, daily_max: e.target.value })} min="0" step="5000" className="w-full" style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 15, fontWeight: 700, textAlign: "center" }} />
+                            <span style={{ fontSize: 13, color: "#475569", flexShrink: 0 }}>원</span>
+                          </div>
+                        </div>
+                      </div>
+                      {/* 요금 시뮬레이션 미리보기 */}
+                      <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 12px", marginTop: 4 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>💡 요금 시뮬레이션</div>
+                        <div className="flex gap-3 flex-wrap">
+                          {[30, 60, 120, 180, 360].map(min => {
+                            const bm = Number((plForm as any).base_minutes) || 0;
+                            const bf = Number((plForm as any).base_fee) || 0;
+                            const eu = Number((plForm as any).extra_unit) || 10;
+                            const ef = Number((plForm as any).extra_fee) || 0;
+                            const dm = Number((plForm as any).daily_max) || 999999;
+                            let fee = min <= bm ? bf : bf + Math.ceil((min - bm) / eu) * ef;
+                            if (fee > dm) fee = dm;
+                            return (
+                              <div key={min} style={{ textAlign: "center" }}>
+                                <div style={{ fontSize: 10, color: "#94a3b8" }}>{min >= 60 ? `${min / 60}시간` : `${min}분`}</div>
+                                <div style={{ fontSize: 13, fontWeight: 800, color: "#1428A0" }}>₩{fee.toLocaleString()}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
                     {plMessage && <div style={{ padding: "8px 12px", borderRadius: 8, background: "#fee2e2", color: "#dc2626", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{plMessage}</div>}
                     <div className="flex gap-2">
                       <button onClick={handlePLSave} className="cursor-pointer" style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#F5B731", color: "#fff", fontSize: 13, fontWeight: 700 }}>{editPL ? "수정" : "추가"}</button>
@@ -819,7 +905,7 @@ export default function StoresPage() {
                               <span style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{pl.name}</span>
                             </div>
                             <div className="flex gap-1.5">
-                              <button onClick={() => { setEditPL(pl); setPLForm({ name: pl.name, lot_type: pl.lot_type, lot_tag: pl.lot_tag || (pl.lot_type === "internal" ? "본관" : "외부1"), parking_type: pl.parking_type || ["self"], road_address: pl.road_address || "", total_spaces: pl.total_spaces || 0, self_spaces: pl.self_spaces || 0, mechanical_normal: pl.mechanical_normal || 0, mechanical_suv: pl.mechanical_suv || 0, operating_days: pl.operating_days || { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: pl.open_time?.slice(0, 5) || "09:00", close_time: pl.close_time?.slice(0, 5) || "22:00" }); setShowPLForm(true); }} className="cursor-pointer" style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", fontSize: 11, fontWeight: 600, color: "#475569" }}>수정</button>
+                              <button onClick={() => { setEditPL(pl); setPLForm({ name: pl.name, lot_type: pl.lot_type, lot_tag: pl.lot_tag || (pl.lot_type === "internal" ? "본관" : "외부1"), parking_type: pl.parking_type || ["self"], road_address: pl.road_address || "", total_spaces: pl.total_spaces || 0, self_spaces: pl.self_spaces || 0, mechanical_normal: pl.mechanical_normal || 0, mechanical_suv: pl.mechanical_suv || 0, operating_days: pl.operating_days || { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: pl.open_time?.slice(0, 5) || "09:00", close_time: pl.close_time?.slice(0, 5) || "22:00", operation_mode: pl.operation_mode || "valet", base_minutes: pl.base_minutes || 120, base_fee: pl.base_fee || 3000, extra_unit: pl.extra_unit || 10, extra_fee: pl.extra_fee || 1000, daily_max: pl.daily_max || 30000 }); setShowPLForm(true); }} className="cursor-pointer" style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", fontSize: 11, fontWeight: 600, color: "#475569" }}>수정</button>
                               <button onClick={() => deletePL(pl.id)} className="cursor-pointer" style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "#fee2e2", fontSize: 11, fontWeight: 600, color: "#dc2626" }}>삭제</button>
                             </div>
                           </div>
@@ -832,6 +918,9 @@ export default function StoresPage() {
                             {(pl.mechanical_suv > 0) && <span style={{ padding: "3px 8px", borderRadius: 6, background: "#F3E8FF", fontSize: 11, color: "#7C3AED", fontWeight: 600 }}>🚙SUV {pl.mechanical_suv}</span>}
                             <span style={{ padding: "3px 8px", borderRadius: 6, background: "#f8fafc", fontSize: 11, color: "#475569" }}>⏰ {pl.open_time?.slice(0, 5)}~{pl.close_time?.slice(0, 5)}</span>
                             <span style={{ padding: "3px 8px", borderRadius: 6, background: "#f8fafc", fontSize: 11, color: "#475569" }}>📅 {activeDays}</span>
+                            <span style={{ padding: "3px 8px", borderRadius: 6, background: pl.operation_mode === "paid" ? "#FFF7ED" : "#1428A010", fontSize: 11, fontWeight: 700, color: pl.operation_mode === "paid" ? "#EA580C" : "#1428A0" }}>{pl.operation_mode === "paid" ? "🚗유료주차" : "🅿️발렛"}</span>
+                            <span style={{ padding: "3px 8px", borderRadius: 6, background: "#f8fafc", fontSize: 11, fontWeight: 600, color: "#475569" }}>{pl.base_minutes || 0}분/₩{(pl.base_fee || 0).toLocaleString()}</span>
+                            {(pl.daily_max > 0) && <span style={{ padding: "3px 8px", borderRadius: 6, background: "#fef3c7", fontSize: 11, fontWeight: 600, color: "#92400e" }}>일최대 ₩{(pl.daily_max).toLocaleString()}</span>}
                           </div>
                         </div>
                       );

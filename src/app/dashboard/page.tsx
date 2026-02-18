@@ -17,6 +17,7 @@ type DailyRecord = {
   total_cars: number;
   valet_count: number;
   valet_revenue: number;
+  daily_revenue: number;
   stores: { name: string } | null;
 };
 
@@ -155,9 +156,11 @@ export default function DashboardPage() {
   const kpi = useMemo(() => {
     const totalCars = records.reduce((s, r) => s + r.total_cars, 0);
     const totalValet = records.reduce((s, r) => s + r.valet_revenue, 0);
+    const totalRevenue = records.reduce((s, r) => s + (r.daily_revenue || 0), 0);
+    const totalParking = totalRevenue - totalValet;
     const workerIds = new Set(assignments.map((a) => a.worker_id));
     const activeContracts = monthlyContracts.filter((c) => c.contract_status === "active").length;
-    return { totalCars, totalValet, workerCount: workerIds.size, activeContracts };
+    return { totalCars, totalValet, totalParking: totalParking > 0 ? totalParking : 0, workerCount: workerIds.size, activeContracts };
   }, [records, assignments, monthlyContracts]);
 
   const hourlyChartData = useMemo(() => {
@@ -277,8 +280,16 @@ export default function DashboardPage() {
                 <p className="text-3xl font-extrabold text-gray-900 mt-1">{kpi.totalCars.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">대</span></p>
               </div>
               <div className="bg-white rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-gray-600 font-medium">발렛 매출</p>
-                <p className="text-3xl font-extrabold text-gray-900 mt-1">{kpi.totalValet.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span style={{ width: 6, height: 6, borderRadius: 3, background: "#1428A0" }} />
+                  <p className="text-sm font-medium" style={{ color: "#1428A0" }}>발렛 매출</p>
+                </div>
+                <p className="text-2xl font-extrabold mt-0.5" style={{ color: "#1428A0" }}>{kpi.totalValet.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
+                <div className="flex items-center gap-1.5 mt-2 pt-2" style={{ borderTop: "1px solid #f1f5f9" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 3, background: "#EA580C" }} />
+                  <p className="text-sm font-medium" style={{ color: "#EA580C" }}>주차 매출</p>
+                </div>
+                <p className="text-2xl font-extrabold mt-0.5" style={{ color: "#EA580C" }}>{(kpi.totalParking || 0).toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
               </div>
               <div className="bg-white rounded-xl p-5 shadow-sm">
                 <p className="text-sm text-gray-600 font-medium">근무 인원</p>
