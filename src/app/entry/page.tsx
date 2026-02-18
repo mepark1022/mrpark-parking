@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 
 type Store = { id: string; name: string; has_valet: boolean; valet_fee: number };
@@ -56,9 +57,11 @@ export default function EntryPage() {
   }
 
   async function loadStoresAndWorkers() {
+    const oid = await getOrgId();
+    if (!oid) return;
     const [storesRes, workersRes] = await Promise.all([
-      supabase.from("stores").select("id, name, has_valet, valet_fee").eq("is_active", true).order("name"),
-      supabase.from("workers").select("id, name").eq("status", "active").order("name"),
+      supabase.from("stores").select("id, name, has_valet, valet_fee").eq("org_id", oid).eq("is_active", true).order("name"),
+      supabase.from("workers").select("id, name").eq("org_id", oid).eq("status", "active").order("name"),
     ]);
     if (storesRes.data) {
       setStores(storesRes.data);
@@ -149,7 +152,7 @@ export default function EntryPage() {
         await supabase.from("hourly_data").delete().eq("record_id", recordId);
         await supabase.from("worker_assignments").delete().eq("record_id", recordId);
       } else {
-        const { data } = await supabase.from("daily_records").insert(recordData).select("id").single();
+        const { data } = await supabase.from("daily_records").insert({ ...recordData, org_id: oid }).select("id").single();
         recordId = data?.id;
       }
 

@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 
 const storeTabs = [
   { id: "list", label: "매장 목록" },
@@ -387,7 +388,7 @@ export default function StoresPage() {
   // 특별추가근무 CRUD
   const loadWorkers = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("workers").select("id, name").eq("status", "active").order("name");
+    const { data } = await supabase.from("workers").select("id, name").eq("org_id", oid).eq("status", "active").order("name");
     if (data) setWorkers(data);
   };
   const loadOvertimeShifts = async () => {
@@ -426,7 +427,7 @@ export default function StoresPage() {
 
   const loadStores = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("stores").select("*, regions(name)").order("name");
+    const { data } = await supabase.from("stores").select("*, regions(name)").eq("org_id", oid).order("name");
     if (data) { setStores(data); if (data.length > 0 && !selectedStore) setSelectedStore(data[0].id); }
   };
   const loadRegions = async () => {
@@ -487,7 +488,7 @@ export default function StoresPage() {
       setMessage("매장 정보가 저장되었습니다!"); setTimeout(() => setMessage(""), 2000);
       loadStores();
     } else {
-      const { data } = await supabase.from("stores").insert({ ...payload, is_active: true }).select().single();
+      const { data } = await supabase.from("stores").insert({ ...payload, org_id: oid, is_active: true }).select().single();
       if (data) {
         await loadStores();
         setEditItem(data);

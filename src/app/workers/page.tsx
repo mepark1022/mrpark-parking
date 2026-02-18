@@ -6,6 +6,7 @@ import ReportTab from "./ReportTab";
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 
 const tabs = [
   { id: "attendance", label: "출퇴근" },
@@ -38,7 +39,7 @@ function ScheduleTab() {
   const loadBase = async () => {
     const supabase = createClient();
     const { data: w } = await supabase.from("workers").select("id, name").eq("status", "active").order("name");
-    const { data: s } = await supabase.from("stores").select("id, name").eq("is_active", true).order("name");
+    const { data: s } = await supabase.from("stores").select("id, name").eq("org_id", orgId).eq("is_active", true).order("name");
     if (w) { setWorkers(w); if (w.length > 0) setSelectedWorker(w[0].id); }
     if (s) setStores(s);
   };
@@ -56,7 +57,7 @@ function ScheduleTab() {
     const supabase = createClient();
     const existing = records.find(r => r.date === date);
     if (existing) return;
-    await supabase.from("worker_attendance").insert({ worker_id: selectedWorker, date, status: "present", check_in: "09:00", store_id: stores[0]?.id || null });
+    await supabase.from("worker_attendance").insert({ org_id: orgId, worker_id: selectedWorker, date, status: "present", check_in: "09:00", store_id: stores[0]?.id || null });
     loadRecords();
   };
 

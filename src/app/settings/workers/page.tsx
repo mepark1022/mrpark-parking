@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 
 const tabs = [
   { id: "attendance", label: "출퇴근" },
@@ -49,7 +50,7 @@ export default function WorkersPage() {
         region_id: formData.region_id || null,
       }).eq("id", editItem.id);
     } else {
-      await supabase.from("workers").insert({
+      await supabase.from("workers").insert({ org_id: oid,
         name: formData.name, phone: formData.phone || null,
         region_id: formData.region_id || null, status: "active",
       });

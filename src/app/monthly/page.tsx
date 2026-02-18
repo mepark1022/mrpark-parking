@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
 import type { Store } from "@/lib/types/database";
@@ -29,6 +30,7 @@ export default function MonthlyPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [contracts, setContracts] = useState<MonthlyRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [filterStore, setFilterStore] = useState("");
   const [filterStatus, setFilterStatus] = useState("active");
   const [searchText, setSearchText] = useState("");
@@ -37,7 +39,10 @@ export default function MonthlyPage() {
   useEffect(() => { loadContracts(); }, [filterStore, filterStatus]);
 
   async function loadStores() {
-    const { data } = await supabase.from("stores").select("*").eq("is_active", true).order("name");
+    const oid = await getOrgId();
+    if (!oid) return;
+    setOrgId(oid);
+    const { data } = await supabase.from("stores").select("*").eq("org_id", oid).eq("is_active", true).order("name");
     if (data) setStores(data);
   }
 

@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 
 const leaveTypeMap = {
   annual: { label: "연차", bg: "#ede9fe", color: "#7c3aed" },
@@ -26,13 +27,15 @@ export default function LeaveTab() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ start_date: "", end_date: "", days: 1, leave_type: "annual", reason: "" });
   const [msg, setMsg] = useState("");
+  const [orgId, setOrgId] = useState<string | null>(null);
 
-  useEffect(() => { loadWorkers(); }, []);
+  useEffect(() => { getOrgId().then(oid => { if (oid) { setOrgId(oid); } }); }, []);
+  useEffect(() => { if (orgId) loadWorkers(); }, [orgId]);
   useEffect(() => { if (selectedWorker) { loadLeaveInfo(); loadRecords(); } }, [selectedWorker, year]);
 
   const loadWorkers = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("workers").select("id, name").eq("status", "active").order("name");
+    const { data } = await supabase.from("workers").select("id, name").eq("org_id", orgId).eq("status", "active").order("name");
     if (data) { setWorkers(data); if (data.length > 0) setSelectedWorker(data[0].id); }
   };
 
@@ -42,7 +45,7 @@ export default function LeaveTab() {
     if (data) setLeaveInfo(data);
     else {
       // 자동 생성
-      const { data: created } = await supabase.from("worker_leaves").insert({ worker_id: selectedWorker, year, total_days: 15, used_days: 0 }).select().single();
+      const { data: created } = await supabase.from("worker_leaves").insert({ org_id: orgId, worker_id: selectedWorker, year, total_days: 15, used_days: 0 }).select().single();
       setLeaveInfo(created);
     }
   };
@@ -63,7 +66,7 @@ export default function LeaveTab() {
   const addRecord = async () => {
     if (!form.start_date || !form.end_date) { setMsg("날짜를 입력하세요"); return; }
     const supabase = createClient();
-    await supabase.from("worker_leave_records").insert({
+    await supabase.from("worker_leave_records").insert({ org_id: orgId,
       worker_id: selectedWorker, start_date: form.start_date, end_date: form.end_date,
       days: Number(form.days) || 1, leave_type: form.leave_type, reason: form.reason || null, status: "approved",
     });

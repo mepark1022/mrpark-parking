@@ -3,24 +3,27 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 
 const ratingLabels = ["", "매우 부족", "부족", "보통", "우수", "매우 우수"];
 const ratingColors = ["", "#dc2626", "#ea580c", "#475569", "#1428A0", "#16a34a"];
 
 export default function ReviewTab() {
   const [workers, setWorkers] = useState([]);
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [selectedWorker, setSelectedWorker] = useState("");
   const [reviews, setReviews] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ month: "", punctuality: 3, attitude: 3, skill: 3, teamwork: 3, comment: "" });
   const [msg, setMsg] = useState("");
 
-  useEffect(() => { loadWorkers(); }, []);
+  useEffect(() => { getOrgId().then(oid => { if (oid) setOrgId(oid); }); }, []);
+  useEffect(() => { if (orgId) loadWorkers(); }, [orgId]);
   useEffect(() => { if (selectedWorker) loadReviews(); }, [selectedWorker]);
 
   const loadWorkers = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("workers").select("id, name").eq("status", "active").order("name");
+    const { data } = await supabase.from("workers").select("id, name").eq("org_id", orgId).eq("status", "active").order("name");
     if (data) { setWorkers(data); if (data.length > 0) setSelectedWorker(data[0].id); }
   };
 
@@ -34,7 +37,7 @@ export default function ReviewTab() {
     if (!form.month) { setMsg("월을 선택하세요"); return; }
     const supabase = createClient();
     const avg = ((Number(form.punctuality) + Number(form.attitude) + Number(form.skill) + Number(form.teamwork)) / 4).toFixed(1);
-    await supabase.from("worker_reviews").insert({
+    await supabase.from("worker_reviews").insert({ org_id: orgId,
       worker_id: selectedWorker, month: form.month + "-01",
       punctuality: form.punctuality, attitude: form.attitude,
       skill: form.skill, teamwork: form.teamwork,

@@ -3,6 +3,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 import { LogoAppIcon } from "@/components/Logo";
 
 const pageTitles: Record<string, { title: string; desc: string }> = {

@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 
 type Region = { id: string; name: string };
@@ -24,6 +25,7 @@ export default function StoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editStore, setEditStore] = useState<Store | null>(null);
   const [showFeeModal, setShowFeeModal] = useState(false);
@@ -49,6 +51,9 @@ export default function StoresPage() {
   }, []);
 
   async function loadData() {
+    const oid = await getOrgId();
+    if (!oid) return;
+    setOrgId(oid);
     setLoading(true);
     const [storesRes, regionsRes] = await Promise.all([
       supabase.from("stores").select("*, regions(*)").order("name"),

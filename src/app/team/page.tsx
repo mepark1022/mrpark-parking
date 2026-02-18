@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 
 type Profile = { id: string; email: string; name: string; role: string; status: string };
@@ -13,6 +14,7 @@ export default function TeamPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("member");
@@ -23,13 +25,16 @@ export default function TeamPage() {
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
+    const oid = await getOrgId();
+    if (!oid) return;
+    setOrgId(oid);
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) setCurrentUserId(user.id);
 
     const [profilesRes, invitationsRes] = await Promise.all([
-      supabase.from("profiles").select("*").order("created_at"),
-      supabase.from("invitations").select("*").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("*").eq("org_id", oid).order("created_at"),
+      supabase.from("invitations").select("*").eq("org_id", oid).order("created_at", { ascending: false }),
     ]);
     if (profilesRes.data) setProfiles(profilesRes.data);
     if (invitationsRes.data) setInvitations(invitationsRes.data);

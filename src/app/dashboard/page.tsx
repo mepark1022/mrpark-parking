@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -63,6 +64,7 @@ export default function DashboardPage() {
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [monthlyContracts, setMonthlyContracts] = useState<MonthlyContract[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [showValet, setShowValet] = useState(true);
   const [showParking, setShowParking] = useState(true);
   const [parkingStatus, setParkingStatus] = useState([]);
@@ -72,15 +74,14 @@ export default function DashboardPage() {
   useEffect(() => { loadParkingStatus(); }, [selectedStore, stores]);
 
   async function loadParkingStatus() {
-    // 모든 매장 or 선택된 매장의 주차장 정보 로드
-    let lotQuery = supabase.from("parking_lots").select("*, stores(name)");
+    if (!orgId) return;
+    let lotQuery = supabase.from("parking_lots").select("*, stores(name)").eq("org_id", orgId);
     if (selectedStore) lotQuery = lotQuery.eq("store_id", selectedStore);
     const { data: lots } = await lotQuery;
     if (!lots || lots.length === 0) { setParkingStatus([]); return; }
 
-    // 오늘 입차량으로 현재 주차대수 추정 (daily_records 기준)
     const today = new Date().toISOString().split("T")[0];
-    let recQuery = supabase.from("daily_records").select("store_id, total_cars").eq("date", today);
+    let recQuery = supabase.from("daily_records").select("store_id, total_cars").eq("org_id", orgId).eq("date", today);
     if (selectedStore) recQuery = recQuery.eq("store_id", selectedStore);
     const { data: todayRecs } = await recQuery;
 
@@ -98,7 +99,10 @@ export default function DashboardPage() {
   }
 
   async function loadStores() {
-    const { data } = await supabase.from("stores").select("*").eq("is_active", true).order("name");
+    const oid = await getOrgId();
+    if (!oid) return;
+    setOrgId(oid);
+    const { data } = await supabase.from("stores").select("*").eq("org_id", oid).eq("is_active", true).order("name");
     if (data) setStores(data);
   }
 
