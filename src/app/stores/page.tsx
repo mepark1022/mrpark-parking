@@ -500,6 +500,29 @@ export default function StoresPage() {
   };
   const toggleStatus = async (store) => { const supabase = createClient(); await supabase.from("stores").update({ is_active: !store.is_active }).eq("id", store.id); loadStores(); };
 
+  const deleteStore = async (store) => {
+    if (!confirm(`"${store.name}" 매장을 삭제하시겠습니까?\n\n관련된 주차장, 방문지, 운영시간, 근무조, 일일기록 등 모든 데이터가 함께 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.`)) return;
+    const supabase = createClient();
+    const sid = store.id;
+    await supabase.from("hourly_data").delete().in("record_id", (await supabase.from("daily_records").select("id").eq("store_id", sid)).data?.map(r => r.id) || []);
+    await supabase.from("worker_assignments").delete().in("record_id", (await supabase.from("daily_records").select("id").eq("store_id", sid)).data?.map(r => r.id) || []);
+    await supabase.from("daily_records").delete().eq("store_id", sid);
+    await supabase.from("monthly_parking").delete().eq("store_id", sid);
+    await supabase.from("parking_entries").delete().eq("store_id", sid);
+    await supabase.from("store_operating_hours").delete().eq("store_id", sid);
+    await supabase.from("store_shifts").delete().eq("store_id", sid);
+    await supabase.from("store_late_rules").delete().eq("store_id", sid);
+    await supabase.from("store_default_workers").delete().eq("store_id", sid);
+    await supabase.from("store_parking_fees").delete().eq("store_id", sid);
+    await supabase.from("overtime_shifts").delete().eq("store_id", sid);
+    await supabase.from("visit_places").delete().eq("store_id", sid);
+    await supabase.from("parking_lots").delete().eq("store_id", sid);
+    await supabase.from("worker_attendance").delete().eq("store_id", sid);
+    await supabase.from("stores").delete().eq("id", sid);
+    if (editItem?.id === sid) { setEditItem(null); setShowForm(false); }
+    loadStores();
+  };
+
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto">
@@ -979,7 +1002,7 @@ export default function StoresPage() {
                   <td style={{ padding: "12px 16px" }}><div className="flex gap-2">
                     <button onClick={() => { setEditItem(s); setFormData({ name: s.name, region_id: s.region_id || "", has_valet: s.has_valet, valet_fee: s.valet_fee || 0, address: s.address || "", detail_address: s.detail_address || "", manager_name: s.manager_name || "", manager_phone: s.manager_phone || "" }); setShowForm(true); }} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569" }}>수정</button>
                     <button onClick={() => toggleStatus(s)} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, background: s.is_active ? "#fff7ed" : "#dcfce7", color: s.is_active ? "#c2410c" : "#15803d" }}>{s.is_active ? "중지" : "운영"}</button>
-                  </div></td>
+                    <button onClick={() => deleteStore(s)} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #fee2e2", background: "#fff", fontSize: 12, fontWeight: 600, color: "#dc2626" }}>삭제</button>
                 </tr>))}</tbody>
             </table>
             </div>
@@ -1002,6 +1025,7 @@ export default function StoresPage() {
                     <div style={{ display: "flex", gap: 6 }}>
                       <button onClick={() => { setEditItem(s); setFormData({ name: s.name, region_id: s.region_id || "", has_valet: s.has_valet, valet_fee: s.valet_fee || 0, address: s.address || "", detail_address: s.detail_address || "", manager_name: s.manager_name || "", manager_phone: s.manager_phone || "" }); setShowForm(true); }} style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569" }}>수정</button>
                       <button onClick={() => toggleStatus(s)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, background: s.is_active ? "#fff7ed" : "#dcfce7", color: s.is_active ? "#c2410c" : "#15803d" }}>{s.is_active ? "중지" : "운영"}</button>
+                      <button onClick={() => deleteStore(s)} style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #fee2e2", background: "#fff", fontSize: 12, fontWeight: 600, color: "#dc2626" }}>삭제</button>
                     </div>
                   </div>
                 </div>

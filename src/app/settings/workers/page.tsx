@@ -70,6 +70,20 @@ export default function WorkersPage() {
     loadWorkers();
   };
 
+  const deleteWorker = async (worker) => {
+    if (!confirm(`"${worker.name}" 근무자를 삭제하시겠습니까?\n\n관련된 출퇴근/연차/리뷰 데이터도 함께 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.`)) return;
+    const supabase = createClient();
+    await supabase.from("worker_attendance").delete().eq("worker_id", worker.id);
+    await supabase.from("worker_leave_records").delete().eq("worker_id", worker.id);
+    await supabase.from("worker_leaves").delete().eq("worker_id", worker.id);
+    await supabase.from("worker_reviews").delete().eq("worker_id", worker.id);
+    await supabase.from("worker_reports").delete().eq("worker_id", worker.id);
+    await supabase.from("worker_assignments").delete().eq("worker_id", worker.id);
+    await supabase.from("store_default_workers").delete().eq("worker_id", worker.id);
+    await supabase.from("workers").delete().eq("id", worker.id);
+    loadWorkers();
+  };
+
   const activeWorkers = workers.filter(w => w.status === "active");
   const inactiveWorkers = workers.filter(w => w.status !== "active");
 
@@ -244,6 +258,10 @@ export default function WorkersPage() {
                           fontSize: 12, fontWeight: 600,
                           color: w.status === "active" ? "#b91c1c" : "#15803d",
                         }}>{w.status === "active" ? "비활성" : "활성화"}</button>
+                        <button onClick={() => deleteWorker(w)} className="cursor-pointer" style={{
+                          padding: "6px 14px", borderRadius: 8, border: "1px solid #fee2e2",
+                          background: "#fff", fontSize: 12, fontWeight: 600, color: "#dc2626",
+                        }}>삭제</button>
                       </div>
                     </td>
                   </tr>
