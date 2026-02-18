@@ -8,6 +8,7 @@ import { LogoAppIcon } from "@/components/Logo";
 const pageTitles: Record<string, { title: string; desc: string }> = {
   "/dashboard": { title: "대시보드", desc: "전체 매장의 주차 현황을 한눈에 확인합니다" },
   "/entry": { title: "데이터 입력", desc: "일일 주차 데이터를 입력합니다" },
+  "/parking-status": { title: "입차 현황", desc: "매장별 입차 데이터를 조회하고 검색합니다" },
   "/monthly": { title: "월주차 관리", desc: "월주차 계약을 관리합니다" },
   "/analytics": { title: "매출 분석", desc: "매출 데이터를 분석합니다" },
   "/workers": { title: "근무자 관리", desc: "출퇴근, 명부, 근태, 연차를 관리합니다" },

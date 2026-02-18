@@ -11,6 +11,20 @@ const menuGroups = [
     title: "주차 관리",
     items: [
       {
+        path: "/parking-status",
+        label: "입차 현황",
+        desc: "매장별 입차 데이터를 조회합니다",
+        icon: (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="7" rx="2" />
+            <path d="M5 11l2-5h10l2 5" />
+            <circle cx="7.5" cy="15.5" r="1.5" />
+            <circle cx="16.5" cy="15.5" r="1.5" />
+          </svg>
+        ),
+        color: "#16a34a",
+      },
+      {
         path: "/monthly",
         label: "월주차 관리",
         desc: "월주차 계약을 관리합니다",
