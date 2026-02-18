@@ -1003,7 +1003,7 @@ export default function StoresPage() {
                     <button onClick={() => { setEditItem(s); setFormData({ name: s.name, region_id: s.region_id || "", has_valet: s.has_valet, valet_fee: s.valet_fee || 0, address: s.address || "", detail_address: s.detail_address || "", manager_name: s.manager_name || "", manager_phone: s.manager_phone || "" }); setShowForm(true); }} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569" }}>수정</button>
                     <button onClick={() => toggleStatus(s)} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, background: s.is_active ? "#fff7ed" : "#dcfce7", color: s.is_active ? "#c2410c" : "#15803d" }}>{s.is_active ? "중지" : "운영"}</button>
                     <button onClick={() => deleteStore(s)} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #fee2e2", background: "#fff", fontSize: 12, fontWeight: 600, color: "#dc2626" }}>삭제</button>
-                </tr>))}</tbody>
+                </div></td></tr>))}</tbody>
             </table>
             </div>
             {/* 모바일 카드형 리스트 */}
