@@ -227,45 +227,47 @@ function LateRuleTab({ selectedStore, stores, onStoreChange }) {
       {msg && <div className="mb-4" style={{ padding: "10px 16px", borderRadius: 10, background: "#dcfce7", color: "#15803d", fontSize: 13, fontWeight: 600 }}>{msg}</div>}
 
       {/* 시각적 타임라인 */}
-      <div className="mb-6" style={{ background: "#f8fafc", borderRadius: 14, padding: 20, border: "1px solid #e2e8f0" }}>
+      <div className="mb-6" style={{ background: "#f8fafc", borderRadius: 14, padding: "16px 14px", border: "1px solid #e2e8f0" }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 12 }}>출근 판정 타임라인</div>
-        <div className="flex items-center gap-0" style={{ height: 40 }}>
-          <div style={{ flex: rule.grace_minutes, background: "#dcfce7", borderRadius: "8px 0 0 8px", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#15803d" }}>
-            정상 ({rule.grace_minutes}분)
+        <div className="flex items-center gap-0" style={{ height: 36 }}>
+          <div style={{ flex: rule.grace_minutes, background: "#dcfce7", borderRadius: "8px 0 0 8px", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#15803d", whiteSpace: "nowrap", padding: "0 4px" }}>
+            정상({rule.grace_minutes}분)
           </div>
-          <div style={{ flex: rule.late_threshold_minutes - rule.grace_minutes, background: "#fff7ed", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#ea580c" }}>
-            지각 ({rule.late_threshold_minutes}분)
+          <div style={{ flex: rule.late_threshold_minutes - rule.grace_minutes, background: "#fff7ed", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#ea580c", whiteSpace: "nowrap", padding: "0 4px" }}>
+            지각({rule.late_threshold_minutes}분)
           </div>
-          <div style={{ flex: rule.absence_threshold_minutes - rule.late_threshold_minutes, background: "#fee2e2", borderRadius: "0 8px 8px 0", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#dc2626" }}>
-            결근 ({rule.absence_threshold_minutes}분+)
+          <div style={{ flex: rule.absence_threshold_minutes - rule.late_threshold_minutes, background: "#fee2e2", borderRadius: "0 8px 8px 0", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#dc2626", whiteSpace: "nowrap", padding: "0 4px" }}>
+            결근({rule.absence_threshold_minutes}분+)
           </div>
         </div>
         <div className="flex justify-between mt-2">
-          <span style={{ fontSize: 11, color: "#94a3b8" }}>출근시각</span>
-          <span style={{ fontSize: 11, color: "#94a3b8" }}>+{rule.grace_minutes}분</span>
-          <span style={{ fontSize: 11, color: "#94a3b8" }}>+{rule.late_threshold_minutes}분</span>
-          <span style={{ fontSize: 11, color: "#94a3b8" }}>+{rule.absence_threshold_minutes}분</span>
+          <span style={{ fontSize: 10, color: "#94a3b8" }}>출근시각</span>
+          <span style={{ fontSize: 10, color: "#94a3b8" }}>+{rule.grace_minutes}분</span>
+          <span style={{ fontSize: 10, color: "#94a3b8" }}>+{rule.late_threshold_minutes}분</span>
+          <span style={{ fontSize: 10, color: "#94a3b8" }}>+{rule.absence_threshold_minutes}분</span>
         </div>
       </div>
 
       {/* 설정 입력 */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {items.map(item => (
-          <div key={item.key} className="flex items-center gap-4" style={{ padding: "16px 20px", borderRadius: 12, border: "1px solid #e2e8f0" }}>
-            <div style={{ width: 8, height: 40, borderRadius: 4, background: item.color }} />
-            <div className="flex-1">
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{item.label}</div>
-              <div style={{ fontSize: 12, color: "#94a3b8" }}>{item.desc}</div>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                value={rule[item.key]}
-                onChange={e => setRule({ ...rule, [item.key]: Number(e.target.value) || 0 })}
-                min="0"
-                style={{ width: 80, padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 16, fontWeight: 700, textAlign: "center" }}
-              />
-              <span style={{ fontSize: 14, color: "#475569", fontWeight: 600 }}>{item.unit}</span>
+          <div key={item.key} style={{ padding: "14px 16px", borderRadius: 12, border: "1px solid #e2e8f0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 6, height: 36, borderRadius: 3, background: item.color, flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{item.label}</div>
+                <div style={{ fontSize: 11, color: "#94a3b8", lineHeight: 1.4 }}>{item.desc}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                <input
+                  type="number"
+                  value={rule[item.key]}
+                  onChange={e => setRule({ ...rule, [item.key]: Number(e.target.value) || 0 })}
+                  min="0"
+                  style={{ width: 64, padding: "8px 6px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 16, fontWeight: 700, textAlign: "center" }}
+                />
+                <span style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>{item.unit}</span>
+              </div>
             </div>
           </div>
         ))}
@@ -873,6 +875,8 @@ export default function StoresPage() {
                 </div>
               </div>
             )}
+            {/* PC 테이블 */}
+            <div className="hidden md:block">
             <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 4px" }}>
               <thead><tr>{["매장명", "지역", "발렛", "발렛비", "상태", "관리"].map(h => (<th key={h} style={{ padding: "10px 16px", fontSize: 13, fontWeight: 700, color: "#94a3b8", textAlign: "left", borderBottom: "2px solid #e2e8f0" }}>{h}</th>))}</tr></thead>
               <tbody>{stores.map((s, i) => (
@@ -888,6 +892,31 @@ export default function StoresPage() {
                   </div></td>
                 </tr>))}</tbody>
             </table>
+            </div>
+            {/* 모바일 카드형 리스트 */}
+            <div className="md:hidden space-y-2">
+              {stores.map(s => (
+                <div key={s.id} style={{ background: "#f8fafc", borderRadius: 12, padding: "12px 14px", border: "1px solid #e2e8f0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</span>
+                      <span style={{ fontSize: 11, color: "#94a3b8", flexShrink: 0 }}>{s.regions?.name || ""}</span>
+                    </div>
+                    <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: s.is_active ? "#dcfce7" : "#fff7ed", color: s.is_active ? "#15803d" : "#c2410c", flexShrink: 0 }}>{s.is_active ? "운영중" : "중지"}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      {s.has_valet && <span style={{ fontSize: 12, fontWeight: 600, color: "#1428A0" }}>발렛 ₩{(s.valet_fee || 0).toLocaleString()}</span>}
+                      {!s.has_valet && <span style={{ fontSize: 12, color: "#94a3b8" }}>발렛 없음</span>}
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => { setEditItem(s); setFormData({ name: s.name, region_id: s.region_id || "", has_valet: s.has_valet, valet_fee: s.valet_fee || 0, address: s.address || "", detail_address: s.detail_address || "", manager_name: s.manager_name || "", manager_phone: s.manager_phone || "" }); setShowForm(true); }} style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569" }}>수정</button>
+                      <button onClick={() => toggleStatus(s)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, background: s.is_active ? "#fff7ed" : "#dcfce7", color: s.is_active ? "#c2410c" : "#15803d" }}>{s.is_active ? "중지" : "운영"}</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
