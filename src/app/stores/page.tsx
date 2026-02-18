@@ -306,6 +306,9 @@ export default function StoresPage() {
   const [editOT, setEditOT] = useState(null);
   const [otForm, setOTForm] = useState({ date: "", start_time: "", end_time: "", worker_id: "", note: "" });
   const [workers, setWorkers] = useState([]);
+  // 인라인 운영시간 (매장 수정 폼 내)
+  const [inlineHours, setInlineHours] = useState(Array.from({ length: 7 }, (_, i) => ({ day_of_week: i, open_time: "09:00", close_time: "22:00", is_closed: false, id: null })));
+  const [inlineHoursMsg, setInlineHoursMsg] = useState("");
 
   useEffect(() => { loadStores(); loadRegions(); }, []);
   useEffect(() => {
@@ -315,6 +318,7 @@ export default function StoresPage() {
   // 방문지: editItem 변경 시 로드
   useEffect(() => { if (editItem) loadVisitPlaces(editItem.id); else setVisitPlaces([]); }, [editItem]);
   useEffect(() => { if (editItem) loadParkingLots(editItem.id); else setParkingLots([]); }, [editItem]);
+  useEffect(() => { if (editItem) loadInlineHours(editItem.id); }, [editItem]);
   const loadVisitPlaces = async (storeId) => {
     const supabase = createClient();
     const { data } = await supabase.from("visit_places").select("*").eq("store_id", storeId).order("floor,name");
@@ -377,6 +381,24 @@ export default function StoresPage() {
     loadOvertimeShifts();
   };
   const deleteOT = async (id) => { const supabase = createClient(); await supabase.from("overtime_shifts").delete().eq("id", id); loadOvertimeShifts(); };
+  // 인라인 운영시간 로드/저장
+  const loadInlineHours = async (storeId) => {
+    const supabase = createClient();
+    const { data } = await supabase.from("store_operating_hours").select("*").eq("store_id", storeId).order("day_of_week");
+    if (data && data.length > 0) setInlineHours(data);
+    else setInlineHours(Array.from({ length: 7 }, (_, i) => ({ id: null, store_id: storeId, day_of_week: i, open_time: "09:00", close_time: "22:00", is_closed: false })));
+  };
+  const saveInlineHours = async () => {
+    if (!editItem) return;
+    const supabase = createClient();
+    for (const h of inlineHours) {
+      const p = { store_id: editItem.id, day_of_week: h.day_of_week, open_time: h.open_time, close_time: h.close_time, is_closed: h.is_closed };
+      if (h.id) await supabase.from("store_operating_hours").update(p).eq("id", h.id);
+      else await supabase.from("store_operating_hours").upsert(p, { onConflict: "store_id,day_of_week" });
+    }
+    setInlineHoursMsg("운영시간 저장 완료!"); setTimeout(() => setInlineHoursMsg(""), 2000);
+    loadInlineHours(editItem.id);
+  };
 
   const loadStores = async () => {
     const supabase = createClient();
@@ -782,6 +804,41 @@ export default function StoresPage() {
                     })}
                   </div>
                 )}
+              </div>
+            )}
+            {/* ─── 운영시간 (매장 수정 시에만) ─── */}
+            {editItem && showForm && (
+              <div style={{ borderTop: "2px dashed #e2e8f0", paddingTop: 16, marginBottom: 20 }}>
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div style={{ width: 4, height: 24, borderRadius: 2, background: "#0D9488" }} />
+                    <span style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>운영시간</span>
+                    <span style={{ fontSize: 12, color: "#94a3b8" }}>요일별 설정</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => {
+                      const first = inlineHours.find(h => !h.is_closed);
+                      if (first) setInlineHours(inlineHours.map(h => ({ ...h, open_time: first.open_time, close_time: first.close_time, is_closed: false })));
+                    }} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569" }}>첫째 행 전체 적용</button>
+                    <button onClick={saveInlineHours} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "#0D9488", color: "#fff", fontSize: 12, fontWeight: 700 }}>저장</button>
+                  </div>
+                </div>
+                {inlineHoursMsg && <div style={{ padding: "8px 12px", borderRadius: 8, background: "#dcfce7", color: "#15803d", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{inlineHoursMsg}</div>}
+                <div className="space-y-1.5">
+                  {inlineHours.map((h, i) => {
+                    const dayNames2 = ["일", "월", "화", "수", "목", "금", "토"];
+                    const isWeekend = h.day_of_week === 0 || h.day_of_week === 6;
+                    return (
+                      <div key={i} className="flex items-center gap-3" style={{ background: i % 2 === 0 ? "#f8fafc" : "#fff", padding: "8px 12px", borderRadius: 8 }}>
+                        <span style={{ width: 40, fontSize: 14, fontWeight: 700, color: h.day_of_week === 0 ? "#dc2626" : h.day_of_week === 6 ? "#1428A0" : "#1e293b" }}>{dayNames2[h.day_of_week]}요일</span>
+                        <input type="time" value={h.open_time} onChange={e => { const u = [...inlineHours]; u[i] = { ...u[i], open_time: e.target.value }; setInlineHours(u); }} disabled={h.is_closed} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, color: h.is_closed ? "#94a3b8" : "#1e293b", background: h.is_closed ? "#f1f5f9" : "#fff" }} />
+                        <span style={{ fontSize: 12, color: "#94a3b8" }}>~</span>
+                        <input type="time" value={h.close_time} onChange={e => { const u = [...inlineHours]; u[i] = { ...u[i], close_time: e.target.value }; setInlineHours(u); }} disabled={h.is_closed} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, color: h.is_closed ? "#94a3b8" : "#1e293b", background: h.is_closed ? "#f1f5f9" : "#fff" }} />
+                        <button onClick={() => { const u = [...inlineHours]; u[i] = { ...u[i], is_closed: !u[i].is_closed }; setInlineHours(u); }} className="cursor-pointer" style={{ padding: "4px 12px", borderRadius: 6, border: "none", fontSize: 11, fontWeight: 700, background: h.is_closed ? "#fee2e2" : "#f1f5f9", color: h.is_closed ? "#dc2626" : "#94a3b8" }}>{h.is_closed ? "휴무" : "영업"}</button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
             <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 4px" }}>

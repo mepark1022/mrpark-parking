@@ -26,6 +26,7 @@ export default function EntryPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [existingRecordId, setExistingRecordId] = useState<string | null>(null);
+  const [storeHours, setStoreHours] = useState<{ open: number; close: number }>({ open: 7, close: 22 });
 
   const dayType = useMemo(() => {
     const d = new Date(selectedDate);
@@ -39,7 +40,20 @@ export default function EntryPage() {
   }, [inputMode, hourlyData, totalCarsOnly]);
 
   useEffect(() => { loadStoresAndWorkers(); }, []);
-  useEffect(() => { if (selectedStore && selectedDate) { loadDefaultWorkers(); loadExistingRecord(); } }, [selectedStore, selectedDate]);
+  useEffect(() => { if (selectedStore && selectedDate) { loadDefaultWorkers(); loadExistingRecord(); loadStoreHours(); } }, [selectedStore, selectedDate]);
+
+  async function loadStoreHours() {
+    const d = new Date(selectedDate);
+    const dow = d.getDay(); // 0=일, 1=월...6=토
+    const { data } = await supabase.from("store_operating_hours").select("open_time, close_time, is_closed").eq("store_id", selectedStore).eq("day_of_week", dow).single();
+    if (data && !data.is_closed) {
+      const open = parseInt(data.open_time?.split(":")[0] || "7");
+      const close = parseInt(data.close_time?.split(":")[0] || "22");
+      setStoreHours({ open, close });
+    } else {
+      setStoreHours({ open: 7, close: 22 }); // 기본값
+    }
+  }
 
   async function loadStoresAndWorkers() {
     const [storesRes, workersRes] = await Promise.all([
@@ -224,7 +238,7 @@ export default function EntryPage() {
               </div>
             ) : (
               <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {Array.from({ length: 16 }, (_, i) => i + 7).map((hour) => (
+                {Array.from({ length: storeHours.close - storeHours.open + 1 }, (_, i) => i + storeHours.open).map((hour) => (
                   <div key={hour} className="flex items-center gap-3">
                     <span className="w-12 text-sm font-bold text-gray-700 text-right">{String(hour).padStart(2, "0")}시</span>
                     <input
