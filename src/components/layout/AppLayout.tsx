@@ -1,49 +1,48 @@
 // @ts-nocheck
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import MobileTabBar from "./MobileTabBar";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createClient();
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function check() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/login");
-        return;
-      }
-      setLoading(false);
-    }
-    check();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-bg">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-sm text-gray-500">로딩 중...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen bg-bg">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f1f5f9" }}>
+      {/* PC 사이드바 (768px 이상에서만 표시 - Sidebar.tsx 내부 className으로 처리) */}
+<div className="hidden md:block">
+        <Sidebar />
+      </div>
+      {/* 메인 영역 */}
+      <div
+        className="flex-1 md:ml-[220px]"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "100vh",
+        }}
+      >
+        {/* 헤더 (PC: 흰색 헤더 / 모바일: 네이비 그라디언트 헤더) */}
         <Header />
-        <main className="flex-1 p-8">
-          {children}
+
+        {/* 컨텐츠 영역 */}
+        {/* pb-20: 모바일에서 하단 탭바 높이만큼 여백 추가 */}
+        {/* md:pb-0: PC에서는 여백 제거 */}
+        <main
+          className="pb-20 md:pb-0"
+          style={{
+            flex: 1,
+            padding: "20px",
+            overflow: "auto",
+          }}
+        >
+          <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+            {children}
+          </div>
         </main>
       </div>
+
+      {/* 모바일 하단 탭바 (768px 미만에서만 표시 - MobileTabBar 내부 className으로 처리) */}
+      <MobileTabBar />
     </div>
   );
 }
