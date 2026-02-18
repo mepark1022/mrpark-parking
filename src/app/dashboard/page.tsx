@@ -344,6 +344,7 @@ export default function DashboardPage() {
                                   <span style={{ fontSize: 11, fontWeight: 800, color: lotCurrent > lotTotal ? "#dc2626" : "#0f172a" }}>{lotCurrent}대</span>
                                   <span style={{ fontSize: 10, color: "#94a3b8" }}>잔여</span>
                                   <span style={{ fontSize: 11, fontWeight: 800, color: lotRemain < 0 ? "#dc2626" : lotRemain <= 3 ? "#EA580C" : "#15803d" }}>{lotRemain}면</span>
+                                  <span style={{ fontSize: 10, fontWeight: 700, color: lotTotal > 0 ? (lotCurrent / lotTotal > 0.85 ? "#dc2626" : lotCurrent / lotTotal > 0.6 ? "#EA580C" : "#1428A0") : "#94a3b8", background: lotTotal > 0 ? (lotCurrent / lotTotal > 0.85 ? "#fee2e2" : lotCurrent / lotTotal > 0.6 ? "#FFF7ED" : "#1428A010") : "#f1f5f9", padding: "1px 5px", borderRadius: 4 }}>{lotTotal > 0 ? Math.round((lotCurrent / lotTotal) * 100) : 0}%</span>
                                 </div>
                               </div>
                             );
