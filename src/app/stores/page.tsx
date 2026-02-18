@@ -385,6 +385,18 @@ export default function StoresPage() {
     const { data } = await supabase.from("regions").select("*").order("name");
     if (data) setRegions(data);
   };
+  // 도로명 주소에서 지역 자동 매칭
+  const autoMatchRegion = (sido: string) => {
+    if (!sido || regions.length === 0) return;
+    const sidoMap: Record<string, string> = { "서울특별시": "서울", "서울": "서울", "경기도": "경기", "경기": "경기", "인천광역시": "인천", "인천": "인천", "부산광역시": "부산", "부산": "부산", "대구광역시": "대구", "대구": "대구", "광주광역시": "광주", "광주": "광주", "대전광역시": "대전", "대전": "대전", "울산광역시": "울산", "울산": "울산", "세종특별자치시": "세종", "세종": "세종", "강원특별자치도": "강원", "강원도": "강원", "강원": "강원", "충청북도": "충북", "충북": "충북", "충청남도": "충남", "충남": "충남", "전라북도": "전북", "전북특별자치도": "전북", "전북": "전북", "전라남도": "전남", "전남": "전남", "경상북도": "경북", "경북": "경북", "경상남도": "경남", "경남": "경남", "제주특별자치도": "제주", "제주": "제주" };
+    const shortName = sidoMap[sido] || sido;
+    const matched = regions.find(r => r.name === shortName || r.name === sido || sido.includes(r.name));
+    if (matched) setFormData(prev => ({ ...prev, region_id: matched.id }));
+  };
+  const handlePostcodeComplete = (data: any) => {
+    setFormData(prev => ({ ...prev, address: data.roadAddress || data.jibunAddress }));
+    autoMatchRegion(data.sido);
+  };
   const loadHours = async () => {
     const supabase = createClient();
     const { data } = await supabase.from("store_operating_hours").select("*").eq("store_id", selectedStore).order("day_of_week");
@@ -461,7 +473,7 @@ export default function StoresPage() {
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>{editItem ? "매장 수정" : "매장 추가"}</div>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>매장명 *</label><input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="매장명" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
-                  <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>지역</label><select value={formData.region_id} onChange={e => setFormData({ ...formData, region_id: e.target.value })} className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }}><option value="">선택</option>{regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
+                  <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>지역 <span style={{ fontSize: 11, color: "#94a3b8" }}>(주소 검색 시 자동)</span></label><select value={formData.region_id} onChange={e => setFormData({ ...formData, region_id: e.target.value })} className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, background: formData.region_id ? "#dcfce7" : "#fff" }}><option value="">선택</option>{regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
                 </div>
                 {/* 도로명 주소 검색 */}
                 <div className="mb-4">
@@ -471,14 +483,14 @@ export default function StoresPage() {
                       onClick={() => {
                         if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
                           new (window as any).daum.Postcode({
-                            oncomplete: (data: any) => { setFormData(prev => ({ ...prev, address: data.roadAddress || data.jibunAddress })); }
+                            oncomplete: handlePostcodeComplete
                           }).open();
                         } else {
                           const script = document.createElement("script");
                           script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
                           script.onload = () => {
                             new (window as any).daum.Postcode({
-                              oncomplete: (data: any) => { setFormData(prev => ({ ...prev, address: data.roadAddress || data.jibunAddress })); }
+                              oncomplete: handlePostcodeComplete
                             }).open();
                           };
                           document.head.appendChild(script);
@@ -488,14 +500,14 @@ export default function StoresPage() {
                     <button type="button" className="cursor-pointer" onClick={() => {
                       if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
                         new (window as any).daum.Postcode({
-                          oncomplete: (data: any) => { setFormData(prev => ({ ...prev, address: data.roadAddress || data.jibunAddress })); }
+                          oncomplete: handlePostcodeComplete
                         }).open();
                       } else {
                         const script = document.createElement("script");
                         script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
                         script.onload = () => {
                           new (window as any).daum.Postcode({
-                            oncomplete: (data: any) => { setFormData(prev => ({ ...prev, address: data.roadAddress || data.jibunAddress })); }
+                            oncomplete: handlePostcodeComplete
                           }).open();
                         };
                         document.head.appendChild(script);
