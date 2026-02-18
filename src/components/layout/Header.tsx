@@ -3,6 +3,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { LogoIcon } from "@/components/Logo";
 
 const pageTitles: Record<string, { title: string; desc: string }> = {
   "/dashboard": { title: "대시보드", desc: "전체 매장의 주차 현황을 한눈에 확인합니다" },
@@ -124,16 +125,19 @@ export default function Header() {
           alignItems: "center",
         }}
       >
-        {/* 좌측: 페이지 제목 */}
-        <div>
-          <div style={{ color: "#fff", fontSize: 17, fontWeight: 700, letterSpacing: -0.3 }}>
-            {page.title}
-          </div>
+        {/* 좌측: 로고 + 페이지 제목 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <LogoIcon size={28} />
+          <div>
+            <div style={{ color: "#fff", fontSize: 17, fontWeight: 700, letterSpacing: -0.3 }}>
+              {page.title}
+            </div>
           {page.desc && (
             <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, marginTop: 1 }}>
               {page.desc}
             </div>
           )}
+          </div>
         </div>
 
         {/* 우측: 알림 아이콘 */}

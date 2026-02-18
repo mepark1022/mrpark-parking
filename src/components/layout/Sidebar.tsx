@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogoFull } from "@/components/Logo";
 
 const menuItems = [
   { href: "/dashboard", label: "대시보드", icon: (
@@ -53,21 +54,7 @@ className="w-60 min-h-screen flex flex-col relative overflow-hidden fixed top-0 
 
       {/* Logo */}
       <div className="p-6 pb-5">
-        <div className="flex items-center gap-3">
-          <div
-            className="flex items-center justify-center"
-            style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: "linear-gradient(135deg, #F5B731 0%, #f59e0b 100%)",
-              fontSize: 16, fontWeight: 900, color: "#0a1352",
-              boxShadow: "0 2px 8px rgba(245,183,49,0.3)",
-            }}
-          >P</div>
-          <div>
-            <div className="text-lg font-extrabold text-white tracking-tight">VALETMAN</div>
-            <div style={{ fontSize: 10, fontWeight: 500, color: "rgba(255,255,255,0.45)", letterSpacing: "0.05em" }}>주차운영 시스템</div>
-          </div>
-        </div>
+        <LogoFull size={36} theme="light" />
       </div>
 
       {/* Menu Label */}

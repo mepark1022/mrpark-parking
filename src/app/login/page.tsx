@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { login, signup } from "./actions";
+import { LogoLogin } from "@/components/Logo";
 
 export default function LoginPage() {
   const [isSignup, setIsSignup] = useState(false);
@@ -32,8 +33,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-page-bg flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary">Mr. Park</h1>
-          <p className="text-mr-gray mt-2">주차 관리 시스템</p>
+          <LogoLogin />
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-8">

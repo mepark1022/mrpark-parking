@@ -4,6 +4,7 @@
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AppLayout from "@/components/layout/AppLayout";
+import { LogoIcon } from "@/components/Logo";
 
 const menuGroups = [
   {
@@ -163,9 +164,10 @@ export default function MorePage() {
       >로그아웃</div>
 
       {/* 하단 정보 */}
-      <div style={{ textAlign: "center", padding: "12px 0 40px" }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: "#1428A0", letterSpacing: 1 }}>VALETMAN</div>
-        <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>(주)미스터팍 · v1.0.0</div>
+      <div style={{ textAlign: "center", padding: "12px 0 40px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+        <LogoIcon size={32} />
+        <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a" }}><span style={{ color: "#F5B731" }}>ME</span>.PARK</div>
+        <div style={{ fontSize: 11, color: "#94a3b8" }}>(주)미스터팍 · v2.0.0</div>
       </div>
     </AppLayout>
   );
