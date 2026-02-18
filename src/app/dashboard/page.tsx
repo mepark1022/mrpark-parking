@@ -359,7 +359,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="bg-white rounded-xl p-7 shadow-sm">
-                  <h3 className="font-semibold text-dark mb-4">미입력 매장</h3>
+                  <h3 className="font-semibold text-dark mb-4">마감미정산</h3>
                   {records.length === 0 ? (
                     <div className="h-48 flex items-center justify-center text-mr-gray text-sm">선택된 기간에 입력된 데이터가 없습니다</div>
                   ) : (
@@ -368,7 +368,7 @@ export default function DashboardPage() {
                         .filter((s) => !records.some((r) => r.store_id === s.id))
                         .map((s) => (
                           <div key={s.id} className="flex items-center gap-2 p-2 bg-red-50 rounded-lg">
-                            <span className="text-xs text-error">미입력</span>
+                            <span className="text-xs text-error">미정산</span>
                             <span className="text-sm text-dark">{s.name}</span>
                           </div>
                         ))}

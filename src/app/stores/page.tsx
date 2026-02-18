@@ -9,7 +9,7 @@ const storeTabs = [
   { id: "list", label: "매장 목록" },
   { id: "hours", label: "운영시간" },
   { id: "shifts", label: "근무조" },
-  { id: "late", label: "지각판별" },
+  { id: "late", label: "정상출근체크" },
   { id: "pricing", label: "요금설정" },
 ];
 
@@ -214,7 +214,7 @@ function LateRuleTab({ selectedStore, stores, onStoreChange }) {
   return (
     <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
       <div className="flex justify-between items-center mb-5">
-        <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>지각판별 기준 설정</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>정상출근체크 기준 설정</div>
         <button onClick={saveRule} className="cursor-pointer" style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700 }}>저장</button>
       </div>
 
@@ -479,7 +479,7 @@ export default function StoresPage() {
           </div>
         )}
 
-        {/* 지각판별 */}
+        {/* 정상출근체크 */}
         {tab === "late" && <LateRuleTab selectedStore={selectedStore} stores={stores} onStoreChange={setSelectedStore} />}
 
         {tab === "pricing" && <PricingTab selectedStore={selectedStore} stores={stores} onStoreChange={setSelectedStore} />}
