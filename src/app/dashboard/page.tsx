@@ -330,12 +330,21 @@ export default function DashboardPage() {
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                           {store.lots.map(lot => {
                             const lotTotal = (lot.self_spaces || 0) + (lot.mechanical_normal || 0) + (lot.mechanical_suv || 0);
-                            const tag = lot.lot_tag || (lot.lot_type === "internal" ? "본관" : "외부");
+                            const lotCurrent = lot.current_cars || 0;
+                            const lotRemain = lotTotal - lotCurrent;
                             return (
-                              <div key={lot.id} style={{ display: "flex", alignItems: "center", gap: 4, background: "#f8fafc", borderRadius: 8, padding: "6px 10px", border: "1px solid #e2e8f0" }}>
-                                <span style={{ fontSize: 12 }}>{lot.lot_type === "internal" ? "🏢" : "🅿️"}</span>
-                                <span style={{ fontSize: 11, fontWeight: 700, color: "#475569" }}>{lot.name}</span>
-                                <span style={{ fontSize: 11, fontWeight: 800, color: "#1428A0" }}>{lotTotal}면</span>
+                              <div key={lot.id} style={{ background: "#f8fafc", borderRadius: 8, padding: "6px 10px", border: "1px solid #e2e8f0" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
+                                  <span style={{ fontSize: 12 }}>{lot.lot_type === "internal" ? "🏢" : "🅿️"}</span>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: "#475569" }}>{lot.name}</span>
+                                  <span style={{ fontSize: 11, fontWeight: 800, color: "#1428A0" }}>{lotTotal}면</span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                  <span style={{ fontSize: 10, color: "#94a3b8" }}>현재</span>
+                                  <span style={{ fontSize: 11, fontWeight: 800, color: lotCurrent > lotTotal ? "#dc2626" : "#0f172a" }}>{lotCurrent}대</span>
+                                  <span style={{ fontSize: 10, color: "#94a3b8" }}>잔여</span>
+                                  <span style={{ fontSize: 11, fontWeight: 800, color: lotRemain < 0 ? "#dc2626" : lotRemain <= 3 ? "#EA580C" : "#15803d" }}>{lotRemain}면</span>
+                                </div>
                               </div>
                             );
                           })}
