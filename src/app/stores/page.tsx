@@ -480,8 +480,10 @@ export default function StoresPage() {
     const supabase = createClient();
     const payload = { name: formData.name, region_id: formData.region_id || null, has_valet: formData.has_valet, valet_fee: formData.has_valet ? Number(formData.valet_fee) || 0 : 0, address: formData.address || null, detail_address: formData.detail_address || null, manager_name: formData.manager_name || null, manager_phone: formData.manager_phone || null };
     if (editItem) {
-      await supabase.from("stores").update(payload).eq("id", editItem.id);
-      setMessage(""); loadStores();
+      const { error } = await supabase.from("stores").update(payload).eq("id", editItem.id);
+      if (error) { setMessage("저장 실패: " + error.message); return; }
+      setMessage("매장 정보가 저장되었습니다!"); setTimeout(() => setMessage(""), 2000);
+      loadStores();
     } else {
       const { data } = await supabase.from("stores").insert({ ...payload, is_active: true }).select().single();
       if (data) {
@@ -576,7 +578,7 @@ export default function StoresPage() {
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>발렛비</label><input type="number" value={formData.valet_fee} onChange={e => setFormData({ ...formData, valet_fee: e.target.value })} className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
                 </div>
-                {message && <p style={{ color: message.includes("추가되었습니다") ? "#15803d" : "#dc2626", fontSize: 13, marginBottom: 8, fontWeight: message.includes("추가되었습니다") ? 600 : 400, background: message.includes("추가되었습니다") ? "#dcfce7" : "transparent", padding: message.includes("추가되었습니다") ? "8px 12px" : 0, borderRadius: 8 }}>{message}</p>}
+                {message && <p style={{ color: message.includes("실패") ? "#dc2626" : "#15803d", fontSize: 13, marginBottom: 8, fontWeight: 600, background: message.includes("실패") ? "#fee2e2" : "#dcfce7", padding: "8px 12px", borderRadius: 8 }}>{message}</p>}
                 <div className="flex gap-2">
                   <button onClick={handleSave} className="cursor-pointer" style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 14, fontWeight: 700 }}>{editItem ? "수정" : "추가"}</button>
                   <button onClick={() => { setShowForm(false); setMessage(""); }} className="cursor-pointer" style={{ padding: "10px 24px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: 14, fontWeight: 600 }}>취소</button>
