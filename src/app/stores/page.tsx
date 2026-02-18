@@ -549,12 +549,12 @@ export default function StoresPage() {
                 </div>
                 {showVPForm && (
                   <div style={{ background: "#f8fafc", borderRadius: 14, padding: 20, marginBottom: 12, border: "1px solid #e2e8f0" }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 12 }}>{editVP ? "방문지 수정" : "새 방문지 추가"}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", marginBottom: 14 }}>{editVP ? "방문지 수정" : "새 방문지 추가"}</div>
                     <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div><label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>방문지명 *</label><input value={vpForm.name} onChange={e => setVPForm({ ...vpForm, name: e.target.value })} placeholder="예: 1층 내과" className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }} /></div>
-                      <div><label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>층</label><input value={vpForm.floor} onChange={e => setVPForm({ ...vpForm, floor: e.target.value })} placeholder="예: 1층, B1" className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }} /></div>
+                      <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>방문지명 *</label><input value={vpForm.name} onChange={e => setVPForm({ ...vpForm, name: e.target.value })} placeholder="예: 1층 내과" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
+                      <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>층</label><input value={vpForm.floor} onChange={e => setVPForm({ ...vpForm, floor: e.target.value })} placeholder="예: 1층, B1" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1428A0", marginBottom: 8 }}>💰 요금 체계</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#1428A0", marginBottom: 10 }}>💰 요금 체계</div>
                     <div className="grid grid-cols-4 gap-3 mb-3">
                       {[
                         { key: "free_minutes", label: "무료시간", unit: "분" },
@@ -566,10 +566,10 @@ export default function StoresPage() {
                         { key: "monthly_fee", label: "월주차비", unit: "원/월" },
                       ].map(f => (
                         <div key={f.key}>
-                          <label className="block mb-1" style={{ fontSize: 11, fontWeight: 600, color: "#475569" }}>{f.label}</label>
+                          <label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>{f.label}</label>
                           <div style={{ position: "relative" }}>
-                            <input type="number" value={vpForm[f.key]} onChange={e => setVPForm({ ...vpForm, [f.key]: e.target.value })} className="w-full" style={{ padding: "8px 10px", paddingRight: 40, borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
-                            <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 10, color: "#94a3b8" }}>{f.unit}</span>
+                            <input type="number" value={vpForm[f.key]} onChange={e => setVPForm({ ...vpForm, [f.key]: e.target.value })} className="w-full" style={{ padding: "10px 12px", paddingRight: 44, borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} />
+                            <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#94a3b8" }}>{f.unit}</span>
                           </div>
                         </div>
                       ))}
@@ -602,7 +602,7 @@ export default function StoresPage() {
                             `추가 ₩${(vp.extra_fee || 0).toLocaleString()}/10분`, `일최대 ₩${(vp.daily_max || 0).toLocaleString()}`,
                             `발렛 ₩${(vp.valet_fee || 0).toLocaleString()}`, `월주차 ₩${(vp.monthly_fee || 0).toLocaleString()}`,
                           ].map((tag, i) => (
-                            <span key={i} style={{ padding: "3px 8px", borderRadius: 6, background: "#f8fafc", fontSize: 11, color: "#475569", fontWeight: 500 }}>{tag}</span>
+                            <span key={i} style={{ padding: "4px 10px", borderRadius: 6, background: "#f8fafc", fontSize: 12, color: "#475569", fontWeight: 500 }}>{tag}</span>
                           ))}
                         </div>
                       </div>
@@ -624,15 +624,15 @@ export default function StoresPage() {
                 </div>
                 {showPLForm && (
                   <div style={{ background: "#FFFBEB", borderRadius: 14, padding: 20, marginBottom: 12, border: "1px solid #FED7AA" }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 12 }}>{editPL ? "주차장 수정" : "새 주차장 추가"}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", marginBottom: 14 }}>{editPL ? "주차장 수정" : "새 주차장 추가"}</div>
                     {/* 주차장 이름 + 총 면수 */}
                     <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div><label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>주차장 이름 *</label><input value={plForm.name} onChange={e => setPLForm({ ...plForm, name: e.target.value })} placeholder="예: 본관 주차장" className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
-                      <div><label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>총 주차면 수</label><input type="number" value={plForm.total_spaces} onChange={e => setPLForm({ ...plForm, total_spaces: e.target.value })} placeholder="0" className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
+                      <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>주차장 이름 *</label><input value={plForm.name} onChange={e => setPLForm({ ...plForm, name: e.target.value })} placeholder="예: 본관 주차장" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, background: "#fff" }} /></div>
+                      <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>총 주차면 수</label><input type="number" value={plForm.total_spaces} onChange={e => setPLForm({ ...plForm, total_spaces: e.target.value })} placeholder="0" className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
                     </div>
                     {/* 주차장 구분 */}
                     <div className="mb-3">
-                      <label className="block mb-1.5" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>주차장 구분</label>
+                      <label className="block mb-1.5" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>주차장 구분</label>
                       <div className="flex gap-3">
                         {[
                           { val: "internal", icon: "🏢", label: "본관 주차장", desc: "건물 내부" },
@@ -643,7 +643,7 @@ export default function StoresPage() {
                             background: plForm.lot_type === t.val ? "#1428A008" : "#fff", textAlign: "center"
                           }}>
                             <div style={{ fontSize: 22, marginBottom: 4 }}>{t.icon}</div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: plForm.lot_type === t.val ? "#1428A0" : "#0f172a" }}>{t.label}</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: plForm.lot_type === t.val ? "#1428A0" : "#0f172a" }}>{t.label}</div>
                             <div style={{ fontSize: 11, color: "#94a3b8" }}>{t.desc}</div>
                           </button>
                         ))}
@@ -651,7 +651,7 @@ export default function StoresPage() {
                     </div>
                     {/* 주차 방식 */}
                     <div className="mb-3">
-                      <label className="block mb-1.5" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>주차 방식 (복수 선택)</label>
+                      <label className="block mb-1.5" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>주차 방식 (복수 선택)</label>
                       <div className="flex gap-3">
                         {[
                           { val: "self", label: "자주식", desc: "운전자 직접 주차" },
@@ -661,7 +661,7 @@ export default function StoresPage() {
                             padding: "10px 16px", borderRadius: 10, border: (plForm.parking_type || []).includes(t.val) ? "2px solid #16a34a" : "1px solid #e2e8f0",
                             background: (plForm.parking_type || []).includes(t.val) ? "#dcfce7" : "#fff", textAlign: "center"
                           }}>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: (plForm.parking_type || []).includes(t.val) ? "#15803d" : "#0f172a" }}>{(plForm.parking_type || []).includes(t.val) ? "✅ " : ""}{t.label}</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: (plForm.parking_type || []).includes(t.val) ? "#15803d" : "#0f172a" }}>{(plForm.parking_type || []).includes(t.val) ? "✅ " : ""}{t.label}</div>
                             <div style={{ fontSize: 11, color: "#94a3b8" }}>{t.desc}</div>
                           </button>
                         ))}
@@ -669,7 +669,7 @@ export default function StoresPage() {
                     </div>
                     {/* 도로명 주소 */}
                     <div className="mb-3">
-                      <label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>도로명 주소</label>
+                      <label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>도로명 주소</label>
                       <div className="flex gap-2">
                         <input value={plForm.road_address} readOnly placeholder="주소 검색을 클릭하세요" className="flex-1" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff", cursor: "pointer" }}
                           onClick={() => {
@@ -688,7 +688,7 @@ export default function StoresPage() {
                     </div>
                     {/* 운영 요일 */}
                     <div className="mb-3">
-                      <label className="block mb-1.5" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>운영 요일</label>
+                      <label className="block mb-1.5" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>운영 요일</label>
                       <div className="flex gap-2">
                         {[
                           { key: "mon", label: "월" }, { key: "tue", label: "화" }, { key: "wed", label: "수" },
@@ -704,8 +704,8 @@ export default function StoresPage() {
                     </div>
                     {/* 운영 시간 */}
                     <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div><label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>오픈 시간</label><input type="time" value={plForm.open_time} onChange={e => setPLForm({ ...plForm, open_time: e.target.value })} className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
-                      <div><label className="block mb-1" style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>마감 시간</label><input type="time" value={plForm.close_time} onChange={e => setPLForm({ ...plForm, close_time: e.target.value })} className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
+                      <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>오픈 시간</label><input type="time" value={plForm.open_time} onChange={e => setPLForm({ ...plForm, open_time: e.target.value })} className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
+                      <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>마감 시간</label><input type="time" value={plForm.close_time} onChange={e => setPLForm({ ...plForm, close_time: e.target.value })} className="w-full" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, background: "#fff" }} /></div>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={handlePLSave} className="cursor-pointer" style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#F5B731", color: "#fff", fontSize: 13, fontWeight: 700 }}>{editPL ? "수정" : "추가"}</button>
@@ -727,7 +727,7 @@ export default function StoresPage() {
                             <div className="flex items-center gap-2">
                               <span style={{ fontSize: 16 }}>{pl.lot_type === "internal" ? "🏢" : "🅿️"}</span>
                               <span style={{ padding: "2px 8px", borderRadius: 6, background: pl.lot_type === "internal" ? "#1428A010" : "#F5B73120", fontSize: 11, fontWeight: 700, color: pl.lot_type === "internal" ? "#1428A0" : "#b45309" }}>{pl.lot_type === "internal" ? "본관" : "외부"}</span>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{pl.name}</span>
+                              <span style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{pl.name}</span>
                             </div>
                             <div className="flex gap-1.5">
                               <button onClick={() => { setEditPL(pl); setPLForm({ name: pl.name, lot_type: pl.lot_type, parking_type: pl.parking_type || ["self"], road_address: pl.road_address || "", total_spaces: pl.total_spaces || 0, operating_days: pl.operating_days || { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: pl.open_time?.slice(0, 5) || "09:00", close_time: pl.close_time?.slice(0, 5) || "22:00" }); setShowPLForm(true); }} className="cursor-pointer" style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", fontSize: 11, fontWeight: 600, color: "#475569" }}>수정</button>
