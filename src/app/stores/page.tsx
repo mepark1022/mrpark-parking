@@ -312,8 +312,9 @@ export default function StoresPage() {
   // 인라인 운영시간 (매장 수정 폼 내)
   const [inlineHours, setInlineHours] = useState(Array.from({ length: 7 }, (_, i) => ({ day_of_week: i, open_time: "09:00", close_time: "22:00", is_closed: false, id: null })));
   const [inlineHoursMsg, setInlineHoursMsg] = useState("");
+  const [oid, setOid] = useState(null);
 
-  useEffect(() => { loadStores(); loadRegions(); }, []);
+  useEffect(() => { getOrgId().then(id => setOid(id)); loadStores(); loadRegions(); }, []);
   useEffect(() => {
     if (selectedStore && tab === "hours") { loadHours(); loadOvertimeShifts(); loadWorkers(); }
     if (selectedStore && tab === "shifts") loadShifts();
@@ -388,7 +389,8 @@ export default function StoresPage() {
   // 특별추가근무 CRUD
   const loadWorkers = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("workers").select("id, name").eq("org_id", oid).eq("status", "active").order("name");
+    const orgId = oid || await getOrgId();
+    const { data } = await supabase.from("workers").select("id, name").eq("org_id", orgId).eq("status", "active").order("name");
     if (data) setWorkers(data);
   };
   const loadOvertimeShifts = async () => {
@@ -427,7 +429,10 @@ export default function StoresPage() {
 
   const loadStores = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("stores").select("*, regions(name)").eq("org_id", oid).order("name");
+    const orgId = oid || await getOrgId();
+    if (!orgId) return;
+    if (!oid) setOid(orgId);
+    const { data } = await supabase.from("stores").select("*, regions(name)").eq("org_id", orgId).order("name");
     if (data) { setStores(data); if (data.length > 0 && !selectedStore) setSelectedStore(data[0].id); }
   };
   const loadRegions = async () => {
@@ -488,7 +493,7 @@ export default function StoresPage() {
       setMessage("매장 정보가 저장되었습니다!"); setTimeout(() => setMessage(""), 2000);
       loadStores();
     } else {
-      const { data } = await supabase.from("stores").insert({ ...payload, org_id: oid, is_active: true }).select().single();
+      const { data } = await supabase.from("stores").insert({ ...payload, org_id: oid || await getOrgId(), is_active: true }).select().single();
       if (data) {
         await loadStores();
         setEditItem(data);
