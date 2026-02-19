@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "ME.PARK <onboarding@resend.dev>",
+        from: "ME.PARK 2.0 <noreply@mepark.kr>",
         to: [email],
         subject: "[ME.PARK 2.0] 팀원 초대가 도착했습니다",
         html: `
