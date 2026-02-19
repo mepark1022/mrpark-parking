@@ -147,8 +147,8 @@ export default function Sidebar() {
           onClick={() => setEditMode(!editMode)}
           style={{
             fontSize: 10, fontWeight: 700, border: "none", cursor: "pointer", borderRadius: 4, padding: "2px 8px",
-            background: editMode ? "#F5B731" : "rgba(255,255,255,0.1)",
-            color: editMode ? "#0a1352" : "rgba(255,255,255,0.5)",
+            background: editMode ? "#F5B731" : "rgba(245,183,49,0.15)",
+            color: editMode ? "#0a1352" : "#F5B731",
             transition: "all 0.15s",
           }}
         >
