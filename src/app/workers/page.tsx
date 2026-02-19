@@ -113,25 +113,56 @@ function ScheduleTab() {
     return { date, day: i + 1, dayOfWeek, dayName: dayNames[dayOfWeek], holidayName, isSpecial: dtype !== "weekday", isToday: date === today };
   });
 
-  const downloadExcel = () => {
-    const storeName = stores.find(s => s.id === selectedStore)?.name || "전체";
-    const header = ["근무자", ...dates.map(d => `${d.day}일(${d.dayName})`), "출근", "지각", "결근", "휴무", "연차", "합계"];
-    const rows = storeWorkers.map(w => {
-      const stats = getWorkerStats(w.id);
-      return [
-        w.name,
-        ...dates.map(d => {
-          const rec = records.find(r => r.worker_id === w.id && r.date === d.date);
-          return rec ? statusMap[rec.status]?.label || "" : "";
-        }),
-        stats.present, stats.late, stats.absent, stats.dayoff, stats.vacation, stats.total,
-      ];
-    });
-    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-    ws["!cols"] = [{ wch: 10 }, ...dates.map(() => ({ wch: 7 })), { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }];
+  const [showDownMenu, setShowDownMenu] = useState(false);
+
+  const downloadExcel = async (mode) => {
+    setShowDownMenu(false);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `${storeName}_근태`);
-    XLSX.writeFile(wb, `근태현황_${storeName}_${selectedMonth}.xlsx`);
+    const header = ["근무자", ...dates.map(d => `${d.day}일(${d.dayName})`), "출근", "지각", "결근", "휴무", "연차", "합계"];
+    const colWidths = [{ wch: 10 }, ...dates.map(() => ({ wch: 7 })), { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }];
+
+    if (mode === "current") {
+      // 현재 매장만
+      const storeName = stores.find(s => s.id === selectedStore)?.name || "매장";
+      const rows = storeWorkers.map(w => {
+        const stats = getWorkerStats(w.id);
+        return [w.name, ...dates.map(d => { const rec = records.find(r => r.worker_id === w.id && r.date === d.date); return rec ? statusMap[rec.status]?.label || "" : ""; }), stats.present, stats.late, stats.absent, stats.dayoff, stats.vacation, stats.total];
+      });
+      const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+      ws["!cols"] = colWidths;
+      XLSX.utils.book_append_sheet(wb, ws, storeName.slice(0, 31));
+      XLSX.writeFile(wb, `근태현황_${storeName}_${selectedMonth}.xlsx`);
+    } else {
+      // 전체 매장 (매장별 시트)
+      const supabase = createClient();
+      const [ys, ms] = selectedMonth.split("-");
+      const startDate = `${ys}-${ms}-01`;
+      const endDate = `${ys}-${ms}-${new Date(Number(ys), Number(ms), 0).getDate()}`;
+
+      for (const store of stores) {
+        // 매장별 근무자
+        const { data: members } = await supabase.from("store_members").select("user_id").eq("store_id", store.id);
+        let sw = workers;
+        if (members && members.length > 0) {
+          const ids = members.map(m => m.user_id);
+          const filtered = workers.filter(w => ids.includes(w.id));
+          if (filtered.length > 0) sw = filtered;
+        }
+        // 매장별 레코드
+        const { data: recs } = await supabase.from("worker_attendance").select("*").in("worker_id", sw.map(w => w.id)).eq("store_id", store.id).gte("date", startDate).lte("date", endDate);
+        const storeRecs = recs || [];
+
+        const rows = sw.map(w => {
+          const wr = storeRecs.filter(r => r.worker_id === w.id);
+          const st = { present: wr.filter(r => r.status === "present").length, late: wr.filter(r => r.status === "late").length, absent: wr.filter(r => r.status === "absent").length, dayoff: wr.filter(r => r.status === "dayoff").length, vacation: wr.filter(r => r.status === "vacation").length };
+          return [w.name, ...dates.map(d => { const rec = storeRecs.find(r => r.worker_id === w.id && r.date === d.date); return rec ? statusMap[rec.status]?.label || "" : ""; }), st.present, st.late, st.absent, st.dayoff, st.vacation, st.present + st.late + st.absent + st.dayoff + st.vacation];
+        });
+        const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+        ws["!cols"] = colWidths;
+        XLSX.utils.book_append_sheet(wb, ws, store.name.slice(0, 31));
+      }
+      XLSX.writeFile(wb, `근태현황_전체매장_${selectedMonth}.xlsx`);
+    }
   };
 
   return (
@@ -155,11 +186,23 @@ function ScheduleTab() {
         </div>
         <div>
           <label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>월 선택</label>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center" style={{ position: "relative" }}>
             <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600 }} />
-            <button onClick={downloadExcel} className="cursor-pointer" style={{ padding: "10px 16px", borderRadius: 8, border: "none", background: "#15803d", color: "#fff", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-              📥 엑셀 다운
+            <button onClick={() => setShowDownMenu(!showDownMenu)} className="cursor-pointer" style={{ padding: "10px 16px", borderRadius: 8, border: "none", background: "#15803d", color: "#fff", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+              📥 엑셀 다운 ▾
             </button>
+            {showDownMenu && (
+              <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0", zIndex: 20, overflow: "hidden", minWidth: 160 }}>
+                <button onClick={() => downloadExcel("current")} className="cursor-pointer" style={{ display: "block", width: "100%", padding: "10px 16px", border: "none", background: "#fff", fontSize: 13, fontWeight: 600, color: "#1e293b", textAlign: "left", cursor: "pointer", borderBottom: "1px solid #f1f5f9" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+                  📄 현재 매장만
+                </button>
+                <button onClick={() => downloadExcel("all")} className="cursor-pointer" style={{ display: "block", width: "100%", padding: "10px 16px", border: "none", background: "#fff", fontSize: 13, fontWeight: 600, color: "#1e293b", textAlign: "left", cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+                  📚 전체 매장 (시트별)
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
