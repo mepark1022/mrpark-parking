@@ -286,6 +286,13 @@ export default function StoresPage() {
   const [formData, setFormData] = useState({ name: "", region_id: "", has_valet: true, valet_fee: 5000, address: "", detail_address: "", manager_name: "", manager_phone: "" });
   const [message, setMessage] = useState("");
   const [showParkingGuide, setShowParkingGuide] = useState(false);
+
+  const handleCloseForm = () => {
+    if (editItem && parkingLots.length === 0) {
+      if (!confirm("⚠️ 주차장이 등록되지 않았습니다!\n\n주차장이 최소 1개 이상 필요합니다.\n(본관/외부 등)\n\n그래도 나가시겠습니까?")) return;
+    }
+    setShowForm(false); setMessage(""); setShowParkingGuide(false);
+  };
   const [selectedStore, setSelectedStore] = useState("");
   const [hours, setHours] = useState([]);
   const [hoursMessage, setHoursMessage] = useState("");
@@ -373,7 +380,12 @@ export default function StoresPage() {
     setShowPLForm(false); setEditPL(null); setShowParkingGuide(false); setPLForm({ name: "", lot_type: "internal", lot_tag: "본관", parking_type: ["self"], road_address: "", total_spaces: 0, self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00", operation_mode: "valet", base_minutes: 120, base_fee: 3000, extra_unit: 10, extra_fee: 1000, daily_max: 30000 });
     loadParkingLots(editItem.id);
   };
-  const deletePL = async (id) => { const supabase = createClient(); await supabase.from("parking_lots").delete().eq("id", id); loadParkingLots(editItem.id); };
+  const deletePL = async (id) => {
+    if (parkingLots.length <= 1) {
+      if (!confirm("⚠️ 주차장이 최소 1개 이상 필요합니다.\n\n마지막 주차장을 삭제하면 대시보드 주차장 현황에 표시되지 않습니다.\n\n그래도 삭제하시겠습니까?")) return;
+    }
+    const supabase = createClient(); await supabase.from("parking_lots").delete().eq("id", id); loadParkingLots(editItem.id);
+  };
   const movePL = async (index, direction) => {
     const items = [...parkingLots];
     const targetIdx = index + direction;
@@ -622,7 +634,7 @@ export default function StoresPage() {
                 {message && <p style={{ color: message.includes("실패") ? "#dc2626" : "#15803d", fontSize: 13, marginBottom: 8, fontWeight: 600, background: message.includes("실패") ? "#fee2e2" : "#dcfce7", padding: "8px 12px", borderRadius: 8 }}>{message}</p>}
                 <div className="flex gap-2">
                   <button onClick={handleSave} className="cursor-pointer" style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 14, fontWeight: 700 }}>{editItem ? "수정" : "추가"}</button>
-                  <button onClick={() => { setShowForm(false); setMessage(""); }} className="cursor-pointer" style={{ padding: "10px 24px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: 14, fontWeight: 600 }}>취소</button>
+                  <button onClick={handleCloseForm} className="cursor-pointer" style={{ padding: "10px 24px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: 14, fontWeight: 600 }}>취소</button>
                 </div>
               </div>
             )}
@@ -728,10 +740,16 @@ export default function StoresPage() {
                   <div className="flex items-center gap-2.5">
                     <div style={{ width: 4, height: 24, borderRadius: 2, background: "#F5B731" }} />
                     <span style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>주차장 관리</span>
-                    <span style={{ padding: "2px 10px", borderRadius: 10, background: "#F5B73120", fontSize: 12, fontWeight: 700, color: "#b45309" }}>{parkingLots.length}</span>
+                    <span style={{ padding: "2px 10px", borderRadius: 10, background: parkingLots.length === 0 ? "#fee2e2" : "#F5B73120", fontSize: 12, fontWeight: 700, color: parkingLots.length === 0 ? "#dc2626" : "#b45309" }}>{parkingLots.length === 0 ? "필수" : parkingLots.length}</span>
                   </div>
                   <button onClick={() => { setEditPL(null); setPLForm({ name: "", lot_type: "internal", lot_tag: "본관", parking_type: ["self"], road_address: "", total_spaces: 0, self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00", operation_mode: "valet", base_minutes: 120, base_fee: 3000, extra_unit: 10, extra_fee: 1000, daily_max: 30000 }); setShowPLForm(true); }} className="cursor-pointer" style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#F5B731", color: "#fff", fontSize: 13, fontWeight: 700 }}>+ 주차장 추가</button>
                 </div>
+                {parkingLots.length === 0 && !showPLForm && (
+                  <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "12px 16px", marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 18 }}>⚠️</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#dc2626" }}>주차장이 최소 1개 이상 등록되어야 합니다. (본관 또는 외부)</span>
+                  </div>
+                )}
                 {showPLForm && (
                   <div style={{ background: "#FFFBEB", borderRadius: 14, padding: 20, marginBottom: 12, border: "1px solid #FED7AA" }}>
                     <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 14 }}>{editPL ? "주차장 수정" : "새 주차장 추가"}</div>
