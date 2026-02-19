@@ -92,9 +92,11 @@ export default function DashboardPage() {
     // 매장별로 주차장 그룹핑
     const storeMap = {};
     lots.forEach(lot => {
-      if (!storeMap[lot.store_id]) storeMap[lot.store_id] = { storeId: lot.store_id, storeName: lot.stores?.name || "알 수 없음", lots: [], totalSpaces: 0, currentCars: carsMap[lot.store_id] || 0 };
+      const lotTotal = (lot.self_spaces || 0) + (lot.mechanical_normal || 0) + (lot.mechanical_suv || 0);
+      if (!storeMap[lot.store_id]) storeMap[lot.store_id] = { storeId: lot.store_id, storeName: lot.stores?.name || "알 수 없음", lots: [], totalSpaces: 0, currentCars: 0 };
       storeMap[lot.store_id].lots.push(lot);
-      storeMap[lot.store_id].totalSpaces += lot.total_spaces || 0;
+      storeMap[lot.store_id].totalSpaces += lotTotal;
+      storeMap[lot.store_id].currentCars += (lot.current_cars || 0);
     });
     setParkingStatus(Object.values(storeMap));
   }
