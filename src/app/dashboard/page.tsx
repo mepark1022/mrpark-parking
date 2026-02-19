@@ -345,7 +345,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* 매장 선택 탭 */}
-                {parkingStatus.length > 1 && (
+                {parkingStatus.length >= 1 && (
                   <div className="flex gap-2 mb-5 flex-wrap">
                     {parkingStatus.map((s, idx) => (
                       <button
