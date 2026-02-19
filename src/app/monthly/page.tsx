@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getOrgId } from "@/lib/utils/org";
+import { getOrgId, getUserContext } from "@/lib/utils/org";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
 import type { Store } from "@/lib/types/database";
@@ -39,10 +39,13 @@ export default function MonthlyPage() {
   useEffect(() => { loadContracts(); }, [filterStore, filterStatus]);
 
   async function loadStores() {
-    const oid = await getOrgId();
-    if (!oid) return;
-    setOrgId(oid);
-    const { data } = await supabase.from("stores").select("*").eq("org_id", oid).eq("is_active", true).order("name");
+    const ctx = await getUserContext();
+    if (!ctx.orgId) return;
+    setOrgId(ctx.orgId);
+    let query = supabase.from("stores").select("*").eq("org_id", ctx.orgId).eq("is_active", true).order("name");
+    if (!ctx.allStores && ctx.storeIds.length > 0) query = query.in("id", ctx.storeIds);
+    else if (!ctx.allStores) { setStores([]); return; }
+    const { data } = await query;
     if (data) setStores(data);
   }
 

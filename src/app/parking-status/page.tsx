@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getOrgId } from "@/lib/utils/org";
+import { getOrgId, getUserContext } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 
 export default function ParkingStatusPage() {
@@ -26,12 +26,15 @@ export default function ParkingStatusPage() {
 
   const loadInitial = async () => {
     const supabase = createClient();
-    const oid = await getOrgId();
-    if (!oid) return;
-    setOrgId(oid);
-    const { data: storeData } = await supabase.from("stores").select("id, name, region").eq("org_id", oid).eq("is_active", true).order("name");
+    const ctx = await getUserContext();
+    if (!ctx.orgId) return;
+    setOrgId(ctx.orgId);
+    let storeQuery = supabase.from("stores").select("id, name, region").eq("org_id", ctx.orgId).eq("is_active", true).order("name");
+    if (!ctx.allStores && ctx.storeIds.length > 0) storeQuery = storeQuery.in("id", ctx.storeIds);
+    else if (!ctx.allStores) { setStores([]); return; }
+    const { data: storeData } = await storeQuery;
     setStores(storeData || []);
-    const { data: workerData } = await supabase.from("workers").select("id, name").eq("org_id", oid).order("name");
+    const { data: workerData } = await supabase.from("workers").select("id, name").eq("org_id", ctx.orgId).order("name");
     setWorkers(workerData || []);
     loadEntries();
   };

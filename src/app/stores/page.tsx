@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
-import { getOrgId } from "@/lib/utils/org";
+import { getOrgId, getUserContext } from "@/lib/utils/org";
 
 const storeTabs = [
   { id: "list", label: "매장 목록" },
@@ -313,8 +313,12 @@ export default function StoresPage() {
   const [inlineHours, setInlineHours] = useState(Array.from({ length: 7 }, (_, i) => ({ day_of_week: i, open_time: "09:00", close_time: "22:00", is_closed: false, id: null })));
   const [inlineHoursMsg, setInlineHoursMsg] = useState("");
   const [oid, setOid] = useState(null);
+  const [userRole, setUserRole] = useState("admin");
 
-  useEffect(() => { getOrgId().then(id => setOid(id)); loadStores(); loadRegions(); }, []);
+  useEffect(() => {
+    getUserContext().then(ctx => { setOid(ctx.orgId); setUserRole(ctx.role); });
+    loadStores(); loadRegions();
+  }, []);
   useEffect(() => {
     if (selectedStore && tab === "hours") { loadHours(); loadOvertimeShifts(); loadWorkers(); }
     if (selectedStore && tab === "shifts") loadShifts();
@@ -429,10 +433,14 @@ export default function StoresPage() {
 
   const loadStores = async () => {
     const supabase = createClient();
-    const orgId = oid || await getOrgId();
-    if (!orgId) return;
-    if (!oid) setOid(orgId);
-    const { data } = await supabase.from("stores").select("*, regions(name)").eq("org_id", orgId).order("name");
+    const ctx = await getUserContext();
+    if (!ctx.orgId) return;
+    if (!oid) setOid(ctx.orgId);
+    setUserRole(ctx.role);
+    let query = supabase.from("stores").select("*, regions(name)").eq("org_id", ctx.orgId).order("name");
+    if (!ctx.allStores && ctx.storeIds.length > 0) query = query.in("id", ctx.storeIds);
+    else if (!ctx.allStores) { setStores([]); return; }
+    const { data } = await query;
     if (data) { setStores(data); if (data.length > 0 && !selectedStore) setSelectedStore(data[0].id); }
   };
   const loadRegions = async () => {

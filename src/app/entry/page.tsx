@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getOrgId } from "@/lib/utils/org";
+import { getOrgId, getUserContext } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 
 type Store = { id: string; name: string; has_valet: boolean; valet_fee: number };
@@ -58,12 +58,15 @@ export default function EntryPage() {
   }
 
   async function loadStoresAndWorkers() {
-    const orgId = await getOrgId();
-    if (!orgId) return;
-    setOid(orgId);
+    const ctx = await getUserContext();
+    if (!ctx.orgId) return;
+    setOid(ctx.orgId);
+    let storesQuery = supabase.from("stores").select("id, name, has_valet, valet_fee").eq("org_id", ctx.orgId).eq("is_active", true).order("name");
+    if (!ctx.allStores && ctx.storeIds.length > 0) storesQuery = storesQuery.in("id", ctx.storeIds);
+    else if (!ctx.allStores) { setStores([]); return; }
     const [storesRes, workersRes] = await Promise.all([
-      supabase.from("stores").select("id, name, has_valet, valet_fee").eq("org_id", orgId).eq("is_active", true).order("name"),
-      supabase.from("workers").select("id, name").eq("org_id", orgId).eq("status", "active").order("name"),
+      storesQuery,
+      supabase.from("workers").select("id, name").eq("org_id", ctx.orgId).eq("status", "active").order("name"),
     ]);
     if (storesRes.data) {
       setStores(storesRes.data);

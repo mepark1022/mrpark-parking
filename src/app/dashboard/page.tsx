@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getOrgId } from "@/lib/utils/org";
+import { getOrgId, getUserContext } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -99,10 +99,13 @@ export default function DashboardPage() {
   }
 
   async function loadStores() {
-    const oid = await getOrgId();
-    if (!oid) return;
-    setOrgId(oid);
-    const { data } = await supabase.from("stores").select("*").eq("org_id", oid).eq("is_active", true).order("name");
+    const ctx = await getUserContext();
+    if (!ctx.orgId) return;
+    setOrgId(ctx.orgId);
+    let query = supabase.from("stores").select("*").eq("org_id", ctx.orgId).eq("is_active", true).order("name");
+    if (!ctx.allStores && ctx.storeIds.length > 0) query = query.in("id", ctx.storeIds);
+    else if (!ctx.allStores) { setStores([]); return; }
+    const { data } = await query;
     if (data) setStores(data);
   }
 
