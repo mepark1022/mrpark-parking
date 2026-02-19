@@ -68,6 +68,7 @@ export default function DashboardPage() {
   const [showValet, setShowValet] = useState(true);
   const [showParking, setShowParking] = useState(true);
   const [parkingStatus, setParkingStatus] = useState([]);
+  const [parkingStoreIdx, setParkingStoreIdx] = useState(0);
 
   useEffect(() => { loadStores(); }, []);
   useEffect(() => { loadData(); }, [selectedStore, period, customStart, customEnd]);
@@ -328,68 +329,116 @@ export default function DashboardPage() {
             </div>
 
             {/* 잔여면수 현황 */}
-            {parkingStatus.length > 0 && (
-              <div style={{ background: "#fff", borderRadius: 16, padding: "24px 28px 28px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div style={{ width: 4, height: 22, borderRadius: 2, background: "#1428A0" }} />
-                  <h3 style={{ fontSize: 17, fontWeight: 700, color: "#0f172a" }}>🅿️ 주차장 현황</h3>
+            {parkingStatus.length > 0 && (() => {
+              const ps = parkingStatus[parkingStoreIdx] || parkingStatus[0];
+              const remaining = ps.totalSpaces - ps.currentCars;
+              const occupancy = ps.totalSpaces > 0 ? Math.round((ps.currentCars / ps.totalSpaces) * 100) : 0;
+              const isOver = remaining < 0;
+              return (
+              <div style={{ background: "#fff", borderRadius: 16, padding: "28px 32px 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <div style={{ width: 4, height: 24, borderRadius: 2, background: "#1428A0" }} />
+                    <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>🅿️ 주차장 현황</h3>
+                  </div>
+                  <div style={{ fontSize: 13, color: "#64748b" }}>점유율 <span style={{ fontWeight: 800, fontSize: 18, color: occupancy > 80 ? "#dc2626" : "#1428A0" }}>{occupancy}%</span></div>
                 </div>
-                <div className="space-y-4">
-                  {parkingStatus.map((store, si) => {
-                    const remaining = store.totalSpaces - store.currentCars;
-                    const occupancy = store.totalSpaces > 0 ? Math.round((store.currentCars / store.totalSpaces) * 100) : 0;
-                    const isOver = remaining < 0;
+
+                {/* 매장 선택 탭 */}
+                {parkingStatus.length > 1 && (
+                  <div className="flex gap-2 mb-5 flex-wrap">
+                    {parkingStatus.map((s, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setParkingStoreIdx(idx)}
+                        className="cursor-pointer"
+                        style={{
+                          padding: "8px 18px",
+                          borderRadius: 10,
+                          border: idx === parkingStoreIdx ? "2px solid #1428A0" : "1px solid #e2e8f0",
+                          background: idx === parkingStoreIdx ? "#1428A0" : "#fff",
+                          color: idx === parkingStoreIdx ? "#fff" : "#475569",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        {s.storeName}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* 매장 요약 */}
+                <div style={{ background: "#f8fafc", borderRadius: 14, padding: "20px 24px", marginBottom: 20, border: "1px solid #e2e8f0" }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span style={{ fontSize: 17, fontWeight: 800, color: "#0f172a" }}>{ps.storeName}</span>
+                    {isOver && <span style={{ padding: "4px 10px", borderRadius: 8, background: "#fee2e2", fontSize: 12, fontWeight: 700, color: "#dc2626" }}>이중주차 {Math.abs(remaining)}대</span>}
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>총 면수</div>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: "#1428A0" }}>{ps.totalSpaces}</div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>현재 주차</div>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: ps.currentCars > ps.totalSpaces ? "#dc2626" : "#0f172a" }}>{ps.currentCars}</div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>잔여 면수</div>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: isOver ? "#dc2626" : remaining <= 5 ? "#EA580C" : "#15803d" }}>{remaining}</div>
+                    </div>
+                  </div>
+                  {/* 점유율 바 */}
+                  <div style={{ background: "#e2e8f0", borderRadius: 8, height: 14, overflow: "hidden" }}>
+                    <div style={{ width: `${Math.min(occupancy, 100)}%`, height: "100%", borderRadius: 8, background: occupancy > 100 ? "#dc2626" : occupancy > 80 ? "#EA580C" : "#1428A0", transition: "width 0.5s ease" }} />
+                  </div>
+                </div>
+
+                {/* 개별 주차장 카드 - 그리드 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {ps.lots.map(lot => {
+                    const lotTotal = (lot.self_spaces || 0) + (lot.mechanical_normal || 0) + (lot.mechanical_suv || 0);
+                    const lotCurrent = lot.current_cars || 0;
+                    const lotRemain = lotTotal - lotCurrent;
+                    const lotOcc = lotTotal > 0 ? Math.round((lotCurrent / lotTotal) * 100) : 0;
+                    const isLotOver = lotRemain < 0;
                     return (
-                      <div key={si} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: "16px 18px" }}>
-                        {/* 매장명 + 요약 한줄 */}
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "nowrap", gap: 8 }}>
-                          <span style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0, flex: "0 1 auto" }}>{store.storeName}</span>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                            <span style={{ fontSize: 12, color: "#94a3b8" }}>총</span>
-                            <span style={{ fontSize: 17, fontWeight: 800, color: "#1428A0" }}>{store.totalSpaces}</span>
-                            <span style={{ color: "#e2e8f0" }}>|</span>
-                            <span style={{ fontSize: 12, color: "#94a3b8" }}>현재</span>
-                            <span style={{ fontSize: 17, fontWeight: 800, color: store.currentCars > store.totalSpaces ? "#dc2626" : "#0f172a" }}>{store.currentCars}</span>
-                            <span style={{ color: "#e2e8f0" }}>|</span>
-                            <span style={{ fontSize: 12, color: "#94a3b8" }}>잔여</span>
-                            <span style={{ fontSize: 17, fontWeight: 800, color: isOver ? "#dc2626" : remaining <= 5 ? "#EA580C" : "#15803d" }}>{remaining}</span>
-                            {isOver && <span style={{ padding: "2px 6px", borderRadius: 6, background: "#fee2e2", fontSize: 10, fontWeight: 700, color: "#dc2626", whiteSpace: "nowrap" }}>이중{Math.abs(remaining)}</span>}
+                      <div key={lot.id} style={{ background: "#fff", borderRadius: 14, padding: "18px 20px", border: isLotOver ? "2px solid #fca5a5" : "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                        {/* 헤더 */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span style={{ fontSize: 20 }}>{lot.lot_type === "internal" ? "🏢" : "🅿️"}</span>
+                            <span style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>{lot.name}</span>
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 800, padding: "3px 10px", borderRadius: 8, background: lotOcc > 85 ? "#fee2e2" : lotOcc > 60 ? "#FFF7ED" : "#eff6ff", color: lotOcc > 85 ? "#dc2626" : lotOcc > 60 ? "#EA580C" : "#1428A0" }}>{lotOcc}%</span>
+                        </div>
+                        {/* 수치 */}
+                        <div className="grid grid-cols-3 gap-2 mb-3">
+                          <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 0", textAlign: "center" }}>
+                            <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>총</div>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: "#1428A0" }}>{lotTotal}</div>
+                          </div>
+                          <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 0", textAlign: "center" }}>
+                            <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>현재</div>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: lotCurrent > lotTotal ? "#dc2626" : "#0f172a" }}>{lotCurrent}</div>
+                          </div>
+                          <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 0", textAlign: "center" }}>
+                            <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>잔여</div>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: isLotOver ? "#dc2626" : lotRemain <= 3 ? "#EA580C" : "#15803d" }}>{lotRemain}</div>
                           </div>
                         </div>
-                        {/* 점유율 바 */}
-                        <div style={{ background: "#f1f5f9", borderRadius: 6, height: 10, marginBottom: 12, overflow: "hidden" }}>
-                          <div style={{ width: `${Math.min(occupancy, 100)}%`, height: "100%", borderRadius: 6, background: occupancy > 100 ? "#dc2626" : occupancy > 80 ? "#EA580C" : "#1428A0", transition: "width 0.5s ease" }} />
-                        </div>
-                        {/* 개별 주차장 - 한줄 카드 */}
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          {store.lots.map(lot => {
-                            const lotTotal = (lot.self_spaces || 0) + (lot.mechanical_normal || 0) + (lot.mechanical_suv || 0);
-                            const lotCurrent = lot.current_cars || 0;
-                            const lotRemain = lotTotal - lotCurrent;
-                            return (
-                              <div key={lot.id} style={{ background: "#f8fafc", borderRadius: 10, padding: "8px 12px", border: "1px solid #e2e8f0" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
-                                  <span style={{ fontSize: 13 }}>{lot.lot_type === "internal" ? "🏢" : "🅿️"}</span>
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>{lot.name}</span>
-                                  <span style={{ fontSize: 12, fontWeight: 800, color: "#1428A0" }}>{lotTotal}면</span>
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                  <span style={{ fontSize: 10, color: "#94a3b8" }}>현재</span>
-                                  <span style={{ fontSize: 11, fontWeight: 800, color: lotCurrent > lotTotal ? "#dc2626" : "#0f172a" }}>{lotCurrent}대</span>
-                                  <span style={{ fontSize: 10, color: "#94a3b8" }}>잔여</span>
-                                  <span style={{ fontSize: 11, fontWeight: 800, color: lotRemain < 0 ? "#dc2626" : lotRemain <= 3 ? "#EA580C" : "#15803d" }}>{lotRemain}면</span>
-                                  <span style={{ fontSize: 10, fontWeight: 700, color: lotTotal > 0 ? (lotCurrent / lotTotal > 0.85 ? "#dc2626" : lotCurrent / lotTotal > 0.6 ? "#EA580C" : "#1428A0") : "#94a3b8", background: lotTotal > 0 ? (lotCurrent / lotTotal > 0.85 ? "#fee2e2" : lotCurrent / lotTotal > 0.6 ? "#FFF7ED" : "#1428A010") : "#f1f5f9", padding: "1px 5px", borderRadius: 4 }}>{lotTotal > 0 ? Math.round((lotCurrent / lotTotal) * 100) : 0}%</span>
-                                </div>
-                              </div>
-                            );
-                          })}
+                        {/* 미니 점유율 바 */}
+                        <div style={{ background: "#f1f5f9", borderRadius: 6, height: 8, overflow: "hidden" }}>
+                          <div style={{ width: `${Math.min(lotOcc, 100)}%`, height: "100%", borderRadius: 6, background: lotOcc > 85 ? "#dc2626" : lotOcc > 60 ? "#EA580C" : "#1428A0", transition: "width 0.5s" }} />
                         </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="bg-white rounded-xl p-7 shadow-sm">
