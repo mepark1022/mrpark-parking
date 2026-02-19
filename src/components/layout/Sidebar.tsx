@@ -123,7 +123,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="w-60 min-h-screen flex flex-col relative overflow-hidden fixed top-0 left-0 z-50"
+      className="w-60 h-screen flex flex-col relative overflow-hidden fixed top-0 left-0 z-50"
       style={{ background: "linear-gradient(180deg, #020617 0%, #0a1352 30%, #0f1d6b 70%, #162050 100%)" }}
     >
       {/* Decorative glow */}
