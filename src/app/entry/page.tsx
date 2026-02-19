@@ -4,6 +4,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId, getUserContext } from "@/lib/utils/org";
+import { getDayType, getDayTypeLabel } from "@/utils/holidays";
 import AppLayout from "@/components/layout/AppLayout";
 
 type Store = { id: string; name: string; has_valet: boolean; valet_fee: number };
@@ -30,11 +31,8 @@ export default function EntryPage() {
   const [storeHours, setStoreHours] = useState<{ open: number; close: number }>({ open: 7, close: 22 });
   const [oid, setOid] = useState<string | null>(null);
 
-  const dayType = useMemo(() => {
-    const d = new Date(selectedDate);
-    const day = d.getDay();
-    return day === 0 || day === 6 ? "weekend" : "weekday";
-  }, [selectedDate]);
+  const dayType = useMemo(() => getDayType(selectedDate), [selectedDate]);
+  const dayLabel = useMemo(() => getDayTypeLabel(selectedDate), [selectedDate]);
 
   const totalCars = useMemo(() => {
     if (inputMode === "total") return totalCarsOnly;
@@ -80,7 +78,7 @@ export default function EntryPage() {
       .from("default_workers")
       .select("id, worker_id, day_type, display_order, workers(id, name)")
       .eq("store_id", selectedStore)
-      .eq("day_type", dayType)
+      .eq("day_type", dayType === "holiday" ? "weekend" : dayType)
       .order("display_order");
     if (data) {
       setAssignedWorkers(data.map((d: any) => ({ worker_id: d.worker_id, worker_type: "default" as const, name: d.workers?.name || "" })));
@@ -149,6 +147,8 @@ export default function EntryPage() {
         total_cars: totalCars,
         valet_count: valetCount,
         valet_revenue: valetRevenue,
+        day_type: dayType,
+        is_holiday: dayType === "holiday",
         memo: memo || null,
       };
 
@@ -207,8 +207,8 @@ export default function EntryPage() {
             <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 font-medium" />
           </div>
           <div className="pt-6">
-            <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${dayType === "weekday" ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800"}`}>
-              {dayType === "weekday" ? "평일" : "주말"}
+            <span style={{ padding: "4px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: dayLabel.bg, color: dayLabel.color }}>
+              {dayLabel.label}
             </span>
           </div>
         </div>
@@ -292,7 +292,7 @@ export default function EntryPage() {
 
             <div className="bg-white rounded-xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">근무자 ({dayType === "weekday" ? "평일" : "주말"} 기본)</h3>
+                <h3 className="text-lg font-bold text-gray-900">근무자 ({dayType === "holiday" ? "공휴일" : dayType === "weekday" ? "평일" : "주말"} 기본)</h3>
                 <div className="flex gap-2">
                   <button onClick={() => addWorker("substitute")} className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg text-xs font-bold hover:bg-orange-200">+ 대체</button>
                   <button onClick={() => addWorker("hq")} className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold hover:bg-purple-200">+ 본사</button>
