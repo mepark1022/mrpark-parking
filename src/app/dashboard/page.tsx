@@ -72,18 +72,16 @@ export default function DashboardPage() {
 
   useEffect(() => { loadStores(); }, []);
   useEffect(() => { loadData(); }, [selectedStore, period, customStart, customEnd]);
-  useEffect(() => { loadParkingStatus(); }, [selectedStore, stores]);
+  useEffect(() => { loadParkingStatus(); }, [stores]);
 
   async function loadParkingStatus() {
     if (!orgId) return;
-    let lotQuery = supabase.from("parking_lots").select("*, stores(name)").eq("org_id", orgId);
-    if (selectedStore) lotQuery = lotQuery.eq("store_id", selectedStore);
+    const lotQuery = supabase.from("parking_lots").select("*, stores(name)").eq("org_id", orgId);
     const { data: lots } = await lotQuery;
     if (!lots || lots.length === 0) { setParkingStatus([]); return; }
 
     const today = new Date().toISOString().split("T")[0];
-    let recQuery = supabase.from("daily_records").select("store_id, total_cars").eq("org_id", orgId).eq("date", today);
-    if (selectedStore) recQuery = recQuery.eq("store_id", selectedStore);
+    const recQuery = supabase.from("daily_records").select("store_id, total_cars").eq("org_id", orgId).eq("date", today);
     const { data: todayRecs } = await recQuery;
 
     const carsMap = {};
@@ -332,7 +330,8 @@ export default function DashboardPage() {
 
             {/* 잔여면수 현황 */}
             {stores.length > 0 && (() => {
-              const activeStoreId = parkingStoreId || stores[0]?.id;
+              const firstWithLots = parkingStatus.length > 0 ? parkingStatus[0].storeId : stores[0]?.id;
+              const activeStoreId = parkingStoreId || firstWithLots;
               const ps = parkingStatus.find(p => p.storeId === activeStoreId);
               const remaining = ps ? ps.totalSpaces - ps.currentCars : 0;
               const occupancy = ps && ps.totalSpaces > 0 ? Math.round((ps.currentCars / ps.totalSpaces) * 100) : 0;
@@ -349,7 +348,9 @@ export default function DashboardPage() {
 
                 {/* 매장 선택 탭 */}
                 <div className="flex gap-2 mb-5 flex-wrap">
-                  {stores.map((s) => (
+                  {stores.map((s) => {
+                    const hasLots = parkingStatus.some(p => p.storeId === s.id);
+                    return (
                     <button
                       key={s.id}
                       onClick={() => setParkingStoreId(s.id)}
@@ -359,15 +360,16 @@ export default function DashboardPage() {
                         borderRadius: 10,
                         border: s.id === activeStoreId ? "2px solid #1428A0" : "1px solid #e2e8f0",
                         background: s.id === activeStoreId ? "#1428A0" : "#fff",
-                        color: s.id === activeStoreId ? "#fff" : "#475569",
+                        color: s.id === activeStoreId ? "#fff" : hasLots ? "#475569" : "#cbd5e1",
                         fontSize: 13,
                         fontWeight: 700,
                         transition: "all 0.15s",
                       }}
                     >
-                      {s.name}
+                      {s.name} {hasLots && "🅿️"}
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {ps ? (
