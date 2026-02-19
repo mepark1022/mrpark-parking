@@ -78,7 +78,7 @@ export default function EntryPage() {
       .from("default_workers")
       .select("id, worker_id, day_type, display_order, workers(id, name)")
       .eq("store_id", selectedStore)
-      .eq("day_type", dayType === "holiday" ? "weekend" : dayType)
+      .eq("day_type", dayType === "holiday" ? "weekday" : dayType)
       .order("display_order");
     if (data) {
       setAssignedWorkers(data.map((d: any) => ({ worker_id: d.worker_id, worker_type: "default" as const, name: d.workers?.name || "" })));
