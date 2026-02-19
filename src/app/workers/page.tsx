@@ -7,7 +7,8 @@ import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
-import { getDayType, getHolidayName } from "@/utils/holidays";
+import { getDayType, getHolidayName, getDayTypeLabel } from "@/utils/holidays";
+import * as XLSX from "xlsx";
 
 const tabs = [
   { id: "attendance", label: "출퇴근" },
@@ -112,6 +113,27 @@ function ScheduleTab() {
     return { date, day: i + 1, dayOfWeek, dayName: dayNames[dayOfWeek], holidayName, isSpecial: dtype !== "weekday", isToday: date === today };
   });
 
+  const downloadExcel = () => {
+    const storeName = stores.find(s => s.id === selectedStore)?.name || "전체";
+    const header = ["근무자", ...dates.map(d => `${d.day}일(${d.dayName})`), "출근", "지각", "결근", "휴무", "연차", "합계"];
+    const rows = storeWorkers.map(w => {
+      const stats = getWorkerStats(w.id);
+      return [
+        w.name,
+        ...dates.map(d => {
+          const rec = records.find(r => r.worker_id === w.id && r.date === d.date);
+          return rec ? statusMap[rec.status]?.label || "" : "";
+        }),
+        stats.present, stats.late, stats.absent, stats.dayoff, stats.vacation, stats.total,
+      ];
+    });
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    ws["!cols"] = [{ wch: 10 }, ...dates.map(() => ({ wch: 7 })), { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `${storeName}_근태`);
+    XLSX.writeFile(wb, `근태현황_${storeName}_${selectedMonth}.xlsx`);
+  };
+
   return (
     <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
       <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>월별 근태 현황</div>
@@ -133,7 +155,12 @@ function ScheduleTab() {
         </div>
         <div>
           <label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>월 선택</label>
-          <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600 }} />
+          <div className="flex gap-2 items-center">
+            <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600 }} />
+            <button onClick={downloadExcel} className="cursor-pointer" style={{ padding: "10px 16px", borderRadius: 8, border: "none", background: "#15803d", color: "#fff", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+              📥 엑셀 다운
+            </button>
+          </div>
         </div>
       </div>
 
