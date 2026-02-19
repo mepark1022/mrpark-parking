@@ -283,14 +283,14 @@ export default function DashboardPage() {
           <div className="text-center py-10 text-mr-gray">로딩 중...</div>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              <div className="bg-white rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-gray-600 font-medium">총 입차량</p>
-                <p className="text-3xl font-extrabold text-gray-900 mt-1">{kpi.totalCars.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">대</span></p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+              <div className="bg-white rounded-xl p-6 md:p-7 shadow-sm">
+                <p className="text-sm text-gray-500 font-medium">총 입차량</p>
+                <p className="text-4xl font-extrabold text-gray-900 mt-2">{kpi.totalCars.toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">대</span></p>
               </div>
-              <div className="bg-white rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-gray-600 font-medium">총 매출</p>
-                <p className="text-2xl font-extrabold text-gray-900 mt-0.5">{((showValet ? kpi.totalValet : 0) + (showParking ? (kpi.totalParking || 0) : 0)).toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
+              <div className="bg-white rounded-xl p-6 md:p-7 shadow-sm">
+                <p className="text-sm text-gray-500 font-medium">총 매출</p>
+                <p className="text-3xl font-extrabold text-gray-900 mt-1">{((showValet ? kpi.totalValet : 0) + (showParking ? (kpi.totalParking || 0) : 0)).toLocaleString()}<span className="text-sm font-normal text-mr-gray ml-1">원</span></p>
                 <div style={{ borderTop: "1px solid #f1f5f9", marginTop: 8, paddingTop: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -314,13 +314,13 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-gray-600 font-medium">근무 인원</p>
-                <p className="text-3xl font-extrabold text-gray-900 mt-1">{kpi.workerCount}<span className="text-sm font-normal text-mr-gray ml-1">명</span></p>
+              <div className="bg-white rounded-xl p-6 md:p-7 shadow-sm">
+                <p className="text-sm text-gray-500 font-medium">근무 인원</p>
+                <p className="text-4xl font-extrabold text-gray-900 mt-2">{kpi.workerCount}<span className="text-sm font-normal text-mr-gray ml-1">명</span></p>
               </div>
-              <div className="bg-white rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-gray-600 font-medium">{selectedStore ? "월주차 계약" : "운영 매장"}</p>
-                <p className="text-3xl font-extrabold text-gray-900 mt-1">
+              <div className="bg-white rounded-xl p-6 md:p-7 shadow-sm">
+                <p className="text-sm text-gray-500 font-medium">{selectedStore ? "월주차 계약" : "운영 매장"}</p>
+                <p className="text-4xl font-extrabold text-gray-900 mt-2">
                   {selectedStore ? kpi.activeContracts : stores.length}
                   <span className="text-sm font-normal text-mr-gray ml-1">{selectedStore ? "건" : "개"}</span>
                 </p>
@@ -345,13 +345,13 @@ export default function DashboardPage() {
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "nowrap", gap: 8 }}>
                           <span style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0, flex: "0 1 auto" }}>{store.storeName}</span>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                            <span style={{ fontSize: 11, color: "#94a3b8" }}>총</span>
+                            <span style={{ fontSize: 12, color: "#94a3b8" }}>총</span>
                             <span style={{ fontSize: 17, fontWeight: 800, color: "#1428A0" }}>{store.totalSpaces}</span>
                             <span style={{ color: "#e2e8f0" }}>|</span>
-                            <span style={{ fontSize: 11, color: "#94a3b8" }}>현재</span>
+                            <span style={{ fontSize: 12, color: "#94a3b8" }}>현재</span>
                             <span style={{ fontSize: 17, fontWeight: 800, color: store.currentCars > store.totalSpaces ? "#dc2626" : "#0f172a" }}>{store.currentCars}</span>
                             <span style={{ color: "#e2e8f0" }}>|</span>
-                            <span style={{ fontSize: 11, color: "#94a3b8" }}>잔여</span>
+                            <span style={{ fontSize: 12, color: "#94a3b8" }}>잔여</span>
                             <span style={{ fontSize: 17, fontWeight: 800, color: isOver ? "#dc2626" : remaining <= 5 ? "#EA580C" : "#15803d" }}>{remaining}</span>
                             {isOver && <span style={{ padding: "2px 6px", borderRadius: 6, background: "#fee2e2", fontSize: 10, fontWeight: 700, color: "#dc2626", whiteSpace: "nowrap" }}>이중{Math.abs(remaining)}</span>}
                           </div>
@@ -431,17 +431,39 @@ export default function DashboardPage() {
             </div>
 
             {!selectedStore && storeRankData.length > 0 && (
-              <div className="bg-white rounded-xl p-7 shadow-sm">
-                <h3 className="font-semibold text-dark mb-4">매장 랭킹 (입차량 TOP 10)</h3>
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={storeRankData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" tick={{ fontSize: 11 }} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
-                    <Tooltip />
-                    <Bar dataKey="cars" fill="#1428A0" radius={[0, 4, 4, 0]} name="입차량" />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div className="bg-white rounded-xl p-7 shadow-sm">
+                  <h3 className="font-semibold text-dark mb-4">매장 랭킹 (입차량 TOP 10)</h3>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={storeRankData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" tick={{ fontSize: 11 }} />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
+                      <Tooltip />
+                      <Bar dataKey="cars" fill="#1428A0" radius={[0, 4, 4, 0]} name="입차량" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="bg-white rounded-xl p-7 shadow-sm">
+                  <h3 className="font-semibold text-dark mb-4">마감미정산</h3>
+                  {records.length === 0 ? (
+                    <div className="h-56 flex items-center justify-center text-mr-gray text-sm">선택된 기간에 입력된 데이터가 없습니다</div>
+                  ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {stores
+                        .filter((s) => !records.some((r) => r.store_id === s.id))
+                        .map((s) => (
+                          <div key={s.id} className="flex items-center gap-2 p-2.5 bg-red-50 rounded-lg">
+                            <span className="text-xs text-error font-bold">미정산</span>
+                            <span className="text-sm text-dark">{s.name}</span>
+                          </div>
+                        ))}
+                      {stores.filter((s) => !records.some((r) => r.store_id === s.id)).length === 0 && (
+                        <div className="h-56 flex items-center justify-center text-success text-sm">모든 매장 입력 완료!</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -449,9 +471,9 @@ export default function DashboardPage() {
               <div className="bg-white rounded-xl p-7 shadow-sm">
                 <h3 className="font-semibold text-dark mb-4">월주차 현황</h3>
                 {monthlyPieData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={200}>
+                  <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
-                      <Pie data={monthlyPieData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, value }) => `${name} ${value}건`}>
+                      <Pie data={monthlyPieData} cx="50%" cy="50%" outerRadius={85} dataKey="value" label={({ name, value }) => `${name} ${value}건`}>
                         {monthlyPieData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                       </Pie>
                       <Tooltip />
@@ -473,7 +495,7 @@ export default function DashboardPage() {
                   {workerSummary.length > 0 ? (
                     <div className="space-y-2">
                       {workerSummary.map((w, i) => (
-                        <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                        <div key={i} className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-lg">
                           {getTypeBadge(w.type)}
                           <span className="text-sm text-dark">{w.name}</span>
                         </div>
@@ -489,12 +511,12 @@ export default function DashboardPage() {
                   {records.length === 0 ? (
                     <div className="h-56 flex items-center justify-center text-mr-gray text-sm">선택된 기간에 입력된 데이터가 없습니다</div>
                   ) : (
-                    <div className="space-y-2 max-h-56 overflow-y-auto">
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
                       {stores
                         .filter((s) => !records.some((r) => r.store_id === s.id))
                         .map((s) => (
-                          <div key={s.id} className="flex items-center gap-2 p-2 bg-red-50 rounded-lg">
-                            <span className="text-xs text-error">미정산</span>
+                          <div key={s.id} className="flex items-center gap-2 p-2.5 bg-red-50 rounded-lg">
+                            <span className="text-xs text-error font-bold">미정산</span>
                             <span className="text-sm text-dark">{s.name}</span>
                           </div>
                         ))}

@@ -35,7 +35,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             overflow: "auto",
           }}
         >
-          <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ maxWidth: 1400, margin: "0 auto" }}>
             {children}
           </div>
         </main>
