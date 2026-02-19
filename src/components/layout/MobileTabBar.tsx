@@ -65,7 +65,7 @@ const tabs = [
 ];
 
 // "더보기" 메뉴에 포함될 경로들
-const moreRoutes = ["/parking-status", "/monthly", "/analytics", "/stores", "/team", "/settings", "/more"];
+const moreRoutes = ["/parking-status", "/monthly", "/analytics", "/stores", "/team", "/settings", "/guide", "/more"];
 
 export default function MobileTabBar() {
   const pathname = usePathname();
@@ -90,22 +90,26 @@ export default function MobileTabBar() {
   };
 
   return (
-    <div
-      className="md:hidden"
-      style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 200,
-        background: "#ffffff",
-        borderTop: "1px solid #e2e8f0",
-        display: "flex",
-        justifyContent: "space-around",
-        padding: "6px 0 8px",
-        boxShadow: "0 -2px 12px rgba(0,0,0,0.06)",
-      }}
-    >
+    <>
+      <style>{`
+        .mobile-tab-bar { display: flex !important; }
+        @media (min-width: 768px) { .mobile-tab-bar { display: none !important; } }
+      `}</style>
+      <div
+        className="mobile-tab-bar"
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 200,
+          background: "#ffffff",
+          borderTop: "1px solid #e2e8f0",
+          justifyContent: "space-around",
+          padding: "6px 0 8px",
+          boxShadow: "0 -2px 12px rgba(0,0,0,0.06)",
+        }}
+      >
       {tabs.map((tab) => {
         const active = isActive(tab);
         return (
@@ -149,5 +153,6 @@ export default function MobileTabBar() {
         );
       })}
     </div>
+    </>
   );
 }
