@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
+import { getDayType, getHolidayName } from "@/utils/holidays";
 
 const tabs = [
   { id: "attendance", label: "출퇴근" },
@@ -30,191 +31,222 @@ function ScheduleTab() {
   const [stores, setStores] = useState([]);
   const [records, setRecords] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
-  const [selectedWorker, setSelectedWorker] = useState("");
-  const [msg, setMsg] = useState("");
+  const [selectedStore, setSelectedStore] = useState("");
+  const [storeWorkers, setStoreWorkers] = useState([]);
+  const [orgId, setOrgId] = useState("");
 
   useEffect(() => { loadBase(); }, []);
-  useEffect(() => { if (selectedWorker && selectedMonth) loadRecords(); }, [selectedWorker, selectedMonth]);
+  useEffect(() => { if (selectedStore && selectedMonth) loadAllRecords(); }, [selectedStore, selectedMonth, storeWorkers]);
+  useEffect(() => { if (selectedStore) loadStoreWorkers(); }, [selectedStore]);
 
   const loadBase = async () => {
+    const oid = await getOrgId();
+    setOrgId(oid);
     const supabase = createClient();
-    const { data: w } = await supabase.from("workers").select("id, name").eq("status", "active").order("name");
-    const { data: s } = await supabase.from("stores").select("id, name").eq("org_id", orgId).eq("is_active", true).order("name");
-    if (w) { setWorkers(w); if (w.length > 0) setSelectedWorker(w[0].id); }
-    if (s) setStores(s);
+    const { data: w } = await supabase.from("workers").select("id, name").eq("org_id", oid).eq("status", "active").order("name");
+    const { data: s } = await supabase.from("stores").select("id, name").eq("org_id", oid).eq("is_active", true).order("name");
+    if (w) setWorkers(w);
+    if (s) { setStores(s); if (s.length > 0) setSelectedStore(s[0].id); }
   };
 
-  const loadRecords = async () => {
+  const loadStoreWorkers = async () => {
+    const supabase = createClient();
+    // store_members 테이블에서 배정된 근무자 가져오기, 없으면 전체 근무자
+    const { data: members } = await supabase.from("store_members").select("user_id").eq("store_id", selectedStore);
+    if (members && members.length > 0) {
+      const workerIds = members.map(m => m.user_id);
+      const filtered = workers.filter(w => workerIds.includes(w.id));
+      setStoreWorkers(filtered.length > 0 ? filtered : workers);
+    } else {
+      setStoreWorkers(workers);
+    }
+  };
+
+  const loadAllRecords = async () => {
+    if (storeWorkers.length === 0) return;
     const [y, m] = selectedMonth.split("-");
     const startDate = `${y}-${m}-01`;
     const endDate = `${y}-${m}-${new Date(Number(y), Number(m), 0).getDate()}`;
     const supabase = createClient();
-    const { data } = await supabase.from("worker_attendance").select("*, stores(name)").eq("worker_id", selectedWorker).gte("date", startDate).lte("date", endDate).order("date");
+    const workerIds = storeWorkers.map(w => w.id);
+    const { data } = await supabase.from("worker_attendance").select("*").in("worker_id", workerIds).gte("date", startDate).lte("date", endDate).order("date");
     if (data) setRecords(data);
   };
 
-  const addRecord = async (date) => {
+  const toggleStatus = async (workerId, date) => {
+    const existing = records.find(r => r.worker_id === workerId && r.date === date);
     const supabase = createClient();
-    const existing = records.find(r => r.date === date);
-    if (existing) return;
-    await supabase.from("worker_attendance").insert({ org_id: orgId, worker_id: selectedWorker, date, status: "present", check_in: "09:00", store_id: stores[0]?.id || null });
-    loadRecords();
-  };
-
-  const updateRecord = async (id, field, value) => {
-    const supabase = createClient();
-    await supabase.from("worker_attendance").update({ [field]: value }).eq("id", id);
-    loadRecords();
-  };
-
-  const deleteRecord = async (id) => {
-    const supabase = createClient();
-    await supabase.from("worker_attendance").delete().eq("id", id);
-    loadRecords();
+    const statuses = ["present", "late", "absent", "dayoff", "vacation"];
+    if (!existing) {
+      await supabase.from("worker_attendance").insert({ org_id: orgId, worker_id: workerId, date, status: "present", check_in: "09:00", store_id: selectedStore });
+    } else {
+      const idx = statuses.indexOf(existing.status);
+      if (idx === statuses.length - 1) {
+        await supabase.from("worker_attendance").delete().eq("id", existing.id);
+      } else {
+        await supabase.from("worker_attendance").update({ status: statuses[idx + 1] }).eq("id", existing.id);
+      }
+    }
+    loadAllRecords();
   };
 
   const [y, m] = selectedMonth.split("-");
   const daysInMonth = new Date(Number(y), Number(m), 0).getDate();
   const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
 
-  const stats = {
-    present: records.filter(r => r.status === "present").length,
-    late: records.filter(r => r.status === "late").length,
-    absent: records.filter(r => r.status === "absent").length,
-    dayoff: records.filter(r => r.status === "dayoff").length,
-    vacation: records.filter(r => r.status === "vacation").length,
+  // 근무자별 통계
+  const getWorkerStats = (workerId) => {
+    const wr = records.filter(r => r.worker_id === workerId);
+    return {
+      present: wr.filter(r => r.status === "present").length,
+      late: wr.filter(r => r.status === "late").length,
+      absent: wr.filter(r => r.status === "absent").length,
+      dayoff: wr.filter(r => r.status === "dayoff").length,
+      vacation: wr.filter(r => r.status === "vacation").length,
+      total: wr.length,
+    };
   };
 
   return (
     <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
-      <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>월별 근태 현황</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>월별 근태 현황</div>
 
+      {/* 매장 선택 + 월 선택 */}
       <div className="flex flex-col md:flex-row gap-4 mb-5">
         <div>
-          <label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>근무자</label>
-          <select value={selectedWorker} onChange={e => setSelectedWorker(e.target.value)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600, minWidth: 160, width: "100%" }}>
-            {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-          </select>
+          <label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>매장 선택</label>
+          <div className="flex gap-2 flex-wrap">
+            {stores.map(s => (
+              <button key={s.id} onClick={() => setSelectedStore(s.id)} className="cursor-pointer" style={{
+                padding: "8px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700, transition: "all 0.15s",
+                border: s.id === selectedStore ? "2px solid #1428A0" : "1px solid #e2e8f0",
+                background: s.id === selectedStore ? "#1428A0" : "#fff",
+                color: s.id === selectedStore ? "#fff" : "#475569",
+              }}>{s.name}</button>
+            ))}
+          </div>
         </div>
         <div>
           <label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>월 선택</label>
-          <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600, width: "100%" }} />
+          <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600 }} />
         </div>
       </div>
 
-      {/* 통계 - 모바일에서 줄바꿈 */}
-      <div className="flex flex-wrap gap-2 md:gap-3 mb-5">
-        {Object.entries(statusMap).map(([key, val]) => (
-          <div key={key} style={{ padding: "6px 12px", borderRadius: 10, background: val.bg, display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: val.color }}>{val.label}</span>
-            <span style={{ fontSize: 14, fontWeight: 800, color: val.color }}>{stats[key] || 0}</span>
+      {/* 범례 */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {Object.entries(statusMap).map(([k, v]) => (
+          <div key={k} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ width: 14, height: 14, borderRadius: 4, background: v.bg, border: `1px solid ${v.color}30` }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: v.color }}>{v.label}</span>
           </div>
         ))}
-        <div style={{ padding: "6px 12px", borderRadius: 10, background: "#1428A010" }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#1428A0" }}>총 {records.length}일</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ width: 14, height: 14, borderRadius: 4, background: "#f8fafc", border: "1px solid #e2e8f0" }} />
+          <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8" }}>미입력</span>
         </div>
+        <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 8 }}>💡 셀 클릭으로 상태 변경 (출근→지각→결근→휴무→연차→삭제)</span>
       </div>
 
-      {/* PC: 테이블 */}
-      <div className="hidden md:block">
-        <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 2px" }}>
-          <thead>
-            <tr>
-              {["날짜", "요일", "상태", "출근", "퇴근", "매장", "비고", "관리"].map(h => (
-                <th key={h} style={{ padding: "8px 12px", fontSize: 12, fontWeight: 700, color: "#94a3b8", textAlign: "left", borderBottom: "2px solid #e2e8f0" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
+      {storeWorkers.length === 0 ? (
+        <div style={{ padding: 40, textAlign: "center", color: "#94a3b8", fontSize: 14 }}>배정된 근무자가 없습니다</div>
+      ) : (
+        <>
+          {/* PC: 매트릭스 뷰 */}
+          <div className="hidden md:block" style={{ overflowX: "auto", borderRadius: 12, border: "1px solid #e2e8f0" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: storeWorkers.length * 80 + 140 }}>
+              <thead>
+                <tr style={{ background: "#f8fafc" }}>
+                  <th style={{ padding: "10px 12px", fontSize: 12, fontWeight: 700, color: "#64748b", textAlign: "left", position: "sticky", left: 0, background: "#f8fafc", zIndex: 2, borderRight: "2px solid #e2e8f0", minWidth: 130 }}>날짜</th>
+                  {storeWorkers.map(w => (
+                    <th key={w.id} style={{ padding: "10px 8px", fontSize: 12, fontWeight: 700, color: "#1e293b", textAlign: "center", minWidth: 72, borderLeft: "1px solid #f1f5f9" }}>{w.name}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: daysInMonth }, (_, i) => {
+                  const date = `${y}-${m}-${String(i + 1).padStart(2, "0")}`;
+                  const dayOfWeek = new Date(date + "T00:00:00").getDay();
+                  const holidayName = getHolidayName(date);
+                  const dtype = getDayType(date);
+                  const isSpecial = dtype !== "weekday";
+                  return (
+                    <tr key={date} style={{ background: isSpecial ? "#fefce8" : i % 2 === 0 ? "#fff" : "#fafbfc", borderTop: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "8px 12px", fontSize: 13, fontWeight: 600, position: "sticky", left: 0, background: isSpecial ? "#fefce8" : i % 2 === 0 ? "#fff" : "#fafbfc", zIndex: 1, borderRight: "2px solid #e2e8f0", whiteSpace: "nowrap" }}>
+                        <span style={{ color: "#1e293b" }}>{i + 1}일</span>
+                        <span style={{ marginLeft: 6, fontSize: 12, fontWeight: 600, color: dayOfWeek === 0 ? "#dc2626" : dayOfWeek === 6 ? "#1428A0" : "#94a3b8" }}>{dayNames[dayOfWeek]}</span>
+                        {holidayName && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "#dc2626", background: "#fee2e2", padding: "1px 6px", borderRadius: 4 }}>{holidayName}</span>}
+                      </td>
+                      {storeWorkers.map(w => {
+                        const rec = records.find(r => r.worker_id === w.id && r.date === date);
+                        const st = rec ? statusMap[rec.status] : null;
+                        return (
+                          <td key={w.id} onClick={() => toggleStatus(w.id, date)} style={{ padding: "6px 4px", textAlign: "center", cursor: "pointer", borderLeft: "1px solid #f1f5f9", transition: "background 0.1s" }} onMouseEnter={e => e.currentTarget.style.background = "#e0e7ff"} onMouseLeave={e => e.currentTarget.style.background = ""}>
+                            {st ? (
+                              <span style={{ display: "inline-block", padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: st.bg, color: st.color, minWidth: 36 }}>{st.label}</span>
+                            ) : (
+                              <span style={{ fontSize: 12, color: "#e2e8f0" }}>-</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+                {/* 합계 행 */}
+                <tr style={{ background: "#f1f5f9", borderTop: "2px solid #cbd5e1" }}>
+                  <td style={{ padding: "10px 12px", fontSize: 13, fontWeight: 800, color: "#0f172a", position: "sticky", left: 0, background: "#f1f5f9", zIndex: 1, borderRight: "2px solid #e2e8f0" }}>합계</td>
+                  {storeWorkers.map(w => {
+                    const s = getWorkerStats(w.id);
+                    return (
+                      <td key={w.id} style={{ padding: "6px 4px", textAlign: "center", borderLeft: "1px solid #e2e8f0" }}>
+                        <div style={{ fontSize: 10, lineHeight: 1.6 }}>
+                          <span style={{ color: "#15803d", fontWeight: 700 }}>{s.present}</span>
+                          {s.late > 0 && <span style={{ color: "#ea580c", fontWeight: 700 }}>/{s.late}</span>}
+                          {s.absent > 0 && <span style={{ color: "#dc2626", fontWeight: 700 }}>/{s.absent}</span>}
+                        </div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "#1428A0" }}>{s.total}일</div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* 모바일: 날짜별 카드 */}
+          <div className="md:hidden space-y-2">
             {Array.from({ length: daysInMonth }, (_, i) => {
               const date = `${y}-${m}-${String(i + 1).padStart(2, "0")}`;
-              const dayOfWeek = new Date(date).getDay();
-              const record = records.find(r => r.date === date);
-              const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+              const dayOfWeek = new Date(date + "T00:00:00").getDay();
+              const holidayName = getHolidayName(date);
+              const dtype = getDayType(date);
+              const isSpecial = dtype !== "weekday";
+              const dayRecords = records.filter(r => r.date === date);
               return (
-                <tr key={date} style={{ background: isWeekend ? "#f8fafc" : "#fff" }}>
-                  <td style={{ padding: "8px 12px", fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{i + 1}일</td>
-                  <td style={{ padding: "8px 12px", fontSize: 13, fontWeight: 600, color: dayOfWeek === 0 ? "#dc2626" : dayOfWeek === 6 ? "#1428A0" : "#475569" }}>{dayNames[dayOfWeek]}</td>
-                  <td style={{ padding: "8px 12px" }}>
-                    {record ? (
-                      <select value={record.status} onChange={e => updateRecord(record.id, "status", e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600, background: statusMap[record.status]?.bg, color: statusMap[record.status]?.color }}>
-                        {Object.entries(statusMap).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                      </select>
-                    ) : <span style={{ fontSize: 12, color: "#d1d5db" }}>-</span>}
-                  </td>
-                  <td style={{ padding: "8px 12px" }}>
-                    {record && !["absent", "dayoff", "vacation"].includes(record.status) ? (
-                      <input type="time" value={record.check_in || ""} onChange={e => updateRecord(record.id, "check_in", e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, width: 90 }} />
-                    ) : <span style={{ fontSize: 12, color: "#d1d5db" }}>-</span>}
-                  </td>
-                  <td style={{ padding: "8px 12px" }}>
-                    {record && !["absent", "dayoff", "vacation"].includes(record.status) ? (
-                      <input type="time" value={record.check_out || ""} onChange={e => updateRecord(record.id, "check_out", e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, width: 90 }} />
-                    ) : <span style={{ fontSize: 12, color: "#d1d5db" }}>-</span>}
-                  </td>
-                  <td style={{ padding: "8px 12px", fontSize: 12, color: "#475569" }}>{record?.stores?.name || "-"}</td>
-                  <td style={{ padding: "8px 12px" }}>
-                    {record ? <input value={record.note || ""} onChange={e => updateRecord(record.id, "note", e.target.value)} placeholder="메모" style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, width: 100 }} /> : <span style={{ fontSize: 12, color: "#d1d5db" }}>-</span>}
-                  </td>
-                  <td style={{ padding: "8px 12px" }}>
-                    {record ? (
-                      <button onClick={() => deleteRecord(record.id)} className="cursor-pointer" style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "#fee2e2", color: "#dc2626", fontSize: 11, fontWeight: 600 }}>삭제</button>
-                    ) : (
-                      <button onClick={() => addRecord(date)} className="cursor-pointer" style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "#1428A015", color: "#1428A0", fontSize: 11, fontWeight: 600 }}>추가</button>
-                    )}
-                  </td>
-                </tr>
+                <div key={date} style={{ background: isSpecial ? "#fefce810" : "#fff", borderRadius: 12, padding: "12px 14px", border: isSpecial ? "1px solid #fde68a" : "1px solid #e2e8f0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: dayRecords.length > 0 || storeWorkers.length > 0 ? 8 : 0 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: "#1e293b" }}>{i + 1}일</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: dayOfWeek === 0 ? "#dc2626" : dayOfWeek === 6 ? "#1428A0" : "#94a3b8" }}>({dayNames[dayOfWeek]})</span>
+                    {holidayName && <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", background: "#fee2e2", padding: "1px 6px", borderRadius: 4 }}>{holidayName}</span>}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {storeWorkers.map(w => {
+                      const rec = records.find(r => r.worker_id === w.id && r.date === date);
+                      const st = rec ? statusMap[rec.status] : null;
+                      return (
+                        <button key={w.id} onClick={() => toggleStatus(w.id, date)} className="cursor-pointer" style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 8, border: "1px solid #e2e8f0", background: st ? st.bg : "#f8fafc", fontSize: 11, fontWeight: 600, color: st ? st.color : "#94a3b8" }}>
+                          <span>{w.name}</span>
+                          {st && <span>{st.label}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* 모바일: 카드형 리스트 */}
-      <div className="md:hidden space-y-2">
-        {Array.from({ length: daysInMonth }, (_, i) => {
-          const date = `${y}-${m}-${String(i + 1).padStart(2, "0")}`;
-          const dayOfWeek = new Date(date).getDay();
-          const record = records.find(r => r.date === date);
-          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-          const st = record ? statusMap[record.status] : null;
-          return (
-            <div key={date} style={{ background: isWeekend ? "#f8fafc" : "#fff", borderRadius: 12, padding: "12px 14px", border: "1px solid #e2e8f0" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: record ? 8 : 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "#1e293b" }}>{i + 1}일</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: dayOfWeek === 0 ? "#dc2626" : dayOfWeek === 6 ? "#1428A0" : "#94a3b8" }}>({dayNames[dayOfWeek]})</span>
-                  {st && <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: st.bg, color: st.color }}>{st.label}</span>}
-                </div>
-                {record ? (
-                  <button onClick={() => deleteRecord(record.id)} className="cursor-pointer" style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "#fee2e2", color: "#dc2626", fontSize: 11, fontWeight: 600 }}>삭제</button>
-                ) : (
-                  <button onClick={() => addRecord(date)} className="cursor-pointer" style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "#1428A015", color: "#1428A0", fontSize: 11, fontWeight: 600 }}>추가</button>
-                )}
-              </div>
-              {record && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-                  {!["absent", "dayoff", "vacation"].includes(record.status) && (
-                    <>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <span style={{ fontSize: 11, color: "#94a3b8" }}>출근</span>
-                        <input type="time" value={record.check_in || ""} onChange={e => updateRecord(record.id, "check_in", e.target.value)} style={{ padding: "3px 6px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, width: 80 }} />
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <span style={{ fontSize: 11, color: "#94a3b8" }}>퇴근</span>
-                        <input type="time" value={record.check_out || ""} onChange={e => updateRecord(record.id, "check_out", e.target.value)} style={{ padding: "3px 6px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, width: 80 }} />
-                      </div>
-                    </>
-                  )}
-                  <select value={record.status} onChange={e => updateRecord(record.id, "status", e.target.value)} style={{ padding: "3px 6px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 11, fontWeight: 600, background: st?.bg, color: st?.color }}>
-                    {Object.entries(statusMap).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                  </select>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
