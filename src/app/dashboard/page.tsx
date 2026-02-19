@@ -329,49 +329,49 @@ export default function DashboardPage() {
 
             {/* 잔여면수 현황 */}
             {parkingStatus.length > 0 && (
-              <div style={{ background: "#fff", borderRadius: 16, padding: "16px 16px 20px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div style={{ width: 4, height: 20, borderRadius: 2, background: "#1428A0" }} />
-                  <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>🅿️ 주차장 현황</h3>
+              <div style={{ background: "#fff", borderRadius: 16, padding: "24px 28px 28px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div style={{ width: 4, height: 22, borderRadius: 2, background: "#1428A0" }} />
+                  <h3 style={{ fontSize: 17, fontWeight: 700, color: "#0f172a" }}>🅿️ 주차장 현황</h3>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {parkingStatus.map((store, si) => {
                     const remaining = store.totalSpaces - store.currentCars;
                     const occupancy = store.totalSpaces > 0 ? Math.round((store.currentCars / store.totalSpaces) * 100) : 0;
                     const isOver = remaining < 0;
                     return (
-                      <div key={si} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}>
+                      <div key={si} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: "16px 18px" }}>
                         {/* 매장명 + 요약 한줄 */}
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "nowrap", gap: 8 }}>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0, flex: "0 1 auto" }}>{store.storeName}</span>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0, flex: "0 1 auto" }}>{store.storeName}</span>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                             <span style={{ fontSize: 11, color: "#94a3b8" }}>총</span>
-                            <span style={{ fontSize: 15, fontWeight: 800, color: "#1428A0" }}>{store.totalSpaces}</span>
+                            <span style={{ fontSize: 17, fontWeight: 800, color: "#1428A0" }}>{store.totalSpaces}</span>
                             <span style={{ color: "#e2e8f0" }}>|</span>
                             <span style={{ fontSize: 11, color: "#94a3b8" }}>현재</span>
-                            <span style={{ fontSize: 15, fontWeight: 800, color: store.currentCars > store.totalSpaces ? "#dc2626" : "#0f172a" }}>{store.currentCars}</span>
+                            <span style={{ fontSize: 17, fontWeight: 800, color: store.currentCars > store.totalSpaces ? "#dc2626" : "#0f172a" }}>{store.currentCars}</span>
                             <span style={{ color: "#e2e8f0" }}>|</span>
                             <span style={{ fontSize: 11, color: "#94a3b8" }}>잔여</span>
-                            <span style={{ fontSize: 15, fontWeight: 800, color: isOver ? "#dc2626" : remaining <= 5 ? "#EA580C" : "#15803d" }}>{remaining}</span>
+                            <span style={{ fontSize: 17, fontWeight: 800, color: isOver ? "#dc2626" : remaining <= 5 ? "#EA580C" : "#15803d" }}>{remaining}</span>
                             {isOver && <span style={{ padding: "2px 6px", borderRadius: 6, background: "#fee2e2", fontSize: 10, fontWeight: 700, color: "#dc2626", whiteSpace: "nowrap" }}>이중{Math.abs(remaining)}</span>}
                           </div>
                         </div>
                         {/* 점유율 바 */}
-                        <div style={{ background: "#f1f5f9", borderRadius: 6, height: 8, marginBottom: 10, overflow: "hidden" }}>
+                        <div style={{ background: "#f1f5f9", borderRadius: 6, height: 10, marginBottom: 12, overflow: "hidden" }}>
                           <div style={{ width: `${Math.min(occupancy, 100)}%`, height: "100%", borderRadius: 6, background: occupancy > 100 ? "#dc2626" : occupancy > 80 ? "#EA580C" : "#1428A0", transition: "width 0.5s ease" }} />
                         </div>
                         {/* 개별 주차장 - 한줄 카드 */}
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                           {store.lots.map(lot => {
                             const lotTotal = (lot.self_spaces || 0) + (lot.mechanical_normal || 0) + (lot.mechanical_suv || 0);
                             const lotCurrent = lot.current_cars || 0;
                             const lotRemain = lotTotal - lotCurrent;
                             return (
-                              <div key={lot.id} style={{ background: "#f8fafc", borderRadius: 8, padding: "6px 10px", border: "1px solid #e2e8f0" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
-                                  <span style={{ fontSize: 12 }}>{lot.lot_type === "internal" ? "🏢" : "🅿️"}</span>
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: "#475569" }}>{lot.name}</span>
-                                  <span style={{ fontSize: 11, fontWeight: 800, color: "#1428A0" }}>{lotTotal}면</span>
+                              <div key={lot.id} style={{ background: "#f8fafc", borderRadius: 10, padding: "8px 12px", border: "1px solid #e2e8f0" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
+                                  <span style={{ fontSize: 13 }}>{lot.lot_type === "internal" ? "🏢" : "🅿️"}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>{lot.name}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 800, color: "#1428A0" }}>{lotTotal}면</span>
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                   <span style={{ fontSize: 10, color: "#94a3b8" }}>현재</span>
@@ -395,7 +395,7 @@ export default function DashboardPage() {
               <div className="bg-white rounded-xl p-7 shadow-sm">
                 <h3 className="font-semibold text-dark mb-4">시간대별 입차량</h3>
                 {hourlyChartData.some((d) => d.count > 0) ? (
-                  <ResponsiveContainer width="100%" height={250}>
+                  <ResponsiveContainer width="100%" height={280}>
                     <BarChart data={hourlyChartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="hour" tick={{ fontSize: 11 }} />
@@ -412,7 +412,7 @@ export default function DashboardPage() {
               <div className="bg-white rounded-xl p-7 shadow-sm">
                 <h3 className="font-semibold text-dark mb-4">일별 추이</h3>
                 {dailyTrendData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
+                  <ResponsiveContainer width="100%" height={280}>
                     <LineChart data={dailyTrendData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" tick={{ fontSize: 11 }} />
@@ -433,7 +433,7 @@ export default function DashboardPage() {
             {!selectedStore && storeRankData.length > 0 && (
               <div className="bg-white rounded-xl p-7 shadow-sm">
                 <h3 className="font-semibold text-dark mb-4">매장 랭킹 (입차량 TOP 10)</h3>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={350}>
                   <BarChart data={storeRankData} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" tick={{ fontSize: 11 }} />
@@ -458,7 +458,7 @@ export default function DashboardPage() {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-48 flex items-center justify-center text-mr-gray text-sm">월주차 데이터가 없습니다</div>
+                  <div className="h-56 flex items-center justify-center text-mr-gray text-sm">월주차 데이터가 없습니다</div>
                 )}
                 {expiringSoon.length > 0 && (
                   <div className="mt-4 p-3 bg-orange-50 rounded-lg">
@@ -480,16 +480,16 @@ export default function DashboardPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="h-48 flex items-center justify-center text-mr-gray text-sm">근무자 데이터가 없습니다</div>
+                    <div className="h-56 flex items-center justify-center text-mr-gray text-sm">근무자 데이터가 없습니다</div>
                   )}
                 </div>
               ) : (
                 <div className="bg-white rounded-xl p-7 shadow-sm">
                   <h3 className="font-semibold text-dark mb-4">마감미정산</h3>
                   {records.length === 0 ? (
-                    <div className="h-48 flex items-center justify-center text-mr-gray text-sm">선택된 기간에 입력된 데이터가 없습니다</div>
+                    <div className="h-56 flex items-center justify-center text-mr-gray text-sm">선택된 기간에 입력된 데이터가 없습니다</div>
                   ) : (
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                    <div className="space-y-2 max-h-56 overflow-y-auto">
                       {stores
                         .filter((s) => !records.some((r) => r.store_id === s.id))
                         .map((s) => (
@@ -499,7 +499,7 @@ export default function DashboardPage() {
                           </div>
                         ))}
                       {stores.filter((s) => !records.some((r) => r.store_id === s.id)).length === 0 && (
-                        <div className="h-48 flex items-center justify-center text-success text-sm">모든 매장 입력 완료!</div>
+                        <div className="h-56 flex items-center justify-center text-success text-sm">모든 매장 입력 완료!</div>
                       )}
                     </div>
                   )}
