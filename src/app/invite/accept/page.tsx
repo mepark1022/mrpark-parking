@@ -87,11 +87,14 @@ function InviteAcceptContent() {
     }
   }
 
-  // 카카오/구글 소셜 로그인 → invite_token을 callback에 전달
+  // 카카오/구글 소셜 로그인 → invite_token을 쿠키에 저장
   async function handleSocialLogin(provider) {
     setSocialLoading(provider);
     setError("");
     try {
+      // 쿠키에 invite_token 저장 (callback에서 읽기)
+      document.cookie = `invite_token=${token}; path=/; max-age=600; SameSite=Lax`;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
