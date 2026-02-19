@@ -112,12 +112,13 @@ export async function GET(request: Request) {
           // 초대 수락
           await admin.from("invitations").update({ status: "accepted" }).eq("id", invitation.id);
 
-          // CREW → store_members
-          if (invitation.role === "crew" && invitation.store_id) {
+          // 배정 매장 → store_members 등록 (복수 매장 지원)
+          const storeIds: string[] = invitation.store_ids || (invitation.store_id ? [invitation.store_id] : []);
+          for (const sid of storeIds) {
             try {
               await admin.from("store_members").upsert({
                 user_id: user.id,
-                store_id: invitation.store_id,
+                store_id: sid,
                 org_id: orgId,
               });
             } catch (e) {}
