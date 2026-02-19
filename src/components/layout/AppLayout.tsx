@@ -14,7 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
       {/* 메인 영역 */}
       <div
-        className="flex-1 md:ml-[220px]"
+        className="flex-1 md:ml-[248px]"
         style={{
           display: "flex",
           flexDirection: "column",
