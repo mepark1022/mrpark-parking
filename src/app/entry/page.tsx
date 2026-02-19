@@ -28,6 +28,7 @@ export default function EntryPage() {
   const [message, setMessage] = useState("");
   const [existingRecordId, setExistingRecordId] = useState<string | null>(null);
   const [storeHours, setStoreHours] = useState<{ open: number; close: number }>({ open: 7, close: 22 });
+  const [oid, setOid] = useState<string | null>(null);
 
   const dayType = useMemo(() => {
     const d = new Date(selectedDate);
@@ -57,11 +58,12 @@ export default function EntryPage() {
   }
 
   async function loadStoresAndWorkers() {
-    const oid = await getOrgId();
-    if (!oid) return;
+    const orgId = await getOrgId();
+    if (!orgId) return;
+    setOid(orgId);
     const [storesRes, workersRes] = await Promise.all([
-      supabase.from("stores").select("id, name, has_valet, valet_fee").eq("org_id", oid).eq("is_active", true).order("name"),
-      supabase.from("workers").select("id, name").eq("org_id", oid).eq("status", "active").order("name"),
+      supabase.from("stores").select("id, name, has_valet, valet_fee").eq("org_id", orgId).eq("is_active", true).order("name"),
+      supabase.from("workers").select("id, name").eq("org_id", orgId).eq("status", "active").order("name"),
     ]);
     if (storesRes.data) {
       setStores(storesRes.data);
@@ -153,7 +155,7 @@ export default function EntryPage() {
         await supabase.from("hourly_data").delete().eq("record_id", recordId);
         await supabase.from("worker_assignments").delete().eq("record_id", recordId);
       } else {
-        const { data, error: insErr } = await supabase.from("daily_records").insert({ ...recordData, org_id: oid }).select("id").single();
+        const { data, error: insErr } = await supabase.from("daily_records").insert({ ...recordData, org_id: oid || await getOrgId() }).select("id").single();
         if (insErr) { setMessage(`저장 실패: ${insErr.message}`); setSaving(false); return; }
         recordId = data?.id;
       }
