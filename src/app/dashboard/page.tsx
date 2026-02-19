@@ -506,7 +506,6 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
-          </div>
 
           {/* 기능 안내 */}
           <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
@@ -542,6 +541,7 @@ export default function DashboardPage() {
             <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
               <p className="text-[11px] text-gray-400 text-center">© 주식회사 미스터팍 (Mr. Park) · ME.PARK 2.0 주차운영 시스템 · 문의: mepark1022@gmail.com</p>
             </div>
+          </div>
           </div>
         )}
       </div>
