@@ -148,11 +148,13 @@ export default function EntryPage() {
       };
 
       if (recordId) {
-        await supabase.from("daily_records").update(recordData).eq("id", recordId);
+        const { error: updErr } = await supabase.from("daily_records").update(recordData).eq("id", recordId);
+        if (updErr) { setMessage(`수정 실패: ${updErr.message}`); setSaving(false); return; }
         await supabase.from("hourly_data").delete().eq("record_id", recordId);
         await supabase.from("worker_assignments").delete().eq("record_id", recordId);
       } else {
-        const { data } = await supabase.from("daily_records").insert({ ...recordData, org_id: oid }).select("id").single();
+        const { data, error: insErr } = await supabase.from("daily_records").insert({ ...recordData, org_id: oid }).select("id").single();
+        if (insErr) { setMessage(`저장 실패: ${insErr.message}`); setSaving(false); return; }
         recordId = data?.id;
       }
 
@@ -178,7 +180,7 @@ export default function EntryPage() {
       setMessage("저장 완료!");
       setTimeout(() => setMessage(""), 3000);
     } catch (e) {
-      setMessage("저장 실패. 다시 시도해주세요.");
+      setMessage(`저장 실패: ${e?.message || JSON.stringify(e)}`);
     }
     setSaving(false);
   }
