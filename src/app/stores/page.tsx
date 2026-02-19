@@ -285,6 +285,7 @@ export default function StoresPage() {
   const [editItem, setEditItem] = useState(null);
   const [formData, setFormData] = useState({ name: "", region_id: "", has_valet: true, valet_fee: 5000, address: "", detail_address: "", manager_name: "", manager_phone: "" });
   const [message, setMessage] = useState("");
+  const [showParkingGuide, setShowParkingGuide] = useState(false);
   const [selectedStore, setSelectedStore] = useState("");
   const [hours, setHours] = useState([]);
   const [hoursMessage, setHoursMessage] = useState("");
@@ -369,7 +370,7 @@ export default function StoresPage() {
     const payload = { store_id: editItem.id, org_id: oid, name: plForm.name, lot_type: plForm.lot_type, lot_tag: (plForm as any).lot_tag || "본관", parking_type: plForm.parking_type, road_address: plForm.road_address || null, total_spaces: calcTotal, self_spaces: Number(plForm.self_spaces) || 0, mechanical_normal: Number(plForm.mechanical_normal) || 0, mechanical_suv: Number(plForm.mechanical_suv) || 0, operating_days: plForm.operating_days, open_time: plForm.open_time, close_time: plForm.close_time, operation_mode: (plForm as any).operation_mode || "valet", base_minutes: Number((plForm as any).base_minutes) || 0, base_fee: Number((plForm as any).base_fee) || 0, extra_unit: Number((plForm as any).extra_unit) || 10, extra_fee: Number((plForm as any).extra_fee) || 0, daily_max: Number((plForm as any).daily_max) || 0 };
     if (editPL) await supabase.from("parking_lots").update(payload).eq("id", editPL.id);
     else await supabase.from("parking_lots").insert(payload);
-    setShowPLForm(false); setEditPL(null); setPLForm({ name: "", lot_type: "internal", lot_tag: "본관", parking_type: ["self"], road_address: "", total_spaces: 0, self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00", operation_mode: "valet", base_minutes: 120, base_fee: 3000, extra_unit: 10, extra_fee: 1000, daily_max: 30000 });
+    setShowPLForm(false); setEditPL(null); setShowParkingGuide(false); setPLForm({ name: "", lot_type: "internal", lot_tag: "본관", parking_type: ["self"], road_address: "", total_spaces: 0, self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0, operating_days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true }, open_time: "09:00", close_time: "22:00", operation_mode: "valet", base_minutes: 120, base_fee: 3000, extra_unit: 10, extra_fee: 1000, daily_max: 30000 });
     loadParkingLots(editItem.id);
   };
   const deletePL = async (id) => { const supabase = createClient(); await supabase.from("parking_lots").delete().eq("id", id); loadParkingLots(editItem.id); };
@@ -506,7 +507,8 @@ export default function StoresPage() {
         await loadStores();
         setEditItem(data);
         setFormData({ name: data.name, region_id: data.region_id || "", has_valet: data.has_valet, valet_fee: data.valet_fee || 0, address: data.address || "", detail_address: data.detail_address || "", manager_name: data.manager_name || "", manager_phone: data.manager_phone || "" });
-        setMessage("매장이 추가되었습니다! 아래에서 방문지와 주차장을 등록하세요.");
+        setMessage("매장이 추가되었습니다!");
+        setShowParkingGuide(true);
         setTimeout(() => setMessage(""), 3000);
       }
     }
@@ -701,6 +703,22 @@ export default function StoresPage() {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+            {/* ─── 주차장 등록 안내 배너 ─── */}
+            {editItem && showForm && showParkingGuide && parkingLots.length === 0 && (
+              <div style={{ background: "linear-gradient(135deg, #1428A0 0%, #0f1d6b 100%)", borderRadius: 16, padding: "24px 28px", marginBottom: 8, position: "relative", overflow: "hidden" }}>
+                <button onClick={() => setShowParkingGuide(false)} style={{ position: "absolute", top: 12, right: 16, background: "none", border: "none", color: "rgba(255,255,255,0.6)", fontSize: 18, cursor: "pointer" }}>✕</button>
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <div style={{ fontSize: 40, flexShrink: 0 }}>🅿️</div>
+                  <div>
+                    <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", marginBottom: 6 }}>주차장을 등록해주세요!</div>
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 1.5 }}>
+                      매장이 생성되었습니다. 대시보드 주차장 현황에 표시하려면<br/>
+                      아래 <span style={{ color: "#F5B731", fontWeight: 700 }}>+ 주차장 추가</span> 버튼을 눌러 본관/외부 주차장을 등록해주세요.
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
             {/* ─── 주차장 관리 (매장 수정 시에만) ─── */}
