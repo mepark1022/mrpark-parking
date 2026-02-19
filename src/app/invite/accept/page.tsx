@@ -14,7 +14,7 @@ function InviteAcceptContent() {
   const [invitation, setInvitation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [step, setStep] = useState("loading"); // loading | signup | login | accepting | done | error
+  const [step, setStep] = useState("loading");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +33,6 @@ function InviteAcceptContent() {
 
   async function checkInvitation() {
     try {
-      // 토큰으로 초대 정보 조회
       const { data: inv, error: fetchErr } = await supabase
         .from("invitations")
         .select("*, stores(name)")
@@ -47,7 +46,6 @@ function InviteAcceptContent() {
         return;
       }
 
-      // 만료 체크
       if (inv.expires_at && new Date(inv.expires_at) < new Date()) {
         setError("초대가 만료되었습니다. 관리자에게 재초대를 요청하세요.");
         setStep("error");
@@ -55,7 +53,6 @@ function InviteAcceptContent() {
         return;
       }
 
-      // 이미 수락됨
       if (inv.status === "accepted") {
         setError("이미 수락된 초대입니다. 로그인 페이지로 이동하세요.");
         setStep("error");
@@ -63,7 +60,6 @@ function InviteAcceptContent() {
         return;
       }
 
-      // 취소됨
       if (inv.status === "rejected") {
         setError("취소된 초대입니다.");
         setStep("error");
@@ -74,15 +70,12 @@ function InviteAcceptContent() {
       setInvitation(inv);
       setEmail(inv.email);
 
-      // 이미 로그인 되어 있는지 확인
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         if (user.email === inv.email) {
-          // 같은 이메일로 로그인됨 → 바로 수락
           await acceptInvitation(user.id, inv);
           return;
         } else {
-          // 다른 이메일로 로그인됨 → 로그아웃 후 진행
           await supabase.auth.signOut();
           setStep("signup");
           setLoading(false);
@@ -98,7 +91,6 @@ function InviteAcceptContent() {
     }
   }
 
-  // 회원가입 후 수락
   async function handleSignUp() {
     if (!name || !password) return;
     setFormLoading(true);
@@ -122,7 +114,6 @@ function InviteAcceptContent() {
       }
 
       if (data.user) {
-        // 프로필 생성/업데이트
         await supabase.from("profiles").upsert({
           id: data.user.id,
           email: email,
@@ -131,7 +122,6 @@ function InviteAcceptContent() {
           status: "active",
           org_id: invitation.org_id || null,
         });
-
         await acceptInvitation(data.user.id, invitation);
       }
     } catch (err) {
@@ -140,7 +130,6 @@ function InviteAcceptContent() {
     }
   }
 
-  // 기존 계정 로그인 후 수락
   async function handleLogin() {
     if (!password) return;
     setFormLoading(true);
@@ -155,7 +144,6 @@ function InviteAcceptContent() {
       if (loginErr) throw loginErr;
 
       if (data.user) {
-        // 프로필 업데이트 (role, org_id)
         await supabase.from("profiles").upsert({
           id: data.user.id,
           email: email,
@@ -163,7 +151,6 @@ function InviteAcceptContent() {
           status: "active",
           org_id: invitation.org_id || null,
         });
-
         await acceptInvitation(data.user.id, invitation);
       }
     } catch (err) {
@@ -172,17 +159,14 @@ function InviteAcceptContent() {
     }
   }
 
-  // 초대 수락 처리
   async function acceptInvitation(userId, inv) {
     setStep("accepting");
     try {
-      // 1. invitations 상태 업데이트
       await supabase
         .from("invitations")
         .update({ status: "accepted" })
         .eq("id", inv.id);
 
-      // 2. crew인 경우 store_members에 매장 배정 (테이블 존재 시)
       if (inv.role === "crew" && inv.store_id) {
         try {
           await supabase.from("store_members").upsert({
@@ -191,14 +175,11 @@ function InviteAcceptContent() {
             org_id: inv.org_id || null,
           });
         } catch (e) {
-          // store_members 테이블이 없어도 무시
           console.log("store_members upsert skipped:", e);
         }
       }
 
       setStep("done");
-
-      // 1.5초 후 리다이렉트
       setTimeout(() => {
         if (inv.role === "crew") {
           router.push("/crew/home");
@@ -212,33 +193,83 @@ function InviteAcceptContent() {
     }
   }
 
-  // --- UI ---
   const roleLabel = invitation?.role === "crew" ? "CREW (현장 크루)" : "관리자 (Admin)";
+  const roleColor = invitation?.role === "crew" ? "#16a34a" : "#1428A0";
   const storeName = invitation?.stores?.name;
 
-  // 로딩
+  // ME.PARK 2.0 로고 컴포넌트 (Rounded Frame + Gold Corner)
+  const MeParkLogo = ({ size = "default", theme = "light" }) => {
+    const sizes = {
+      small: { fontSize: 14, padding: "8px 14px", corner: 12, radius: 8 },
+      default: { fontSize: 20, padding: "12px 20px", corner: 18, radius: 10 },
+      large: { fontSize: 28, padding: "16px 28px", corner: 24, radius: 14 },
+    };
+    const s = sizes[size];
+    const borderColor = theme === "dark" ? "#fff" : "#1A1D2B";
+    const textColor = theme === "dark" ? "#fff" : "#1A1D2B";
+    const subColor = theme === "dark" ? "rgba(255,255,255,.35)" : "#8B90A0";
+
+    return (
+      <div style={{ display: "inline-flex" }}>
+        <div style={{
+          padding: s.padding,
+          border: `2.5px solid ${borderColor}`,
+          borderRadius: s.radius,
+          position: "relative",
+          overflow: "hidden",
+        }}>
+          <div style={{
+            position: "absolute", top: 0, right: 0,
+            width: 0, height: 0,
+            borderTop: `${s.corner}px solid #F5B731`,
+            borderLeft: `${s.corner}px solid transparent`,
+          }} />
+          <span style={{
+            fontFamily: "'Outfit', sans-serif",
+            fontSize: s.fontSize,
+            fontWeight: 800,
+            color: textColor,
+            letterSpacing: "-0.5px",
+          }}>
+            ME.PARK{" "}
+          </span>
+          <span style={{
+            fontFamily: "'Outfit', sans-serif",
+            fontSize: s.fontSize,
+            fontWeight: 300,
+            color: subColor,
+          }}>
+            2.0
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  // --- 상태별 렌더링 ---
+
   if (step === "loading") {
     return (
       <div style={styles.page}>
         <div style={styles.card}>
           <div style={styles.center}>
-            <div style={styles.spinner}>⏳</div>
-            <p style={styles.subText}>초대 정보를 확인하고 있습니다...</p>
+            <div style={{ fontSize: 36, marginBottom: 12, animation: "pulse 1.5s infinite" }}>⏳</div>
+            <p style={{ color: "#8B90A0", fontSize: 14 }}>초대 정보를 확인하고 있습니다...</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // 에러
   if (step === "error") {
     return (
       <div style={styles.page}>
         <div style={styles.card}>
           <div style={styles.center}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-            <h2 style={{ color: "#1A1D2B", fontSize: 18, fontWeight: 700, marginBottom: 12 }}>초대 오류</h2>
-            <p style={{ color: "#dc2626", fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>{error}</p>
+            <MeParkLogo size="default" theme="light" />
+            <div style={{ fontSize: 40, margin: "20px 0 12px" }}>⚠️</div>
+            <h2 style={{ color: "#1A1D2B", fontSize: 17, fontWeight: 700, marginBottom: 12 }}>초대 오류</h2>
+            <p style={{ color: "#dc2626", fontSize: 13, lineHeight: 1.6, marginBottom: 24 }}>{error}</p>
             <button onClick={() => router.push("/login")} style={styles.btnSecondary}>
               로그인 페이지로 이동
             </button>
@@ -248,29 +279,29 @@ function InviteAcceptContent() {
     );
   }
 
-  // 수락 중
   if (step === "accepting") {
     return (
       <div style={styles.page}>
         <div style={styles.card}>
           <div style={styles.center}>
-            <div style={styles.spinner}>⏳</div>
-            <p style={styles.subText}>초대를 수락하고 있습니다...</p>
+            <MeParkLogo size="default" theme="light" />
+            <div style={{ fontSize: 36, margin: "20px 0 12px" }}>⏳</div>
+            <p style={{ color: "#8B90A0", fontSize: 14 }}>초대를 수락하고 있습니다...</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // 완료
   if (step === "done") {
     return (
       <div style={styles.page}>
         <div style={styles.card}>
           <div style={styles.center}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-            <h2 style={{ color: "#15803d", fontSize: 18, fontWeight: 700, marginBottom: 8 }}>초대 수락 완료!</h2>
-            <p style={styles.subText}>잠시 후 이동합니다...</p>
+            <MeParkLogo size="default" theme="light" />
+            <div style={{ fontSize: 40, margin: "20px 0 12px" }}>✅</div>
+            <h2 style={{ color: "#16a34a", fontSize: 17, fontWeight: 700, marginBottom: 8 }}>초대 수락 완료!</h2>
+            <p style={{ color: "#8B90A0", fontSize: 14 }}>잠시 후 이동합니다...</p>
           </div>
         </div>
       </div>
@@ -280,28 +311,42 @@ function InviteAcceptContent() {
   // 회원가입 / 로그인 폼
   return (
     <div style={styles.page}>
+      {/* Google Fonts 로드 */}
+      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;800;900&family=Sora:wght@800&display=swap" rel="stylesheet" />
+
       <div style={styles.card}>
-        {/* 헤더 */}
+        {/* ME.PARK 2.0 로고 */}
         <div style={styles.center}>
-          <div style={styles.logo}>VALETMAN</div>
-          <p style={{ color: "#999", fontSize: 12, marginTop: 4, marginBottom: 20 }}>주차운영 시스템</p>
-          <h2 style={{ color: "#1A1D2B", fontSize: 18, fontWeight: 700, marginBottom: 4 }}>팀원 초대</h2>
+          <MeParkLogo size="default" theme="light" />
+          <p style={{ color: "#8B90A0", fontSize: 11, marginTop: 6, letterSpacing: 1 }}>주차운영 시스템</p>
+        </div>
+
+        {/* 초대 정보 */}
+        <div style={{ textAlign: "center", marginTop: 20 }}>
+          <h2 style={{ color: "#1A1D2B", fontSize: 18, fontWeight: 800, marginBottom: 6 }}>팀원 초대</h2>
           <p style={{ color: "#666", fontSize: 13 }}>
-            <strong style={{ color: "#1428A0" }}>{roleLabel}</strong>으로 초대되었습니다
+            <strong style={{ color: roleColor }}>{roleLabel}</strong>으로 초대되었습니다
           </p>
           {storeName && (
-            <p style={{ color: "#ea580c", fontSize: 13, marginTop: 4, fontWeight: 600 }}>
+            <div style={{
+              display: "inline-block",
+              marginTop: 8,
+              padding: "4px 12px",
+              background: "#FFF7ED",
+              borderRadius: 6,
+              fontSize: 12,
+              color: "#ea580c",
+              fontWeight: 600,
+            }}>
               📍 배정 매장: {storeName}
-            </p>
+            </div>
           )}
         </div>
 
         {/* 에러 메시지 */}
-        {error && (
-          <div style={styles.errorBox}>{error}</div>
-        )}
+        {error && <div style={styles.errorBox}>{error}</div>}
 
-        {/* 탭 전환: 회원가입 / 로그인 */}
+        {/* 탭 전환 */}
         <div style={styles.tabWrap}>
           <button
             onClick={() => { setStep("signup"); setError(""); }}
@@ -321,27 +366,11 @@ function InviteAcceptContent() {
         {step === "signup" && (
           <div style={{ marginTop: 20 }}>
             <label style={styles.label}>이름 *</label>
-            <input
-              style={styles.input}
-              placeholder="이름을 입력하세요"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <input style={styles.input} placeholder="이름을 입력하세요" value={name} onChange={(e) => setName(e.target.value)} />
             <label style={styles.label}>이메일</label>
-            <input
-              style={{ ...styles.input, background: "#f8fafc", color: "#999" }}
-              value={email}
-              readOnly
-            />
+            <input style={{ ...styles.input, background: "#f8fafc", color: "#8B90A0" }} value={email} readOnly />
             <label style={styles.label}>비밀번호 *</label>
-            <input
-              style={styles.input}
-              type="password"
-              placeholder="6자 이상 입력하세요"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSignUp()}
-            />
+            <input style={styles.input} type="password" placeholder="6자 이상 입력하세요" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSignUp()} />
             <button
               style={{ ...styles.btnPrimary, opacity: formLoading || !name || !password || password.length < 6 ? 0.5 : 1 }}
               onClick={handleSignUp}
@@ -356,20 +385,9 @@ function InviteAcceptContent() {
         {step === "login" && (
           <div style={{ marginTop: 20 }}>
             <label style={styles.label}>이메일</label>
-            <input
-              style={{ ...styles.input, background: "#f8fafc", color: "#999" }}
-              value={email}
-              readOnly
-            />
+            <input style={{ ...styles.input, background: "#f8fafc", color: "#8B90A0" }} value={email} readOnly />
             <label style={styles.label}>비밀번호 *</label>
-            <input
-              style={styles.input}
-              type="password"
-              placeholder="비밀번호를 입력하세요"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-            />
+            <input style={styles.input} type="password" placeholder="비밀번호를 입력하세요" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
             <button
               style={{ ...styles.btnPrimary, opacity: formLoading || !password ? 0.5 : 1 }}
               onClick={handleLogin}
@@ -381,22 +399,21 @@ function InviteAcceptContent() {
         )}
 
         {/* 푸터 */}
-        <p style={{ color: "#ccc", fontSize: 11, textAlign: "center", marginTop: 24 }}>
-          © 주식회사 미스터팍 · VALETMAN
+        <p style={{ color: "#C0C4D0", fontSize: 11, textAlign: "center", marginTop: 28 }}>
+          © 주식회사 미스터팍 · ME.PARK 2.0
         </p>
       </div>
     </div>
   );
 }
 
-// Suspense 래퍼 (useSearchParams 필수)
 export default function InviteAcceptPage() {
   return (
     <Suspense fallback={
       <div style={styles.page}>
         <div style={styles.card}>
           <div style={styles.center}>
-            <p style={styles.subText}>로딩 중...</p>
+            <p style={{ color: "#8B90A0", fontSize: 14 }}>로딩 중...</p>
           </div>
         </div>
       </div>
@@ -406,11 +423,10 @@ export default function InviteAcceptPage() {
   );
 }
 
-// 스타일
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "linear-gradient(180deg, #0a1352 0%, #1428A0 50%, #1e3a8a 100%)",
+    background: "#1A1D2B",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -422,26 +438,15 @@ const styles = {
     background: "#fff",
     borderRadius: 20,
     padding: "36px 28px",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+    position: "relative",
   },
   center: { textAlign: "center" },
-  logo: {
-    display: "inline-block",
-    background: "#1428A0",
-    color: "#fff",
-    padding: "8px 20px",
-    borderRadius: 10,
-    fontWeight: 800,
-    fontSize: 17,
-    letterSpacing: 1,
-  },
-  spinner: { fontSize: 40, marginBottom: 12 },
-  subText: { color: "#888", fontSize: 14 },
   label: {
     display: "block",
     fontSize: 13,
     fontWeight: 700,
-    color: "#555",
+    color: "#1A1D2B",
     marginBottom: 6,
     marginTop: 14,
   },
@@ -454,7 +459,6 @@ const styles = {
     color: "#1A1D2B",
     outline: "none",
     boxSizing: "border-box",
-    transition: "border-color 0.2s",
   },
   btnPrimary: {
     width: "100%",
@@ -515,7 +519,7 @@ const styles = {
     fontSize: 14,
     fontWeight: 500,
     background: "transparent",
-    color: "#999",
+    color: "#8B90A0",
     cursor: "pointer",
   },
 };
