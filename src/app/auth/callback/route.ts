@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/dashboard";
 
-  // invite_token: URL 파라미터 또는 쿠키에서 가져오기
+  // invite_token: URL → 쿠키 순서로 확인
   let inviteToken = searchParams.get("invite_token");
   if (!inviteToken) {
     try {
@@ -16,6 +16,8 @@ export async function GET(request: Request) {
       inviteToken = cookieStore.get("invite_token")?.value || null;
     } catch (e) {}
   }
+
+  console.log("[callback] inviteToken:", inviteToken);
 
   if (code) {
     const supabase = await createClient();
@@ -30,47 +32,71 @@ export async function GET(request: Request) {
                      user.user_metadata?.preferred_username ||
                      user.email?.split("@")[0] || "사용자";
 
+        console.log("[callback] user:", user.email, "inviteToken:", inviteToken);
+
         // ============================
-        // 1단계: 초대 확인 (token → email 순서)
+        // 1단계: 초대 확인
         // ============================
         let invitation = null;
 
-        // 1-1. invite_token으로 초대 조회
+        // 1-1. invite_token으로
         if (inviteToken) {
-          const { data: inv } = await supabase
+          const { data: inv, error: invErr } = await supabase
             .from("invitations")
-            .select("id, role, org_id, store_id, email, invited_by")
+            .select("*")
             .eq("token", inviteToken)
             .eq("status", "pending")
             .single();
+          console.log("[callback] token lookup:", inv?.id, invErr?.message);
           if (inv) invitation = inv;
         }
 
-        // 1-2. 이메일로 초대 조회
+        // 1-2. 이메일로
         if (!invitation && user.email) {
           const { data: inv } = await supabase
             .from("invitations")
-            .select("id, role, org_id, store_id, email, invited_by")
+            .select("*")
             .eq("email", user.email)
             .eq("status", "pending")
             .single();
+          console.log("[callback] email lookup:", inv?.id);
           if (inv) invitation = inv;
         }
 
         // ============================
-        // 2단계: 초대가 있으면 → 수락 처리
+        // 2단계: 초대가 있으면 → 수락
         // ============================
         if (invitation) {
-          // org_id 결정: 초대에 있으면 사용, 없으면 초대한 사람에서 가져오기
+          console.log("[callback] invitation found:", invitation.id, "org_id:", invitation.org_id, "invited_by:", invitation.invited_by);
+
+          // org_id 결정 (3단계 fallback)
           let orgId = invitation.org_id;
+
+          // fallback 1: invited_by로 초대한 사람의 org_id
           if (!orgId && invitation.invited_by) {
-            const { data: inviterProfile } = await supabase
+            const { data: inviter } = await supabase
               .from("profiles")
               .select("org_id")
               .eq("id", invitation.invited_by)
               .single();
-            if (inviterProfile?.org_id) orgId = inviterProfile.org_id;
+            if (inviter?.org_id) orgId = inviter.org_id;
+            console.log("[callback] fallback1 inviter org_id:", orgId);
           }
+
+          // fallback 2: 시스템에서 첫 번째 admin의 org_id (최후의 수단)
+          if (!orgId) {
+            const { data: admins } = await supabase
+              .from("profiles")
+              .select("org_id")
+              .eq("role", "admin")
+              .eq("status", "active")
+              .not("org_id", "is", null)
+              .limit(1);
+            if (admins?.[0]?.org_id) orgId = admins[0].org_id;
+            console.log("[callback] fallback2 admin org_id:", orgId);
+          }
+
+          console.log("[callback] final orgId:", orgId);
 
           // 기존 프로필 확인
           const { data: existingProfile } = await supabase
@@ -79,23 +105,24 @@ export async function GET(request: Request) {
             .eq("id", user.id)
             .single();
 
-          // 프로필 생성/업데이트
-          await supabase.from("profiles").upsert({
+          // 프로필 upsert
+          const profileData = {
             id: user.id,
             email: user.email,
             name: existingProfile?.name && existingProfile.name !== "EMPTY" ? existingProfile.name : name,
             role: invitation.role === "crew" ? "crew" : "admin",
             status: "active",
             org_id: orgId,
-          });
+          };
+          console.log("[callback] upsert profile:", profileData);
+
+          const { error: upsertErr } = await supabase.from("profiles").upsert(profileData);
+          console.log("[callback] upsert result:", upsertErr?.message || "OK");
 
           // 초대 수락
-          await supabase
-            .from("invitations")
-            .update({ status: "accepted" })
-            .eq("id", invitation.id);
+          await supabase.from("invitations").update({ status: "accepted" }).eq("id", invitation.id);
 
-          // CREW → store_members 추가
+          // CREW → store_members
           if (invitation.role === "crew" && invitation.store_id) {
             try {
               await supabase.from("store_members").upsert({
@@ -106,7 +133,7 @@ export async function GET(request: Request) {
             } catch (e) {}
           }
 
-          // 쿠키 삭제
+          // 쿠키 삭제 + 리다이렉트
           const response = NextResponse.redirect(
             `${origin}${invitation.role === "crew" ? "/crew/home" : "/dashboard"}`
           );
@@ -115,7 +142,7 @@ export async function GET(request: Request) {
         }
 
         // ============================
-        // 3단계: 초대 없음 → 일반 로그인
+        // 3단계: 초대 없음
         // ============================
         const { data: profile } = await supabase
           .from("profiles")
@@ -125,11 +152,8 @@ export async function GET(request: Request) {
 
         if (!profile) {
           await supabase.from("profiles").insert({
-            id: user.id,
-            email: user.email,
-            name,
-            role: "viewer",
-            status: "pending",
+            id: user.id, email: user.email, name,
+            role: "viewer", status: "pending",
           });
           await supabase.auth.signOut();
           return NextResponse.redirect(`${origin}/login?message=pending`);
