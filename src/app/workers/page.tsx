@@ -232,7 +232,9 @@ export default function WorkersPage() {
 
   const loadWorkers = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("workers").select("*, regions(name)").order("name");
+    const oid = await getOrgId();
+    if (!oid) return;
+    const { data } = await supabase.from("workers").select("*, regions(name)").eq("org_id", oid).order("name");
     if (data) setWorkers(data);
   };
   const loadRegions = async () => {
@@ -243,8 +245,14 @@ export default function WorkersPage() {
   const handleSave = async () => {
     if (!formData.name) { setMessage("이름을 입력하세요"); return; }
     const supabase = createClient();
-    if (editItem) { await supabase.from("workers").update({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null }).eq("id", editItem.id); }
-    else { await supabase.from("workers").insert({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, status: "active" }); }
+    const oid = await getOrgId();
+    if (editItem) {
+      const { error } = await supabase.from("workers").update({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null }).eq("id", editItem.id);
+      if (error) { setMessage(`수정 실패: ${error.message}`); return; }
+    } else {
+      const { error } = await supabase.from("workers").insert({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, status: "active", org_id: oid });
+      if (error) { setMessage(`추가 실패: ${error.message}`); return; }
+    }
     setShowForm(false); setEditItem(null); setFormData({ name: "", phone: "", region_id: "" }); setMessage(""); loadWorkers();
   };
   const toggleStatus = async (worker) => {
