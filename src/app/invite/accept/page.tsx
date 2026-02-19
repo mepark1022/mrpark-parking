@@ -73,14 +73,9 @@ function InviteAcceptContent() {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        if (user.email === inv.email) {
-          await acceptInvitation(user.id, inv);
-          return;
-        } else {
-          await supabase.auth.signOut();
-          setStep("social");
-          setLoading(false);
-        }
+        // 이미 로그인된 유저 → 바로 수락
+        await acceptInvitation(user.id, inv, user.email);
+        return;
       } else {
         setStep("social");
         setLoading(false);
@@ -92,7 +87,7 @@ function InviteAcceptContent() {
     }
   }
 
-  // 카카오/구글/네이버 소셜 로그인
+  // 카카오/구글 소셜 로그인 → invite_token을 callback에 전달
   async function handleSocialLogin(provider) {
     setSocialLoading(provider);
     setError("");
@@ -100,7 +95,7 @@ function InviteAcceptContent() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?invite_token=${token}`,
         },
       });
       if (error) setError("로그인 중 오류가 발생했습니다.");
@@ -142,7 +137,7 @@ function InviteAcceptContent() {
           status: "active",
           org_id: invitation.org_id || null,
         });
-        await acceptInvitation(data.user.id, invitation);
+        await acceptInvitation(data.user.id, invitation, email);
       }
     } catch (err) {
       setError(err.message || "회원가입에 실패했습니다.");
@@ -171,7 +166,7 @@ function InviteAcceptContent() {
           status: "active",
           org_id: invitation.org_id || null,
         });
-        await acceptInvitation(data.user.id, invitation);
+        await acceptInvitation(data.user.id, invitation, email);
       }
     } catch (err) {
       setError(err.message || "로그인에 실패했습니다.");
@@ -179,7 +174,7 @@ function InviteAcceptContent() {
     }
   }
 
-  async function acceptInvitation(userId, inv) {
+  async function acceptInvitation(userId, inv, userEmail) {
     setStep("accepting");
     try {
       await supabase
@@ -237,7 +232,6 @@ function InviteAcceptContent() {
     </div>
   );
 
-  // 소셜 로그인 버튼 데이터
   const socialButtons = [
     {
       provider: "kakao",
@@ -266,8 +260,6 @@ function InviteAcceptContent() {
       ),
     },
   ];
-
-  // --- 상태별 렌더링 ---
 
   if (step === "loading" || step === "accepting") {
     return (
@@ -321,19 +313,15 @@ function InviteAcceptContent() {
     );
   }
 
-  // 메인: 소셜 로그인 + 이메일 폼
   return (
     <div style={styles.page}>
       <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;800;900&display=swap" rel="stylesheet" />
-
       <div style={styles.card}>
-        {/* ME.PARK 2.0 로고 */}
         <div style={styles.center}>
           <MeParkLogo />
           <p style={{ color: "#8B90A0", fontSize: 11, marginTop: 6, letterSpacing: 1 }}>주차운영 시스템</p>
         </div>
 
-        {/* 초대 정보 */}
         <div style={{ textAlign: "center", marginTop: 20 }}>
           <h2 style={{ color: "#1A1D2B", fontSize: 18, fontWeight: 800, marginBottom: 6 }}>팀원 초대</h2>
           <p style={{ color: "#666", fontSize: 13 }}>
@@ -349,10 +337,8 @@ function InviteAcceptContent() {
           )}
         </div>
 
-        {/* 에러 메시지 */}
         {error && <div style={styles.errorBox}>{error}</div>}
 
-        {/* 소셜 로그인 (기본 화면) */}
         {step === "social" && (
           <div style={{ marginTop: 24 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -369,41 +355,22 @@ function InviteAcceptContent() {
                     opacity: socialLoading && socialLoading !== btn.provider ? 0.5 : 1,
                   }}
                 >
-                  {socialLoading === btn.provider ? (
-                    <span>연결 중...</span>
-                  ) : (
-                    <>{btn.icon}<span>{btn.label}</span></>
-                  )}
+                  {socialLoading === btn.provider ? <span>연결 중...</span> : <>{btn.icon}<span>{btn.label}</span></>}
                 </button>
               ))}
             </div>
-
-            {/* 구분선 */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0 16px" }}>
               <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
               <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 500 }}>또는 이메일로</span>
               <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
             </div>
-
-            {/* 이메일 가입/로그인 버튼 */}
             <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={() => setStep("signup")}
-                style={{ ...styles.btnOutline, flex: 1 }}
-              >
-                이메일 회원가입
-              </button>
-              <button
-                onClick={() => setStep("login")}
-                style={{ ...styles.btnOutline, flex: 1 }}
-              >
-                이메일 로그인
-              </button>
+              <button onClick={() => setStep("signup")} style={{ ...styles.btnOutline, flex: 1 }}>이메일 회원가입</button>
+              <button onClick={() => setStep("login")} style={{ ...styles.btnOutline, flex: 1 }}>이메일 로그인</button>
             </div>
           </div>
         )}
 
-        {/* 회원가입 폼 */}
         {step === "signup" && (
           <div style={{ marginTop: 20 }}>
             <button onClick={() => setStep("social")} style={styles.backBtn}>← 돌아가기</button>
@@ -413,17 +380,12 @@ function InviteAcceptContent() {
             <input style={{ ...styles.input, background: "#f8fafc", color: "#8B90A0" }} value={email} readOnly />
             <label style={styles.label}>비밀번호 *</label>
             <input style={styles.input} type="password" placeholder="6자 이상 입력하세요" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSignUp()} />
-            <button
-              style={{ ...styles.btnPrimary, opacity: formLoading || !name || !password || password.length < 6 ? 0.5 : 1 }}
-              onClick={handleSignUp}
-              disabled={formLoading || !name || !password || password.length < 6}
-            >
+            <button style={{ ...styles.btnPrimary, opacity: formLoading || !name || !password || password.length < 6 ? 0.5 : 1 }} onClick={handleSignUp} disabled={formLoading || !name || !password || password.length < 6}>
               {formLoading ? "처리 중..." : "가입하고 초대 수락"}
             </button>
           </div>
         )}
 
-        {/* 로그인 폼 */}
         {step === "login" && (
           <div style={{ marginTop: 20 }}>
             <button onClick={() => setStep("social")} style={styles.backBtn}>← 돌아가기</button>
@@ -431,17 +393,12 @@ function InviteAcceptContent() {
             <input style={{ ...styles.input, background: "#f8fafc", color: "#8B90A0" }} value={email} readOnly />
             <label style={styles.label}>비밀번호 *</label>
             <input style={styles.input} type="password" placeholder="비밀번호를 입력하세요" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
-            <button
-              style={{ ...styles.btnPrimary, opacity: formLoading || !password ? 0.5 : 1 }}
-              onClick={handleLogin}
-              disabled={formLoading || !password}
-            >
+            <button style={{ ...styles.btnPrimary, opacity: formLoading || !password ? 0.5 : 1 }} onClick={handleLogin} disabled={formLoading || !password}>
               {formLoading ? "처리 중..." : "로그인하고 초대 수락"}
             </button>
           </div>
         )}
 
-        {/* 푸터 */}
         <p style={{ color: "#C0C4D0", fontSize: 11, textAlign: "center", marginTop: 28 }}>
           © 주식회사 미스터팍 · ME.PARK 2.0
         </p>
@@ -453,13 +410,7 @@ function InviteAcceptContent() {
 export default function InviteAcceptPage() {
   return (
     <Suspense fallback={
-      <div style={styles.page}>
-        <div style={styles.card}>
-          <div style={styles.center}>
-            <p style={{ color: "#8B90A0", fontSize: 14 }}>로딩 중...</p>
-          </div>
-        </div>
-      </div>
+      <div style={styles.page}><div style={styles.card}><div style={styles.center}><p style={{ color: "#8B90A0", fontSize: 14 }}>로딩 중...</p></div></div></div>
     }>
       <InviteAcceptContent />
     </Suspense>
@@ -467,91 +418,14 @@ export default function InviteAcceptPage() {
 }
 
 const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "#1A1D2B",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "20px 16px",
-  },
-  card: {
-    width: "100%",
-    maxWidth: 420,
-    background: "#fff",
-    borderRadius: 20,
-    padding: "36px 28px",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
-    position: "relative",
-  },
+  page: { minHeight: "100vh", background: "#1A1D2B", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 16px" },
+  card: { width: "100%", maxWidth: 420, background: "#fff", borderRadius: 20, padding: "36px 28px", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", position: "relative" },
   center: { textAlign: "center" },
-  label: {
-    display: "block",
-    fontSize: 13,
-    fontWeight: 700,
-    color: "#1A1D2B",
-    marginBottom: 6,
-    marginTop: 14,
-  },
-  input: {
-    width: "100%",
-    padding: "12px 16px",
-    border: "1.5px solid #e2e8f0",
-    borderRadius: 10,
-    fontSize: 14,
-    color: "#1A1D2B",
-    outline: "none",
-    boxSizing: "border-box",
-  },
-  btnPrimary: {
-    width: "100%",
-    padding: "14px 0",
-    background: "#1428A0",
-    color: "#fff",
-    border: "none",
-    borderRadius: 12,
-    fontSize: 15,
-    fontWeight: 700,
-    cursor: "pointer",
-    marginTop: 20,
-  },
-  btnSecondary: {
-    padding: "10px 24px",
-    background: "#f1f5f9",
-    color: "#475569",
-    border: "1px solid #e2e8f0",
-    borderRadius: 10,
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-  btnOutline: {
-    padding: "11px 0",
-    background: "#fff",
-    color: "#475569",
-    border: "1.5px solid #e2e8f0",
-    borderRadius: 10,
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-  backBtn: {
-    background: "none",
-    border: "none",
-    color: "#8B90A0",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-    padding: 0,
-    marginBottom: 8,
-  },
-  errorBox: {
-    background: "#fee2e2",
-    color: "#dc2626",
-    padding: "10px 14px",
-    borderRadius: 10,
-    fontSize: 13,
-    marginTop: 16,
-    lineHeight: 1.5,
-  },
+  label: { display: "block", fontSize: 13, fontWeight: 700, color: "#1A1D2B", marginBottom: 6, marginTop: 14 },
+  input: { width: "100%", padding: "12px 16px", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 14, color: "#1A1D2B", outline: "none", boxSizing: "border-box" },
+  btnPrimary: { width: "100%", padding: "14px 0", background: "#1428A0", color: "#fff", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", marginTop: 20 },
+  btnSecondary: { padding: "10px 24px", background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer" },
+  btnOutline: { padding: "11px 0", background: "#fff", color: "#475569", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" },
+  backBtn: { background: "none", border: "none", color: "#8B90A0", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: 8 },
+  errorBox: { background: "#fee2e2", color: "#dc2626", padding: "10px 14px", borderRadius: 10, fontSize: 13, marginTop: 16, lineHeight: 1.5 },
 };
