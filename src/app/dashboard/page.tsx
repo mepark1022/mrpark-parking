@@ -68,7 +68,7 @@ export default function DashboardPage() {
   const [showValet, setShowValet] = useState(true);
   const [showParking, setShowParking] = useState(true);
   const [parkingStatus, setParkingStatus] = useState([]);
-  const [parkingStoreIdx, setParkingStoreIdx] = useState(0);
+  const [parkingStoreId, setParkingStoreId] = useState("");
 
   useEffect(() => { loadStores(); }, []);
   useEffect(() => { loadData(); }, [selectedStore, period, customStart, customEnd]);
@@ -92,7 +92,7 @@ export default function DashboardPage() {
     // 매장별로 주차장 그룹핑
     const storeMap = {};
     lots.forEach(lot => {
-      if (!storeMap[lot.store_id]) storeMap[lot.store_id] = { storeName: lot.stores?.name || "알 수 없음", lots: [], totalSpaces: 0, currentCars: carsMap[lot.store_id] || 0 };
+      if (!storeMap[lot.store_id]) storeMap[lot.store_id] = { storeId: lot.store_id, storeName: lot.stores?.name || "알 수 없음", lots: [], totalSpaces: 0, currentCars: carsMap[lot.store_id] || 0 };
       storeMap[lot.store_id].lots.push(lot);
       storeMap[lot.store_id].totalSpaces += lot.total_spaces || 0;
     });
@@ -329,11 +329,12 @@ export default function DashboardPage() {
             </div>
 
             {/* 잔여면수 현황 */}
-            {parkingStatus.length > 0 && (() => {
-              const ps = parkingStatus[parkingStoreIdx] || parkingStatus[0];
-              const remaining = ps.totalSpaces - ps.currentCars;
-              const occupancy = ps.totalSpaces > 0 ? Math.round((ps.currentCars / ps.totalSpaces) * 100) : 0;
-              const isOver = remaining < 0;
+            {stores.length > 0 && (() => {
+              const activeStoreId = parkingStoreId || stores[0]?.id;
+              const ps = parkingStatus.find(p => p.storeId === activeStoreId);
+              const remaining = ps ? ps.totalSpaces - ps.currentCars : 0;
+              const occupancy = ps && ps.totalSpaces > 0 ? Math.round((ps.currentCars / ps.totalSpaces) * 100) : 0;
+              const isOver = ps ? remaining < 0 : false;
               return (
               <div style={{ background: "#fff", borderRadius: 16, padding: "28px 32px 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
                 <div className="flex items-center justify-between mb-5">
@@ -341,34 +342,34 @@ export default function DashboardPage() {
                     <div style={{ width: 4, height: 24, borderRadius: 2, background: "#1428A0" }} />
                     <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>🅿️ 주차장 현황</h3>
                   </div>
-                  <div style={{ fontSize: 13, color: "#64748b" }}>점유율 <span style={{ fontWeight: 800, fontSize: 18, color: occupancy > 80 ? "#dc2626" : "#1428A0" }}>{occupancy}%</span></div>
+                  {ps && <div style={{ fontSize: 13, color: "#64748b" }}>점유율 <span style={{ fontWeight: 800, fontSize: 18, color: occupancy > 80 ? "#dc2626" : "#1428A0" }}>{occupancy}%</span></div>}
                 </div>
 
                 {/* 매장 선택 탭 */}
-                {parkingStatus.length >= 1 && (
-                  <div className="flex gap-2 mb-5 flex-wrap">
-                    {parkingStatus.map((s, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setParkingStoreIdx(idx)}
-                        className="cursor-pointer"
-                        style={{
-                          padding: "8px 18px",
-                          borderRadius: 10,
-                          border: idx === parkingStoreIdx ? "2px solid #1428A0" : "1px solid #e2e8f0",
-                          background: idx === parkingStoreIdx ? "#1428A0" : "#fff",
-                          color: idx === parkingStoreIdx ? "#fff" : "#475569",
-                          fontSize: 13,
-                          fontWeight: 700,
-                          transition: "all 0.15s",
-                        }}
-                      >
-                        {s.storeName}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className="flex gap-2 mb-5 flex-wrap">
+                  {stores.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setParkingStoreId(s.id)}
+                      className="cursor-pointer"
+                      style={{
+                        padding: "8px 18px",
+                        borderRadius: 10,
+                        border: s.id === activeStoreId ? "2px solid #1428A0" : "1px solid #e2e8f0",
+                        background: s.id === activeStoreId ? "#1428A0" : "#fff",
+                        color: s.id === activeStoreId ? "#fff" : "#475569",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
 
+                {ps ? (
+                  <>
                 {/* 매장 요약 */}
                 <div style={{ background: "#f8fafc", borderRadius: 14, padding: "20px 24px", marginBottom: 20, border: "1px solid #e2e8f0" }}>
                   <div className="flex items-center justify-between mb-3">
@@ -389,13 +390,12 @@ export default function DashboardPage() {
                       <div style={{ fontSize: 28, fontWeight: 800, color: isOver ? "#dc2626" : remaining <= 5 ? "#EA580C" : "#15803d" }}>{remaining}</div>
                     </div>
                   </div>
-                  {/* 점유율 바 */}
                   <div style={{ background: "#e2e8f0", borderRadius: 8, height: 14, overflow: "hidden" }}>
                     <div style={{ width: `${Math.min(occupancy, 100)}%`, height: "100%", borderRadius: 8, background: occupancy > 100 ? "#dc2626" : occupancy > 80 ? "#EA580C" : "#1428A0", transition: "width 0.5s ease" }} />
                   </div>
                 </div>
 
-                {/* 개별 주차장 카드 - 그리드 */}
+                {/* 개별 주차장 카드 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {ps.lots.map(lot => {
                     const lotTotal = (lot.self_spaces || 0) + (lot.mechanical_normal || 0) + (lot.mechanical_suv || 0);
@@ -405,7 +405,6 @@ export default function DashboardPage() {
                     const isLotOver = lotRemain < 0;
                     return (
                       <div key={lot.id} style={{ background: "#fff", borderRadius: 14, padding: "18px 20px", border: isLotOver ? "2px solid #fca5a5" : "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                        {/* 헤더 */}
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <span style={{ fontSize: 20 }}>{lot.lot_type === "internal" ? "🏢" : "🅿️"}</span>
@@ -413,7 +412,6 @@ export default function DashboardPage() {
                           </div>
                           <span style={{ fontSize: 13, fontWeight: 800, padding: "3px 10px", borderRadius: 8, background: lotOcc > 85 ? "#fee2e2" : lotOcc > 60 ? "#FFF7ED" : "#eff6ff", color: lotOcc > 85 ? "#dc2626" : lotOcc > 60 ? "#EA580C" : "#1428A0" }}>{lotOcc}%</span>
                         </div>
-                        {/* 수치 */}
                         <div className="grid grid-cols-3 gap-2 mb-3">
                           <div style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 0", textAlign: "center" }}>
                             <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>총</div>
@@ -428,7 +426,6 @@ export default function DashboardPage() {
                             <div style={{ fontSize: 18, fontWeight: 800, color: isLotOver ? "#dc2626" : lotRemain <= 3 ? "#EA580C" : "#15803d" }}>{lotRemain}</div>
                           </div>
                         </div>
-                        {/* 미니 점유율 바 */}
                         <div style={{ background: "#f1f5f9", borderRadius: 6, height: 8, overflow: "hidden" }}>
                           <div style={{ width: `${Math.min(lotOcc, 100)}%`, height: "100%", borderRadius: 6, background: lotOcc > 85 ? "#dc2626" : lotOcc > 60 ? "#EA580C" : "#1428A0", transition: "width 0.5s" }} />
                         </div>
@@ -436,6 +433,14 @@ export default function DashboardPage() {
                     );
                   })}
                 </div>
+                  </>
+                ) : (
+                  <div style={{ background: "#f8fafc", borderRadius: 14, padding: "40px 24px", textAlign: "center", border: "1px dashed #cbd5e1" }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>🅿️</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#64748b", marginBottom: 4 }}>주차장이 등록되지 않은 매장입니다</div>
+                    <div style={{ fontSize: 13, color: "#94a3b8" }}>매장 관리에서 주차장(방문지)을 추가해주세요</div>
+                  </div>
+                )}
               </div>
               );
             })()}
