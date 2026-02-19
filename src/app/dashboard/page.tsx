@@ -506,44 +506,43 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+        )}
 
-          {/* 기능 안내 */}
-          <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100" style={{ background: "linear-gradient(135deg, #0a1352 0%, #1428A0 100%)" }}>
-              <h3 className="text-[15px] font-bold text-white flex items-center gap-2">
-                <span style={{ background: "#F5B731", color: "#0a1352", width: 22, height: 22, borderRadius: 6, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800 }}>?</span>
-                ME.PARK 2.0 기능 안내
-              </h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0">
-              {[
-                { icon: "📊", title: "대시보드", desc: "매장별 매출 현황, 입차 통계, 월주차 현황, 근무자 배치 등을 한눈에 파악할 수 있습니다. 기간별(오늘/이번 주/이번 달) 필터를 지원합니다." },
-                { icon: "✏️", title: "데이터 입력", desc: "일일 매출, 입차 대수, 시간대별 현황, 근무자 배치 등 매장 운영 데이터를 입력합니다. 발렛비·수금·카드 매출을 자동 합산합니다." },
-                { icon: "🚗", title: "입차 현황", desc: "실시간 차량 입출차 현황을 관리합니다. 차량번호, 입차시간, 출차시간, 발렛 여부, 요금 정산까지 한 화면에서 처리합니다." },
-                { icon: "🅿️", title: "월주차 관리", desc: "월정기 주차 계약 관리입니다. 계약자, 차량번호, 계약기간, 요금, 만료 예정 알림까지 체계적으로 관리합니다." },
-                { icon: "📈", title: "매출 분석", desc: "매장별·기간별 매출 추이를 차트로 분석합니다. 일별, 주별, 월별, 분기별 비교와 매장 간 성과 비교를 제공합니다." },
-                { icon: "👥", title: "근무자 관리", desc: "출퇴근 기록, 명부 관리, 근태 현황, 연차 관리, 근무 리뷰, 시말서 관리를 지원합니다. 근무자별 배치 이력을 확인합니다." },
-                { icon: "🏢", title: "매장 관리", desc: "매장 정보, 운영시간, 근무조(주간/야간), 정상출근체크 설정을 관리합니다. 매장별 발렛비, 상태(운영/중지)를 설정합니다." },
-                { icon: "👋", title: "팀원 초대", desc: "이메일로 팀원을 초대합니다. 관리자(전체 접근)와 CREW(배정 매장만) 역할을 선택하고, 매장을 복수 배정할 수 있습니다." },
-                { icon: "⚠️", title: "사고보고", desc: "주차장 내 사고 발생 시 즉시 보고서를 작성합니다. 차량정보, 사고유형, 사진 첨부, 처리 상태를 기록·관리합니다." },
-              ].map((item, i) => (
-                <div key={i} className="p-5 border-b border-r border-gray-100 hover:bg-gray-50 transition-colors" style={{ borderRight: (i + 1) % 3 === 0 ? "none" : undefined }}>
-                  <div className="flex items-start gap-3">
-                    <span style={{ fontSize: 24, lineHeight: 1 }}>{item.icon}</span>
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-900 mb-1">{item.title}</h4>
-                      <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
-                    </div>
+        {/* 기능 안내 */}
+        <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100" style={{ background: "linear-gradient(135deg, #0a1352 0%, #1428A0 100%)" }}>
+            <h3 className="text-[15px] font-bold text-white flex items-center gap-2">
+              <span style={{ background: "#F5B731", color: "#0a1352", width: 22, height: 22, borderRadius: 6, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800 }}>?</span>
+              ME.PARK 2.0 기능 안내
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0">
+            {[
+              { icon: "📊", title: "대시보드", desc: "매장별 매출 현황, 입차 통계, 월주차 현황, 근무자 배치 등을 한눈에 파악할 수 있습니다. 기간별(오늘/이번 주/이번 달) 필터를 지원합니다." },
+              { icon: "✏️", title: "데이터 입력", desc: "일일 매출, 입차 대수, 시간대별 현황, 근무자 배치 등 매장 운영 데이터를 입력합니다. 발렛비·수금·카드 매출을 자동 합산합니다." },
+              { icon: "🚗", title: "입차 현황", desc: "실시간 차량 입출차 현황을 관리합니다. 차량번호, 입차시간, 출차시간, 발렛 여부, 요금 정산까지 한 화면에서 처리합니다." },
+              { icon: "🅿️", title: "월주차 관리", desc: "월정기 주차 계약 관리입니다. 계약자, 차량번호, 계약기간, 요금, 만료 예정 알림까지 체계적으로 관리합니다." },
+              { icon: "📈", title: "매출 분석", desc: "매장별·기간별 매출 추이를 차트로 분석합니다. 일별, 주별, 월별, 분기별 비교와 매장 간 성과 비교를 제공합니다." },
+              { icon: "👥", title: "근무자 관리", desc: "출퇴근 기록, 명부 관리, 근태 현황, 연차 관리, 근무 리뷰, 시말서 관리를 지원합니다. 근무자별 배치 이력을 확인합니다." },
+              { icon: "🏢", title: "매장 관리", desc: "매장 정보, 운영시간, 근무조(주간/야간), 정상출근체크 설정을 관리합니다. 매장별 발렛비, 상태(운영/중지)를 설정합니다." },
+              { icon: "👋", title: "팀원 초대", desc: "이메일로 팀원을 초대합니다. 관리자(전체 접근)와 CREW(배정 매장만) 역할을 선택하고, 매장을 복수 배정할 수 있습니다." },
+              { icon: "⚠️", title: "사고보고", desc: "주차장 내 사고 발생 시 즉시 보고서를 작성합니다. 차량정보, 사고유형, 사진 첨부, 처리 상태를 기록·관리합니다." },
+            ].map((item, i) => (
+              <div key={i} className="p-5 border-b border-r border-gray-100 hover:bg-gray-50 transition-colors" style={{ borderRight: (i + 1) % 3 === 0 ? "none" : undefined }}>
+                <div className="flex items-start gap-3">
+                  <span style={{ fontSize: 24, lineHeight: 1 }}>{item.icon}</span>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900 mb-1">{item.title}</h4>
+                    <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-            <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
-              <p className="text-[11px] text-gray-400 text-center">© 주식회사 미스터팍 (Mr. Park) · ME.PARK 2.0 주차운영 시스템 · 문의: mepark1022@gmail.com</p>
-            </div>
+              </div>
+            ))}
           </div>
+          <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
+            <p className="text-[11px] text-gray-400 text-center">© 주식회사 미스터팍 (Mr. Park) · ME.PARK 2.0 주차운영 시스템 · 문의: mepark1022@gmail.com</p>
           </div>
-        )}
+        </div>
       </div>
     </AppLayout>
   );
