@@ -15,6 +15,7 @@ function InviteAcceptContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [step, setStep] = useState("loading");
+  const [socialLoading, setSocialLoading] = useState("");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -77,17 +78,36 @@ function InviteAcceptContent() {
           return;
         } else {
           await supabase.auth.signOut();
-          setStep("signup");
+          setStep("social");
           setLoading(false);
         }
       } else {
-        setStep("signup");
+        setStep("social");
         setLoading(false);
       }
     } catch (err) {
       setError("초대 정보를 불러오는 중 오류가 발생했습니다.");
       setStep("error");
       setLoading(false);
+    }
+  }
+
+  // 카카오/구글/네이버 소셜 로그인
+  async function handleSocialLogin(provider) {
+    setSocialLoading(provider);
+    setError("");
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) setError("로그인 중 오류가 발생했습니다.");
+    } catch {
+      setError("로그인 중 오류가 발생했습니다.");
+    } finally {
+      setSocialLoading("");
     }
   }
 
@@ -197,64 +217,69 @@ function InviteAcceptContent() {
   const roleColor = invitation?.role === "crew" ? "#16a34a" : "#1428A0";
   const storeName = invitation?.stores?.name;
 
-  // ME.PARK 2.0 로고 컴포넌트 (Rounded Frame + Gold Corner)
-  const MeParkLogo = ({ size = "default", theme = "light" }) => {
-    const sizes = {
-      small: { fontSize: 14, padding: "8px 14px", corner: 12, radius: 8 },
-      default: { fontSize: 20, padding: "12px 20px", corner: 18, radius: 10 },
-      large: { fontSize: 28, padding: "16px 28px", corner: 24, radius: 14 },
-    };
-    const s = sizes[size];
-    const borderColor = theme === "dark" ? "#fff" : "#1A1D2B";
-    const textColor = theme === "dark" ? "#fff" : "#1A1D2B";
-    const subColor = theme === "dark" ? "rgba(255,255,255,.35)" : "#8B90A0";
-
-    return (
-      <div style={{ display: "inline-flex" }}>
+  const MeParkLogo = () => (
+    <div style={{ display: "inline-flex" }}>
+      <div style={{
+        padding: "12px 20px", border: "2.5px solid #1A1D2B",
+        borderRadius: 10, position: "relative", overflow: "hidden",
+      }}>
         <div style={{
-          padding: s.padding,
-          border: `2.5px solid ${borderColor}`,
-          borderRadius: s.radius,
-          position: "relative",
-          overflow: "hidden",
-        }}>
-          <div style={{
-            position: "absolute", top: 0, right: 0,
-            width: 0, height: 0,
-            borderTop: `${s.corner}px solid #F5B731`,
-            borderLeft: `${s.corner}px solid transparent`,
-          }} />
-          <span style={{
-            fontFamily: "'Outfit', sans-serif",
-            fontSize: s.fontSize,
-            fontWeight: 800,
-            color: textColor,
-            letterSpacing: "-0.5px",
-          }}>
-            ME.PARK{" "}
-          </span>
-          <span style={{
-            fontFamily: "'Outfit', sans-serif",
-            fontSize: s.fontSize,
-            fontWeight: 300,
-            color: subColor,
-          }}>
-            2.0
-          </span>
-        </div>
+          position: "absolute", top: 0, right: 0, width: 0, height: 0,
+          borderTop: "18px solid #F5B731", borderLeft: "18px solid transparent",
+        }} />
+        <span style={{ fontFamily: "'Outfit',sans-serif", fontSize: 20, fontWeight: 800, color: "#1A1D2B", letterSpacing: "-0.5px" }}>
+          ME.PARK{" "}
+        </span>
+        <span style={{ fontFamily: "'Outfit',sans-serif", fontSize: 20, fontWeight: 300, color: "#8B90A0" }}>
+          2.0
+        </span>
       </div>
-    );
-  };
+    </div>
+  );
+
+  // 소셜 로그인 버튼 데이터
+  const socialButtons = [
+    {
+      provider: "kakao",
+      label: "카카오로 시작하기",
+      bg: "#FEE500",
+      color: "#191919",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M9 1.5C4.86 1.5 1.5 4.14 1.5 7.38C1.5 9.42 2.88 11.22 4.95 12.24L4.14 15.18C4.08 15.39 4.32 15.57 4.5 15.45L7.95 13.14C8.28 13.2 8.64 13.23 9 13.23C13.14 13.23 16.5 10.59 16.5 7.35C16.5 4.14 13.14 1.5 9 1.5Z" fill="#191919"/>
+        </svg>
+      ),
+    },
+    {
+      provider: "google",
+      label: "Google로 시작하기",
+      bg: "#ffffff",
+      color: "#344054",
+      border: "1px solid #d0d5dd",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+          <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+          <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+        </svg>
+      ),
+    },
+  ];
 
   // --- 상태별 렌더링 ---
 
-  if (step === "loading") {
+  if (step === "loading" || step === "accepting") {
     return (
       <div style={styles.page}>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;800;900&display=swap" rel="stylesheet" />
         <div style={styles.card}>
           <div style={styles.center}>
-            <div style={{ fontSize: 36, marginBottom: 12, animation: "pulse 1.5s infinite" }}>⏳</div>
-            <p style={{ color: "#8B90A0", fontSize: 14 }}>초대 정보를 확인하고 있습니다...</p>
+            <MeParkLogo />
+            <div style={{ fontSize: 36, margin: "20px 0 12px" }}>⏳</div>
+            <p style={{ color: "#8B90A0", fontSize: 14 }}>
+              {step === "accepting" ? "초대를 수락하고 있습니다..." : "초대 정보를 확인하고 있습니다..."}
+            </p>
           </div>
         </div>
       </div>
@@ -264,9 +289,10 @@ function InviteAcceptContent() {
   if (step === "error") {
     return (
       <div style={styles.page}>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;800;900&display=swap" rel="stylesheet" />
         <div style={styles.card}>
           <div style={styles.center}>
-            <MeParkLogo size="default" theme="light" />
+            <MeParkLogo />
             <div style={{ fontSize: 40, margin: "20px 0 12px" }}>⚠️</div>
             <h2 style={{ color: "#1A1D2B", fontSize: 17, fontWeight: 700, marginBottom: 12 }}>초대 오류</h2>
             <p style={{ color: "#dc2626", fontSize: 13, lineHeight: 1.6, marginBottom: 24 }}>{error}</p>
@@ -279,26 +305,13 @@ function InviteAcceptContent() {
     );
   }
 
-  if (step === "accepting") {
-    return (
-      <div style={styles.page}>
-        <div style={styles.card}>
-          <div style={styles.center}>
-            <MeParkLogo size="default" theme="light" />
-            <div style={{ fontSize: 36, margin: "20px 0 12px" }}>⏳</div>
-            <p style={{ color: "#8B90A0", fontSize: 14 }}>초대를 수락하고 있습니다...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (step === "done") {
     return (
       <div style={styles.page}>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;800;900&display=swap" rel="stylesheet" />
         <div style={styles.card}>
           <div style={styles.center}>
-            <MeParkLogo size="default" theme="light" />
+            <MeParkLogo />
             <div style={{ fontSize: 40, margin: "20px 0 12px" }}>✅</div>
             <h2 style={{ color: "#16a34a", fontSize: 17, fontWeight: 700, marginBottom: 8 }}>초대 수락 완료!</h2>
             <p style={{ color: "#8B90A0", fontSize: 14 }}>잠시 후 이동합니다...</p>
@@ -308,16 +321,15 @@ function InviteAcceptContent() {
     );
   }
 
-  // 회원가입 / 로그인 폼
+  // 메인: 소셜 로그인 + 이메일 폼
   return (
     <div style={styles.page}>
-      {/* Google Fonts 로드 */}
-      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;800;900&family=Sora:wght@800&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;800;900&display=swap" rel="stylesheet" />
 
       <div style={styles.card}>
         {/* ME.PARK 2.0 로고 */}
         <div style={styles.center}>
-          <MeParkLogo size="default" theme="light" />
+          <MeParkLogo />
           <p style={{ color: "#8B90A0", fontSize: 11, marginTop: 6, letterSpacing: 1 }}>주차운영 시스템</p>
         </div>
 
@@ -329,14 +341,8 @@ function InviteAcceptContent() {
           </p>
           {storeName && (
             <div style={{
-              display: "inline-block",
-              marginTop: 8,
-              padding: "4px 12px",
-              background: "#FFF7ED",
-              borderRadius: 6,
-              fontSize: 12,
-              color: "#ea580c",
-              fontWeight: 600,
+              display: "inline-block", marginTop: 8, padding: "4px 12px",
+              background: "#FFF7ED", borderRadius: 6, fontSize: 12, color: "#ea580c", fontWeight: 600,
             }}>
               📍 배정 매장: {storeName}
             </div>
@@ -346,25 +352,61 @@ function InviteAcceptContent() {
         {/* 에러 메시지 */}
         {error && <div style={styles.errorBox}>{error}</div>}
 
-        {/* 탭 전환 */}
-        <div style={styles.tabWrap}>
-          <button
-            onClick={() => { setStep("signup"); setError(""); }}
-            style={step === "signup" ? styles.tabActive : styles.tabInactive}
-          >
-            회원가입
-          </button>
-          <button
-            onClick={() => { setStep("login"); setError(""); }}
-            style={step === "login" ? styles.tabActive : styles.tabInactive}
-          >
-            로그인
-          </button>
-        </div>
+        {/* 소셜 로그인 (기본 화면) */}
+        {step === "social" && (
+          <div style={{ marginTop: 24 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {socialButtons.map((btn) => (
+                <button
+                  key={btn.provider}
+                  onClick={() => handleSocialLogin(btn.provider)}
+                  disabled={!!socialLoading}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                    width: "100%", padding: "13px 16px", borderRadius: 12,
+                    background: btn.bg, color: btn.color, border: btn.border || "none",
+                    fontSize: 15, fontWeight: 600, cursor: "pointer",
+                    opacity: socialLoading && socialLoading !== btn.provider ? 0.5 : 1,
+                  }}
+                >
+                  {socialLoading === btn.provider ? (
+                    <span>연결 중...</span>
+                  ) : (
+                    <>{btn.icon}<span>{btn.label}</span></>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* 구분선 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0 16px" }}>
+              <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
+              <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 500 }}>또는 이메일로</span>
+              <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
+            </div>
+
+            {/* 이메일 가입/로그인 버튼 */}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => setStep("signup")}
+                style={{ ...styles.btnOutline, flex: 1 }}
+              >
+                이메일 회원가입
+              </button>
+              <button
+                onClick={() => setStep("login")}
+                style={{ ...styles.btnOutline, flex: 1 }}
+              >
+                이메일 로그인
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 회원가입 폼 */}
         {step === "signup" && (
           <div style={{ marginTop: 20 }}>
+            <button onClick={() => setStep("social")} style={styles.backBtn}>← 돌아가기</button>
             <label style={styles.label}>이름 *</label>
             <input style={styles.input} placeholder="이름을 입력하세요" value={name} onChange={(e) => setName(e.target.value)} />
             <label style={styles.label}>이메일</label>
@@ -384,6 +426,7 @@ function InviteAcceptContent() {
         {/* 로그인 폼 */}
         {step === "login" && (
           <div style={{ marginTop: 20 }}>
+            <button onClick={() => setStep("social")} style={styles.backBtn}>← 돌아가기</button>
             <label style={styles.label}>이메일</label>
             <input style={{ ...styles.input, background: "#f8fafc", color: "#8B90A0" }} value={email} readOnly />
             <label style={styles.label}>비밀번호 *</label>
@@ -482,6 +525,26 @@ const styles = {
     fontWeight: 600,
     cursor: "pointer",
   },
+  btnOutline: {
+    padding: "11px 0",
+    background: "#fff",
+    color: "#475569",
+    border: "1.5px solid #e2e8f0",
+    borderRadius: 10,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  backBtn: {
+    background: "none",
+    border: "none",
+    color: "#8B90A0",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    padding: 0,
+    marginBottom: 8,
+  },
   errorBox: {
     background: "#fee2e2",
     color: "#dc2626",
@@ -490,36 +553,5 @@ const styles = {
     fontSize: 13,
     marginTop: 16,
     lineHeight: 1.5,
-  },
-  tabWrap: {
-    display: "flex",
-    background: "#f1f5f9",
-    borderRadius: 12,
-    padding: 4,
-    marginTop: 24,
-    gap: 4,
-  },
-  tabActive: {
-    flex: 1,
-    padding: "10px 0",
-    border: "none",
-    borderRadius: 10,
-    fontSize: 14,
-    fontWeight: 700,
-    background: "#fff",
-    color: "#1428A0",
-    cursor: "pointer",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-  },
-  tabInactive: {
-    flex: 1,
-    padding: "10px 0",
-    border: "none",
-    borderRadius: 10,
-    fontSize: 14,
-    fontWeight: 500,
-    background: "transparent",
-    color: "#8B90A0",
-    cursor: "pointer",
   },
 };
