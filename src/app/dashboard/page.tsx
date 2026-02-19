@@ -489,39 +489,17 @@ export default function DashboardPage() {
             </div>
 
             {!selectedStore && storeRankData.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                <div className="bg-white rounded-xl p-7 shadow-sm">
-                  <h3 className="font-semibold text-dark mb-4">매장 랭킹 (입차량 TOP 10)</h3>
-                  <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={storeRankData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" tick={{ fontSize: 11 }} />
-                      <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
-                      <Tooltip />
-                      <Bar dataKey="cars" fill="#1428A0" radius={[0, 4, 4, 0]} name="입차량" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="bg-white rounded-xl p-7 shadow-sm">
-                  <h3 className="font-semibold text-dark mb-4">마감미정산</h3>
-                  {records.length === 0 ? (
-                    <div className="h-56 flex items-center justify-center text-mr-gray text-sm">선택된 기간에 입력된 데이터가 없습니다</div>
-                  ) : (
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {stores
-                        .filter((s) => !records.some((r) => r.store_id === s.id))
-                        .map((s) => (
-                          <div key={s.id} className="flex items-center gap-2 p-2.5 bg-red-50 rounded-lg">
-                            <span className="text-xs text-error font-bold">미정산</span>
-                            <span className="text-sm text-dark">{s.name}</span>
-                          </div>
-                        ))}
-                      {stores.filter((s) => !records.some((r) => r.store_id === s.id)).length === 0 && (
-                        <div className="h-56 flex items-center justify-center text-success text-sm">모든 매장 입력 완료!</div>
-                      )}
-                    </div>
-                  )}
-                </div>
+              <div className="bg-white rounded-xl p-7 shadow-sm">
+                <h3 className="font-semibold text-dark mb-4">매장 랭킹 (입차량 TOP 10)</h3>
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={storeRankData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
+                    <Tooltip />
+                    <Bar dataKey="cars" fill="#1428A0" radius={[0, 4, 4, 0]} name="입차량" />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             )}
 
