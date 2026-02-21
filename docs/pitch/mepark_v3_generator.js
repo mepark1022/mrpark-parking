@@ -669,25 +669,25 @@ async function slide05() {
       name: "Starter",  price: "19,900", fee: "3.5%",
       badge: "무료 체험 후 전환", badgeCol: P.green,
       bg: "0D1B6A", accent: P.green, highlighted: false,
-      feats: ["QR 발권 기본", "결제 이력 조회", "기본 CS 지원"]
+      feats: ["QR 발권 기본", "알림톡 월 1,000건 포함", "결제 이력 조회", "기본 CS 지원"]
     },
     {
       name: "Basic",    price: "39,900", fee: "3.3%",
       badge: "가장 인기", badgeCol: P.teal,
       bg: "0D1B6A", accent: P.teal, highlighted: false,
-      feats: ["Starter 전체", "정기권 관리", "매출 대시보드", "이메일 알림"]
+      feats: ["Starter 전체", "알림톡 월 3,000건 포함", "정기권 관리", "매출 대시보드"]
     },
     {
       name: "Pro",      price: "69,900", fee: "3.0%",
       badge: "추천", badgeCol: P.gold,
       bg: P.navy, accent: P.gold, highlighted: true,
-      feats: ["Basic 전체", "멀티 주차장", "쿠폰·할인 관리", "고급 분석 리포트", "우선 CS"]
+      feats: ["Basic 전체", "알림톡 월 10,000건 포함", "멀티 주차장", "쿠폰·할인 관리", "고급 분석"]
     },
     {
       name: "Enterprise", price: "협의", fee: "2.8% 협의",
       badge: "대형·프랜차이즈", badgeCol: P.violet,
       bg: "0D1B6A", accent: P.violet, highlighted: false,
-      feats: ["Pro 전체", "API·화이트라벨", "SLA 보장", "전담 매니저", "맞춤 개발"]
+      feats: ["Pro 전체", "알림톡 무제한 포함", "API·화이트라벨", "전담 매니저", "맞춤 개발"]
     },
   ];
 
@@ -767,7 +767,7 @@ async function slide05() {
   });
 
   // Bottom note
-  s.addText("※ 수수료 = PG 원가(2.0%) 차감 후 미팍 수취분  ·  1년차 티어 믹스 가정: Starter 30% / Basic 40% / Pro 20% / Enterprise 10%", {
+  s.addText("※ 알림톡 초과 발송 시 건당 12원 고객 청구 (수익원 전환)  ·  수수료 = PG 원가(2.0%) 차감 후 미팍 수취분  ·  티어 믹스: Starter 30% / Basic 40% / Pro 20% / Enterprise 10%", {
     x: 0.4, y: 7.15, w: 12.5, h: 0.22,
     fontSize: 8, color: P.ink, fontFace: "Outfit"
   });
@@ -783,22 +783,23 @@ async function slide06() {
   const s = pres.addSlide();
   s.background = { color: P.white };
 
-  // Left navy panel
   s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 5.0, h: 7.5, fill: { color: P.navyDD }, line: { color: P.navyDD } });
   s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 0.18, h: 7.5, fill: { color: P.gold }, line: { color: P.gold } });
-
-  // Header
   s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 13.3, h: 1.1, fill: { color: P.navy }, line: { color: P.navy } });
   s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 0.18, h: 1.1, fill: { color: P.gold }, line: { color: P.gold } });
   s.addText("3개년 재무 시뮬레이션", { x: 0.42, y: 0, w: 8, h: 1.1, fontSize: 28, bold: true, color: P.white, fontFace: "Outfit", valign: "middle" });
-  s.addText("알림톡 2회 기준  ·  인건비·마케팅 제외", { x: 8.2, y: 0, w: 4.92, h: 1.1, fontSize: 10, color: P.gold, fontFace: "Outfit", align: "right", valign: "middle" });
+  s.addText("알림톡 요금제 내재화  ·  초과 건당 12원 수익 반영", { x: 7.8, y: 0, w: 5.32, h: 1.1, fontSize: 10, color: P.gold, fontFace: "Outfit", align: "right", valign: "middle" });
   pgNum(s, 8);
 
-  // LEFT: 3년 KPI — 알림톡 2회 절감 반영
+  // ── LEFT: 3년 KPI ─────────────────────────────────────────
+  // 알림톡 → 요금제 내재화: COGS에서 제거, 초과과금이 수익으로 전환
+  // 1년차: +1,800만(알림톡 COGS 제거) + 344만(초과) = +2,144만 → 영업이익 5,497만 / 39.3%
+  // 2년차: +4,500만 + 860만 = +5,360만 → 영업이익 1.87억 / 42.5%
+  // 3년차: +9,000만 + 2,160만 = +11,160만 → 영업이익 5.066억 / 50.2%
   const years = [
-    { yr: "1년차", cust: "100사", rev: "1.4억", op: "3,353만", pct: "24.0%", infra: "196만/월", col: P.teal },
-    { yr: "2년차", cust: "250사", rev: "4.4억", op: "1.33억",  pct: "30.1%", infra: "459만/월", col: P.navyM },
-    { yr: "3년차", cust: "500사", rev: "10.1억",op: "3.95억",  pct: "39.1%", infra: "905만/월", col: P.gold },
+    { yr: "1년차", cust: "100사", rev: "1.4억", op: "5,497만", pct: "39.3%", infra: "168만/월", col: P.teal },
+    { yr: "2년차", cust: "250사", rev: "4.4억", op: "1.87억",  pct: "42.5%", infra: "385만/월", col: P.navyM },
+    { yr: "3년차", cust: "500사", rev: "10.1억",op: "5.07억",  pct: "50.2%", infra: "750만/월", col: P.gold },
   ];
   years.forEach((y, i) => {
     const top = 1.28 + i * 1.9;
@@ -809,19 +810,22 @@ async function slide06() {
     micro.forEach((m, j) => {
       const mx = 0.65 + j * 1.42;
       s.addText(m.l, { x: mx, y: top + 1.06, w: 1.4, h: 0.22, fontSize: 8, color: P.mist, fontFace: "Outfit" });
-      s.addText(m.v, { x: mx, y: top + 1.26, w: 1.4, h: 0.3, fontSize: 13, bold: true, fontFace: "Outfit", color: y.col === P.gold ? P.goldL : P.white });
+      s.addText(m.v, { x: mx, y: top + 1.26, w: 1.4, h: 0.3, fontSize: 13, bold: true, fontFace: "Outfit",
+        color: y.col === P.gold ? P.goldL : P.white });
     });
-    // Infra badge
-    s.addText("인프라 " + y.infra, { x: 0.65, y: top + 1.55, w: 4.0, h: 0.2, fontSize: 9, color: y.col, fontFace: "Outfit" });
+    s.addText("서버인프라 " + y.infra, { x: 0.65, y: top + 1.55, w: 4.0, h: 0.2, fontSize: 9, color: y.col, fontFace: "Outfit" });
     if (i < 2) rule(s, 0.42, top + 1.76, 4.3, 0.012);
   });
 
-  // BEP bar
   s.addShape(pres.shapes.RECTANGLE, { x: 0.42, y: 6.9, w: 4.3, h: 0.28, fill: { color: P.gold }, line: { color: P.gold } });
-  s.addText("BEP Q3  ·  알림톡 2회 절감 반영  ·  연 절감 최대 4,500만", { x: 0.48, y: 6.9, w: 4.18, h: 0.28, fontSize: 8, bold: true, color: P.navyDD, fontFace: "Outfit", valign: "middle" });
+  s.addText("BEP Q2 당겨짐  ·  알림톡 수익화로 이익률 50% 돌파 (3년차)", {
+    x: 0.48, y: 6.9, w: 4.18, h: 0.28, fontSize: 8, bold: true, color: P.navyDD, fontFace: "Outfit", valign: "middle"
+  });
 
-  // RIGHT: 인프라 비용 Breakdown 테이블
-  s.addText("📡  인프라 비용 시뮬레이션  (인건비·마케팅 제외)", { x: 5.25, y: 1.18, w: 7.8, h: 0.36, fontSize: 12, bold: true, color: P.dark, fontFace: "Outfit" });
+  // ── RIGHT: 비용 구조 전환 테이블 ─────────────────────────
+  s.addText("💡  알림톡 수익 구조 전환  ·  비용 → 매출", {
+    x: 5.25, y: 1.18, w: 7.8, h: 0.36, fontSize: 12, bold: true, color: P.dark, fontFace: "Outfit"
+  });
   rule(s, 5.25, 1.56, 7.8, 0.022);
 
   const tX    = [5.25, 7.35, 9.05, 10.75, 12.45];
@@ -829,40 +833,50 @@ async function slide06() {
   const tHdrs = ["항목", "1년차", "2년차", "3년차", "비고"];
   s.addShape(pres.shapes.RECTANGLE, { x: 5.25, y: 1.63, w: 7.8, h: 0.34, fill: { color: P.navyDD }, line: { color: P.navyDD } });
   tHdrs.forEach((h, i) => {
-    s.addText(h, { x: tX[i]+0.05, y: 1.63, w: tCols[i]-0.08, h: 0.34, fontSize: 9.5, bold: true, color: P.white, fontFace: "Outfit", valign: "middle", align: i===0?"left":"center" });
+    s.addText(h, { x: tX[i]+0.05, y: 1.63, w: tCols[i]-0.08, h: 0.34,
+      fontSize: 9.5, bold: true, color: P.white, fontFace: "Outfit",
+      valign: "middle", align: i===0?"left":"center" });
   });
 
   const rows = [
-    { item: "카카오 알림톡 (2회/거래)", v: ["1,800만","4,500만","9,000만"], note: "10원×2회", hi: true,  col: P.gold },
-    { item: "클라우드 서버 (Vercel)",   v: ["60만",   "120만",  "240만" ], note: "선형↑",   hi: false, col: null },
-    { item: "데이터베이스 (Supabase)", v: ["42만",   "84만",   "168만" ], note: "선형↑",   hi: false, col: null },
-    { item: "스토리지·CDN (QR이미지)", v: ["24만",   "48만",   "120만" ], note: "선형↑",   hi: false, col: null },
-    { item: "모니터링·이메일 등",       v: ["42만",   "66만",   "96만"  ], note: "완만↑",   hi: false, col: null },
-    { item: "인프라 합계 (연)",          v: ["1,968만","4,818만","9,624만"], note: "비용↑",   hi: true,  col: P.teal },
-    { item: "매출 대비 인프라 비율",    v: ["14.1%", "11.0%", "9.5%"  ], note: "SaaS↓",   hi: true,  col: P.green },
+    { item: "① 알림톡 COGS (과거)",  v: ["1,800만","4,500만","9,000만"], note: "비용", hi: false, col: "DC2626", strike: true },
+    { item: "② 요금제 내재화 → 0",    v: ["0만",    "0만",    "0만"   ], note: "이관", hi: true,  col: P.green },
+    { item: "③ 초과과금 수익 (+12원)",v: ["+344만", "+860만", "+2,160만"], note: "신규↑", hi: true, col: P.gold },
+    { item: "", v: ["","",""], note: "", hi: false, col: null, divider: true },
+    { item: "서버·DB·CDN (연)",       v: ["168만",  "420만",  "840만" ], note: "선형↑", hi: false, col: null },
+    { item: "인프라 COGS 합계 (연)",  v: ["168만",  "420만",  "840만" ], note: "↓82%",  hi: true,  col: P.teal },
+    { item: "영업이익률",             v: ["39.3%", "42.5%", "50.2%"], note: "+22%p", hi: true,  col: P.green },
   ];
 
+  let rowY = 1.97;
   rows.forEach((r, i) => {
-    const ry = 1.97 + i * 0.37;
+    if (r.divider) {
+      rule(s, 5.25, rowY + 0.12, 7.8, 0.02);
+      rowY += 0.28;
+      return;
+    }
     const bg = r.hi
-      ? (i === rows.length-1 ? "E8F5E9" : i === rows.length-2 ? "E0F2F7" : "FEF9E7")
+      ? (r.col === P.green && i > 3 ? "E8F5E9" : r.col === P.teal ? "E0F2F7" : r.col === P.gold ? "FEF9E7" : "F0FFF4")
       : (i%2===0 ? P.white : P.offwht);
-    s.addShape(pres.shapes.RECTANGLE, { x: 5.25, y: ry, w: 7.8, h: 0.37, fill: { color: bg }, line: { color: "E2E4E9", type: "solid", pt: 0.5 } });
+    s.addShape(pres.shapes.RECTANGLE, { x: 5.25, y: rowY, w: 7.8, h: 0.37, fill: { color: bg }, line: { color: "E2E4E9", type: "solid", pt: 0.5 } });
     const vals = [r.item, ...r.v, r.note];
     vals.forEach((v, j) => {
-      s.addText(v, { x: tX[j]+0.05, y: ry+0.02, w: tCols[j]-0.08, h: 0.33,
-        fontSize: j===0 ? 9 : 10, bold: r.hi, color: r.col && j>0 && j<4 ? r.col : P.dark,
-        fontFace: "Outfit", valign: "middle", align: j===0 ? "left" : "center" });
+      s.addText(v, {
+        x: tX[j]+0.05, y: rowY+0.02, w: tCols[j]-0.08, h: 0.33,
+        fontSize: j===0 ? 9 : 10.5, bold: r.hi,
+        color: r.col && j > 0 && j < 5 ? r.col : P.dark,
+        fontFace: "Outfit", valign: "middle", align: j===0 ? "left" : "center"
+      });
     });
+    rowY += 0.37;
   });
 
-  // RIGHT BOTTOM: bar chart
-  const chartTop = 1.97 + rows.length * 0.37 + 0.18;
+  // Bar chart
+  const chartTop = rowY + 0.18;
   rule(s, 5.25, chartTop, 7.8, 0.022);
-
   s.addChart(pres.charts.BAR, [
     { name: "매출 (백만원)",     labels: ["1년차","2년차","3년차"], values: [140, 440, 1010] },
-    { name: "영업이익 (백만원)", labels: ["1년차","2년차","3년차"], values: [34,  133,  395] },
+    { name: "영업이익 (백만원)", labels: ["1년차","2년차","3년차"], values: [55,  187,  507] },
   ], {
     x: 5.25, y: chartTop+0.1, w: 7.8, h: 7.5 - chartTop - 0.42,
     barDir: "col", barGrouping: "clustered",
@@ -872,7 +886,7 @@ async function slide06() {
     valGridLine: { color: "E2E8F0", size: 0.5 }, catGridLine: { style: "none" },
     showValue: true, dataLabelFontSize: 9, dataLabelColor: P.dark,
     showLegend: true, legendPos: "b", legendFontSize: 9,
-    showTitle: true, title: "매출  vs  영업이익 (백만원)  ·  알림톡 2회 절감 반영",
+    showTitle: true, title: "매출  vs  영업이익 (백만원)  ·  알림톡 수익화 반영  ·  3년차 50.2% 이익률",
     titleFontSize: 10, titleColor: P.dark
   });
 
