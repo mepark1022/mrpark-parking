@@ -122,8 +122,15 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
+      <style>{`
+        @media (max-width: 767px) {
+          .settings-worker-row { flex-direction: column !important; }
+          .settings-store-select { min-width: unset !important; width: 100% !important; }
+          .settings-card { padding: 16px !important; }
+        }
+      `}</style>
       <div className="max-w-5xl mx-auto">
-        <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)" }}>
+        <div className="settings-card" style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)" }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 20 }}>기본 근무자 설정</div>
 
           <div className="mb-6">
@@ -131,6 +138,7 @@ export default function SettingsPage() {
             <select
               value={selectedStore}
               onChange={e => setSelectedStore(e.target.value)}
+              className="settings-store-select"
               style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", minWidth: 280 }}
             >
               {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -141,7 +149,7 @@ export default function SettingsPage() {
             <div className="mb-4" style={{ padding: "10px 16px", borderRadius: 10, background: "var(--mp-error-bg)", color: "var(--mp-error)", fontSize: 13, fontWeight: 600 }}>{message}</div>
           )}
 
-          <div className="flex gap-4">
+          <div className="settings-worker-row flex gap-4">
             {renderWorkerList(weekdayWorkers, "weekday")}
             {renderWorkerList(weekendWorkers, "weekend")}
           </div>

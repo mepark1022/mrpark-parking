@@ -108,7 +108,7 @@ function LoginContent() {
           <div style={{ fontSize: 13, fontWeight: 500, color: "#94a3b8", letterSpacing: "0.08em" }}>주차운영 시스템</div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="bg-white rounded-2xl shadow-lg" style={{ padding: "clamp(20px, 5vw, 32px)" }}>
           <h2 className="text-xl font-semibold text-dark mb-6">
             {isSignup ? "회원가입" : "로그인"}
           </h2>

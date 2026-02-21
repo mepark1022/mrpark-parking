@@ -313,6 +313,23 @@ export default function AnalyticsPage() {
   // ── Render ──────────────────────────────────────────────────
   return (
     <div className="analytics-page" style={{ padding: "24px 32px", maxWidth: 1400 }}>
+      <style>{`
+        @media (max-width: 767px) {
+          .analytics-page { padding: 12px 14px !important; }
+          .analytics-controls { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; margin-bottom: 14px !important; }
+          .analytics-period-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px !important; }
+          .analytics-period-tabs > div { white-space: nowrap; }
+          .analytics-filter-wrap { gap: 8px !important; }
+          .analytics-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; margin-bottom: 14px !important; }
+          .analytics-kpi-grid > div { padding: 14px 14px !important; border-radius: 12px !important; }
+          .analytics-kpi-grid .kpi-icon { width: 34px !important; height: 34px !important; font-size: 18px !important; margin-bottom: 8px !important; border-radius: 10px !important; }
+          .analytics-kpi-grid .kpi-value { font-size: 18px !important; }
+          .analytics-chart-wrap { border-radius: 12px !important; padding: 12px 10px !important; margin-bottom: 14px !important; }
+          .analytics-bottom-grid { grid-template-columns: 1fr !important; gap: 14px !important; }
+          .analytics-store-table { font-size: 12px !important; }
+          .analytics-store-table th, .analytics-store-table td { padding: 10px 10px !important; }
+        }
+      `}</style>
       {/* ── Top Controls ────────────────────────────────────── */}
       <div
         className="analytics-controls"
@@ -476,6 +493,7 @@ export default function AnalyticsPage() {
               }}
             />
             <div
+              className="kpi-icon"
               style={{
                 width: 44,
                 height: 44,
@@ -491,6 +509,7 @@ export default function AnalyticsPage() {
               {card.icon}
             </div>
             <div
+              className="kpi-value"
               style={{
                 fontSize: 26,
                 fontWeight: 800,
@@ -524,6 +543,7 @@ export default function AnalyticsPage() {
 
       {/* ── Revenue Trend Chart ─────────────────────────────── */}
       <div
+        className="analytics-chart-wrap"
         style={{
           background: "#fff",
           borderRadius: 16,
@@ -800,7 +820,7 @@ export default function AnalyticsPage() {
       )}
 
       {/* ── Revenue Composition (Pie) ───────────────────────── */}
-      <div className="analytics-charts-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+      <div className="analytics-charts-grid analytics-bottom-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Pie chart */}
         <div
           style={{

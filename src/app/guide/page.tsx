@@ -72,11 +72,25 @@ const features = [
 export default function GuidePage() {
   return (
     <AppLayout>
+      <style>{`
+        @media (max-width: 767px) {
+          .guide-header { padding: 20px 16px !important; }
+          .guide-header-icon { width: 38px !important; height: 38px !important; border-radius: 10px !important; }
+          .guide-header-icon span { font-size: 18px !important; }
+          .guide-header h1 { font-size: 16px !important; }
+          .guide-card-inner { padding: 14px 14px !important; }
+          .guide-feature-icon { width: 36px !important; height: 36px !important; border-radius: 10px !important; font-size: 18px !important; }
+          .guide-feature-title { font-size: 14px !important; }
+          .guide-feature-desc { font-size: 12px !important; margin-bottom: 8px !important; }
+          .guide-detail-text { font-size: 11px !important; }
+          .guide-footer { padding-bottom: 80px !important; }
+        }
+      `}</style>
       <div className="max-w-4xl mx-auto">
         {/* 헤더 */}
         <div className="rounded-2xl overflow-hidden mb-6 shadow-sm" style={{ background: "linear-gradient(135deg, #020617 0%, #0a1352 50%, #1428A0 100%)" }}>
-          <div className="px-8 py-8 flex items-center gap-5">
-            <div style={{ background: "#F5B731", width: 48, height: 48, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="guide-header px-8 py-8 flex items-center gap-5">
+            <div className="guide-header-icon" style={{ background: "#F5B731", width: 48, height: 48, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <span style={{ fontSize: 24 }}>📖</span>
             </div>
             <div>
@@ -93,19 +107,19 @@ export default function GuidePage() {
               onMouseEnter={e => e.currentTarget.style.boxShadow = "var(--shadow-md)"}
               onMouseLeave={e => e.currentTarget.style.boxShadow = "var(--shadow-sm)"}
             >
-              <div className="p-6">
+              <div className="guide-card-inner p-6">
                 <div className="flex items-start gap-4">
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--gold-light)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>
+                  <div className="guide-feature-icon" style={{ width: 44, height: 44, borderRadius: 12, background: "var(--gold-light)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>
                     {item.icon}
                   </div>
                   <div className="flex-1">
-                    <h3 style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>{item.title}</h3>
-                    <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 12 }}>{item.desc}</p>
+                    <h3 className="guide-feature-title" style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>{item.title}</h3>
+                    <p className="guide-feature-desc" style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 12 }}>{item.desc}</p>
                     <div className="space-y-1.5">
                       {item.details.map((d, j) => (
                         <div key={j} className="flex items-start gap-2">
                           <span style={{ color: "var(--gold)", fontSize: 10, marginTop: 5, flexShrink: 0 }}>●</span>
-                          <span style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>{d}</span>
+                          <span className="guide-detail-text" style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>{d}</span>
                         </div>
                       ))}
                     </div>
@@ -117,7 +131,7 @@ export default function GuidePage() {
         </div>
 
         {/* 푸터 */}
-        <div className="mt-8 text-center pb-4">
+        <div className="guide-footer mt-8 text-center pb-4">
           <p style={{ fontSize: 11, color: "var(--text-muted)" }}>© 주식회사 미스터팍 (Mr. Park) · ME.PARK 2.0 주차운영 시스템</p>
           <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>문의: mepark1022@gmail.com</p>
         </div>
