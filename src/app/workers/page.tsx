@@ -188,6 +188,15 @@ function ScheduleTab() {
 
   const getWorkerStats = (workerId) => {
     const wr = records.filter(r => r.worker_id === workerId);
+    const workedDates = wr.filter(r => r.status === "present" || r.status === "late");
+    const holidayWork = workedDates.filter(r => {
+      const d = dates.find(d => d.date === r.date);
+      return d?.holidayName;
+    }).length;
+    const weekendWork = workedDates.filter(r => {
+      const d = dates.find(d => d.date === r.date);
+      return d && !d.holidayName && (d.dayOfWeek === 0 || d.dayOfWeek === 6);
+    }).length;
     return {
       present: wr.filter(r => r.status === "present").length,
       late: wr.filter(r => r.status === "late").length,
@@ -195,6 +204,8 @@ function ScheduleTab() {
       dayoff: wr.filter(r => r.status === "dayoff").length,
       vacation: wr.filter(r => r.status === "vacation").length,
       total: wr.length,
+      holidayWork,
+      weekendWork,
     };
   };
 
@@ -209,14 +220,20 @@ function ScheduleTab() {
   const downloadExcel = async (mode) => {
     setShowDownMenu(false);
     const wb = XLSX.utils.book_new();
-    const header = ["근무자", ...dates.map(d => `${d.day}일(${d.dayName})`), "출근", "지각", "결근", "휴무", "연차", "합계"];
-    const colWidths = [{ wch: 10 }, ...dates.map(() => ({ wch: 7 })), { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }];
+    const holidayDates = dates.filter(d => d.holidayName);
+    const header = ["근무자", ...dates.map(d => {
+      let label = `${d.day}일(${d.dayName})`;
+      if (d.holidayName) label = `${d.day}일(${d.holidayName.slice(0,3)})🎌`;
+      else if (d.dayOfWeek === 0 || d.dayOfWeek === 6) label = `${d.day}일(${d.dayName})☆`;
+      return label;
+    }), "출근", "지각", "결근", "휴무", "연차", "공휴일근무", "주말근무", "합계"];
+    const colWidths = [{ wch: 10 }, ...dates.map(() => ({ wch: 8 })), { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 8 }, { wch: 8 }, { wch: 5 }];
 
     if (mode === "current") {
       const storeName = stores.find(s => s.id === selectedStore)?.name || "매장";
       const rows = storeWorkers.map(w => {
         const stats = getWorkerStats(w.id);
-        return [w.name, ...dates.map(d => { const rec = records.find(r => r.worker_id === w.id && r.date === d.date); return rec ? statusMap[rec.status]?.label || "" : ""; }), stats.present, stats.late, stats.absent, stats.dayoff, stats.vacation, stats.total];
+        return [w.name, ...dates.map(d => { const rec = records.find(r => r.worker_id === w.id && r.date === d.date); return rec ? statusMap[rec.status]?.label || "" : ""; }), stats.present, stats.late, stats.absent, stats.dayoff, stats.vacation, stats.holidayWork, stats.weekendWork, stats.total];
       });
       const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
       ws["!cols"] = colWidths;
@@ -239,8 +256,17 @@ function ScheduleTab() {
         const storeRecs = recs || [];
         const rows = sw.map(w => {
           const wr = storeRecs.filter(r => r.worker_id === w.id);
-          const st = { present: wr.filter(r => r.status === "present").length, late: wr.filter(r => r.status === "late").length, absent: wr.filter(r => r.status === "absent").length, dayoff: wr.filter(r => r.status === "dayoff").length, vacation: wr.filter(r => r.status === "vacation").length };
-          return [w.name, ...dates.map(d => { const rec = storeRecs.find(r => r.worker_id === w.id && r.date === d.date); return rec ? statusMap[rec.status]?.label || "" : ""; }), st.present, st.late, st.absent, st.dayoff, st.vacation, st.present + st.late + st.absent + st.dayoff + st.vacation];
+          const workedDates = wr.filter(r => r.status === "present" || r.status === "late");
+          const st = {
+            present: wr.filter(r => r.status === "present").length,
+            late: wr.filter(r => r.status === "late").length,
+            absent: wr.filter(r => r.status === "absent").length,
+            dayoff: wr.filter(r => r.status === "dayoff").length,
+            vacation: wr.filter(r => r.status === "vacation").length,
+            holidayWork: workedDates.filter(r => { const d = dates.find(d => d.date === r.date); return d?.holidayName; }).length,
+            weekendWork: workedDates.filter(r => { const d = dates.find(d => d.date === r.date); return d && !d.holidayName && (d.dayOfWeek === 0 || d.dayOfWeek === 6); }).length,
+          };
+          return [w.name, ...dates.map(d => { const rec = storeRecs.find(r => r.worker_id === w.id && r.date === d.date); return rec ? statusMap[rec.status]?.label || "" : ""; }), st.present, st.late, st.absent, st.dayoff, st.vacation, st.holidayWork, st.weekendWork, st.present + st.late + st.absent + st.dayoff + st.vacation];
         });
         const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
         ws["!cols"] = colWidths;
@@ -304,6 +330,55 @@ function ScheduleTab() {
               style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, fontWeight: 600, outline: "none" }} />
           </div>
         </div>
+
+        {/* 공휴일 보너스 요약 카드 */}
+        {(() => {
+          const holidayDatesThisMonth = dates.filter(d => d.holidayName);
+          if (holidayDatesThisMonth.length === 0 || storeWorkers.length === 0) return null;
+          const bonusSummary = storeWorkers.map(w => {
+            const stats = getWorkerStats(w.id);
+            return { name: w.name, holidayWork: stats.holidayWork, weekendWork: stats.weekendWork };
+          }).filter(w => w.holidayWork > 0 || w.weekendWork > 0);
+          return (
+            <div style={{ background: "linear-gradient(135deg, #fff9e6 0%, #fffdf5 100%)", border: "1px solid rgba(245,183,49,0.4)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <span style={{ fontSize: 18 }}>🎌</span>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#92400e" }}>공휴일 · 주말 근무 현황</span>
+                <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-muted)", background: "rgba(245,183,49,0.2)", padding: "3px 10px", borderRadius: 6, fontWeight: 600 }}>
+                  이번 달 공휴일 {holidayDatesThisMonth.length}일
+                </span>
+              </div>
+              {bonusSummary.length === 0 ? (
+                <div style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>공휴일/주말 근무 기록 없음</div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
+                  {bonusSummary.map(w => (
+                    <div key={w.name} style={{ background: "var(--white)", borderRadius: 10, padding: "10px 14px", border: "1px solid rgba(245,183,49,0.3)" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{w.name}</div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        {w.holidayWork > 0 && (
+                          <div style={{ textAlign: "center" }}>
+                            <div style={{ fontSize: 20, fontWeight: 800, color: "#dc2626", lineHeight: 1 }}>{w.holidayWork}</div>
+                            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>공휴일근무</div>
+                          </div>
+                        )}
+                        {w.weekendWork > 0 && (
+                          <div style={{ textAlign: "center" }}>
+                            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--navy)", lineHeight: 1 }}>{w.weekendWork}</div>
+                            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>주말근무</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ marginTop: 10, fontSize: 11, color: "#92400e", background: "rgba(245,183,49,0.15)", padding: "6px 12px", borderRadius: 6 }}>
+                💡 근로기준법 기준: 공휴일 근무 시 통상임금의 150% 지급 (8시간 초과 시 200%)
+              </div>
+            </div>
+          );
+        })()}
 
         {/* 범례 */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16, alignItems: "center" }}>
@@ -380,6 +455,8 @@ function ScheduleTab() {
                           <div style={{ fontSize: 11, fontWeight: 700, color: "var(--success)" }}>{stats.present}<span style={{ color: "var(--text-muted)", fontWeight: 400 }}>출</span></div>
                           {stats.late > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--warning)" }}>{stats.late}<span style={{ color: "var(--text-muted)", fontWeight: 400 }}>지</span></div>}
                           {stats.absent > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--error)" }}>{stats.absent}<span style={{ color: "var(--text-muted)", fontWeight: 400 }}>결</span></div>}
+                          {stats.holidayWork > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", marginTop: 2 }}>{stats.holidayWork}<span style={{ fontSize: 8, fontWeight: 400, color: "var(--text-muted)" }}>공휴</span></div>}
+                          {stats.weekendWork > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--navy)", marginTop: 1 }}>{stats.weekendWork}<span style={{ fontSize: 8, fontWeight: 400, color: "var(--text-muted)" }}>주말</span></div>}
                         </td>
                       </tr>
                     );
