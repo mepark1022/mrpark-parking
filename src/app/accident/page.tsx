@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
 import { getUserContext } from "@/lib/utils/org";
+import * as XLSX from "xlsx";
 
 const styles = `
   .ac-kpi-grid {
@@ -155,6 +156,68 @@ export default function AccidentPage() {
     }
   };
 
+  const handleExcelDownload = (mode: "current" | "monthly") => {
+    const now = new Date();
+    let data: any[];
+    let fileName: string;
+
+    if (mode === "monthly") {
+      // 월별 시트 분리
+      const wb = XLSX.utils.book_new();
+      const monthMap: Record<string, any[]> = {};
+      accidents.forEach(a => {
+        const d = new Date(a.accident_at);
+        const key = `${d.getFullYear()}년 ${String(d.getMonth() + 1).padStart(2, "0")}월`;
+        if (!monthMap[key]) monthMap[key] = [];
+        monthMap[key].push(a);
+      });
+      Object.entries(monthMap)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .forEach(([month, rows]) => {
+          const sheetData = rows.map(a => ({
+            "사고 일시": fmt(a.accident_at),
+            "매장": a.stores?.name || "-",
+            "사고 유형": a.accident_type,
+            "차량번호": a.vehicle,
+            "차주 연락처": a.phone || "-",
+            "보고자": a.reporter,
+            "상태": a.status,
+            "크루 보고내용": a.detail || "-",
+            "관리자 메모": a.admin_memo || "-",
+            "접수 일시": fmt(a.created_at),
+          }));
+          const ws = XLSX.utils.json_to_sheet(sheetData);
+          ws["!cols"] = [20, 12, 12, 14, 16, 10, 8, 30, 30, 20].map(w => ({ wch: w }));
+          XLSX.utils.book_append_sheet(wb, ws, month);
+        });
+      fileName = `사고보고_월별_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    } else {
+      // 현재 필터 기준
+      data = filtered.map(a => ({
+        "사고 일시": fmt(a.accident_at),
+        "매장": a.stores?.name || "-",
+        "사고 유형": a.accident_type,
+        "차량번호": a.vehicle,
+        "차주 연락처": a.phone || "-",
+        "보고자": a.reporter,
+        "상태": a.status,
+        "크루 보고내용": a.detail || "-",
+        "관리자 메모": a.admin_memo || "-",
+        "접수 일시": fmt(a.created_at),
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      ws["!cols"] = [20, 12, 12, 14, 16, 10, 8, 30, 30, 20].map(w => ({ wch: w }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "사고보고");
+      const periodLabel = PERIOD_OPTIONS.find(p => p.value === filterPeriod)?.label || "";
+      fileName = `사고보고_${periodLabel}_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    }
+  };
+
+  const [showExcelMenu, setShowExcelMenu] = useState(false);
+
   const handleDelete = async (id: string) => {
     if (!confirm("이 사고보고를 삭제하시겠습니까?")) return;
     const supabase = createClient();
@@ -240,8 +303,42 @@ export default function AccidentPage() {
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={selStyle}>
             {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <div style={{ marginLeft: "auto", fontSize: 13, color: "#94a3b8", fontWeight: 500 }}>
-            {filtered.length}건
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ fontSize: 13, color: "#94a3b8", fontWeight: 500 }}>{filtered.length}건</div>
+            {/* 엑셀 다운 드롭다운 */}
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => setShowExcelMenu(v => !v)}
+                className="cursor-pointer"
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 9,
+                  border: "1px solid #16a34a", background: "#f0fdf4", color: "#16a34a", fontSize: 13, fontWeight: 700 }}>
+                📥 엑셀 다운 ▾
+              </button>
+              {showExcelMenu && (
+                <>
+                  <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setShowExcelMenu(false)} />
+                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "#fff",
+                    borderRadius: 10, border: "1px solid #e2e8f0", boxShadow: "0 8px 24px rgba(0,0,0,.1)",
+                    zIndex: 100, minWidth: 200, overflow: "hidden" }}>
+                    <button onClick={() => { handleExcelDownload("current"); setShowExcelMenu(false); }}
+                      className="cursor-pointer"
+                      style={{ display: "block", width: "100%", padding: "12px 16px", textAlign: "left",
+                        fontSize: 13, fontWeight: 600, color: "#1e293b", border: "none", background: "none",
+                        borderBottom: "1px solid #f1f5f9" }}>
+                      📄 현재 필터 결과 다운로드
+                      <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>선택한 조건 기준 ({filtered.length}건)</div>
+                    </button>
+                    <button onClick={() => { handleExcelDownload("monthly"); setShowExcelMenu(false); }}
+                      className="cursor-pointer"
+                      style={{ display: "block", width: "100%", padding: "12px 16px", textAlign: "left",
+                        fontSize: 13, fontWeight: 600, color: "#1e293b", border: "none", background: "none" }}>
+                      📊 월별 보고서 (시트 분리)
+                      <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>전체 이력을 월별 시트로 분리</div>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
