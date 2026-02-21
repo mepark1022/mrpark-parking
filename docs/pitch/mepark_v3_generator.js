@@ -784,135 +784,102 @@ async function slide06() {
   s.background = { color: P.white };
 
   // Left navy panel
-  s.addShape(pres.shapes.RECTANGLE, {
-    x: 0, y: 0, w: 5.0, h: 7.5,
-    fill: { color: P.navyDD }, line: { color: P.navyDD }
-  });
-  s.addShape(pres.shapes.RECTANGLE, {
-    x: 0, y: 0, w: 0.18, h: 7.5,
-    fill: { color: P.gold }, line: { color: P.gold }
-  });
+  s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 5.0, h: 7.5, fill: { color: P.navyDD }, line: { color: P.navyDD } });
+  s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 0.18, h: 7.5, fill: { color: P.gold }, line: { color: P.gold } });
 
-  // Header (spans full width)
-  s.addShape(pres.shapes.RECTANGLE, {
-    x: 0, y: 0, w: 13.3, h: 1.1,
-    fill: { color: P.navy }, line: { color: P.navy }
-  });
-  s.addShape(pres.shapes.RECTANGLE, {
-    x: 0, y: 0, w: 0.18, h: 1.1,
-    fill: { color: P.gold }, line: { color: P.gold }
-  });
-  s.addText("3개년 재무 계획", {
-    x: 0.42, y: 0, w: 7, h: 1.1,
-    fontSize: 28, bold: true, color: P.white,
-    fontFace: "Outfit", valign: "middle"
-  });
+  // Header
+  s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 13.3, h: 1.1, fill: { color: P.navy }, line: { color: P.navy } });
+  s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 0.18, h: 1.1, fill: { color: P.gold }, line: { color: P.gold } });
+  s.addText("3개년 재무 시뮬레이션", { x: 0.42, y: 0, w: 8, h: 1.1, fontSize: 28, bold: true, color: P.white, fontFace: "Outfit", valign: "middle" });
+  s.addText("알림톡 2회 기준  ·  인건비·마케팅 제외", { x: 8.2, y: 0, w: 4.92, h: 1.1, fontSize: 10, color: P.gold, fontFace: "Outfit", align: "right", valign: "middle" });
   pgNum(s, 8);
 
-  // Left panel — 3 year KPI blocks
+  // LEFT: 3년 KPI — 알림톡 2회 절감 반영
   const years = [
-    { yr: "1년차", cust: "100사",  rev: "1.4억",  op: "2,453만", pct: "17.4%", col: P.teal },
-    { yr: "2년차", cust: "250사",  rev: "4.4억",  op: "1.1억",   pct: "25.4%", col: P.navyM },
-    { yr: "3년차", cust: "500사",  rev: "10.1억", op: "3.5억",   pct: "34.6%", col: P.gold },
+    { yr: "1년차", cust: "100사", rev: "1.4억", op: "3,353만", pct: "24.0%", infra: "196만/월", col: P.teal },
+    { yr: "2년차", cust: "250사", rev: "4.4억", op: "1.33억",  pct: "30.1%", infra: "459만/월", col: P.navyM },
+    { yr: "3년차", cust: "500사", rev: "10.1억",op: "3.95억",  pct: "39.1%", infra: "905만/월", col: P.gold },
   ];
-
   years.forEach((y, i) => {
     const top = 1.28 + i * 1.9;
-    // Accent stroke
-    s.addShape(pres.shapes.RECTANGLE, {
-      x: 0.42, y: top, w: 0.06, h: 1.65,
-      fill: { color: y.col }, line: { color: y.col }
-    });
-    // Year
-    s.addText(y.yr, {
-      x: 0.65, y: top + 0.08, w: 4.0, h: 0.32,
-      fontSize: 11, bold: true, color: y.col,
-      fontFace: "Outfit", charSpacing: 1
-    });
-    // Customer count — monument number
-    s.addText(y.cust, {
-      x: 0.65, y: top + 0.38, w: 4.0, h: 0.72,
-      fontSize: 40, bold: true, fontFace: "Outfit", color: P.white
-    });
-    // Three micro stats
-    const micro = [
-      { l: "매출", v: y.rev },
-      { l: "영업이익", v: y.op },
-      { l: "이익률", v: y.pct },
-    ];
+    s.addShape(pres.shapes.RECTANGLE, { x: 0.42, y: top, w: 0.06, h: 1.65, fill: { color: y.col }, line: { color: y.col } });
+    s.addText(y.yr, { x: 0.65, y: top + 0.06, w: 4.1, h: 0.3, fontSize: 11, bold: true, color: y.col, fontFace: "Outfit", charSpacing: 1 });
+    s.addText(y.cust, { x: 0.65, y: top + 0.34, w: 4.1, h: 0.7, fontSize: 40, bold: true, fontFace: "Outfit", color: P.white });
+    const micro = [{ l: "매출", v: y.rev }, { l: "영업이익", v: y.op }, { l: "이익률", v: y.pct }];
     micro.forEach((m, j) => {
       const mx = 0.65 + j * 1.42;
-      s.addText(m.l, {
-        x: mx, y: top + 1.1, w: 1.35, h: 0.22,
-        fontSize: 8, color: P.mist, fontFace: "Outfit"
-      });
-      s.addText(m.v, {
-        x: mx, y: top + 1.3, w: 1.35, h: 0.3,
-        fontSize: 14, bold: true, fontFace: "Outfit",
-        color: y.col === P.gold ? P.goldL : P.white
-      });
+      s.addText(m.l, { x: mx, y: top + 1.06, w: 1.4, h: 0.22, fontSize: 8, color: P.mist, fontFace: "Outfit" });
+      s.addText(m.v, { x: mx, y: top + 1.26, w: 1.4, h: 0.3, fontSize: 13, bold: true, fontFace: "Outfit", color: y.col === P.gold ? P.goldL : P.white });
     });
-    if (i < 2) rule(s, 0.42, top + 1.72, 4.3, 0.012);
+    // Infra badge
+    s.addText("인프라 " + y.infra, { x: 0.65, y: top + 1.55, w: 4.0, h: 0.2, fontSize: 9, color: y.col, fontFace: "Outfit" });
+    if (i < 2) rule(s, 0.42, top + 1.76, 4.3, 0.012);
   });
 
-  // BEP label at bottom of left panel
-  s.addShape(pres.shapes.RECTANGLE, {
-    x: 0.42, y: 6.9, w: 4.3, h: 0.25,
-    fill: { color: P.gold }, line: { color: P.gold }
-  });
-  s.addText("손익분기점  Q3  (1년차 7~8개월)", {
-    x: 0.48, y: 6.9, w: 4.2, h: 0.25,
-    fontSize: 9.5, bold: true, color: P.navyDD,
-    fontFace: "Outfit", valign: "middle"
+  // BEP bar
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.42, y: 6.9, w: 4.3, h: 0.28, fill: { color: P.gold }, line: { color: P.gold } });
+  s.addText("BEP Q3  ·  알림톡 2회 절감 반영  ·  연 절감 최대 4,500만", { x: 0.48, y: 6.9, w: 4.18, h: 0.28, fontSize: 8, bold: true, color: P.navyDD, fontFace: "Outfit", valign: "middle" });
+
+  // RIGHT: 인프라 비용 Breakdown 테이블
+  s.addText("📡  인프라 비용 시뮬레이션  (인건비·마케팅 제외)", { x: 5.25, y: 1.18, w: 7.8, h: 0.36, fontSize: 12, bold: true, color: P.dark, fontFace: "Outfit" });
+  rule(s, 5.25, 1.56, 7.8, 0.022);
+
+  const tX    = [5.25, 7.35, 9.05, 10.75, 12.45];
+  const tCols = [2.1,  1.7,  1.7,  1.7,   0.6];
+  const tHdrs = ["항목", "1년차", "2년차", "3년차", "비고"];
+  s.addShape(pres.shapes.RECTANGLE, { x: 5.25, y: 1.63, w: 7.8, h: 0.34, fill: { color: P.navyDD }, line: { color: P.navyDD } });
+  tHdrs.forEach((h, i) => {
+    s.addText(h, { x: tX[i]+0.05, y: 1.63, w: tCols[i]-0.08, h: 0.34, fontSize: 9.5, bold: true, color: P.white, fontFace: "Outfit", valign: "middle", align: i===0?"left":"center" });
   });
 
-  // Right panel — Charts
+  const rows = [
+    { item: "카카오 알림톡 (2회/거래)", v: ["1,800만","4,500만","9,000만"], note: "10원×2회", hi: true,  col: P.gold },
+    { item: "클라우드 서버 (Vercel)",   v: ["60만",   "120만",  "240만" ], note: "선형↑",   hi: false, col: null },
+    { item: "데이터베이스 (Supabase)", v: ["42만",   "84만",   "168만" ], note: "선형↑",   hi: false, col: null },
+    { item: "스토리지·CDN (QR이미지)", v: ["24만",   "48만",   "120만" ], note: "선형↑",   hi: false, col: null },
+    { item: "모니터링·이메일 등",       v: ["42만",   "66만",   "96만"  ], note: "완만↑",   hi: false, col: null },
+    { item: "인프라 합계 (연)",          v: ["1,968만","4,818만","9,624만"], note: "비용↑",   hi: true,  col: P.teal },
+    { item: "매출 대비 인프라 비율",    v: ["14.1%", "11.0%", "9.5%"  ], note: "SaaS↓",   hi: true,  col: P.green },
+  ];
+
+  rows.forEach((r, i) => {
+    const ry = 1.97 + i * 0.37;
+    const bg = r.hi
+      ? (i === rows.length-1 ? "E8F5E9" : i === rows.length-2 ? "E0F2F7" : "FEF9E7")
+      : (i%2===0 ? P.white : P.offwht);
+    s.addShape(pres.shapes.RECTANGLE, { x: 5.25, y: ry, w: 7.8, h: 0.37, fill: { color: bg }, line: { color: "E2E4E9", type: "solid", pt: 0.5 } });
+    const vals = [r.item, ...r.v, r.note];
+    vals.forEach((v, j) => {
+      s.addText(v, { x: tX[j]+0.05, y: ry+0.02, w: tCols[j]-0.08, h: 0.33,
+        fontSize: j===0 ? 9 : 10, bold: r.hi, color: r.col && j>0 && j<4 ? r.col : P.dark,
+        fontFace: "Outfit", valign: "middle", align: j===0 ? "left" : "center" });
+    });
+  });
+
+  // RIGHT BOTTOM: bar chart
+  const chartTop = 1.97 + rows.length * 0.37 + 0.18;
+  rule(s, 5.25, chartTop, 7.8, 0.022);
+
   s.addChart(pres.charts.BAR, [
-    { name: "매출 (백만원)", labels: ["1년차", "2년차", "3년차"], values: [141, 438, 1012] },
-    { name: "영업이익 (백만원)", labels: ["1년차", "2년차", "3년차"], values: [25, 111, 351] },
+    { name: "매출 (백만원)",     labels: ["1년차","2년차","3년차"], values: [140, 440, 1010] },
+    { name: "영업이익 (백만원)", labels: ["1년차","2년차","3년차"], values: [34,  133,  395] },
   ], {
-    x: 5.2, y: 1.18, w: 7.8, h: 2.88,
+    x: 5.25, y: chartTop+0.1, w: 7.8, h: 7.5 - chartTop - 0.42,
     barDir: "col", barGrouping: "clustered",
     chartColors: [P.navy, P.gold],
-    chartArea: { fill: { color: P.white } },
-    plotArea: { fill: { color: P.white } },
+    chartArea: { fill: { color: P.white } }, plotArea: { fill: { color: P.white } },
     catAxisLabelColor: P.grayD, valAxisLabelColor: P.grayD,
     valGridLine: { color: "E2E8F0", size: 0.5 }, catGridLine: { style: "none" },
-    showValue: true, dataLabelFontSize: 10, dataLabelColor: P.dark,
-    showLegend: true, legendPos: "b", legendFontSize: 10,
-    showTitle: true,
-    title: "연간 매출  &  영업이익  (단위: 백만원)",
-    titleFontSize: 11, titleColor: P.dark
-  });
-
-  rule(s, 5.2, 4.2, 7.8, 0.025);
-
-  s.addChart(pres.charts.LINE, [
-    { name: "월 MRR (만원)",
-      labels: ["Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Q11","Q12"],
-      values: [74, 185, 278, 370, 444, 592, 740, 1000, 1320, 1672, 1980, 2200] }
-  ], {
-    x: 5.2, y: 4.28, w: 7.8, h: 2.78,
-    chartColors: [P.gold],
-    chartArea: { fill: { color: P.white } },
-    catAxisLabelColor: P.grayD, valAxisLabelColor: P.grayD,
-    valGridLine: { color: "E2E8F0", size: 0.5 }, catGridLine: { style: "none" },
-    lineSize: 3, lineSmooth: true,
-    showLegend: false,
-    showTitle: true,
-    title: "MRR 성장 추이  (분기별, 만원)  →  3년차 2,200만원/월",
-    titleFontSize: 11, titleColor: P.dark
+    showValue: true, dataLabelFontSize: 9, dataLabelColor: P.dark,
+    showLegend: true, legendPos: "b", legendFontSize: 9,
+    showTitle: true, title: "매출  vs  영업이익 (백만원)  ·  알림톡 2회 절감 반영",
+    titleFontSize: 10, titleColor: P.dark
   });
 
   credit(s);
 }
 
 
-// ═══════════════════════════════════════════════════════════════
-//  SLIDE 07 — ROADMAP
-//  Philosophy: Three year columns. Year number as ghost monument.
-//  Clean vertical timeline with dot nodes.
-// ═══════════════════════════════════════════════════════════════
 async function slide07() {
   const s = pres.addSlide();
   s.background = { color: P.offwht };
