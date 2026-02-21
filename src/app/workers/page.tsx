@@ -446,6 +446,11 @@ export default function WorkersPage() {
   const [workers, setWorkers] = useState([]);
   const [stores, setStores] = useState([]);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [attendanceStore, setAttendanceStore] = useState("");
+  const [attendanceWorkers, setAttendanceWorkers] = useState([]);
+  const [manualModal, setManualModal] = useState({ show: false, record: null });
+  const [manualForm, setManualForm] = useState({ workerId: "", status: "present", checkIn: "", checkOut: "" });
+  const [manualMsg, setManualMsg] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [formData, setFormData] = useState({ name: "", phone: "", region_id: "", district: "" });
@@ -494,6 +499,72 @@ export default function WorkersPage() {
     if (rData) setRegions(rData);
   };
 
+  // ── 출퇴근 탭: 매장별 근무자 로드 ──
+  const loadAttendanceWorkers = async (storeId: string) => {
+    if (!storeId) { setAttendanceWorkers(workers.filter(w => w.status === "active")); return; }
+    const supabase = createClient();
+    const { data: members } = await supabase.from("store_members").select("user_id").eq("store_id", storeId);
+    const allActive = workers.filter(w => w.status === "active");
+    if (members && members.length > 0) {
+      const ids = members.map(m => m.user_id);
+      const filtered = allActive.filter(w => ids.includes(w.id));
+      setAttendanceWorkers(filtered.length > 0 ? filtered : allActive);
+    } else {
+      setAttendanceWorkers(allActive);
+    }
+  };
+
+  useEffect(() => { loadAttendanceWorkers(attendanceStore); }, [attendanceStore, workers]);
+
+  // ── 출퇴근 탭: 수동 등록/수정 저장 ──
+  const saveManualAttendance = async () => {
+    if (!manualForm.workerId) { setManualMsg("근무자를 선택하세요"); return; }
+    const supabase = createClient();
+    const oid = await getOrgId();
+    const today = new Date().toISOString().slice(0, 10);
+    const existing = attendanceRecords.find(r => r.worker_id === manualForm.workerId);
+    const payload = {
+      org_id: oid,
+      worker_id: manualForm.workerId,
+      store_id: attendanceStore || null,
+      date: today,
+      status: manualForm.status,
+      check_in: manualForm.checkIn || (manualForm.status === "present" || manualForm.status === "late" ? "09:00" : null),
+      check_out: manualForm.checkOut || null,
+    };
+    let error;
+    if (existing) {
+      ({ error } = await supabase.from("worker_attendance").update(payload).eq("id", existing.id));
+    } else {
+      ({ error } = await supabase.from("worker_attendance").insert(payload));
+    }
+    if (error) { setManualMsg(`저장 실패: ${error.message}`); return; }
+    setManualModal({ show: false, record: null });
+    setManualForm({ workerId: "", status: "present", checkIn: "", checkOut: "" });
+    setManualMsg("");
+    loadAll();
+  };
+
+  // ── 출퇴근 탭: 특정 근무자 출퇴근 삭제 ──
+  const deleteAttendance = async (recordId: string) => {
+    if (!confirm("출퇴근 기록을 삭제하시겠습니까?")) return;
+    const supabase = createClient();
+    await supabase.from("worker_attendance").delete().eq("id", recordId);
+    loadAll();
+  };
+
+  // ── 출퇴근 탭: 근무시간 계산 ──
+  const calcWorkHours = (checkIn: string, checkOut: string) => {
+    if (!checkIn || !checkOut) return "-";
+    const [h1, m1] = checkIn.split(":").map(Number);
+    const [h2, m2] = checkOut.split(":").map(Number);
+    const mins = (h2 * 60 + m2) - (h1 * 60 + m1);
+    if (mins <= 0) return "-";
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h > 0 ? `${h}시간 ${m}분` : `${m}분`;
+  };
+
   const handleSave = async () => {
     if (!formData.name) { setMessage("이름을 입력하세요"); return; }
     const supabase = createClient();
@@ -533,58 +604,178 @@ export default function WorkersPage() {
         </div>
 
         {/* ── 출퇴근 탭 ── */}
-        {tab === "attendance" && (
-          <div style={{ background: "var(--white)", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderBottom: "1px solid var(--border-light)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 700 }}>
-                <span>🕐</span> 오늘의 출퇴근 현황
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <span style={{ padding: "5px 12px", borderRadius: 8, background: "var(--success-bg)", color: "var(--success)", fontSize: 13, fontWeight: 700 }}>출근 {activeWorkers.length}명</span>
-                <span style={{ padding: "5px 12px", borderRadius: 8, background: "var(--error-bg)", color: "var(--error)", fontSize: 13, fontWeight: 700 }}>미출근 0명</span>
-              </div>
-            </div>
-            <div style={{ padding: "16px 24px" }}>
-              {/* PC 테이블 */}
-              <div className="hidden md:block">
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr>
-                      {["이름", "지역", "연락처", "상태"].map(h => (
-                        <th key={h} style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textAlign: "left", background: "var(--bg-card)", borderBottom: "1px solid var(--border-light)" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activeWorkers.map(w => (
-                      <tr key={w.id}>
-                        <td style={{ padding: "12px 14px", fontSize: 14, fontWeight: 600 }}>{w.name}</td>
-                        <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "-"}</td>
-                        <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{w.phone || "-"}</td>
-                        <td style={{ padding: "12px 14px" }}><span style={{ padding: "4px 12px", borderRadius: 6, background: "var(--success-bg)", color: "var(--success)", fontSize: 12, fontWeight: 600 }}>활성</span></td>
-                      </tr>
-                    ))}
-                    {activeWorkers.length === 0 && (
-                      <tr><td colSpan={4} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)", fontSize: 14 }}>등록된 근무자가 없습니다</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              {/* 모바일 카드 */}
-              <div className="md:hidden space-y-2">
-                {activeWorkers.map(w => (
-                  <div key={w.id} style={{ background: "var(--bg-card)", borderRadius: 12, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700 }}>{w.name}</div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "-"} · {w.phone || "-"}</div>
-                    </div>
-                    <span style={{ padding: "4px 10px", borderRadius: 6, background: "var(--success-bg)", color: "var(--success)", fontSize: 12, fontWeight: 600 }}>활성</span>
+        {tab === "attendance" && (() => {
+          const today = new Date().toISOString().slice(0, 10);
+          const displayWorkers = attendanceWorkers.length > 0 ? attendanceWorkers : workers.filter(w => w.status === "active");
+          const checkedIn = displayWorkers.filter(w => attendanceRecords.find(r => r.worker_id === w.id && (r.status === "present" || r.status === "late")));
+          const late = displayWorkers.filter(w => attendanceRecords.find(r => r.worker_id === w.id && r.status === "late"));
+          const absent = displayWorkers.filter(w => attendanceRecords.find(r => r.worker_id === w.id && r.status === "absent"));
+          const notYet = displayWorkers.filter(w => !attendanceRecords.find(r => r.worker_id === w.id));
+          return (
+          <div>
+            {/* 수동 등록 모달 */}
+            {manualModal.show && (
+              <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ background: "#fff", borderRadius: 20, padding: 28, width: 460, boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
+                    <span>🕐</span> 출퇴근 수동 등록
+                    <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)", fontWeight: 500, background: "var(--bg-card)", padding: "4px 10px", borderRadius: 8 }}>{today}</span>
                   </div>
-                ))}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "var(--text-secondary)" }}>근무자 *</div>
+                      <select value={manualForm.workerId} onChange={e => setManualForm({ ...manualForm, workerId: e.target.value })}
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14 }}>
+                        <option value="">선택하세요</option>
+                        {displayWorkers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "var(--text-secondary)" }}>상태</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {Object.entries(statusMap).map(([key, val]) => (
+                          <button key={key} onClick={() => setManualForm({ ...manualForm, status: key })}
+                            style={{ padding: "8px 16px", borderRadius: 8, border: `2px solid ${manualForm.status === key ? val.color : "var(--border)"}`, background: manualForm.status === key ? val.bg : "#fff", color: val.color, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                            {val.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "var(--text-secondary)" }}>출근 시간</div>
+                        <input type="time" value={manualForm.checkIn} onChange={e => setManualForm({ ...manualForm, checkIn: e.target.value })}
+                          style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, boxSizing: "border-box" }} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "var(--text-secondary)" }}>퇴근 시간</div>
+                        <input type="time" value={manualForm.checkOut} onChange={e => setManualForm({ ...manualForm, checkOut: e.target.value })}
+                          style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, boxSizing: "border-box" }} />
+                      </div>
+                    </div>
+                    {manualMsg && <p style={{ color: "var(--error)", fontSize: 13 }}>{manualMsg}</p>}
+                    <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                      <button onClick={() => { setManualModal({ show: false, record: null }); setManualForm({ workerId: "", status: "present", checkIn: "", checkOut: "" }); setManualMsg(""); }}
+                        style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1px solid var(--border)", background: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>취소</button>
+                      <button onClick={saveManualAttendance}
+                        style={{ flex: 1, padding: "11px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>💾 저장</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 카드 헤더 */}
+            <div style={{ background: "var(--white)", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderBottom: "1px solid var(--border-light)", flexWrap: "wrap", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                    <span>🕐</span> 오늘의 출퇴근 현황
+                  </div>
+                  {/* 매장 필터 */}
+                  <select value={attendanceStore} onChange={e => setAttendanceStore(e.target.value)}
+                    style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 13, background: "#fff" }}>
+                    <option value="">전체 매장</option>
+                    {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ padding: "5px 12px", borderRadius: 8, background: "var(--success-bg)", color: "var(--success)", fontSize: 13, fontWeight: 700 }}>출근 {checkedIn.length}명</span>
+                  <span style={{ padding: "5px 12px", borderRadius: 8, background: "#fff7ed", color: "#ea580c", fontSize: 13, fontWeight: 700 }}>지각 {late.length}명</span>
+                  <span style={{ padding: "5px 12px", borderRadius: 8, background: "var(--error-bg)", color: "var(--error)", fontSize: 13, fontWeight: 700 }}>미출근 {notYet.length}명</span>
+                  <button onClick={() => { setManualForm({ workerId: "", status: "present", checkIn: "", checkOut: "" }); setManualMsg(""); setManualModal({ show: true, record: null }); }}
+                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                    + 수동 등록
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ padding: "16px 24px" }}>
+                {/* PC 테이블 */}
+                <div className="hidden md:block">
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        {["이름", "연락처", "출근시간", "퇴근시간", "근무시간", "상태", "액션"].map(h => (
+                          <th key={h} style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textAlign: "left", background: "var(--bg-card)", borderBottom: "1px solid var(--border-light)" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayWorkers.map(w => {
+                        const rec = attendanceRecords.find(r => r.worker_id === w.id);
+                        const sm = rec ? statusMap[rec.status] : null;
+                        return (
+                          <tr key={w.id} style={{ borderBottom: "1px solid var(--border-light)" }}>
+                            <td style={{ padding: "13px 14px", fontSize: 14, fontWeight: 700 }}>{w.name}</td>
+                            <td style={{ padding: "13px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{w.phone || "-"}</td>
+                            <td style={{ padding: "13px 14px", fontSize: 14, fontWeight: 600, color: rec?.check_in ? "var(--text-primary)" : "var(--text-muted)" }}>{rec?.check_in || "-"}</td>
+                            <td style={{ padding: "13px 14px", fontSize: 14, color: rec?.check_out ? "var(--text-primary)" : "var(--text-muted)" }}>{rec?.check_out || "-"}</td>
+                            <td style={{ padding: "13px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{rec ? calcWorkHours(rec.check_in, rec.check_out) : "-"}</td>
+                            <td style={{ padding: "13px 14px" }}>
+                              {sm ? (
+                                <span style={{ padding: "4px 12px", borderRadius: 6, background: sm.bg, color: sm.color, fontSize: 12, fontWeight: 700 }}>{sm.label}</span>
+                              ) : (
+                                <span style={{ padding: "4px 12px", borderRadius: 6, background: "var(--bg-card)", color: "var(--text-muted)", fontSize: 12, fontWeight: 600 }}>미기록</span>
+                              )}
+                            </td>
+                            <td style={{ padding: "13px 14px" }}>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button onClick={() => { setManualForm({ workerId: w.id, status: rec?.status || "present", checkIn: rec?.check_in || "", checkOut: rec?.check_out || "" }); setManualMsg(""); setManualModal({ show: true, record: rec }); }}
+                                  style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid var(--border)", background: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "var(--navy)" }}>수정</button>
+                                {rec && (
+                                  <button onClick={() => deleteAttendance(rec.id)}
+                                    style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid var(--border)", background: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "var(--error)" }}>삭제</button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {displayWorkers.length === 0 && (
+                        <tr><td colSpan={7} style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", fontSize: 14 }}>등록된 근무자가 없습니다</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 모바일 카드 */}
+                <div className="md:hidden space-y-2">
+                  {displayWorkers.map(w => {
+                    const rec = attendanceRecords.find(r => r.worker_id === w.id);
+                    const sm = rec ? statusMap[rec.status] : null;
+                    return (
+                      <div key={w.id} style={{ background: "var(--bg-card)", borderRadius: 12, padding: "14px 16px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                          <div style={{ fontSize: 15, fontWeight: 700 }}>{w.name}</div>
+                          {sm ? (
+                            <span style={{ padding: "4px 12px", borderRadius: 6, background: sm.bg, color: sm.color, fontSize: 12, fontWeight: 700 }}>{sm.label}</span>
+                          ) : (
+                            <span style={{ padding: "4px 12px", borderRadius: 6, background: "#fff", color: "var(--text-muted)", fontSize: 12, fontWeight: 600, border: "1px solid var(--border)" }}>미기록</span>
+                          )}
+                        </div>
+                        <div style={{ display: "flex", gap: 16, fontSize: 13, color: "var(--text-secondary)", marginBottom: 10 }}>
+                          <span>출근: <strong>{rec?.check_in || "-"}</strong></span>
+                          <span>퇴근: <strong>{rec?.check_out || "-"}</strong></span>
+                          {rec && <span>근무: <strong>{calcWorkHours(rec.check_in, rec.check_out)}</strong></span>}
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button onClick={() => { setManualForm({ workerId: w.id, status: rec?.status || "present", checkIn: rec?.check_in || "", checkOut: rec?.check_out || "" }); setManualMsg(""); setManualModal({ show: true, record: rec }); }}
+                            style={{ flex: 1, padding: "8px", borderRadius: 8, border: "1px solid var(--border)", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--navy)" }}>수정</button>
+                          {rec && (
+                            <button onClick={() => deleteAttendance(rec.id)}
+                              style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid var(--border)", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--error)" }}>삭제</button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* ── 명부 탭 ── */}
         {tab === "roster" && (
