@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getOrgId, getUserContext } from "@/lib/utils/org";
+import { getUserContext } from "@/lib/utils/org";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
 import type { Store } from "@/lib/types/database";
@@ -30,7 +30,6 @@ export default function MonthlyPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [contracts, setContracts] = useState<MonthlyRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [orgId, setOrgId] = useState<string | null>(null);
   const [filterStore, setFilterStore] = useState("");
   const [filterStatus, setFilterStatus] = useState("active");
   const [searchText, setSearchText] = useState("");
@@ -41,7 +40,6 @@ export default function MonthlyPage() {
   async function loadStores() {
     const ctx = await getUserContext();
     if (!ctx.orgId) return;
-    setOrgId(ctx.orgId);
     let query = supabase.from("stores").select("*").eq("org_id", ctx.orgId).eq("is_active", true).order("name");
     if (!ctx.allStores && ctx.storeIds.length > 0) query = query.in("id", ctx.storeIds);
     else if (!ctx.allStores) { setStores([]); return; }
@@ -55,10 +53,8 @@ export default function MonthlyPage() {
       .from("monthly_parking")
       .select("*, stores(name)")
       .order("end_date", { ascending: true });
-
     if (filterStore) query = query.eq("store_id", filterStore);
     if (filterStatus) query = query.eq("contract_status", filterStatus);
-
     const { data } = await query;
     if (data) setContracts(data as MonthlyRow[]);
     setLoading(false);
@@ -75,27 +71,36 @@ export default function MonthlyPage() {
     );
   }
 
-  function getStatusBadge(status: string) {
-    switch (status) {
-      case "active": return <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs">계약중</span>;
-      case "expired": return <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">만료</span>;
-      case "cancelled": return <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-xs">해지</span>;
-      default: return null;
+  function getDaysLeft(endDate: string): number {
+    return Math.ceil((new Date(endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  function isExpiringSoon(endDate: string): boolean {
+    const diff = getDaysLeft(endDate);
+    return diff >= 0 && diff <= 7;
+  }
+
+  function getContractBadge(row: MonthlyRow) {
+    if (row.contract_status === "cancelled") {
+      return <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: "#fee2e2", color: "#dc2626" }}>해지</span>;
     }
+    if (row.contract_status === "expired") {
+      return <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: "#f1f5f9", color: "#475569" }}>만료</span>;
+    }
+    if (isExpiringSoon(row.end_date)) {
+      const days = getDaysLeft(row.end_date);
+      return <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: "#fff7ed", color: "#ea580c" }}>D-{days}</span>;
+    }
+    return <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: "#ecfdf5", color: "#10b981" }}>계약중</span>;
   }
 
   function getPaymentBadge(status: string) {
     switch (status) {
-      case "paid": return <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">납부</span>;
-      case "unpaid": return <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">미납</span>;
-      case "overdue": return <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-xs">연체</span>;
+      case "paid":    return <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: "#eff6ff", color: "#2563eb" }}>납부</span>;
+      case "unpaid":  return <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: "#fff7ed", color: "#ea580c" }}>미납</span>;
+      case "overdue": return <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: "#fee2e2", color: "#dc2626" }}>연체</span>;
       default: return null;
     }
-  }
-
-  function isExpiringSoon(endDate: string): boolean {
-    const diff = (new Date(endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);
-    return diff >= 0 && diff <= 7;
   }
 
   async function cancelContract(id: string) {
@@ -105,111 +110,269 @@ export default function MonthlyPage() {
   }
 
   const filtered = getFiltered();
-  const expiringSoon = contracts.filter((c) => c.contract_status === "active" && isExpiringSoon(c.end_date));
+  const activeCount = contracts.filter(c => c.contract_status === "active").length;
+  const expiringSoon = contracts.filter(c => c.contract_status === "active" && isExpiringSoon(c.end_date));
+  const expiredCount = contracts.filter(c => c.contract_status === "expired").length;
+
+  // KPI 계산 (전체 계약 수는 filterStatus 무관하게 조회하기 어려우므로 현재 contracts 기반)
+  const totalFee = contracts.filter(c => c.contract_status === "active").reduce((s, c) => s + c.monthly_fee, 0);
 
   return (
     <AppLayout>
-      <div className="max-w-6xl">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-dark">월주차 현황</h3>
+      <div style={{ maxWidth: 1300 }}>
+
+        {/* 상단 헤더 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: "#1a1d26", marginBottom: 2 }}>월주차 관리</h2>
+            <p style={{ fontSize: 13, color: "var(--text-muted)" }}>월정기 주차 계약 등록 및 현황 관리</p>
+          </div>
           <button
             onClick={() => router.push("/monthly/register")}
-            className="px-4 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary-dark transition-colors"
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "11px 22px", borderRadius: 10,
+              background: "var(--navy)", color: "#fff",
+              fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer"
+            }}
           >
-            + 월주차 등록
+            <span>+</span> 월주차 등록
           </button>
         </div>
 
+        {/* KPI 카드 4개 */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 20 }}>
+          {[
+            { icon: "📋", label: "전체 계약", value: contracts.length, color: "var(--navy)", bg: "rgba(20,40,160,0.08)" },
+            { icon: "✅", label: "계약 중", value: activeCount, color: "#10b981", bg: "#ecfdf5" },
+            { icon: "⏰", label: "만료 예정 (7일)", value: expiringSoon.length, color: "#ea580c", bg: "#fff7ed" },
+            { icon: "💰", label: "월 계약 매출", value: `₩${(totalFee / 10000).toFixed(0)}만`, color: "var(--gold)", bg: "rgba(245,183,49,0.12)" },
+          ].map((kpi, i) => (
+            <div key={i} className="v3-info-card" style={{ borderLeft: `4px solid ${kpi.color}` }}>
+              <div style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: kpi.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
+                  {kpi.icon}
+                </div>
+                <div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: kpi.color, lineHeight: 1, marginBottom: 4 }}>{kpi.value}</div>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{kpi.label}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 만료 예정 알림 배너 */}
         {expiringSoon.length > 0 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
-            <p className="text-sm font-medium text-orange-800">
-              만료 예정 계약 {expiringSoon.length}건 (7일 이내)
-            </p>
-            <div className="mt-2 space-y-1">
-              {expiringSoon.map((c) => (
-                <p key={c.id} className="text-xs text-orange-700">
-                  {c.stores?.name} - {c.vehicle_number} ({c.customer_name}) / 만료: {c.end_date}
+          <div style={{
+            background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)",
+            border: "1px solid #fed7aa",
+            borderRadius: 14, padding: "16px 20px",
+            marginBottom: 20, borderLeft: "4px solid #ea580c"
+          }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <span style={{ fontSize: 20 }}>⚠️</span>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "#9a3412", marginBottom: 8 }}>
+                  만료 예정 계약 {expiringSoon.length}건 (7일 이내)
                 </p>
-              ))}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {expiringSoon.map((c) => (
+                    <span key={c.id} style={{
+                      fontSize: 12, padding: "4px 12px",
+                      background: "#fff", borderRadius: 6,
+                      border: "1px solid #fed7aa", color: "#ea580c", fontWeight: 600
+                    }}>
+                      {c.stores?.name} · {c.vehicle_number} · D-{getDaysLeft(c.end_date)}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        <div className="flex items-center gap-4 mb-4">
-          <select
-            value={filterStore}
-            onChange={(e) => setFilterStore(e.target.value)}
-            className="w-40 px-3 py-2 border border-light-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-          >
-            <option value="">전체 매장</option>
-            {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-32 px-3 py-2 border border-light-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-          >
-            <option value="">전체 상태</option>
-            <option value="active">계약중</option>
-            <option value="expired">만료</option>
-            <option value="cancelled">해지</option>
-          </select>
-          <input
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            placeholder="차량번호, 고객명, 연락처 검색"
-            className="flex-1 px-3 py-2 border border-light-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
+        {/* 필터 바 */}
+        <div className="v3-info-card" style={{ marginBottom: 20 }}>
+          <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-secondary)", marginRight: 4 }}>🔍 필터</span>
+
+            {/* 상태 탭 버튼 */}
+            <div style={{ display: "flex", gap: 4, background: "var(--bg-card)", padding: 4, borderRadius: 10 }}>
+              {[
+                { v: "active", label: "계약중" },
+                { v: "expired", label: "만료" },
+                { v: "cancelled", label: "해지" },
+                { v: "", label: "전체" },
+              ].map(opt => (
+                <button
+                  key={opt.v}
+                  onClick={() => setFilterStatus(opt.v)}
+                  style={{
+                    padding: "7px 14px", borderRadius: 8,
+                    fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer",
+                    background: filterStatus === opt.v ? "#fff" : "transparent",
+                    color: filterStatus === opt.v ? "var(--text-primary)" : "var(--text-secondary)",
+                    boxShadow: filterStatus === opt.v ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                    transition: "all 0.15s"
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            <select
+              value={filterStore}
+              onChange={(e) => setFilterStore(e.target.value)}
+              style={{
+                padding: "9px 12px", border: "1px solid var(--border)",
+                borderRadius: 10, fontSize: 13, fontWeight: 500,
+                background: "#fff", color: "var(--text-primary)",
+                outline: "none", cursor: "pointer"
+              }}
+            >
+              <option value="">전체 매장</option>
+              {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200,
+              background: "var(--bg-card)", border: "1px solid var(--border)",
+              borderRadius: 10, padding: "9px 14px"
+            }}>
+              <span style={{ fontSize: 14 }}>🔍</span>
+              <input
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="차량번호, 고객명, 연락처 검색"
+                style={{
+                  flex: 1, border: "none", background: "transparent",
+                  fontSize: 13, outline: "none", color: "var(--text-primary)"
+                }}
+              />
+              {searchText && (
+                <button onClick={() => setSearchText("")}
+                  style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 16 }}>
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)", fontWeight: 600 }}>
+              총 {filtered.length}건
+            </span>
+          </div>
         </div>
 
-        {loading ? (
-          <div className="text-center py-10 text-mr-gray">로딩 중...</div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-10 text-mr-gray bg-white rounded-xl shadow-sm">
-            등록된 월주차 계약이 없습니다
+        {/* 계약 목록 테이블 */}
+        <div className="v3-info-card">
+          <div className="v3-info-card-header">
+            <div className="v3-info-card-title">
+              <span>📅</span>
+              <span>월주차 계약 목록</span>
+            </div>
+            <span className="v3-info-card-badge">{filterStatus === "active" ? "계약중" : filterStatus === "expired" ? "만료" : filterStatus === "cancelled" ? "해지" : "전체"}</span>
           </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-light-gray">
-                <tr>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-mr-gray">매장</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-mr-gray">차량번호</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-mr-gray">고객명</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-mr-gray">연락처</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-mr-gray">기간</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-mr-gray">월요금</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-mr-gray">납부</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-mr-gray">상태</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-mr-gray">관리</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((c) => (
-                  <tr key={c.id} className={`border-b border-light-gray last:border-0 hover:bg-gray-50 ${isExpiringSoon(c.end_date) && c.contract_status === "active" ? "bg-orange-50" : ""}`}>
-                    <td className="px-4 py-3 text-sm text-dark">{c.stores?.name}</td>
-                    <td className="px-4 py-3 text-sm text-dark font-medium">{c.vehicle_number}</td>
-                    <td className="px-4 py-3 text-sm text-dark">{c.customer_name}</td>
-                    <td className="px-4 py-3 text-sm text-mr-gray">{c.customer_phone}</td>
-                    <td className="px-4 py-3 text-sm text-mr-gray">{c.start_date} ~ {c.end_date}</td>
-                    <td className="px-4 py-3 text-sm text-dark">{c.monthly_fee.toLocaleString()}원</td>
-                    <td className="px-4 py-3 text-sm">{getPaymentBadge(c.payment_status)}</td>
-                    <td className="px-4 py-3 text-sm">{getStatusBadge(c.contract_status)}</td>
-                    <td className="px-4 py-3 text-sm space-x-2">
-                      <button onClick={() => router.push(`/monthly/register?id=${c.id}`)} className="text-primary hover:underline">수정</button>
-                      {c.contract_status === "active" && (
-                        <button onClick={() => cancelContract(c.id)} className="text-error hover:underline">해지</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
 
-        <div className="mt-4 text-sm text-mr-gray">
-          총 {filtered.length}건
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-muted)" }}>
+              <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
+              <p style={{ fontSize: 14 }}>로딩 중...</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "64px 24px", color: "var(--text-muted)" }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+              <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>등록된 계약이 없습니다</p>
+              <p style={{ fontSize: 13 }}>월주차 등록 버튼으로 새 계약을 추가하세요</p>
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-card)", borderBottom: "2px solid var(--border)" }}>
+                    {["매장", "차량번호", "고객명", "연락처", "계약 기간", "월 요금", "납부", "상태", "관리"].map(h => (
+                      <th key={h} style={{
+                        padding: "13px 16px", textAlign: "left",
+                        fontSize: 13, fontWeight: 700, color: "var(--text-secondary)",
+                        whiteSpace: "nowrap"
+                      }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((c, idx) => (
+                    <tr
+                      key={c.id}
+                      style={{
+                        borderBottom: "1px solid var(--border-light)",
+                        background: isExpiringSoon(c.end_date) && c.contract_status === "active"
+                          ? "#fffbeb"
+                          : idx % 2 === 0 ? "#fff" : "var(--bg-page)",
+                        transition: "background 0.15s"
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-hover)")}
+                      onMouseLeave={e => (e.currentTarget.style.background =
+                        isExpiringSoon(c.end_date) && c.contract_status === "active"
+                          ? "#fffbeb"
+                          : idx % 2 === 0 ? "#fff" : "var(--bg-page)"
+                      )}
+                    >
+                      <td style={{ padding: "14px 16px", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                        {c.stores?.name ?? "-"}
+                      </td>
+                      <td style={{ padding: "14px 16px" }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: "var(--navy)", fontFamily: "monospace, sans-serif" }}>
+                          {c.vehicle_number}
+                        </span>
+                        {c.vehicle_type && (
+                          <span style={{ marginLeft: 6, fontSize: 11, color: "var(--text-muted)", background: "var(--bg-card)", padding: "2px 8px", borderRadius: 5 }}>
+                            {c.vehicle_type}
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600 }}>{c.customer_name}</td>
+                      <td style={{ padding: "14px 16px", fontSize: 13, color: "var(--text-secondary)" }}>{c.customer_phone}</td>
+                      <td style={{ padding: "14px 16px", fontSize: 12, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
+                        {c.start_date} ~ {c.end_date}
+                      </td>
+                      <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap" }}>
+                        ₩{c.monthly_fee.toLocaleString()}
+                      </td>
+                      <td style={{ padding: "14px 16px" }}>{getPaymentBadge(c.payment_status)}</td>
+                      <td style={{ padding: "14px 16px" }}>{getContractBadge(c)}</td>
+                      <td style={{ padding: "14px 16px" }}>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            onClick={() => router.push(`/monthly/register?id=${c.id}`)}
+                            style={{
+                              padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                              border: "1px solid var(--border)", background: "#fff",
+                              color: "var(--navy)", cursor: "pointer", transition: "all 0.15s"
+                            }}
+                          >
+                            수정
+                          </button>
+                          {c.contract_status === "active" && (
+                            <button
+                              onClick={() => cancelContract(c.id)}
+                              style={{
+                                padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                                border: "1px solid #fecaca", background: "#fff",
+                                color: "#dc2626", cursor: "pointer", transition: "all 0.15s"
+                              }}
+                            >
+                              해지
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </AppLayout>
