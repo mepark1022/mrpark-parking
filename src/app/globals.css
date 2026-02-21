@@ -405,4 +405,36 @@
   main {
     padding: 14px !important;
   }
+
+  /* ── 하이라이트 카드 내부 수치 크기 강제 축소 ── */
+  .dash-highlight-stats > div > span:first-child {
+    font-size: 22px !important;
+  }
+
+  /* ── Recharts 차트 높이 모바일 축소 ── */
+  .v3-info-card-body .recharts-wrapper,
+  .v3-info-card-body .recharts-surface {
+    height: 180px !important;
+  }
+  .v3-info-card-body > div[style*="height: 200px"],
+  .v3-info-card-body > div[style*="height: 260px"] {
+    height: 180px !important;
+  }
+
+  /* ── 하이라이트 카드 토글 행 세로 스택 ── */
+  .v3-highlight-card > div:last-child {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  /* ── 핵심지표 KPI 2×2 그리드 반응형 ── */
+  .v3-info-card-body > div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* ── 월주차 만료 배너 모바일 ── */
+  div[style*="border-radius: 12px"][style*="fde68a"] {
+    flex-wrap: wrap;
+  }
 }

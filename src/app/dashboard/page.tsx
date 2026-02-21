@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId, getUserContext } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
@@ -58,6 +58,14 @@ export default function DashboardPage() {
   const [showParking, setShowParking] = useState(true);
   const [parkingStatus, setParkingStatus] = useState([]);
   const [parkingStoreId, setParkingStoreId] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => { loadStores(); }, []);
   useEffect(() => { loadData(); }, [selectedStore, period, customStart, customEnd]);
@@ -382,7 +390,7 @@ export default function DashboardPage() {
               <div className="v3-info-card-header"><span className="v3-info-card-title">⏰ 시간대별 입차</span><span className="v3-info-card-badge">{period === "today" ? "오늘" : period === "week" ? "이번 주" : "이번 달"}</span></div>
               <div className="v3-info-card-body">
                 {hourlyChartData.some((d) => d.count > 0) ? (
-                  <ResponsiveContainer width="100%" height={200}><BarChart data={hourlyChartData}><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" /><XAxis dataKey="hour" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="count" fill="#1428A0" radius={[4,4,0,0]} name="입차량" /></BarChart></ResponsiveContainer>
+                  <ResponsiveContainer width="100%" height={isMobile ? 160 : 200}><BarChart data={hourlyChartData}><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" /><XAxis dataKey="hour" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="count" fill="#1428A0" radius={[4,4,0,0]} name="입차량" /></BarChart></ResponsiveContainer>
                 ) : (<div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 13 }}>데이터가 없습니다</div>)}
               </div>
             </div>
@@ -407,7 +415,7 @@ export default function DashboardPage() {
               <div className="v3-info-card-body">
                 {selectedStore ? (
                   monthlyPieData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={200}><PieChart><Pie data={monthlyPieData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }) => `${name} ${value}건`}>{monthlyPieData.map((_,i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer>
+                    <ResponsiveContainer width="100%" height={isMobile ? 160 : 200}><PieChart><Pie data={monthlyPieData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }) => `${name} ${value}건`}>{monthlyPieData.map((_,i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer>
                   ) : (<div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 13 }}>월주차 데이터가 없습니다</div>)
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -427,7 +435,7 @@ export default function DashboardPage() {
               <div className="v3-info-card-header"><span className="v3-info-card-title">📈 일별 추이</span></div>
               <div className="v3-info-card-body">
                 {dailyTrendData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={260}><LineChart data={dailyTrendData}><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" /><XAxis dataKey="date" tick={{ fontSize: 11 }} /><YAxis yAxisId="left" tick={{ fontSize: 11 }} /><YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} /><Tooltip /><Legend /><Line yAxisId="left" type="monotone" dataKey="cars" stroke="#1428A0" name="입차량" strokeWidth={2} /><Line yAxisId="right" type="monotone" dataKey="valet" stroke="#F5B731" name="발렛매출" strokeWidth={2} /></LineChart></ResponsiveContainer>
+                  <ResponsiveContainer width="100%" height={isMobile ? 180 : 260}><LineChart data={dailyTrendData}><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" /><XAxis dataKey="date" tick={{ fontSize: 11 }} /><YAxis yAxisId="left" tick={{ fontSize: 11 }} /><YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} /><Tooltip /><Legend /><Line yAxisId="left" type="monotone" dataKey="cars" stroke="#1428A0" name="입차량" strokeWidth={2} /><Line yAxisId="right" type="monotone" dataKey="valet" stroke="#F5B731" name="발렛매출" strokeWidth={2} /></LineChart></ResponsiveContainer>
                 ) : (<div style={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 13 }}>데이터가 없습니다</div>)}
               </div>
             </div>
