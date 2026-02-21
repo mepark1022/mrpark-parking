@@ -129,19 +129,22 @@ export default function ParkingStatusPage() {
     <AppLayout>
       <style>{`
         @media (max-width: 767px) {
-          .ps-filter-bar { padding: 12px 14px !important; gap: 8px !important; }
-          .ps-filter-row1 { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px; }
-          .ps-search-wrap { max-width: 100% !important; min-width: unset !important; flex: unset !important; width: 100% !important; }
+          .ps-filter-bar { padding: 12px 14px !important; gap: 10px !important; }
+          .ps-filter-row1 { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+          .ps-search-wrap { max-width: 100% !important; min-width: unset !important; flex: 1 !important; }
           .ps-result-label { display: none !important; }
-          .ps-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; margin-bottom: 16px !important; }
+          .ps-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; margin-bottom: 14px !important; }
           .ps-kpi-card { padding: 14px 14px !important; border-radius: 12px !important; }
-          .ps-kpi-icon { width: 36px !important; height: 36px !important; font-size: 18px !important; border-radius: 10px !important; margin-bottom: 10px !important; }
+          .ps-kpi-icon { width: 34px !important; height: 34px !important; font-size: 17px !important; border-radius: 9px !important; margin-bottom: 8px !important; }
           .ps-kpi-value { font-size: 22px !important; }
-          .ps-filter-chart-grid { grid-template-columns: 1fr !important; gap: 12px !important; margin-bottom: 16px !important; }
-          .ps-filter-groups { flex-direction: row !important; flex-wrap: wrap !important; gap: 8px !important; }
-          .ps-chart-card { padding: 12px 14px !important; }
+          .ps-filter-chart-grid { grid-template-columns: 1fr !important; gap: 10px !important; margin-bottom: 14px !important; }
+          .ps-filter-groups { flex-direction: column !important; gap: 8px !important; }
+          .ps-filter-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+          .ps-filter-scroll > div { width: max-content; }
+          .ps-chart-card { padding: 12px 14px !important; border-radius: 12px !important; }
           .ps-chart-bars { height: 60px !important; }
-          .ps-main { padding-bottom: 100px !important; }
+          .ps-mobile-list { padding-bottom: 80px !important; }
+          .ps-main { padding-bottom: 20px !important; }
         }
       `}</style>
       <div style={{maxWidth:1300}} className="ps-main">
@@ -198,10 +201,14 @@ export default function ParkingStatusPage() {
         {/* 필터 그룹 + 시간대 차트 */}
         <div className="ps-filter-chart-grid" style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:20,marginBottom:24,alignItems:"start"}}>
           <div className="ps-filter-groups" style={{display:"flex",flexDirection:"column",gap:10}}>
-            <FilterGroup value={typeFilter} onChange={setTypeFilter}
-              options={[{id:"all",label:"전체"},{id:"normal",label:"일반"},{id:"valet",label:"발렛"},{id:"monthly",label:"월주차"}]} />
-            <FilterGroup value={statusFilter} onChange={setStatusFilter}
-              options={[{id:"all",label:"전체"},{id:"parked",label:"🟢 주차중"},{id:"exited",label:"⚪ 출차"}]} />
+            <div className="ps-filter-scroll">
+              <div><FilterGroup value={typeFilter} onChange={setTypeFilter}
+                options={[{id:"all",label:"전체"},{id:"normal",label:"일반"},{id:"valet",label:"발렛"},{id:"monthly",label:"월주차"}]} /></div>
+            </div>
+            <div className="ps-filter-scroll">
+              <div><FilterGroup value={statusFilter} onChange={setStatusFilter}
+                options={[{id:"all",label:"전체"},{id:"parked",label:"🟢 주차중"},{id:"exited",label:"⚪ 출차"}]} /></div>
+            </div>
           </div>
           <div className="ps-chart-card" style={{background:"#fff",borderRadius:16,padding:"16px 20px",border:`1px solid ${C.borderLight}`}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
@@ -285,7 +292,7 @@ export default function ParkingStatusPage() {
         </div>
 
         {/* 카드형 (모바일) */}
-        <div className="md:hidden" style={{display:"flex",flexDirection:"column",gap:10,paddingBottom:100}}>
+        <div className="md:hidden ps-mobile-list" style={{display:"flex",flexDirection:"column",gap:10,paddingBottom:100}}>
           {loading?(
             <div style={{textAlign:"center",padding:"60px 0",color:C.textMuted}}>⏳ 로딩 중...</div>
           ):filtered.length===0?(
