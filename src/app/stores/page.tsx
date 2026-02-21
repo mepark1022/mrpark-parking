@@ -1,6 +1,7 @@
 // @ts-nocheck
 "use client";
 export const dynamic = 'force-dynamic';
+import AppLayout from "@/components/layout/AppLayout";
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -1286,6 +1287,7 @@ export default function StoresPage() {
   // Render
   // ════════════════════════════════════════════
   return (
+    <AppLayout>
     <div style={{ background: C.bgPage, minHeight: "100vh" }}>
       <TabBar />
       {mainTab === "list" && renderStoreList()}
@@ -1294,5 +1296,6 @@ export default function StoresPage() {
       {mainTab === "late-check" && renderLateCheck()}
       {renderModal()}
     </div>
+    </AppLayout>
   );
 }

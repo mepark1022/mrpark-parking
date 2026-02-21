@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
+import AppLayout from "@/components/layout/AppLayout";
 import {
   AreaChart,
   Area,
@@ -315,7 +316,8 @@ export default function AnalyticsPage() {
 
   // ── Render ──────────────────────────────────────────────────
   return (
-    <div className="analytics-page" style={{ padding: "24px 32px", maxWidth: 1400 }}>
+    <AppLayout>
+    <div className="analytics-page">
       <style>{`
         @media (max-width: 767px) {
           .analytics-page { padding: 12px 14px !important; }
@@ -1056,5 +1058,6 @@ export default function AnalyticsPage() {
         }
       `}</style>
     </div>
+    </AppLayout>
   );
 }
