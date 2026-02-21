@@ -7,24 +7,16 @@ import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
-  const [stores, setStores] = useState([]);
-  const [workers, setWorkers] = useState([]);
-  const [selectedStore, setSelectedStore] = useState("");
-  const [weekdayWorkers, setWeekdayWorkers] = useState([]);
-  const [weekendWorkers, setWeekendWorkers] = useState([]);
-  const [message, setMessage] = useState("");
-  const [activeTab, setActiveTab] = useState("workers"); // "workers" | "notifications"
-  const [notifTab, setNotifTab] = useState("crew"); // "crew" | "kakao" | "admin"
+  const [notifTab, setNotifTab] = useState<"crew"|"kakao"|"admin">("crew");
   const [toast, setToast] = useState("");
 
-  // 알림 설정 상태
-  const [notifSettings, setNotifSettings] = useState({
+  const [s, setS] = useState({
     crew_entry: true,
     crew_exit: true,
     kakao_entry: true,
     kakao_settled: true,
-    admin_monthly_expire: true,
-    admin_monthly_days: [7, 3, 1],
+    admin_monthly: true,
+    admin_monthly_days: [7, 3, 1] as number[],
     admin_unsettled: true,
     admin_unsettled_time: "09:00",
     admin_accident: true,
@@ -33,583 +25,446 @@ export default function SettingsPage() {
     admin_fullness_pct: 90,
   });
 
-  useEffect(() => { loadData(); }, []);
-  useEffect(() => { if (selectedStore) loadDefaultWorkers(); }, [selectedStore]);
+  const tog = (key: string) => setS(p => ({ ...p, [key]: !p[key] }));
+  const togDay = (day: number) =>
+    setS(p => ({
+      ...p,
+      admin_monthly_days: p.admin_monthly_days.includes(day)
+        ? p.admin_monthly_days.filter(d => d !== day)
+        : [...p.admin_monthly_days, day].sort((a, b) => b - a),
+    }));
 
-  const loadData = async () => {
-    const supabase = createClient();
-    const { data: storeData } = await supabase.from("stores").select("id, name").eq("is_active", true).order("name");
-    const { data: workerData } = await supabase.from("workers").select("id, name").eq("status", "active").order("name");
-    if (storeData) { setStores(storeData); if (storeData.length > 0) setSelectedStore(storeData[0].id); }
-    if (workerData) setWorkers(workerData);
-  };
-
-  const loadDefaultWorkers = async () => {
-    const supabase = createClient();
-    const { data } = await supabase.from("store_default_workers").select("*, workers(name)").eq("store_id", selectedStore).order("display_order");
-    if (data) {
-      setWeekdayWorkers(data.filter(d => d.day_type === "weekday"));
-      setWeekendWorkers(data.filter(d => d.day_type === "weekend"));
-    }
-  };
-
-  const addDefaultWorker = async (dayType) => {
-    const existing = dayType === "weekday" ? weekdayWorkers : weekendWorkers;
-    const existingIds = existing.map(w => w.worker_id);
-    const available = workers.filter(w => !existingIds.includes(w.id));
-    if (available.length === 0) { setMessage("추가할 수 있는 근무자가 없습니다"); setTimeout(() => setMessage(""), 2000); return; }
-    const supabase = createClient();
-    await supabase.from("store_default_workers").insert({ store_id: selectedStore, worker_id: available[0].id, day_type: dayType, display_order: existing.length + 1 });
-    loadDefaultWorkers();
-  };
-
-  const removeDefaultWorker = async (id) => {
-    const supabase = createClient();
-    await supabase.from("store_default_workers").delete().eq("id", id);
-    loadDefaultWorkers();
-  };
-
-  const changeWorker = async (id, newWorkerId) => {
-    const supabase = createClient();
-    await supabase.from("store_default_workers").update({ worker_id: newWorkerId }).eq("id", id);
-    loadDefaultWorkers();
-  };
-
-  const toggleNotif = (key) => {
-    setNotifSettings(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const toggleDay = (day) => {
-    setNotifSettings(prev => {
-      const days = prev.admin_monthly_days.includes(day)
-        ? prev.admin_monthly_days.filter(d => d !== day)
-        : [...prev.admin_monthly_days, day].sort((a,b) => b - a);
-      return { ...prev, admin_monthly_days: days };
-    });
-  };
-
-  const saveNotifSettings = () => {
-    setToast("알림 설정이 저장되었습니다");
+  const showToast = (msg: string) => {
+    setToast(msg);
     setTimeout(() => setToast(""), 2500);
   };
 
-  const selectedStoreName = stores.find(s => s.id === selectedStore)?.name || "";
-
-  const ToggleSwitch = ({ on, onToggle }) => (
-    <div
+  const Toggle = ({ on, onToggle }: { on: boolean; onToggle: () => void }) => (
+    <button
       onClick={onToggle}
       style={{
-        width: 48, height: 26, borderRadius: 13, cursor: "pointer",
+        width: 50, height: 28, borderRadius: 14,
         background: on ? "#1428A0" : "#d1d5db",
-        position: "relative", transition: "background 0.2s", flexShrink: 0,
+        border: "none", cursor: "pointer", position: "relative",
+        transition: "background 0.2s", flexShrink: 0,
       }}
     >
       <div style={{
-        position: "absolute", top: 3, left: on ? 25 : 3,
-        width: 20, height: 20, borderRadius: "50%", background: "#fff",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s",
+        position: "absolute", top: 4,
+        left: on ? 26 : 4,
+        width: 20, height: 20, borderRadius: "50%",
+        background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+        transition: "left 0.2s",
       }} />
-    </div>
+    </button>
   );
 
-  const NotifRow = ({ label, sub, keyName }) => (
-    <div style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "14px 20px", borderBottom: "1px solid var(--border-light)",
-    }}>
-      <div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{label}</div>
-        {sub && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{sub}</div>}
-      </div>
-      <ToggleSwitch on={notifSettings[keyName]} onToggle={() => toggleNotif(keyName)} />
-    </div>
-  );
-
-  const renderWorkerList = (list, dayType) => {
-    const isWeekday = dayType === "weekday";
+  const TabBadge = ({ label, color }: { label: string; color: string }) => {
+    const colors: Record<string, { bg: string; text: string }> = {
+      blue:   { bg: "rgba(20,40,160,0.08)", text: "#1428A0" },
+      gold:   { bg: "#fffbeb",              text: "#92400e" },
+      green:  { bg: "#dcfce7",              text: "#16A34A" },
+      red:    { bg: "#fee2e2",              text: "#DC2626" },
+      orange: { bg: "#fff7ed",              text: "#EA580C" },
+    };
+    const c = colors[color] || colors.blue;
     return (
-      <div className="settings-worker-card">
-        <div className="settings-worker-card-header">
-          <div className="settings-worker-card-title">
-            <span className="settings-worker-card-icon">{isWeekday ? "☀️" : "🌴"}</span>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{isWeekday ? "평일 근무자" : "주말 근무자"}</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{isWeekday ? "월요일 ~ 금요일" : "토요일 · 일요일"}</div>
-            </div>
-          </div>
-          <button onClick={() => addDefaultWorker(dayType)} className="settings-add-btn">+ 추가</button>
-        </div>
-        <div className="settings-worker-count-bar">
-          <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>배정된 근무자</span>
-          <span className="settings-worker-count-badge">{list.length}명</span>
-        </div>
-        <div className="settings-worker-list">
-          {list.length === 0 ? (
-            <div className="settings-empty-state">
-              <div style={{ fontSize: 28, marginBottom: 8 }}>👤</div>
-              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>배정된 근무자가 없습니다</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>+ 추가 버튼으로 근무자를 배정하세요</div>
-            </div>
-          ) : (
-            list.map((dw, i) => (
-              <div key={dw.id} className="settings-worker-item">
-                <span className="settings-worker-num">{i + 1}</span>
-                <select value={dw.worker_id} onChange={e => changeWorker(dw.id, e.target.value)} className="settings-worker-select">
-                  {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                </select>
-                <button onClick={() => removeDefaultWorker(dw.id)} className="settings-remove-btn">×</button>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+      <span style={{
+        fontSize: 10, fontWeight: 800, padding: "2px 8px",
+        borderRadius: 20, background: c.bg, color: c.text,
+        marginRight: 4, display: "inline-flex", alignItems: "center",
+      }}>{label}</span>
     );
   };
+
+  const NotifCard = ({
+    icon, iconBg, title, sub, badge, badgeColor, keyName,
+    children,
+  }: {
+    icon: string; iconBg: string; title: string; sub: string;
+    badge?: string; badgeColor?: string; keyName: string; children?: React.ReactNode;
+  }) => (
+    <div style={{
+      background: "#fff", borderRadius: 16,
+      border: "1px solid #e2e8f0",
+      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+      overflow: "hidden", marginBottom: 10,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "16px 20px", gap: 14 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: 12,
+          background: iconBg,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 20, flexShrink: 0,
+        }}>{icon}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 3 }}>{title}</div>
+          <div style={{ fontSize: 11, color: "#94a3b8", lineHeight: 1.5 }}>
+            {badge && <TabBadge label={badge} color={badgeColor || "blue"} />}
+            {sub}
+          </div>
+        </div>
+        <Toggle on={s[keyName as keyof typeof s] as boolean} onToggle={() => tog(keyName)} />
+      </div>
+      {s[keyName as keyof typeof s] && children && (
+        <div style={{
+          padding: "12px 20px 16px",
+          borderTop: "1px solid #f1f5f9",
+          background: "#fafbfc",
+        }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+
+  const ExtraLabel = ({ children }: { children: React.ReactNode }) => (
+    <div style={{ fontSize: 11, fontWeight: 800, color: "#475569", marginBottom: 10, letterSpacing: "0.3px" }}>
+      {children}
+    </div>
+  );
 
   return (
     <AppLayout>
       <style>{`
-        .settings-page { max-width: 860px; margin: 0 auto; padding-bottom: 80px; }
+        .settings-page { max-width: 720px; margin: 0 auto; padding-bottom: 80px; }
 
-        .settings-page-header {
+        .page-header {
           background: linear-gradient(135deg, #020617 0%, #0a1352 50%, #1428A0 100%);
-          border-radius: 16px; padding: 24px 28px;
+          border-radius: 18px; padding: 22px 24px;
           display: flex; align-items: center; gap: 16px;
-          margin-bottom: 24px; box-shadow: var(--shadow-md);
+          margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
-        .settings-header-icon {
+        .header-icon {
           width: 48px; height: 48px; border-radius: 14px;
           background: #F5B731;
           display: flex; align-items: center; justify-content: center;
-          font-size: 24px; flex-shrink: 0;
+          font-size: 22px; flex-shrink: 0;
         }
-        .settings-header-text h1 { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 4px; }
-        .settings-header-text p { font-size: 13px; color: rgba(255,255,255,0.6); }
+        .header-text h1 { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 3px; }
+        .header-text p { font-size: 12px; color: rgba(255,255,255,0.55); }
 
-        /* ── 상단 탭 (근무자 / 알림 설정) ── */
-        .settings-main-tabs {
-          display: flex; gap: 4px;
-          background: #f1f5f9; border-radius: 12px; padding: 4px;
-          margin-bottom: 20px;
+        .section-label {
+          font-size: 11px; font-weight: 800; letter-spacing: 1.2px;
+          color: #94a3b8; text-transform: uppercase;
+          padding: 0 4px; margin: 24px 0 10px;
+          display: flex; align-items: center; gap: 8px;
         }
-        .settings-main-tab {
-          flex: 1; padding: 10px; border-radius: 10px;
-          border: none; background: transparent;
-          font-size: 14px; font-weight: 700; cursor: pointer;
-          color: var(--text-secondary); transition: all 0.2s;
-          display: flex; align-items: center; justify-content: center; gap: 6px;
-        }
-        .settings-main-tab.active {
-          background: #fff; color: var(--navy);
-          box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-        }
+        .section-label::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
 
-        /* ── 매장 선택 카드 ── */
-        .settings-store-card {
-          background: #fff; border-radius: 16px; padding: 20px 24px;
-          border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); margin-bottom: 20px;
-        }
-        .settings-store-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-        .settings-store-select-wrap { display: flex; align-items: center; gap: 12px; }
-        .settings-store-select-input {
-          flex: 1; padding: 12px 16px; border-radius: 12px;
-          border: 2px solid var(--border); font-size: 15px; font-weight: 700;
-          color: var(--text-primary); background: var(--bg-card); transition: border-color 0.2s;
-          appearance: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235c6370' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-          background-repeat: no-repeat; background-position: right 14px center; padding-right: 40px;
-        }
-        .settings-store-select-input:focus { outline: none; border-color: var(--navy); background-color: #fff; }
-        .settings-store-badge {
-          padding: 6px 14px; border-radius: 8px;
-          background: rgba(20,40,160,0.08); color: var(--navy);
-          font-size: 12px; font-weight: 700; white-space: nowrap; flex-shrink: 0;
-        }
-
-        /* ── 근무자 카드 ── */
-        .settings-worker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .settings-worker-card { background: #fff; border-radius: 16px; border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); overflow: hidden; }
-        .settings-worker-card-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border-light); background: var(--bg-card); }
-        .settings-worker-card-title { display: flex; align-items: center; gap: 10px; }
-        .settings-worker-card-icon { width: 36px; height: 36px; border-radius: 10px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid var(--border-light); }
-        .settings-add-btn { padding: 8px 16px; border-radius: 8px; border: none; background: var(--navy); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
-        .settings-add-btn:hover { background: #1e3a8a; }
-        .settings-worker-count-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-bottom: 1px solid var(--border-light); }
-        .settings-worker-count-badge { padding: 4px 12px; border-radius: 6px; background: rgba(20,40,160,0.08); color: var(--navy); font-size: 12px; font-weight: 700; }
-        .settings-worker-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
-        .settings-empty-state { text-align: center; padding: 32px 16px; color: var(--text-muted); }
-        .settings-worker-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-light); }
-        .settings-worker-num { width: 22px; height: 22px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .settings-worker-select { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; font-weight: 600; color: var(--text-primary); background: #fff; }
-        .settings-remove-btn { width: 30px; height: 30px; border-radius: 8px; border: none; background: #fee2e2; color: #dc2626; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s; }
-        .settings-remove-btn:hover { background: #fca5a5; }
-
-        /* ── 알림 설정 ── */
-        .notif-channel-tabs {
-          display: flex; gap: 0;
-          border-radius: 12px; overflow: hidden;
-          border: 1px solid var(--border-light);
+        .channel-tabs {
+          display: grid; grid-template-columns: repeat(3, 1fr);
+          border-radius: 14px; overflow: hidden;
+          border: 1px solid #e2e8f0;
           margin-bottom: 16px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         }
-        .notif-channel-tab {
-          flex: 1; padding: 12px 8px;
-          border: none; background: #f8fafc;
-          font-size: 13px; font-weight: 700; cursor: pointer;
-          color: var(--text-secondary); transition: all 0.15s;
-          display: flex; flex-direction: column; align-items: center; gap: 4px;
-          border-right: 1px solid var(--border-light);
+        .ch-tab {
+          padding: 14px 8px; border: none;
+          background: #fff; cursor: pointer;
+          font-size: 12px; font-weight: 700;
+          color: #94a3b8; transition: all 0.18s;
+          display: flex; flex-direction: column; align-items: center; gap: 5px;
+          border-right: 1px solid #e2e8f0;
+          font-family: 'Noto Sans KR', sans-serif;
         }
-        .notif-channel-tab:last-child { border-right: none; }
-        .notif-channel-tab.active {
-          background: #1428A0; color: #fff;
-        }
-        .notif-channel-tab .tab-emoji { font-size: 20px; }
+        .ch-tab:last-child { border-right: none; }
+        .ch-tab .tab-emoji { font-size: 22px; }
+        .ch-tab.active { background: #1428A0; color: #fff; }
 
-        .notif-card {
+        .channel-desc {
+          padding: 11px 16px; background: #fafafa;
+          border-radius: 10px; border: 1px dashed #e2e8f0;
+          font-size: 12px; color: #475569;
+          line-height: 1.7; margin-bottom: 14px;
+        }
+        .channel-desc strong { color: #1428A0; }
+
+        .day-chip {
+          padding: 7px 16px; border-radius: 20px;
+          border: 2px solid #e2e8f0; background: #fff;
+          color: #475569; font-size: 13px; font-weight: 700;
+          cursor: pointer; transition: all 0.15s; user-select: none;
+        }
+        .day-chip.on { border-color: #1428A0; background: #1428A0; color: #fff; }
+
+        .time-input {
+          padding: 9px 14px; border-radius: 10px;
+          border: 2px solid #e2e8f0;
+          font-size: 15px; font-weight: 700; color: #0f172a;
+          background: #fff; transition: border-color 0.2s;
+        }
+        .time-input:focus { outline: none; border-color: #1428A0; }
+
+        .pct-input {
+          width: 76px; padding: 9px 10px; border-radius: 10px;
+          border: 2px solid #e2e8f0; text-align: center;
+          font-size: 18px; font-weight: 800; color: #1428A0;
+          background: #fff; transition: border-color 0.2s;
+        }
+        .pct-input:focus { outline: none; border-color: #1428A0; }
+
+        input[type=range] {
+          width: 100%; height: 4px; border-radius: 2px;
+          accent-color: #1428A0; cursor: pointer; margin-top: 10px;
+        }
+        .range-marks {
+          display: flex; justify-content: space-between;
+          font-size: 11px; color: #94a3b8; margin-top: 6px; font-weight: 600;
+        }
+
+        .cost-box {
+          padding: 12px 16px; border-radius: 12px;
+          background: #fffbeb; border: 1px solid #fde68a; margin-top: 10px;
+        }
+        .cost-box-title { font-size: 12px; font-weight: 800; color: #92400e; margin-bottom: 5px; }
+        .cost-box-body { font-size: 13px; color: #78350f; }
+        .cost-box-body strong { font-weight: 800; }
+
+        .info-card {
           background: #fff; border-radius: 16px;
-          border: 1px solid var(--border-light);
-          box-shadow: var(--shadow-sm);
-          overflow: hidden; margin-bottom: 16px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+          overflow: hidden;
         }
-        .notif-card-header {
-          padding: 16px 20px; border-bottom: 1px solid var(--border-light);
-          background: var(--bg-card);
-          display: flex; align-items: center; gap: 10px;
+        .info-row {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 14px 20px; border-bottom: 1px solid #f1f5f9;
+          font-size: 14px;
         }
-        .notif-card-header-icon {
-          width: 36px; height: 36px; border-radius: 10px;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 18px;
+        .info-row:last-child { border-bottom: none; }
+        .info-row-label { font-weight: 700; color: #475569; display: flex; align-items: center; gap: 8px; }
+        .info-row-value { font-weight: 700; color: #0f172a; font-size: 13px; }
+        .info-row-value.mono { font-size: 12px; color: #94a3b8; font-weight: 600; letter-spacing: 0.3px; }
+        .info-row-value.link { color: #1428A0; cursor: pointer; }
+
+        .version-badge {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 4px 12px; border-radius: 20px;
+          background: linear-gradient(90deg, #0d1670, #1428A0);
+          color: #fff; font-size: 13px; font-weight: 800;
+        }
+        .version-dot {
+          width: 6px; height: 6px; border-radius: 50%; background: #F5B731;
+          animation: vpulse 2s ease-in-out infinite;
+        }
+        @keyframes vpulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(0.7); }
         }
 
-        .notif-extra {
-          padding: 12px 20px 14px;
-          background: #f8fafc;
-          border-top: 1px solid var(--border-light);
+        .save-btn {
+          width: 100%; padding: 15px; border-radius: 14px; border: none;
+          background: linear-gradient(135deg, #0d1670, #1428A0);
+          color: #fff; font-size: 15px; font-weight: 800;
+          cursor: pointer; transition: all 0.2s; margin-top: 20px;
+          box-shadow: 0 4px 12px rgba(20,40,160,0.25);
+          display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .notif-extra-label { font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; }
-        .day-badge-group { display: flex; gap: 6px; flex-wrap: wrap; }
-        .day-badge {
-          padding: 6px 14px; border-radius: 20px;
-          border: 2px solid var(--border);
-          background: #fff; color: var(--text-secondary);
-          font-size: 13px; font-weight: 700; cursor: pointer;
-          transition: all 0.15s;
-        }
-        .day-badge.active {
-          border-color: #1428A0; background: #1428A0; color: #fff;
-        }
+        .save-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(20,40,160,0.35); }
+        .save-btn:active { transform: translateY(0); }
 
-        .notif-time-input {
-          padding: 8px 12px; border-radius: 8px;
-          border: 2px solid var(--border);
-          font-size: 14px; font-weight: 700; color: var(--text-primary);
-          background: #fff;
-        }
-        .notif-time-input:focus { outline: none; border-color: #1428A0; }
-
-        .notif-pct-input {
-          width: 70px; padding: 8px 12px; border-radius: 8px;
-          border: 2px solid var(--border); font-size: 14px; font-weight: 700;
-          color: var(--text-primary); background: #fff; text-align: center;
-        }
-        .notif-pct-input:focus { outline: none; border-color: #1428A0; }
-
-        .notif-channel-desc {
-          padding: 12px 20px; margin-bottom: 16px;
-          border-radius: 12px; border: 1px dashed var(--border);
-          font-size: 12px; color: var(--text-muted); line-height: 1.6;
-          background: #fafafa;
-        }
-
-        .notif-save-btn {
-          width: 100%; padding: 14px; border-radius: 12px;
-          border: none; background: #1428A0; color: #fff;
-          font-size: 15px; font-weight: 800; cursor: pointer;
-          transition: background 0.2s; margin-top: 4px;
-        }
-        .notif-save-btn:hover { background: #0f1f7a; }
-
-        /* ── 성공 토스트 ── */
-        .settings-toast-success {
-          position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+        .settings-toast {
+          position: fixed; bottom: 24px; left: 50%;
+          transform: translateX(-50%) translateY(20px);
           padding: 12px 24px; border-radius: 24px;
           background: #1428A0; color: #fff;
           font-size: 14px; font-weight: 700;
-          box-shadow: 0 4px 16px rgba(20,40,160,0.3);
+          box-shadow: 0 4px 20px rgba(20,40,160,0.4);
           z-index: 9999; white-space: nowrap;
-          animation: fadeInUp 0.3s ease;
+          opacity: 0; transition: all 0.3s; pointer-events: none;
         }
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateX(-50%) translateY(10px); }
-          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .settings-toast.show {
+          opacity: 1; transform: translateX(-50%) translateY(0);
         }
 
-        /* ── 에러 토스트 ── */
-        .settings-toast { padding: 12px 18px; border-radius: 12px; background: #fee2e2; color: #dc2626; font-size: 13px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-
-        /* ── 모바일 ── */
         @media (max-width: 767px) {
-          .settings-page-header { padding: 18px 16px; border-radius: 14px; gap: 12px; }
-          .settings-header-icon { width: 40px; height: 40px; font-size: 20px; border-radius: 12px; }
-          .settings-header-text h1 { font-size: 16px; }
-          .settings-header-text p { font-size: 12px; }
-          .settings-store-card { padding: 16px; border-radius: 14px; }
-          .settings-store-select-wrap { flex-direction: column; align-items: stretch; gap: 8px; }
-          .settings-store-badge { text-align: center; }
-          .settings-store-select-input { font-size: 14px; padding: 11px 40px 11px 14px; }
-          .settings-worker-grid { grid-template-columns: 1fr; gap: 12px; }
-          .settings-worker-card-header { padding: 14px 16px; }
-          .settings-worker-count-bar { padding: 8px 16px; }
-          .settings-worker-list { padding: 10px 12px; gap: 6px; }
-          .settings-worker-item { padding: 8px 10px; gap: 8px; }
-          .settings-worker-select { font-size: 13px; padding: 7px 8px; }
-          .settings-add-btn { padding: 7px 12px; font-size: 12px; }
-          .notif-channel-tab { font-size: 12px; padding: 10px 4px; }
-          .notif-channel-tab .tab-emoji { font-size: 18px; }
+          .page-header { padding: 18px 16px; border-radius: 14px; gap: 12px; }
+          .header-icon { width: 40px; height: 40px; font-size: 20px; }
+          .header-text h1 { font-size: 16px; }
+          .ch-tab { font-size: 11px; padding: 12px 4px; }
+          .ch-tab .tab-emoji { font-size: 18px; }
         }
       `}</style>
 
       <div className="settings-page">
 
-        {/* 페이지 헤더 */}
-        <div className="settings-page-header">
-          <div className="settings-header-icon">⚙️</div>
-          <div className="settings-header-text">
+        {/* 헤더 */}
+        <div className="page-header">
+          <div className="header-icon">⚙️</div>
+          <div className="header-text">
             <h1>설정</h1>
-            <p>매장 운영 및 알림을 설정합니다</p>
+            <p>알림 채널 및 앱 정보를 관리합니다</p>
           </div>
         </div>
 
-        {/* 상단 메인 탭 */}
-        <div className="settings-main-tabs">
-          <button className={`settings-main-tab ${activeTab === "workers" ? "active" : ""}`} onClick={() => setActiveTab("workers")}>
-            👥 기본 근무자
-          </button>
-          <button className={`settings-main-tab ${activeTab === "notifications" ? "active" : ""}`} onClick={() => setActiveTab("notifications")}>
-            🔔 알림 설정
-          </button>
+        {/* 알림 설정 */}
+        <div className="section-label">🔔 알림 설정</div>
+
+        {/* 채널 탭 */}
+        <div className="channel-tabs">
+          {(["crew","kakao","admin"] as const).map((id) => {
+            const meta = {
+              crew:  { emoji: "📱", label: "크루앱 푸시" },
+              kakao: { emoji: "💬", label: "카카오 알림톡" },
+              admin: { emoji: "🔔", label: "관리자 알림" },
+            }[id];
+            return (
+              <button
+                key={id}
+                className={`ch-tab ${notifTab === id ? "active" : ""}`}
+                onClick={() => setNotifTab(id)}
+              >
+                <span className="tab-emoji">{meta.emoji}</span>
+                {meta.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* ─── 기본 근무자 탭 ─── */}
-        {activeTab === "workers" && (
+        {/* ── 크루앱 푸시 ── */}
+        {notifTab === "crew" && (
           <>
-            <div className="settings-store-card">
-              <div className="settings-store-label"><span>🏢</span> 매장 선택</div>
-              <div className="settings-store-select-wrap">
-                <select value={selectedStore} onChange={e => setSelectedStore(e.target.value)} className="settings-store-select-input">
-                  {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-                {selectedStoreName && <div className="settings-store-badge">📍 {selectedStoreName}</div>}
+            <div className="channel-desc">
+              📱 크루앱에 등록된 매장 근무자에게 발송되는 <strong>실시간 푸시 알림</strong>입니다.
+              해당 매장에 배정된 크루가 수신 대상입니다.
+            </div>
+            <NotifCard icon="🚗" iconBg="#eef2ff" title="입차 알림" sub="차량 입차 감지 즉시 발송" badge="입차현황" badgeColor="blue" keyName="crew_entry" />
+            <NotifCard icon="🏁" iconBg="#f0fdf4" title="출차 알림" sub="출차 처리 완료 시 발송" badge="입차현황" badgeColor="blue" keyName="crew_exit" />
+          </>
+        )}
+
+        {/* ── 카카오 알림톡 ── */}
+        {notifTab === "kakao" && (
+          <>
+            <div className="channel-desc">
+              💬 차량 소유자에게 카카오 알림톡으로 발송됩니다.<br />
+              <strong>정책: 입차 + 정산완료 2회만 발송</strong> (출차 알림 제외)
+            </div>
+            <NotifCard icon="📩" iconBg="#fffbeb" title="입차 안내" sub="차량 소유자에게 입차 확인 발송" badge="건당 8~15원" badgeColor="gold" keyName="kakao_entry" />
+            <NotifCard icon="✅" iconBg="#f0fdf4" title="정산 완료" sub="정산 처리 완료 시 발송" badge="건당 8~15원" badgeColor="gold" keyName="kakao_settled" />
+            <div className="cost-box">
+              <div className="cost-box-title">💡 예상 발송 비용</div>
+              <div className="cost-box-body">
+                월 2,000건 기준 약 <strong>3~4만원/월</strong>
+                (입차 1,000건 + 정산 1,000건 × 15~20원)
               </div>
             </div>
-            {message && <div className="settings-toast">⚠️ {message}</div>}
-            <div className="settings-worker-grid">
-              {renderWorkerList(weekdayWorkers, "weekday")}
-              {renderWorkerList(weekendWorkers, "weekend")}
-            </div>
           </>
         )}
 
-        {/* ─── 알림 설정 탭 ─── */}
-        {activeTab === "notifications" && (
+        {/* ── 관리자 알림 ── */}
+        {notifTab === "admin" && (
           <>
-            {/* 채널 탭 */}
-            <div className="notif-channel-tabs">
-              <button className={`notif-channel-tab ${notifTab === "crew" ? "active" : ""}`} onClick={() => setNotifTab("crew")}>
-                <span className="tab-emoji">📱</span>크루앱 푸시
-              </button>
-              <button className={`notif-channel-tab ${notifTab === "kakao" ? "active" : ""}`} onClick={() => setNotifTab("kakao")}>
-                <span className="tab-emoji">💬</span>카카오 알림톡
-              </button>
-              <button className={`notif-channel-tab ${notifTab === "admin" ? "active" : ""}`} onClick={() => setNotifTab("admin")}>
-                <span className="tab-emoji">🔔</span>관리자 알림
-              </button>
+            <div className="channel-desc">
+              🔔 관리자 웹에 표시되는 <strong>인앱 알림</strong>입니다. 각 탭의 주요 이벤트 발생 시 알림을 받습니다.
             </div>
 
-            {/* ── 크루앱 푸시 ── */}
-            {notifTab === "crew" && (
-              <>
-                <div className="notif-channel-desc">
-                  📱 크루앱을 사용하는 매장 근무자에게 발송되는 푸시 알림입니다.<br/>
-                  해당 매장에 배정된 크루가 수신 대상입니다.
-                </div>
-                <div className="notif-card">
-                  <div className="notif-card-header">
-                    <div className="notif-card-header-icon" style={{ background: "#eef2ff" }}>🚗</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>입차 알림</div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>차량이 입차될 때 해당 매장 크루에게 발송</div>
-                    </div>
-                    <ToggleSwitch on={notifSettings.crew_entry} onToggle={() => toggleNotif("crew_entry")} />
-                  </div>
-                </div>
-                <div className="notif-card">
-                  <div className="notif-card-header">
-                    <div className="notif-card-header-icon" style={{ background: "#f0fdf4" }}>🏁</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>출차 알림</div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>출차 처리 완료 시 해당 매장 크루에게 발송</div>
-                    </div>
-                    <ToggleSwitch on={notifSettings.crew_exit} onToggle={() => toggleNotif("crew_exit")} />
-                  </div>
-                </div>
-              </>
-            )}
+            {/* 월주차 만료 */}
+            <NotifCard icon="📅" iconBg="#eef2ff" title="월주차 만료 예정" sub="만료 N일 전 자동 알림" badge="월주차 관리" badgeColor="blue" keyName="admin_monthly">
+              <ExtraLabel>📌 알림 기준일</ExtraLabel>
+              <div style={{ display: "flex", gap: 8 }}>
+                {[7, 3, 1].map(d => (
+                  <div
+                    key={d}
+                    className={`day-chip ${s.admin_monthly_days.includes(d) ? "on" : ""}`}
+                    onClick={() => togDay(d)}
+                  >D-{d}</div>
+                ))}
+              </div>
+            </NotifCard>
 
-            {/* ── 카카오 알림톡 ── */}
-            {notifTab === "kakao" && (
-              <>
-                <div className="notif-channel-desc">
-                  💬 차량 소유자에게 카카오 알림톡으로 발송됩니다. 건당 약 8~15원 비용이 발생합니다.<br/>
-                  <strong>정책: 입차 + 정산 완료 2회만 발송 (출차 알림 제외)</strong>
-                </div>
-                <div className="notif-card">
-                  <div className="notif-card-header">
-                    <div className="notif-card-header-icon" style={{ background: "#fffbeb" }}>📩</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>입차 안내</div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>차량 소유자에게 입차 확인 메시지 발송 · ~8~15원/건</div>
-                    </div>
-                    <ToggleSwitch on={notifSettings.kakao_entry} onToggle={() => toggleNotif("kakao_entry")} />
-                  </div>
-                </div>
-                <div className="notif-card">
-                  <div className="notif-card-header">
-                    <div className="notif-card-header-icon" style={{ background: "#f0fdf4" }}>✅</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>정산 완료</div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>정산 처리 완료 시 차량 소유자에게 발송 · ~8~15원/건</div>
-                    </div>
-                    <ToggleSwitch on={notifSettings.kakao_settled} onToggle={() => toggleNotif("kakao_settled")} />
-                  </div>
-                </div>
-                <div style={{ padding: "12px 16px", background: "#fffbeb", borderRadius: 12, border: "1px solid #fde68a", marginTop: 4 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e", marginBottom: 4 }}>💡 예상 발송 비용</div>
-                  <div style={{ fontSize: 13, color: "#78350f" }}>
-                    월 90,000건 기준 약 <strong>180만원/월</strong> (건당 20원 기준)
-                  </div>
-                </div>
-              </>
-            )}
+            {/* 미정산 경고 */}
+            <NotifCard icon="⚠️" iconBg="#fff7ed" title="미정산 경고" sub="전일 미입력 매장 발생 시" badge="데이터 입력" badgeColor="orange" keyName="admin_unsettled">
+              <ExtraLabel>⏰ 알림 발송 시간</ExtraLabel>
+              <input
+                type="time"
+                className="time-input"
+                value={s.admin_unsettled_time}
+                onChange={e => setS(p => ({ ...p, admin_unsettled_time: e.target.value }))}
+              />
+            </NotifCard>
 
-            {/* ── 관리자 알림 ── */}
-            {notifTab === "admin" && (
-              <>
-                <div className="notif-channel-desc">
-                  🔔 관리자 웹에 표시되는 인앱 알림입니다. 각 탭의 주요 이벤트 발생 시 알림을 받습니다.
-                </div>
+            {/* 사고 접수 */}
+            <NotifCard icon="🚨" iconBg="#fef2f2" title="사고 보고 접수" sub="새 보고서 등록 시 즉시 발송" badge="사고 보고" badgeColor="red" keyName="admin_accident" />
 
-                {/* 월주차 만료 */}
-                <div className="notif-card">
-                  <div className="notif-card-header">
-                    <div className="notif-card-header-icon" style={{ background: "#eef2ff" }}>📅</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>월주차 만료 예정</div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>월주차 관리 탭 연동 · 만료 N일 전 알림</div>
-                    </div>
-                    <ToggleSwitch on={notifSettings.admin_monthly_expire} onToggle={() => toggleNotif("admin_monthly_expire")} />
-                  </div>
-                  {notifSettings.admin_monthly_expire && (
-                    <div className="notif-extra">
-                      <div className="notif-extra-label">알림 기준일 설정</div>
-                      <div className="day-badge-group">
-                        {[7, 3, 1].map(d => (
-                          <div key={d} className={`day-badge ${notifSettings.admin_monthly_days.includes(d) ? "active" : ""}`} onClick={() => toggleDay(d)}>
-                            D-{d}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+            {/* 지각/결근 */}
+            <NotifCard icon="🕐" iconBg="#fff7ed" title="지각 / 결근 발생" sub="정상 출근 체크 위반 시" badge="근무자 관리" badgeColor="orange" keyName="admin_lateness" />
 
-                {/* 미정산 경고 */}
-                <div className="notif-card">
-                  <div className="notif-card-header">
-                    <div className="notif-card-header-icon" style={{ background: "#fff7ed" }}>⚠️</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>미정산 경고</div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>데이터 입력 탭 연동 · 전일 미입력 매장 알림</div>
-                    </div>
-                    <ToggleSwitch on={notifSettings.admin_unsettled} onToggle={() => toggleNotif("admin_unsettled")} />
-                  </div>
-                  {notifSettings.admin_unsettled && (
-                    <div className="notif-extra">
-                      <div className="notif-extra-label">알림 발송 시간</div>
-                      <input
-                        type="time"
-                        value={notifSettings.admin_unsettled_time}
-                        onChange={e => setNotifSettings(prev => ({ ...prev, admin_unsettled_time: e.target.value }))}
-                        className="notif-time-input"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* 사고 접수 */}
-                <div className="notif-card">
-                  <div className="notif-card-header">
-                    <div className="notif-card-header-icon" style={{ background: "#fef2f2" }}>🚨</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>사고 보고 접수</div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>사고 보고 탭 연동 · 새 보고서 등록 시 즉시 알림</div>
-                    </div>
-                    <ToggleSwitch on={notifSettings.admin_accident} onToggle={() => toggleNotif("admin_accident")} />
-                  </div>
-                </div>
-
-                {/* 지각/결근 */}
-                <div className="notif-card">
-                  <div className="notif-card-header">
-                    <div className="notif-card-header-icon" style={{ background: "#fff7ed" }}>🕐</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>지각 / 결근 발생</div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>근무자 관리 탭 연동 · 정상 출근 위반 시 알림</div>
-                    </div>
-                    <ToggleSwitch on={notifSettings.admin_lateness} onToggle={() => toggleNotif("admin_lateness")} />
-                  </div>
-                </div>
-
-                {/* 만차 임박 */}
-                <div className="notif-card">
-                  <div className="notif-card-header">
-                    <div className="notif-card-header-icon" style={{ background: "#f0fdf4" }}>🅿️</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>주차장 만차 임박</div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>대시보드 연동 · 점유율 기준 초과 시 알림</div>
-                    </div>
-                    <ToggleSwitch on={notifSettings.admin_fullness} onToggle={() => toggleNotif("admin_fullness")} />
-                  </div>
-                  {notifSettings.admin_fullness && (
-                    <div className="notif-extra">
-                      <div className="notif-extra-label">알림 발생 점유율 기준</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <input
-                          type="number"
-                          min={50} max={99}
-                          value={notifSettings.admin_fullness_pct}
-                          onChange={e => setNotifSettings(prev => ({ ...prev, admin_fullness_pct: Number(e.target.value) }))}
-                          className="notif-pct-input"
-                        />
-                        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-secondary)" }}>% 이상 시 알림</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* 저장 버튼 */}
-            <button className="notif-save-btn" onClick={saveNotifSettings}>
-              💾 알림 설정 저장
-            </button>
+            {/* 만차 임박 */}
+            <NotifCard icon="🅿️" iconBg="#f0fdf4" title="주차장 만차 임박" sub="점유율 기준 초과 시" badge="대시보드" badgeColor="green" keyName="admin_fullness">
+              <ExtraLabel>📊 알림 발생 기준</ExtraLabel>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <input
+                  type="number"
+                  className="pct-input"
+                  min={50} max={99}
+                  value={s.admin_fullness_pct}
+                  onChange={e => setS(p => ({ ...p, admin_fullness_pct: Number(e.target.value) }))}
+                />
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#475569" }}>% 이상 점유 시 알림</span>
+              </div>
+              <input
+                type="range" min={50} max={99}
+                value={s.admin_fullness_pct}
+                onChange={e => setS(p => ({ ...p, admin_fullness_pct: Number(e.target.value) }))}
+              />
+              <div className="range-marks">
+                <span>50%</span><span>70%</span><span>90%</span><span>99%</span>
+              </div>
+            </NotifCard>
           </>
         )}
+
+        <button className="save-btn" onClick={() => showToast("✅ 알림 설정이 저장되었습니다")}>
+          <span>💾</span> 알림 설정 저장
+        </button>
+
+        {/* 앱 정보 */}
+        <div className="section-label">📋 앱 정보</div>
+
+        <div className="info-card">
+          {[
+            { label: "🏷️ 서비스",   value: "ME.PARK 2.0 관리자",          cls: "" },
+            { label: "🌐 배포 환경", value: "Vercel · Production",          cls: "mono" },
+            { label: "🗄️ 데이터베이스", value: "Supabase PostgreSQL",       cls: "mono" },
+            { label: "💳 결제",      value: "토스페이먼츠 v2",              cls: "mono" },
+            { label: "💬 알림톡",    value: "솔라피 (Solapi)",              cls: "mono" },
+            { label: "🏢 운영사",    value: "주식회사 미스터팍",            cls: "" },
+          ].map((row, i) => (
+            <div key={i} className="info-row">
+              <div className="info-row-label">{row.label}</div>
+              <div className={`info-row-value ${row.cls}`}>{row.value}</div>
+            </div>
+          ))}
+          {/* 버전 */}
+          <div className="info-row">
+            <div className="info-row-label">📦 버전</div>
+            <div className="info-row-value">
+              <span className="version-badge">
+                <span className="version-dot" />
+                v2.1.0
+              </span>
+            </div>
+          </div>
+          {/* 문의 */}
+          <div
+            className="info-row"
+            style={{ cursor: "pointer" }}
+            onClick={() => {
+              navigator.clipboard?.writeText("mepark1022@gmail.com").catch(() => {});
+              showToast("📋 이메일이 복사되었습니다");
+            }}
+          >
+            <div className="info-row-label">📞 문의</div>
+            <div className="info-row-value link">mepark1022@gmail.com ↗</div>
+          </div>
+        </div>
+
       </div>
 
-      {/* 성공 토스트 */}
-      {toast && <div className="settings-toast-success">✅ {toast}</div>}
+      {/* 토스트 */}
+      <div className={`settings-toast ${toast ? "show" : ""}`}>{toast}</div>
     </AppLayout>
   );
 }
