@@ -113,15 +113,14 @@ export default function MonthlyPage() {
     <AppLayout>
       <style>{`
         .monthly-kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 20px; }
-        @media (max-width: 767px) { .monthly-kpi-grid { grid-template-columns: repeat(2,1fr); gap: 10px; } }
         .monthly-table-view { display: block; }
         .monthly-card-view { display: none; }
-        @media (max-width: 767px) {
-          .monthly-table-view { display: none; }
-          .monthly-card-view { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
-          .m-filter-row { flex-wrap: wrap !important; }
-          .m-search { width: 100% !important; min-width: 0 !important; }
-        }
+        .m-filter-row { display: flex; align-items: center; gap: 12px; padding: 14px 20px; flex-wrap: wrap; }
+        .m-filter-status { display: flex; gap: 4px; background: var(--bg-card); padding: 4px; border-radius: 10px; flex-shrink: 0; }
+        .m-filter-store { flex-shrink: 0; }
+        .m-search { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 180px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 9px 14px; }
+        .m-filter-count { font-size: 13px; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+        .monthly-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
         .m-contract-card {
           background: #fff; border: 1px solid var(--border-light);
           border-radius: 14px; padding: 16px; transition: all 0.2s;
@@ -133,12 +132,32 @@ export default function MonthlyPage() {
         .btn-sm.navy { border-color: var(--navy); color: var(--navy); }
         .btn-sm.red { border-color: #fecaca; color: #dc2626; }
         .btn-sm:hover { background: var(--bg-card); }
+
+        @media (max-width: 767px) {
+          .monthly-kpi-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
+          .monthly-table-view { display: none; }
+          .monthly-card-view { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
+          /* 필터: 세로 스택 */
+          .m-filter-row { flex-direction: column; align-items: stretch; gap: 10px; padding: 14px 16px; }
+          .m-filter-status { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .m-filter-store { width: 100%; }
+          .m-filter-store select { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: #fff; outline: none; font-family: inherit; }
+          .m-search { min-width: 0; width: 100%; }
+          .m-filter-count { text-align: right; }
+          /* 헤더 */
+          .monthly-page-header { gap: 10px; }
+          .monthly-page-header h2 { font-size: 18px !important; }
+          .monthly-page-header button { padding: 9px 16px !important; font-size: 13px !important; }
+          /* 카드 내 정보 세로 정렬 */
+          .m-card-footer { flex-direction: column !important; gap: 12px !important; align-items: stretch !important; }
+          .m-card-footer-actions { justify-content: flex-end; }
+        }
       `}</style>
 
       <div style={{ maxWidth: 1300 }}>
 
         {/* 헤더 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+        <div className="monthly-page-header">
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", marginBottom: 2 }}>월주차 관리</h2>
             <p style={{ fontSize: 13, color: "var(--text-muted)" }}>월정기 주차 계약 등록 및 현황 관리</p>
@@ -190,26 +209,27 @@ export default function MonthlyPage() {
           </div>
         )}
 
-        {/* 필터 바 */}
         <div className="v3-info-card" style={{ marginBottom: 20 }}>
-          <div className="m-filter-row" style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", gap: 4, background: "var(--bg-card)", padding: 4, borderRadius: 10 }}>
+          <div className="m-filter-row">
+            <div className="m-filter-status">
               {[{v:"active",label:"계약중"},{v:"expired",label:"만료"},{v:"cancelled",label:"해지"},{v:"",label:"전체"}].map(opt => (
-                <button key={opt.v} onClick={() => setFilterStatus(opt.v)} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "inherit", background: filterStatus === opt.v ? "#fff" : "transparent", color: filterStatus === opt.v ? "var(--text-primary)" : "var(--text-secondary)", boxShadow: filterStatus === opt.v ? "0 1px 3px rgba(0,0,0,0.08)" : "none", transition: "all 0.15s" }}>
+                <button key={opt.v} onClick={() => setFilterStatus(opt.v)} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "inherit", background: filterStatus === opt.v ? "#fff" : "transparent", color: filterStatus === opt.v ? "var(--text-primary)" : "var(--text-secondary)", boxShadow: filterStatus === opt.v ? "0 1px 3px rgba(0,0,0,0.08)" : "none", transition: "all 0.15s", whiteSpace: "nowrap" }}>
                   {opt.label}
                 </button>
               ))}
             </div>
-            <select value={filterStore} onChange={(e) => setFilterStore(e.target.value)} style={{ padding: "9px 12px", border: "1px solid var(--border)", borderRadius: 10, fontSize: 13, fontWeight: 500, background: "#fff", outline: "none", cursor: "pointer", fontFamily: "inherit" }}>
-              <option value="">전체 매장</option>
-              {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-            <div className="m-search" style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 14px" }}>
+            <div className="m-filter-store">
+              <select value={filterStore} onChange={(e) => setFilterStore(e.target.value)} style={{ padding: "9px 12px", border: "1px solid var(--border)", borderRadius: 10, fontSize: 13, fontWeight: 500, background: "#fff", outline: "none", cursor: "pointer", fontFamily: "inherit", width: "auto" }}>
+                <option value="">전체 매장</option>
+                {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div className="m-search">
               <span style={{ fontSize: 14 }}>🔍</span>
               <input value={searchText} onChange={(e) => setSearchText(e.target.value)} placeholder="차량번호, 고객명, 연락처" style={{ flex: 1, border: "none", background: "transparent", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
               {searchText && <button onClick={() => setSearchText("")} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 16 }}>✕</button>}
             </div>
-            <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 600, whiteSpace: "nowrap" }}>총 {filtered.length}건</span>
+            <span className="m-filter-count">총 {filtered.length}건</span>
           </div>
         </div>
 
@@ -296,7 +316,7 @@ export default function MonthlyPage() {
                       <div><div className="m-meta">매장</div><div style={{ fontSize: 13 }}>{c.stores?.name ?? "-"}</div></div>
                     </div>
                     {/* 기간 + 요금 + 버튼 */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: "1px solid var(--border-light)" }}>
+                    <div className="m-card-footer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: "1px solid var(--border-light)" }}>
                       <div>
                         <div className="m-meta">계약 기간</div>
                         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{c.start_date} ~ {c.end_date}</div>
@@ -305,7 +325,7 @@ export default function MonthlyPage() {
                         <div className="m-meta">월 요금</div>
                         <div style={{ fontSize: 15, fontWeight: 800, color: "var(--navy)" }}>₩{c.monthly_fee.toLocaleString()}</div>
                       </div>
-                      <div style={{ display: "flex", gap: 8 }}>
+                      <div className="m-card-footer-actions" style={{ display: "flex", gap: 8 }}>
                         <button className="btn-sm navy" onClick={() => router.push(`/monthly/register?id=${c.id}`)}>수정</button>
                         {c.contract_status === "active" && <button className="btn-sm red" onClick={() => cancelContract(c.id)}>해지</button>}
                       </div>
