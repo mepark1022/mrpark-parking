@@ -53,7 +53,7 @@
   --text-muted: #8b919d;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --sidebar-width: 280px;
+  --sidebar-width: 260px;
 }
 
 @layer base {
@@ -61,23 +61,23 @@
     font-family: var(--font-pretendard);
     background-color: var(--bg-page);
     color: #1e293b;
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.65;
     letter-spacing: -0.01em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1 { font-size: 30px; font-weight: 800; color: #0f172a; }
-  h2 { font-size: 24px; font-weight: 700; color: #0f172a; }
-  h3 { font-size: 20px; font-weight: 700; color: #0f172a; }
+  h1 { font-size: 28px; font-weight: 800; color: #0f172a; }
+  h2 { font-size: 22px; font-weight: 700; color: #0f172a; }
+  h3 { font-size: 18px; font-weight: 700; color: #0f172a; }
   h4 { font-size: 16px; font-weight: 600; color: #1e293b; }
   p { color: #1e293b; }
-  td, th { color: #1e293b; font-size: 15px; }
+  td, th { color: #1e293b; font-size: 14px; }
   th { font-weight: 700; color: #64748b; }
-  label { color: #1e293b; font-weight: 600; font-size: 15px; }
-  input, select, textarea { font-family: inherit; font-size: 15px; color: #1e293b; }
-  button { font-family: inherit; font-size: 15px; font-weight: 600; }
+  label { color: #1e293b; font-weight: 600; font-size: 14px; }
+  input, select, textarea { font-family: inherit; font-size: 14px; color: #1e293b; }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; }
   input::placeholder, textarea::placeholder { color: #94a3b8; }
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -100,7 +100,7 @@
 
 .v3-nav-item {
   display: flex; align-items: center; gap: 14px;
-  padding: 14px 18px; border-radius: 12px;
+  padding: 13px 16px; border-radius: 12px;
   color: rgba(255,255,255,0.65); text-decoration: none;
   font-size: 14px; font-weight: 500;
   transition: all 0.2s; cursor: pointer;
@@ -130,10 +130,10 @@
    v3 Header
    ============================================ */
 .v3-header {
-  position: sticky; top: 0; height: 72px;
+  position: sticky; top: 0; height: 64px;
   background: #fff; border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 36px; z-index: 50;
+  padding: 0 28px; z-index: 50;
 }
 .v3-search-box {
   display: flex; align-items: center; gap: 10px;
@@ -163,19 +163,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
   margin-bottom: 16px;
   background: #fff;
   border-radius: 14px;
-  padding: 10px 16px;
+  padding: 8px 12px;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-light);
 }
 .v3-filter-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .v3-btn-all {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 10px 18px; border-radius: 10px;
-  font-size: 14px; font-weight: 700;
+  padding: 9px 16px; border-radius: 10px;
+  font-size: 13px; font-weight: 700;
   cursor: pointer; border: none;
   background: var(--navy); color: #fff;
   transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
@@ -188,9 +188,9 @@
 .v3-store-dropdown-wrap::after { content: '▾'; position: absolute; right: 12px; font-size: 11px; color: var(--text-muted); pointer-events: none; }
 .v3-store-dropdown {
   appearance: none; width: 100%;
-  padding: 10px 32px 10px 14px;
+  padding: 9px 32px 9px 14px;
   border: 1.5px solid var(--border); border-radius: 10px;
-  font-size: 14px; font-weight: 500;
+  font-size: 13px; font-weight: 500;
   background: var(--bg-card); color: var(--text-primary);
   cursor: pointer; transition: all 0.2s; font-family: inherit;
 }
@@ -210,11 +210,11 @@
 /* 리스트 뷰 테이블 */
 .v3-parking-list-table { width: 100%; border-collapse: collapse; }
 .v3-parking-list-table th {
-  font-size: 13px; font-weight: 600; color: var(--text-muted);
-  background: var(--bg-card); padding: 12px 16px;
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  background: var(--bg-card); padding: 10px 14px;
   text-align: left; border-bottom: 1px solid var(--border-light);
 }
-.v3-parking-list-table td { padding: 14px 16px; font-size: 15px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+.v3-parking-list-table td { padding: 12px 14px; font-size: 14px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
 .v3-parking-list-table tr:last-child td { border-bottom: none; }
 .v3-parking-list-table tr:hover td { background: var(--bg-card); }
 .v3-list-bar-wrap { display: flex; align-items: center; gap: 8px; }
@@ -227,22 +227,22 @@
 .v3-summary-card {
   background: #fff;
   border-radius: 16px;
-  padding: 28px;
+  padding: 24px;
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-sm);
 }
 .v3-summary-header {
   display: flex; justify-content: space-between; align-items: center;
-  padding-bottom: 20px; margin-bottom: 12px;
+  padding-bottom: 16px; margin-bottom: 8px;
   border-bottom: 2px solid var(--navy);
 }
 .v3-summary-row {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 18px 0; border-bottom: 1px solid var(--border-light);
+  padding: 14px 0; border-bottom: 1px solid var(--border-light);
 }
 .v3-summary-row:last-of-type { border-bottom: none; }
-.v3-summary-label { font-size: 16px; font-weight: 700; color: var(--text-primary); }
-.v3-summary-value { font-size: 32px; font-weight: 700; line-height: 1; }
+.v3-summary-label { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.v3-summary-value { font-size: 28px; font-weight: 700; line-height: 1; }
 
 .v3-progress-bar {
   height: 10px; background: var(--bg-card);
@@ -255,7 +255,7 @@
 /* Lot Card */
 .v3-lot-card {
   background: #fff; border: 1px solid var(--border-light);
-  border-radius: 14px; padding: 24px;
+  border-radius: 14px; padding: 20px;
   box-shadow: var(--shadow-sm); transition: all 0.2s;
   border-left: 4px solid var(--navy);
 }
@@ -264,7 +264,7 @@
 /* Highlight Card */
 .v3-highlight-card {
   background: linear-gradient(135deg, var(--navy) 0%, #1e3a8a 100%);
-  border: none; border-radius: 16px; padding: 32px 36px;
+  border: none; border-radius: 16px; padding: 28px 32px;
   margin-bottom: 24px;
 }
 
@@ -276,7 +276,7 @@
 }
 .v3-info-card-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 24px; border-bottom: 1px solid var(--border-light);
+  padding: 16px 20px; border-bottom: 1px solid var(--border-light);
 }
 .v3-info-card-title {
   display: flex; align-items: center; gap: 8px;
@@ -286,7 +286,7 @@
   font-size: 12px; color: var(--text-muted);
   background: var(--bg-card); padding: 4px 10px; border-radius: 6px;
 }
-.v3-info-card-body { padding: 20px 24px; }
+.v3-info-card-body { padding: 16px 20px; }
 
 /* Rank Item */
 .v3-rank-item {
@@ -328,7 +328,7 @@
 /* 주차장 현황 메인 그리드 */
 .dash-parking-grid {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 280px 1fr;
   gap: 20px;
 }
 
@@ -387,7 +387,7 @@
   }
 
   /* 요약 카드 숫자 크기 축소 */
-  .v3-summary-value { font-size: 24px; }
+  .v3-summary-value { font-size: 22px; }
 
   /* 매장별 카드: 3열 → 1열 */
   .dash-store-lot-grid,
@@ -397,7 +397,7 @@
   }
 
   /* 주차장 카드 내부 lot-stats 숫자 크기 축소 */
-  .v3-lot-card { padding: 20px; }
+  .v3-lot-card { padding: 16px; }
 
   /* 하이라이트 카드 stats: 4열 flex → 2×2 그리드 */
   .dash-highlight-stats {
