@@ -277,7 +277,7 @@ async function slide02() {
     fontSize: 11, color: P.mist, fontFace: "Outfit",
     align: "right", valign: "middle"
   });
-  pgNum(s, 2);
+  pgNum(s, 4);
 
   // Three problem panels — horizontal split
   const probs = [
@@ -413,7 +413,7 @@ async function slide03() {
     fontSize: 11, color: P.mist, fontFace: "Outfit",
     align: "right", valign: "middle"
   });
-  pgNum(s, 3);
+  pgNum(s, 5);
 
   // Flow rail — horizontal spine
   const steps = [
@@ -535,7 +535,7 @@ async function slide04() {
     fontSize: 28, bold: true, color: P.white,
     fontFace: "Outfit", valign: "middle"
   });
-  pgNum(s, 4);
+  pgNum(s, 6);
 
   const pts = [
     {
@@ -662,7 +662,7 @@ async function slide05() {
     fontSize: 13, color: P.mist, fontFace: "Outfit",
     align: "right", valign: "middle", charSpacing: 2
   });
-  pgNum(s, 5);
+  pgNum(s, 7);
 
   const tiers = [
     {
@@ -807,7 +807,7 @@ async function slide06() {
     fontSize: 28, bold: true, color: P.white,
     fontFace: "Outfit", valign: "middle"
   });
-  pgNum(s, 6);
+  pgNum(s, 8);
 
   // Left panel — 3 year KPI blocks
   const years = [
@@ -935,7 +935,7 @@ async function slide07() {
     fontSize: 13, color: P.mist, fontFace: "Outfit",
     align: "right", valign: "middle", charSpacing: 2
   });
-  pgNum(s, 7);
+  pgNum(s, 9);
 
   const years = [
     {
@@ -1156,27 +1156,419 @@ async function slide08() {
 
 
 // ═══════════════════════════════════════════════════════════════
+//  SLIDE 02 — ME.PARK 1.0 STORY & 3개년 성장
+//  Philosophy: The left panel tells the story through timeline.
+//  The right panel lets numbers BE the slide. Growth is the art.
+// ═══════════════════════════════════════════════════════════════
+async function slideA_story() {
+  const s = pres.addSlide();
+  s.background = { color: P.navyDD };
+
+  // Header
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 0, y: 0, w: 13.3, h: 1.1,
+    fill: { color: P.navy }, line: { color: P.navy }
+  });
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 0, y: 0, w: 0.18, h: 1.1,
+    fill: { color: P.gold }, line: { color: P.gold }
+  });
+  s.addText("미팍 1.0 스토리  &  3개년 성장 실적", {
+    x: 0.42, y: 0, w: 9, h: 1.1,
+    fontSize: 26, bold: true, color: P.white,
+    fontFace: "Outfit", valign: "middle"
+  });
+  s.addText("검증된 운영 기반", {
+    x: 9.5, y: 0, w: 3.65, h: 1.1,
+    fontSize: 11, color: P.gold, fontFace: "Outfit",
+    align: "right", valign: "middle", charSpacing: 1.5, bold: true
+  });
+  pgNum(s, 10);
+
+  // ── LEFT: Company Timeline Story ──────────────────────────
+  // Ghost "1.0" art
+  s.addText("1.0", {
+    x: -0.3, y: 1.0, w: 7, h: 5,
+    fontSize: 330, bold: true, fontFace: "Outfit",
+    color: P.navyM, transparency: 82
+  });
+
+  // Timeline spine
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 0.78, y: 1.28, w: 0.04, h: 5.62,
+    fill: { color: P.gold }, line: { color: P.gold }
+  });
+
+  const timeline = [
+    {
+      yr: "2012", title: "Kings Valet 창업",
+      body: "프리미엄 발렛파킹 서비스 시작\n인천·서울 병원·호텔 운영 노하우 축적",
+      col: P.mist
+    },
+    {
+      yr: "2017", title: "Valetman 법인 설립",
+      body: "발렛·주차 운영 전문 법인화\n체계적 인력 관리 시스템 구축",
+      col: P.mist
+    },
+    {
+      yr: "2018", title: "주식회사 미스터팍 설립",
+      body: "인천 자회사 설립\n스마트 주차 플랫폼 본격 개발 착수",
+      col: P.teal
+    },
+    {
+      yr: "2024", title: "ME.PARK v1.0 출시",
+      body: "QR 키오스크 기반 주차 관리 시스템\n특허 5건 확보 · 18명 팀 구성 완료",
+      col: P.gold
+    },
+  ];
+
+  timeline.forEach((t, i) => {
+    const y = 1.32 + i * 1.38;
+    // Dot
+    s.addShape(pres.shapes.OVAL, {
+      x: 0.62, y: y + 0.14, w: 0.36, h: 0.36,
+      fill: { color: t.col }, line: { color: t.col }
+    });
+    // Year label
+    s.addText(t.yr, {
+      x: 1.08, y: y + 0.06, w: 1.1, h: 0.3,
+      fontSize: 13, bold: true, fontFace: "Outfit", color: t.col
+    });
+    // Title
+    s.addText(t.title, {
+      x: 1.08, y: y + 0.32, w: 5.0, h: 0.36,
+      fontSize: 14, bold: true, color: P.white, fontFace: "Outfit"
+    });
+    // Body
+    s.addText(t.body, {
+      x: 1.08, y: y + 0.66, w: 5.0, h: 0.55,
+      fontSize: 10.5, color: P.mist, fontFace: "Outfit",
+      lineSpacingMultiple: 1.25
+    });
+  });
+
+  // Column divider
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 6.55, y: 1.18, w: 0.018, h: 5.92,
+    fill: { color: P.ink }, line: { color: P.ink }
+  });
+
+  // ── RIGHT: 3개년 성장 실적 — Numbers as monuments ──────────
+  s.addText("3개년  성장  실적", {
+    x: 6.85, y: 1.22, w: 6.2, h: 0.42,
+    fontSize: 11, color: P.gold, bold: true,
+    fontFace: "Outfit", charSpacing: 2
+  });
+  rule(s, 6.85, 1.68, 6.2, 0.025);
+
+  const growth = [
+    {
+      yr: "2023", rev: "1.8억", yoy: "–",
+      label: "키오스크 서비스 개시\n첫 연간 실적 기록",
+      col: P.mist, textCol: P.mist
+    },
+    {
+      yr: "2024", rev: "4.7억", yoy: "+161%",
+      label: "매장 확대 · PG 연동 고도화\n전년 대비 161% 폭발 성장",
+      col: P.teal, textCol: P.teal
+    },
+    {
+      yr: "2025", rev: "13억", yoy: "+177%",
+      label: "SaaS 전환 준비 · 특허 5건\n2년 누적 성장률 622%",
+      col: P.gold, textCol: P.gold
+    },
+  ];
+
+  growth.forEach((g, i) => {
+    const y = 1.88 + i * 1.72;
+
+    // Left accent bar
+    s.addShape(pres.shapes.RECTANGLE, {
+      x: 6.85, y, w: 0.06, h: 1.52,
+      fill: { color: g.col }, line: { color: g.col }
+    });
+
+    // Year
+    s.addText(g.yr, {
+      x: 7.08, y: y + 0.05, w: 1.1, h: 0.32,
+      fontSize: 11, bold: true, fontFace: "Outfit", color: g.textCol, charSpacing: 1
+    });
+
+    // Revenue — monument number
+    s.addText(g.rev, {
+      x: 7.08, y: y + 0.32, w: 3.0, h: 0.88,
+      fontSize: 58, bold: true, fontFace: "Outfit", color: P.white
+    });
+
+    // YoY badge
+    if (g.yoy !== "–") {
+      s.addShape(pres.shapes.RECTANGLE, {
+        x: 10.1, y: y + 0.38, w: 1.6, h: 0.46,
+        fill: { color: g.col }, line: { color: g.col }
+      });
+      s.addText(g.yoy, {
+        x: 10.1, y: y + 0.38, w: 1.6, h: 0.46,
+        fontSize: 20, bold: true, fontFace: "Outfit",
+        color: g.col === P.gold ? P.navyDD : P.white,
+        align: "center", valign: "middle", margin: 0
+      });
+    }
+
+    // Label
+    s.addText(g.label, {
+      x: 7.08, y: y + 1.18, w: 5.75, h: 0.3,
+      fontSize: 10, color: P.mist, fontFace: "Outfit"
+    });
+
+    if (i < 2) rule(s, 6.85, y + 1.58, 6.28, 0.012);
+  });
+
+  // Bottom summary bar — 2년 합산
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 6.85, y: 7.05, w: 6.28, h: 0.3,
+    fill: { color: P.gold }, line: { color: P.gold }
+  });
+  s.addText("2년 누적 성장  1.8억 → 13억  ·  622% 성장  ·  특허 5건 확보", {
+    x: 6.95, y: 7.05, w: 6.08, h: 0.3,
+    fontSize: 10, bold: true, color: P.navyDD,
+    fontFace: "Outfit", valign: "middle"
+  });
+
+  credit(s, true);
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+//  SLIDE 03 — 1.0 키오스크 한계 → 2.0 SaaS 성장성
+//  Philosophy: Contrast as architecture. Left=constraint, Right=freedom.
+//  The dividing line is the business inflection point.
+// ═══════════════════════════════════════════════════════════════
+async function slideB_transition() {
+  const s = pres.addSlide();
+  s.background = { color: P.white };
+
+  // Header
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 0, y: 0, w: 13.3, h: 1.1,
+    fill: { color: P.navyDD }, line: { color: P.navyDD }
+  });
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 0, y: 0, w: 0.18, h: 1.1,
+    fill: { color: P.gold }, line: { color: P.gold }
+  });
+  s.addText("왜 1.0에서 2.0으로?", {
+    x: 0.42, y: 0, w: 9, h: 1.1,
+    fontSize: 26, bold: true, color: P.white,
+    fontFace: "Outfit", valign: "middle"
+  });
+  s.addText("키오스크 한계  →  SaaS 성장성", {
+    x: 7.5, y: 0, w: 5.65, h: 1.1,
+    fontSize: 11, color: P.gold, fontFace: "Outfit",
+    align: "right", valign: "middle", charSpacing: 1, bold: true
+  });
+  pgNum(s, 3);
+
+  // ── LEFT: 1.0 키오스크 제약 ──────────────────────────────
+  // Navy panel
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 0, y: 1.1, w: 6.35, h: 6.4,
+    fill: { color: P.navyDD }, line: { color: P.navyDD }
+  });
+
+  // Ghost "1.0" art
+  s.addText("1.0", {
+    x: -0.2, y: 1.5, w: 5.5, h: 4.0,
+    fontSize: 260, bold: true, fontFace: "Outfit",
+    color: P.navyM, transparency: 84
+  });
+
+  // Label
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 0.38, y: 1.28, w: 2.2, h: 0.36,
+    fill: { color: "DC2626" }, line: { color: "DC2626" }
+  });
+  s.addText("ME.PARK 1.0  키오스크", {
+    x: 0.38, y: 1.28, w: 2.2, h: 0.36,
+    fontSize: 9.5, bold: true, color: P.white,
+    align: "center", valign: "middle", margin: 0, fontFace: "Outfit"
+  });
+
+  s.addText("구조적 한계", {
+    x: 0.38, y: 1.75, w: 5.75, h: 0.52,
+    fontSize: 22, bold: true, color: P.white, fontFace: "Outfit"
+  });
+  rule(s, 0.38, 2.32, 5.75, 0.025);
+
+  const limits = [
+    {
+      icon: "💴", title: "고정비 부담",
+      body: "키오스크 하드웨어 1대 300~500만원\n유지보수 · AS · 소모품 지속 발생\n고객 ROI 회수 기간 12개월 이상"
+    },
+    {
+      icon: "🔧", title: "하드웨어 의존성",
+      body: "설치·교체에 현장 방문 필수\n원격 업데이트 제한 · 장애 대응 지연\n고객 1개소당 1개 장비 = 선형 비용"
+    },
+    {
+      icon: "📊", title: "스케일링 한계",
+      body: "고객 100개사 → 하드웨어 100대 필요\n운영 인력 비례 증가 · 마진 정체\n데이터 통합 어려움 · 대시보드 부재"
+    },
+    {
+      icon: "🔒", title: "록인 구조 부재",
+      body: "하드웨어 교체 시 이탈 가능\n재구매 주기 3~5년 · 이탈률 높음\n고객 생애가치(LTV) 낮음"
+    },
+  ];
+
+  limits.forEach((l, i) => {
+    const y = 2.48 + i * 1.08;
+    s.addText(l.icon, {
+      x: 0.38, y: y + 0.05, w: 0.45, h: 0.38,
+      fontSize: 18
+    });
+    s.addText(l.title, {
+      x: 0.92, y: y + 0.04, w: 5.1, h: 0.36,
+      fontSize: 13, bold: true, color: P.white, fontFace: "Outfit"
+    });
+    s.addText(l.body, {
+      x: 0.92, y: y + 0.38, w: 5.1, h: 0.58,
+      fontSize: 10.5, color: P.mist, fontFace: "Outfit",
+      lineSpacingMultiple: 1.2
+    });
+  });
+
+  // ── CENTER: Arrow / inflection divider ───────────────────
+  // Gold center strike
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 6.35, y: 1.1, w: 0.5, h: 6.4,
+    fill: { color: P.gold }, line: { color: P.gold }
+  });
+  s.addText("→", {
+    x: 6.22, y: 3.85, w: 0.8, h: 0.62,
+    fontSize: 32, bold: true, color: P.navyDD,
+    fontFace: "Outfit", align: "center"
+  });
+
+  // ── RIGHT: 2.0 SaaS 성장성 ──────────────────────────────
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 6.85, y: 1.1, w: 6.45, h: 6.4,
+    fill: { color: P.offwht }, line: { color: P.offwht }
+  });
+
+  // Ghost "2.0" art
+  s.addText("2.0", {
+    x: 7.8, y: 1.5, w: 5.5, h: 4.0,
+    fontSize: 260, bold: true, fontFace: "Outfit",
+    color: P.gold, transparency: 90
+  });
+
+  // Label
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 7.05, y: 1.28, w: 2.5, h: 0.36,
+    fill: { color: P.navy }, line: { color: P.navy }
+  });
+  s.addText("ME.PARK 2.0  미팍티켓  SaaS", {
+    x: 7.05, y: 1.28, w: 2.5, h: 0.36,
+    fontSize: 9.5, bold: true, color: P.gold,
+    align: "center", valign: "middle", margin: 0, fontFace: "Outfit"
+  });
+
+  s.addText("SaaS 성장성", {
+    x: 7.05, y: 1.75, w: 5.9, h: 0.52,
+    fontSize: 22, bold: true, color: P.navy, fontFace: "Outfit"
+  });
+  rule(s, 7.05, 2.32, 5.9, 0.025);
+
+  const gains = [
+    {
+      icon: "🚀", title: "초기 투자 0원",
+      body: "스마트폰 + QR = 즉시 운영\n하드웨어 없음 · 설치 없음 · D+1 시작\n고객 진입 장벽 완전 제거",
+      col: P.gold
+    },
+    {
+      icon: "📈", title: "수평적 확장",
+      body: "고객 100 → 1,000개사, 코드 한 줄 변경 없음\n운영 인력 고정 · 마진 급증 구조\n클라우드 SaaS = 한계비용 0에 수렴",
+      col: P.teal
+    },
+    {
+      icon: "🔁", title: "구독 + 수수료 이중 수익",
+      body: "월정액 MRR + 결제 GMV 수수료\n고객 매출 성장 = 미팍 수익 자동 증가\n이탈률 2% 이하 목표 · 높은 LTV",
+      col: P.green
+    },
+    {
+      icon: "🧠", title: "데이터 기반 성장 엔진",
+      body: "전 고객 매출·이용률·피크 데이터 통합\n산업 벤치마크 · 크로스셀 기회 발굴\n AI 요금 최적화 등 부가기능 확장",
+      col: P.violet
+    },
+  ];
+
+  gains.forEach((g, i) => {
+    const y = 2.48 + i * 1.08;
+    // Colored accent stroke
+    s.addShape(pres.shapes.RECTANGLE, {
+      x: 7.05, y, w: 0.05, h: 0.92,
+      fill: { color: g.col }, line: { color: g.col }
+    });
+    s.addText(g.icon, {
+      x: 7.18, y: y + 0.05, w: 0.42, h: 0.38,
+      fontSize: 18
+    });
+    s.addText(g.title, {
+      x: 7.68, y: y + 0.04, w: 4.95, h: 0.36,
+      fontSize: 13, bold: true, color: P.dark, fontFace: "Outfit"
+    });
+    s.addText(g.body, {
+      x: 7.68, y: y + 0.38, w: 4.95, h: 0.62,
+      fontSize: 10.5, color: P.slate, fontFace: "Outfit",
+      lineSpacingMultiple: 1.2
+    });
+  });
+
+  // Bottom comparison bar
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 0, y: 7.08, w: 13.3, h: 0.32,
+    fill: { color: P.navyDD }, line: { color: P.navyDD }
+  });
+  s.addText("1.0  :  하드웨어 100대 필요  /  마진 정체  /  이탈 용이", {
+    x: 0.38, y: 7.08, w: 6.0, h: 0.32,
+    fontSize: 9.5, color: "DC2626", fontFace: "Outfit", valign: "middle"
+  });
+  s.addText("→", {
+    x: 6.35, y: 7.08, w: 0.5, h: 0.32,
+    fontSize: 12, bold: true, color: P.gold,
+    align: "center", valign: "middle"
+  });
+  s.addText("2.0  :  고객 무한 추가  /  마진 지속 개선  /  높은 LTV  ·  낮은 이탈률", {
+    x: 6.98, y: 7.08, w: 6.14, h: 0.32,
+    fontSize: 9.5, color: P.gold, fontFace: "Outfit", valign: "middle", bold: true
+  });
+}
+
+
+// ═══════════════════════════════════════════════════════════════
 //  BUILD
 // ═══════════════════════════════════════════════════════════════
 (async () => {
-  console.log("Building ME.PARK Ticket v3 — Goldwatch Precision...");
+  console.log("Building ME.PARK Ticket v3.1 — with 1.0 Story...");
   await slide01();
   console.log("  01 ✓ Cover");
+  await slideA_story();
+  console.log("  02 ✓ 1.0 Story & 3Y Growth");
+  await slideB_transition();
+  console.log("  03 ✓ 1.0→2.0 Transition");
   await slide02();
-  console.log("  02 ✓ Problem");
+  console.log("  04 ✓ Problem");
   await slide03();
-  console.log("  03 ✓ Service");
+  console.log("  05 ✓ Service");
   await slide04();
-  console.log("  04 ✓ Sales Points");
+  console.log("  06 ✓ Sales Points");
   await slide05();
-  console.log("  05 ✓ Pricing");
+  console.log("  07 ✓ Pricing");
   await slide06();
-  console.log("  06 ✓ Financials");
+  console.log("  08 ✓ Financials");
   await slide07();
-  console.log("  07 ✓ Roadmap");
+  console.log("  09 ✓ Roadmap");
   await slide08();
-  console.log("  08 ✓ Closing");
+  console.log("  10 ✓ Closing");
 
   await pres.writeFile({ fileName: "/home/claude/mepark_v3.pptx" });
-  console.log("Done → mepark_v3.pptx");
+  console.log("Done → mepark_v3.pptx (10 slides)");
 })();
