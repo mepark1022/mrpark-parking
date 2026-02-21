@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미팍Ticket - 고객 화면 프로토타입</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1428A0;
+    --navy-dark: #0d1670;
+    --gold: #F5B731;
+    --gold-light: #fef9e7;
+    --success: #16A34A;
+    --success-bg: #dcfce7;
+    --warning: #EA580C;
+    --warning-bg: #fff7ed;
+    --error: #DC2626;
+    --error-bg: #fee2e2;
+    --gray: #94a3b8;
+    --gray-bg: #f1f5f9;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #e8ecf4;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+  }
+
+  /* 데모 컨트롤 바 */
+  .demo-bar {
+    width: 100%;
+    max-width: 420px;
+    background: #1a1d2b;
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .demo-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .demo-states {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .state-btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    background: #2d3147;
+    color: #94a3b8;
+    transition: all 0.2s;
+  }
+  .state-btn.active { background: var(--navy); color: #fff; }
+  .state-btn:hover:not(.active) { background: #3d4160; color: #e2e8f0; }
+
+  /* 모바일 폰 프레임 */
+  .phone-frame {
+    width: 100%;
+    max-width: 390px;
+    background: #0f172a;
+    border-radius: 44px;
+    padding: 12px;
+    box-shadow: 0 32px 64px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06);
+  }
+  .phone-screen {
+    background: #f8fafc;
+    border-radius: 34px;
+    overflow: hidden;
+    min-height: 780px;
+    position: relative;
+  }
+  .phone-notch {
+    height: 44px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .notch-pill { width: 120px; height: 32px; background: #0f172a; border-radius: 20px; }
+
+  /* 앱 내용 */
+  .app-content { overflow-y: auto; max-height: 736px; }
+
+  /* 헤더 */
+  .ticket-header {
+    background: var(--navy);
+    padding: 16px 20px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ticket-header::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 140px; height: 140px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+  }
+  .ticket-header::after {
+    content: '';
+    position: absolute;
+    bottom: -20px; left: -20px;
+    width: 100px; height: 100px;
+    background: rgba(245,183,49,0.06);
+    border-radius: 50%;
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    position: relative; z-index: 1;
+  }
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .logo-mark-p { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 900; color: #fff; line-height: 1; margin-top: -2px; }
+  .logo-mark-bar { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 14px; height: 3px; background: var(--gold); border-radius: 2px; }
+  .logo-text { display: flex; align-items: baseline; gap: 2px; }
+  .logo-mipak { font-family: 'Noto Sans KR', sans-serif; font-size: 16px; font-weight: 800; color: #fff; }
+  .logo-ticket-text { font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700; color: var(--gold); }
+
+  .header-store {
+    position: relative; z-index: 1;
+  }
+  .store-name-label { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+  .store-name-text { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+  .plate-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 6px 12px;
+    backdrop-filter: blur(10px);
+  }
+  .plate-icon { font-size: 14px; }
+  .plate-number { font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 800; color: #fff; letter-spacing: 1px; }
+
+  /* 상태 배너 */
+  .status-banner {
+    margin: 0 16px;
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: -1px;
+    transition: all 0.4s;
+  }
+  .status-icon { font-size: 20px; flex-shrink: 0; }
+  .status-text { font-size: 14px; font-weight: 700; }
+  .status-sub { font-size: 12px; opacity: 0.8; margin-top: 1px; }
+
+  /* 메인 카드 */
+  .main-card {
+    margin: 12px 16px;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid #e2e8f0;
+  }
+  .card-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+    font-weight: 700;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .timer-display {
+    padding: 20px 18px;
+    text-align: center;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .timer-label { font-size: 12px; color: #94a3b8; margin-bottom: 6px; }
+  .timer-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 44px;
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .timer-value.pre-paid { color: var(--success); }
+  .timer-value.overtime { color: var(--error); animation: pulse-red 1s infinite; }
+  @keyframes pulse-red { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
+
+  .fee-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid #f8fafc;
+  }
+  .fee-label { font-size: 13px; color: #64748b; font-weight: 500; }
+  .fee-value { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 800; color: #1e293b; }
+  .fee-value.highlight { color: var(--navy); }
+  .fee-note { font-size: 11px; color: #94a3b8; margin-top: 2px; text-align: right; }
+
+  /* 방문지 할인 */
+  .visit-discount {
+    margin: 0 16px 12px;
+    background: var(--gold-light);
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .visit-icon { font-size: 18px; flex-shrink: 0; }
+  .visit-info { flex: 1; min-width: 0; }
+  .visit-name { font-size: 13px; font-weight: 700; color: #92400e; }
+  .visit-detail { font-size: 11px; color: #b45309; margin-top: 2px; }
+
+  /* 버튼들 */
+  .actions { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+  .btn-primary {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-pay {
+    background: var(--navy);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(20,40,160,0.35);
+  }
+  .btn-pay:active { transform: scale(0.98); }
+  .btn-pay-badge {
+    position: absolute;
+    top: 8px; right: 12px;
+    background: var(--gold);
+    color: #1a1d2b;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+  .btn-exit {
+    background: #fff;
+    color: var(--navy);
+    border: 2px solid var(--navy);
+  }
+  .btn-exit:active { background: #f0f4ff; }
+  .btn-notify {
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    font-size: 14px;
+  }
+  .btn-disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    cursor: default;
+  }
+  .btn-success {
+    background: var(--success);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(22,163,74,0.35);
+  }
+
+  /* 30분 카운트다운 */
+  .countdown-box {
+    margin: 0 16px 12px;
+    background: var(--success-bg);
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .countdown-label { font-size: 12px; color: var(--success); font-weight: 600; margin-bottom: 6px; }
+  .countdown-timer {
+    font-family: 'Outfit', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--success);
+    letter-spacing: -0.5px;
+  }
+  .countdown-timer.urgent { color: var(--error); animation: pulse-red 1s infinite; }
+  .countdown-sub { font-size: 11px; color: #4ade80; margin-top: 4px; }
+
+  /* 출차요청 진행 상태 */
+  .exit-progress {
+    margin: 0 16px 12px;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid #e2e8f0;
+  }
+  .exit-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .exit-step:last-child { border-bottom: none; }
+  .step-dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-dot.done { background: var(--success-bg); color: var(--success); }
+  .step-dot.active { background: var(--gold-light); color: var(--warning); animation: pulse-gold 1.5s infinite; }
+  .step-dot.pending { background: #f1f5f9; color: #94a3b8; }
+  @keyframes pulse-gold { 0%,100% { box-shadow: 0 0 0 0 rgba(245,183,49,0.4); } 50% { box-shadow: 0 0 0 6px rgba(245,183,49,0); } }
+  .step-text { flex: 1; }
+  .step-title { font-size: 14px; font-weight: 700; color: #1e293b; }
+  .step-sub { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+  .step-title.muted { color: #94a3b8; }
+
+  /* 전자영수증 */
+  .receipt-card {
+    margin: 0 16px 12px;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid #e2e8f0;
+  }
+  .receipt-header {
+    background: var(--navy);
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .receipt-title { font-size: 15px; font-weight: 700; color: #fff; }
+  .receipt-badge { background: var(--gold); color: #1a1d2b; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; margin-left: auto; }
+  .receipt-rows { padding: 4px 0; }
+  .receipt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 18px;
+    border-bottom: 1px solid #f8fafc;
+  }
+  .receipt-row:last-child { border-bottom: none; }
+  .receipt-label { font-size: 13px; color: #64748b; }
+  .receipt-value { font-size: 14px; font-weight: 700; color: #1e293b; }
+  .receipt-total {
+    background: #f8fafc;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 2px solid #e2e8f0;
+  }
+  .receipt-total-label { font-size: 14px; font-weight: 700; color: #1e293b; }
+  .receipt-total-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--navy);
+  }
+
+  /* 초과요금 경고 */
+  .overtime-warning {
+    margin: 0 16px 12px;
+    background: var(--error-bg);
+    border: 1px solid #fca5a5;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .overtime-text { flex: 1; }
+  .overtime-title { font-size: 14px; font-weight: 700; color: var(--error); }
+  .overtime-sub { font-size: 12px; color: #f87171; margin-top: 2px; }
+
+  /* 결제 모달 */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    backdrop-filter: blur(4px);
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-sheet {
+    background: #fff;
+    border-radius: 24px 24px 0 0;
+    padding: 20px 20px 32px;
+    width: 100%;
+    max-width: 420px;
+    animation: slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle { width: 40px; height: 4px; background: #e2e8f0; border-radius: 2px; margin: 0 auto 20px; }
+  .modal-title { font-size: 18px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+  .modal-sub { font-size: 14px; color: #64748b; margin-bottom: 20px; }
+  .amount-display {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .amount-label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+  .amount-value { font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 800; color: var(--navy); }
+  .pay-methods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .pay-method {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px 4px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .pay-method.selected { border-color: var(--navy); background: #eff3ff; color: var(--navy); }
+  .pay-method-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+  .modal-pay-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(20,40,160,0.35);
+  }
+  .modal-cancel { width: 100%; padding: 12px; background: none; border: none; font-size: 14px; color: #94a3b8; cursor: pointer; margin-top: 8px; font-family: 'Noto Sans KR', sans-serif; }
+
+  /* 전화번호 모달 */
+  .phone-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .phone-input {
+    flex: 1;
+    padding: 14px 16px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 16px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    color: #1e293b;
+    outline: none;
+    letter-spacing: 1px;
+  }
+  .phone-input:focus { border-color: var(--navy); }
+  .privacy-note {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+  .privacy-note strong { color: var(--navy); }
+
+  /* 하단 정보 */
+  .footer-info {
+    margin: 0 16px 20px;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+  }
+  .footer-fee-title { font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
+  .footer-fee-row { display: flex; justify-content: space-between; font-size: 12px; color: #64748b; padding: 3px 0; }
+  .footer-fee-row span:last-child { font-weight: 600; color: #1e293b; }
+  .footer-divider { height: 1px; background: #e2e8f0; margin: 8px 0; }
+  .footer-corp { font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.6; }
+  .footer-corp a { color: var(--navy); font-weight: 600; text-decoration: none; }
+
+  /* 완료 상태 */
+  .complete-check {
+    margin: 20px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    background: var(--success-bg);
+    border-radius: 20px;
+    border: 1px solid #bbf7d0;
+  }
+  .check-circle {
+    width: 64px; height: 64px;
+    background: var(--success);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    margin-bottom: 12px;
+    animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes pop-in { from { transform: scale(0); } to { transform: scale(1); } }
+  .check-title { font-size: 18px; font-weight: 800; color: var(--success); margin-bottom: 4px; }
+  .check-sub { font-size: 13px; color: #4ade80; }
+
+  /* 숨김 처리 */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- 데모 상태 컨트롤 -->
+<div class="demo-bar">
+  <div class="demo-label">🎛 상태 시뮬레이터</div>
+  <div class="demo-states">
+    <button class="state-btn active" onclick="setState('parking')">🚗 입차 중</button>
+    <button class="state-btn" onclick="setState('pre_paid')">✅ 사전정산완료</button>
+    <button class="state-btn" onclick="setState('overtime')">⚠️ 30분초과</button>
+    <button class="state-btn" onclick="setState('exit_requested')">🔔 출차요청</button>
+    <button class="state-btn" onclick="setState('car_ready')">🚙 차량준비완료</button>
+    <button class="state-btn" onclick="setState('completed')">🎉 출차완료</button>
+  </div>
+</div>
+
+<!-- 폰 프레임 -->
+<div class="phone-frame">
+  <div class="phone-screen">
+    <div class="phone-notch"><div class="notch-pill"></div></div>
+
+    <div class="app-content" id="appContent">
+
+      <!-- 헤더 -->
+      <div class="ticket-header">
+        <div class="header-logo">
+          <div class="logo-mark">
+            <span class="logo-mark-p">P</span>
+            <span class="logo-mark-bar"></span>
+          </div>
+          <div class="logo-text">
+            <span class="logo-mipak">미팍</span>
+            <span class="logo-ticket-text">Ticket</span>
+          </div>
+        </div>
+        <div class="header-store">
+          <div class="store-name-label">📍 방문 매장</div>
+          <div class="store-name-text">강서푸른꿈성모어린이병원</div>
+          <div class="plate-badge">
+            <span class="plate-icon">🚗</span>
+            <span class="plate-number">12가 3456</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 상태 배너 -->
+      <div class="status-banner" id="statusBanner">
+        <div class="status-icon" id="statusIcon"></div>
+        <div>
+          <div class="status-text" id="statusText"></div>
+          <div class="status-sub" id="statusSub"></div>
+        </div>
+      </div>
+
+      <!-- 입차중 초과 경고 -->
+      <div class="overtime-warning hidden" id="overtimeWarning">
+        <span style="font-size:22px; animation: pulse-red 1s infinite;">⚠️</span>
+        <div class="overtime-text">
+          <div class="overtime-title">사전정산 30분 초과!</div>
+          <div class="overtime-sub">추가요금이 발생하고 있습니다. 즉시 결제해주세요.</div>
+        </div>
+      </div>
+
+      <!-- 사전정산 완료 카운트다운 -->
+      <div class="countdown-box hidden" id="countdownBox">
+        <div class="countdown-label">✅ 사전정산 완료 — 유예시간</div>
+        <div class="countdown-timer" id="countdownTimer">28:47</div>
+        <div class="countdown-sub">이 시간 내 출차 시 추가요금 없음</div>
+      </div>
+
+      <!-- 출차 진행 상태 -->
+      <div class="exit-progress hidden" id="exitProgress">
+        <div class="exit-step">
+          <div class="step-dot done">✓</div>
+          <div class="step-text">
+            <div class="step-title">출차 요청 접수</div>
+            <div class="step-sub">14:52 — 요청이 전달되었습니다</div>
+          </div>
+        </div>
+        <div class="exit-step" id="stepPreparing">
+          <div class="step-dot active" id="stepDot2">🔄</div>
+          <div class="step-text">
+            <div class="step-title" id="stepTitle2">CREW 차량 이동 중</div>
+            <div class="step-sub" id="stepSub2">잠시만 기다려주세요</div>
+          </div>
+        </div>
+        <div class="exit-step">
+          <div class="step-dot pending" id="stepDot3">3</div>
+          <div class="step-text">
+            <div class="step-title muted" id="stepTitle3">차량 준비 완료 알림</div>
+            <div class="step-sub" id="stepSub3">완료 시 카카오톡 알림 발송</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 차량 준비완료 -->
+      <div class="status-banner hidden" id="carReadyBanner" style="background:var(--success-bg); border:1px solid #bbf7d0; margin:12px 16px; border-radius:14px;">
+        <div class="status-icon">🚙</div>
+        <div>
+          <div class="status-text" style="color:var(--success)">차량이 출구 A에 준비되었습니다!</div>
+          <div class="status-sub" style="color:#4ade80">지금 바로 출차해주세요</div>
+        </div>
+      </div>
+
+      <!-- 완료 체크 -->
+      <div class="complete-check hidden" id="completeCheck">
+        <div class="check-circle">✓</div>
+        <div class="check-title">출차 완료!</div>
+        <div class="check-sub">이용해 주셔서 감사합니다</div>
+      </div>
+
+      <!-- 전자영수증 -->
+      <div class="receipt-card hidden" id="receiptCard">
+        <div class="receipt-header">
+          <span style="font-size:16px">🧾</span>
+          <span class="receipt-title">전자영수증</span>
+          <span class="receipt-badge">결제완료</span>
+        </div>
+        <div class="receipt-rows">
+          <div class="receipt-row"><span class="receipt-label">입차시간</span><span class="receipt-value">14:30</span></div>
+          <div class="receipt-row"><span class="receipt-label">출차시간</span><span class="receipt-value">17:02</span></div>
+          <div class="receipt-row"><span class="receipt-label">주차시간</span><span class="receipt-value">2시간 32분</span></div>
+          <div class="receipt-row"><span class="receipt-label">방문지 할인</span><span class="receipt-value" style="color:var(--success)">무료 30분</span></div>
+          <div class="receipt-row"><span class="receipt-label">결제수단</span><span class="receipt-value">삼성페이</span></div>
+        </div>
+        <div class="receipt-total">
+          <span class="receipt-total-label">총 결제금액</span>
+          <span class="receipt-total-value">₩5,000</span>
+        </div>
+      </div>
+
+      <!-- 주차 시간 카드 (입차 중일 때) -->
+      <div class="main-card" id="timerCard">
+        <div class="card-header">⏱ 주차 현황</div>
+        <div class="timer-display">
+          <div class="timer-label" id="timerLabel">주차 경과 시간</div>
+          <div class="timer-value" id="timerValue">2:15:33</div>
+        </div>
+        <div class="fee-row">
+          <div>
+            <div class="fee-label">현재 예상 요금</div>
+            <div class="fee-note" id="feeNote">무료주차 30분 적용 완료</div>
+          </div>
+          <div style="text-align:right">
+            <div class="fee-value highlight" id="feeValue">₩5,000</div>
+          </div>
+        </div>
+        <div class="fee-row" style="border-bottom:none">
+          <div class="fee-label">입차시간</div>
+          <div style="font-size:13px; font-weight:600; color:#1e293b;">2026.02.22 14:30</div>
+        </div>
+      </div>
+
+      <!-- 방문지 할인 -->
+      <div class="visit-discount" id="visitDiscount">
+        <span class="visit-icon">🏥</span>
+        <div class="visit-info">
+          <div class="visit-name">2층 소아청소년과 방문</div>
+          <div class="visit-detail">무료 30분 + 기본 2,000원 / 추가 10분당 1,000원</div>
+        </div>
+      </div>
+
+      <!-- 액션 버튼들 -->
+      <div class="actions" id="actionBtns">
+        <button class="btn-primary btn-pay" id="btnPay" onclick="openPayModal()">
+          💳 사전정산하기
+          <span class="btn-pay-badge">삼성페이 가능</span>
+        </button>
+        <button class="btn-primary btn-exit" id="btnExit" onclick="openPhoneModal()">
+          🚙 출차요청하기
+        </button>
+        <button class="btn-primary btn-notify" id="btnNotify" onclick="openPhoneModal()">
+          🔔 출차 알림 받기 (카카오톡)
+        </button>
+      </div>
+
+      <!-- 하단 요금 정보 -->
+      <div class="footer-info" id="footerInfo">
+        <div class="footer-fee-title">📋 요금 안내</div>
+        <div class="footer-fee-row"><span>무료 주차</span><span>최초 30분</span></div>
+        <div class="footer-fee-row"><span>기본요금</span><span>2,000원</span></div>
+        <div class="footer-fee-row"><span>추가 요금</span><span>10분당 1,000원</span></div>
+        <div class="footer-fee-row"><span>일 최대요금</span><span>15,000원</span></div>
+        <div class="footer-divider"></div>
+        <div class="footer-corp">
+          주식회사 미스터팍 · 사업자번호 123-45-67890<br>
+          ☎ <a href="tel:18991871">1899-1871</a> · mepark@mrpark.co.kr
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 결제 모달 -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">사전정산</div>
+    <div class="modal-sub">지금 결제하면 30분 유예시간이 주어집니다</div>
+    <div class="amount-display">
+      <div class="amount-label">결제 금액</div>
+      <div class="amount-value">₩5,000</div>
+    </div>
+    <div class="pay-methods">
+      <div class="pay-method selected" onclick="selectMethod(this)">
+        <span class="pay-method-icon">💳</span>카드
+      </div>
+      <div class="pay-method" onclick="selectMethod(this)">
+        <span class="pay-method-icon">📱</span>삼성페이
+      </div>
+      <div class="pay-method" onclick="selectMethod(this)">
+        <span class="pay-method-icon">💛</span>카카오페이
+      </div>
+      <div class="pay-method" onclick="selectMethod(this)">
+        <span class="pay-method-icon">💚</span>네이버페이
+      </div>
+    </div>
+    <button class="modal-pay-btn" onclick="processPayment()">💳 결제하기</button>
+    <button class="modal-cancel" onclick="closeModal('payModal')">취소</button>
+  </div>
+</div>
+
+<!-- 전화번호 모달 -->
+<div class="modal-overlay" id="phoneModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">출차 알림 받기</div>
+    <div class="modal-sub">차량이 준비되면 카카오톡으로 알려드립니다</div>
+    <div class="phone-input-row">
+      <input class="phone-input" type="tel" placeholder="010-0000-0000" id="phoneInput" maxlength="13">
+    </div>
+    <div class="privacy-note">
+      🔒 전화번호는 알림 발송 즉시 삭제되며 <strong>저장되지 않습니다.</strong><br>
+      개인정보 최소 수집 원칙에 따라 DB에 기록되지 않습니다.
+    </div>
+    <button class="modal-pay-btn" onclick="submitPhone()">📩 알림 신청</button>
+    <button class="modal-cancel" onclick="closeModal('phoneModal')">취소</button>
+  </div>
+</div>
+
+<script>
+let currentState = 'parking';
+let timerInterval = null;
+let countdownInterval = null;
+let seconds = 8133; // 2시간 15분 33초
+let countdownSeconds = 1727; // 28분 47초
+
+// 상태 설정
+function setState(state) {
+  currentState = state;
+  document.querySelectorAll('.state-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  renderState();
+}
+
+function renderState() {
+  clearInterval(timerInterval);
+  clearInterval(countdownInterval);
+
+  // 모든 요소 초기화
+  const els = {
+    statusBanner: document.getElementById('statusBanner'),
+    overtimeWarning: document.getElementById('overtimeWarning'),
+    countdownBox: document.getElementById('countdownBox'),
+    exitProgress: document.getElementById('exitProgress'),
+    carReadyBanner: document.getElementById('carReadyBanner'),
+    completeCheck: document.getElementById('completeCheck'),
+    receiptCard: document.getElementById('receiptCard'),
+    timerCard: document.getElementById('timerCard'),
+    visitDiscount: document.getElementById('visitDiscount'),
+    actionBtns: document.getElementById('actionBtns'),
+    footerInfo: document.getElementById('footerInfo'),
+    timerValue: document.getElementById('timerValue'),
+    timerLabel: document.getElementById('timerLabel'),
+    feeValue: document.getElementById('feeValue'),
+    feeNote: document.getElementById('feeNote'),
+    statusIcon: document.getElementById('statusIcon'),
+    statusText: document.getElementById('statusText'),
+    statusSub: document.getElementById('statusSub'),
+    btnPay: document.getElementById('btnPay'),
+    btnExit: document.getElementById('btnExit'),
+    btnNotify: document.getElementById('btnNotify'),
+  };
+
+  // 전부 숨기기
+  Object.values(els).forEach(el => el && el.classList.add('hidden'));
+
+  // 상태별 표시
+  els.statusBanner.classList.remove('hidden');
+  els.statusBanner.style.cssText = '';
+
+  switch(currentState) {
+    case 'parking':
+      setBanner(els, '#eff3ff', '#bfdbfe', '🟢', '입차 완료 — 주차 중', '실시간으로 요금이 계산됩니다', 'var(--navy)', '#60a5fa');
+      show(els, ['timerCard','visitDiscount','actionBtns','footerInfo']);
+      els.timerValue.className = 'timer-value';
+      els.feeValue.textContent = '₩5,000';
+      startTimer(els.timerValue);
+      startFeeUpdate(els.feeValue);
+      break;
+
+    case 'pre_paid':
+      setBanner(els, 'var(--success-bg)', '#bbf7d0', '✅', '사전정산 완료!', '30분 이내 출차해주세요', 'var(--success)', '#4ade80');
+      show(els, ['countdownBox','timerCard','visitDiscount','actionBtns','footerInfo']);
+      els.timerValue.className = 'timer-value pre-paid';
+      els.timerLabel.textContent = '주차 경과 시간';
+      els.feeValue.textContent = '₩5,000';
+      els.feeNote.textContent = '결제 완료 ✓';
+      els.btnPay.classList.add('hidden');
+      els.btnExit.classList.add('hidden');
+      els.btnNotify.classList.remove('hidden');
+      countdownSeconds = 1727;
+      startCountdown();
+      startTimer(els.timerValue);
+      break;
+
+    case 'overtime':
+      setBanner(els, 'var(--error-bg)', '#fca5a5', '⚠️', '추가요금 발생 중', '즉시 결제해주세요', 'var(--error)', '#f87171');
+      show(els, ['overtimeWarning','timerCard','visitDiscount','actionBtns','footerInfo']);
+      els.timerValue.className = 'timer-value overtime';
+      els.timerLabel.textContent = '초과 시간';
+      els.feeValue.textContent = '₩2,000';
+      els.feeNote.textContent = '⚠️ 추가 10분당 1,000원';
+      els.btnExit.classList.add('hidden');
+      els.btnNotify.classList.add('hidden');
+      startTimer(els.timerValue, true);
+      startFeeUpdate(els.feeValue, true);
+      break;
+
+    case 'exit_requested':
+      setBanner(els, 'var(--warning-bg)', '#fed7aa', '🔔', '출차 요청 접수됨', 'CREW가 차량을 준비하고 있습니다', 'var(--warning)', '#fb923c');
+      show(els, ['exitProgress','timerCard','footerInfo']);
+      document.getElementById('stepDot2').textContent = '🔄';
+      document.getElementById('stepTitle2').textContent = 'CREW 차량 이동 중';
+      document.getElementById('stepSub2').textContent = '잠시만 기다려주세요';
+      document.getElementById('stepDot2').className = 'step-dot active';
+      document.getElementById('stepDot3').className = 'step-dot pending';
+      document.getElementById('stepTitle3').className = 'step-title muted';
+      els.timerLabel.textContent = '주차 경과 시간';
+      els.timerValue.className = 'timer-value';
+      els.feeValue.textContent = '₩5,000';
+      startTimer(els.timerValue);
+      break;
+
+    case 'car_ready':
+      setBanner(els, '#eff3ff', '#bfdbfe', '🚙', '차량이 출구 A에 준비되었습니다!', '지금 바로 출차해주세요', 'var(--navy)', '#60a5fa');
+      show(els, ['exitProgress','carReadyBanner','actionBtns','footerInfo']);
+      document.getElementById('stepDot2').textContent = '✓';
+      document.getElementById('stepDot2').className = 'step-dot done';
+      document.getElementById('stepDot3').textContent = '✓';
+      document.getElementById('stepDot3').className = 'step-dot done';
+      document.getElementById('stepTitle2').textContent = '차량 이동 완료';
+      document.getElementById('stepSub2').textContent = '14:58 — 출구 A에 배치됨';
+      document.getElementById('stepTitle3').textContent = '카카오톡 알림 발송 완료';
+      document.getElementById('stepTitle3').className = 'step-title';
+      document.getElementById('stepSub3').textContent = '14:59 — 알림 발송 후 번호 즉시 삭제';
+      els.statusBanner.classList.add('hidden');
+      els.btnPay.classList.remove('hidden');
+      els.btnPay.textContent = '💳 현장 결제하기';
+      els.btnExit.classList.add('hidden');
+      els.btnNotify.classList.add('hidden');
+      break;
+
+    case 'completed':
+      setBanner(els, 'var(--success-bg)', '#bbf7d0', '🎉', '출차 완료!', '이용해 주셔서 감사합니다', 'var(--success)', '#4ade80');
+      show(els, ['completeCheck','receiptCard','footerInfo']);
+      els.statusBanner.classList.add('hidden');
+      break;
+  }
+}
+
+function setBanner(els, bg, border, icon, text, sub, textColor, subColor) {
+  els.statusBanner.style.background = bg;
+  els.statusBanner.style.border = `1px solid ${border}`;
+  els.statusBanner.style.margin = '12px 16px';
+  els.statusBanner.style.borderRadius = '14px';
+  els.statusIcon.textContent = icon;
+  els.statusText.textContent = text;
+  els.statusText.style.color = textColor;
+  els.statusSub.textContent = sub;
+  els.statusSub.style.color = subColor;
+}
+
+function show(els, keys) {
+  keys.forEach(k => els[k] && els[k].classList.remove('hidden'));
+}
+
+function startTimer(el, isOvertime = false) {
+  let s = isOvertime ? 0 : seconds;
+  el.textContent = formatTime(s);
+  timerInterval = setInterval(() => {
+    s++;
+    el.textContent = formatTime(s);
+    if (!isOvertime) seconds = s;
+  }, 1000);
+}
+
+function startFeeUpdate(el, isOvertime = false) {
+  let base = isOvertime ? 1000 : 5000;
+  setInterval(() => {
+    if (isOvertime) {
+      base = 1000 + Math.floor(Math.random() * 2000);
+    }
+  }, 60000);
+}
+
+function startCountdown() {
+  const el = document.getElementById('countdownTimer');
+  let s = countdownSeconds;
+  el.textContent = formatTime(s, true);
+  el.className = s < 300 ? 'countdown-timer urgent' : 'countdown-timer';
+  countdownInterval = setInterval(() => {
+    s--;
+    if (s < 0) { clearInterval(countdownInterval); setState('overtime'); return; }
+    el.textContent = formatTime(s, true);
+    el.className = s < 300 ? 'countdown-timer urgent' : 'countdown-timer';
+  }, 1000);
+}
+
+function formatTime(s, compact = false) {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (compact || h === 0) return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+function openPayModal() { document.getElementById('payModal').classList.add('open'); }
+function openPhoneModal() { document.getElementById('phoneModal').classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function selectMethod(el) { document.querySelectorAll('.pay-method').forEach(e => e.classList.remove('selected')); el.classList.add('selected'); }
+function processPayment() {
+  closeModal('payModal');
+  setState('pre_paid');
+  document.querySelectorAll('.state-btn').forEach((btn,i) => { if(i===1) btn.classList.add('active'); else btn.classList.remove('active'); });
+}
+function submitPhone() {
+  closeModal('phoneModal');
+  const input = document.getElementById('phoneInput').value;
+  if (input.length > 5) { alert('📩 카카오톡 알림을 신청했습니다.\n전화번호는 발송 즉시 삭제됩니다.'); }
+}
+
+// 전화번호 자동 하이픈
+document.getElementById('phoneInput').addEventListener('input', function(e) {
+  let v = e.target.value.replace(/\D/g,'');
+  if (v.length > 3 && v.length <= 7) v = v.slice(0,3)+'-'+v.slice(3);
+  else if (v.length > 7) v = v.slice(0,3)+'-'+v.slice(3,7)+'-'+v.slice(7,11);
+  e.target.value = v;
+});
+
+// 초기 렌더링
+renderState();
+</script>
+</body>
+</html>
