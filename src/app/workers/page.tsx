@@ -27,15 +27,105 @@ const statusMap = {
   vacation: { label: "연차", bg: "#ede9fe", color: "#7c3aed" },
 };
 
+// ─────────────────────────────────────────────
+// 오늘의 근무자 요약 섹션
+// ─────────────────────────────────────────────
+function TodaySummarySection({ stores, workers, attendanceRecords }) {
+  const today = new Date().toLocaleDateString("ko-KR", {
+    year: "numeric", month: "long", day: "numeric", weekday: "short",
+  });
+
+  const storeStats = stores.map(s => {
+    const storeWorkers = workers.filter(w => w.store_id === s.id && w.status === "active");
+    const storeRecs = attendanceRecords.filter(r => r.store_id === s.id);
+    const checkedIn = storeRecs.filter(r => r.status === "present" || r.status === "late").length;
+    const lateCount = storeRecs.filter(r => r.status === "late").length;
+    return {
+      id: s.id, name: s.name,
+      total: storeWorkers.length,
+      checkedIn, lateCount,
+    };
+  }).filter(s => s.total > 0);
+
+  if (storeStats.length === 0) return null;
+
+  return (
+    <div style={{
+      background: "var(--white)", borderRadius: 14,
+      border: "1px solid var(--border-light)", borderLeft: "3px solid var(--navy)",
+      boxShadow: "var(--shadow-sm)", marginBottom: 24, overflow: "hidden",
+    }}>
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "14px 18px", borderBottom: "1px solid var(--border-light)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700 }}>
+          <span>👥</span> 오늘의 근무자
+        </div>
+        <span style={{
+          fontSize: 12, color: "var(--text-muted)",
+          background: "var(--bg-card)", padding: "4px 10px", borderRadius: 6,
+        }}>{today}</span>
+      </div>
+      <div style={{ padding: "14px 18px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+          {storeStats.map(s => {
+            const pct = s.total > 0 ? Math.round((s.checkedIn / s.total) * 100) : 0;
+            const badge = s.lateCount > 0
+              ? { label: "지각", bg: "var(--warning-bg)", color: "var(--warning)" }
+              : s.checkedIn > 0
+              ? { label: "정상", bg: "var(--success-bg)", color: "var(--success)" }
+              : { label: "예정", bg: "var(--bg-card)", color: "var(--text-muted)", border: "1px solid var(--border)" };
+            const barColor = s.lateCount > 0 ? "var(--warning)" : s.checkedIn === 0 ? "var(--text-muted)" : "var(--success)";
+            return (
+              <div key={s.id} style={{
+                background: "var(--white)", border: "1px solid var(--border-light)",
+                borderRadius: 10, padding: "12px 14px",
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700 }}>{s.name}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: badge.bg, color: badge.color, border: badge.border || "none" }}>
+                    {badge.label}
+                  </span>
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-card)", padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 8 }}>
+                  출근 {s.checkedIn} / {s.lateCount > 0 ? `지각 ${s.lateCount}` : `배정 ${s.total}`}
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 2, marginBottom: 4 }}>
+                  <span style={{ fontSize: 24, fontWeight: 800, lineHeight: 1 }}>{s.checkedIn}</span>
+                  <span style={{ fontSize: 14, color: "var(--text-muted)" }}>/ {s.total}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-muted)", marginBottom: 6 }}>
+                  <span>출근</span><span>배정</span>
+                </div>
+                <div style={{ height: 4, background: "var(--bg-card)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ height: "100%", borderRadius: 2, width: `${pct}%`, background: barColor, transition: "width 0.3s" }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 근태 탭 (ScheduleTab) — 기존 기능 완전 보존
+// ─────────────────────────────────────────────
 function ScheduleTab() {
   const [workers, setWorkers] = useState([]);
   const [stores, setStores] = useState([]);
   const [records, setRecords] = useState([]);
-  const [selectedMonth, setSelectedMonth] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [selectedStore, setSelectedStore] = useState("");
   const [storeWorkers, setStoreWorkers] = useState([]);
   const [orgId, setOrgId] = useState("");
-  const [editCell, setEditCell] = useState(null); // {workerId, date}
+  const [editCell, setEditCell] = useState(null);
+  const [showDownMenu, setShowDownMenu] = useState(false);
 
   useEffect(() => { loadBase(); }, []);
   useEffect(() => { if (selectedStore && selectedMonth) loadAllRecords(); }, [selectedStore, selectedMonth, storeWorkers]);
@@ -82,7 +172,10 @@ function ScheduleTab() {
     } else if (existing) {
       await supabase.from("worker_attendance").update({ status }).eq("id", existing.id);
     } else {
-      await supabase.from("worker_attendance").insert({ org_id: orgId, worker_id: workerId, date, status, check_in: status === "present" ? "09:00" : null, store_id: selectedStore });
+      await supabase.from("worker_attendance").insert({
+        org_id: orgId, worker_id: workerId, date, status,
+        check_in: status === "present" ? "09:00" : null, store_id: selectedStore,
+      });
     }
     setEditCell(null);
     loadAllRecords();
@@ -113,8 +206,6 @@ function ScheduleTab() {
     return { date, day: i + 1, dayOfWeek, dayName: dayNames[dayOfWeek], holidayName, isSpecial: dtype !== "weekday", isToday: date === today };
   });
 
-  const [showDownMenu, setShowDownMenu] = useState(false);
-
   const downloadExcel = async (mode) => {
     setShowDownMenu(false);
     const wb = XLSX.utils.book_new();
@@ -122,7 +213,6 @@ function ScheduleTab() {
     const colWidths = [{ wch: 10 }, ...dates.map(() => ({ wch: 7 })), { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }];
 
     if (mode === "current") {
-      // 현재 매장만
       const storeName = stores.find(s => s.id === selectedStore)?.name || "매장";
       const rows = storeWorkers.map(w => {
         const stats = getWorkerStats(w.id);
@@ -133,14 +223,11 @@ function ScheduleTab() {
       XLSX.utils.book_append_sheet(wb, ws, storeName.slice(0, 31));
       XLSX.writeFile(wb, `근태현황_${storeName}_${selectedMonth}.xlsx`);
     } else {
-      // 전체 매장 (매장별 시트)
       const supabase = createClient();
       const [ys, ms] = selectedMonth.split("-");
       const startDate = `${ys}-${ms}-01`;
       const endDate = `${ys}-${ms}-${new Date(Number(ys), Number(ms), 0).getDate()}`;
-
       for (const store of stores) {
-        // 매장별 근무자
         const { data: members } = await supabase.from("store_members").select("user_id").eq("store_id", store.id);
         let sw = workers;
         if (members && members.length > 0) {
@@ -148,10 +235,8 @@ function ScheduleTab() {
           const filtered = workers.filter(w => ids.includes(w.id));
           if (filtered.length > 0) sw = filtered;
         }
-        // 매장별 레코드
         const { data: recs } = await supabase.from("worker_attendance").select("*").in("worker_id", sw.map(w => w.id)).eq("store_id", store.id).gte("date", startDate).lte("date", endDate);
         const storeRecs = recs || [];
-
         const rows = sw.map(w => {
           const wr = storeRecs.filter(r => r.worker_id === w.id);
           const st = { present: wr.filter(r => r.status === "present").length, late: wr.filter(r => r.status === "late").length, absent: wr.filter(r => r.status === "absent").length, dayoff: wr.filter(r => r.status === "dayoff").length, vacation: wr.filter(r => r.status === "vacation").length };
@@ -166,181 +251,207 @@ function ScheduleTab() {
   };
 
   return (
-    <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)" }}>
-      <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 16 }}>월별 근태 현황</div>
-
-      {/* 매장 선택 + 월 선택 */}
-      <div className="flex flex-col md:flex-row gap-4 mb-5">
-        <div>
-          <label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>매장 선택</label>
-          <div className="flex gap-2 flex-wrap">
-            {stores.map(s => (
-              <button key={s.id} onClick={() => setSelectedStore(s.id)} className="cursor-pointer" style={{
-                padding: "8px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700, transition: "all 0.15s",
-                border: s.id === selectedStore ? "2px solid #1428A0" : "1px solid #e2e8f0",
-                background: s.id === selectedStore ? "#1428A0" : "#fff",
-                color: s.id === selectedStore ? "#fff" : "#475569",
-              }}>{s.name}</button>
-            ))}
-          </div>
+    <div style={{ background: "var(--white)", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+      {/* 카드 헤더 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderBottom: "1px solid var(--border-light)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 700 }}>
+          <span>📅</span> 월별 근태 현황
         </div>
-        <div>
-          <label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>월 선택</label>
-          <div className="flex gap-2 items-center" style={{ position: "relative" }}>
-            <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600 }} />
-            <button onClick={() => setShowDownMenu(!showDownMenu)} className="cursor-pointer" style={{ padding: "10px 16px", borderRadius: 8, border: "none", background: "#15803d", color: "#fff", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-              📥 엑셀 다운 ▾
-            </button>
-            {showDownMenu && (
-              <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0", zIndex: 20, overflow: "hidden", minWidth: 160 }}>
-                <button onClick={() => downloadExcel("current")} className="cursor-pointer" style={{ display: "block", width: "100%", padding: "10px 16px", border: "none", background: "#fff", fontSize: 13, fontWeight: 600, color: "#1e293b", textAlign: "left", cursor: "pointer", borderBottom: "1px solid #f1f5f9" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setShowDownMenu(!showDownMenu)}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, border: "none", background: "var(--gold)", color: "var(--navy-dark)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+          >
+            📥 엑셀 다운 ▾
+          </button>
+          {showDownMenu && (
+            <>
+              <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setShowDownMenu(false)} />
+              <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "var(--white)", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,0.12)", border: "1px solid var(--border)", zIndex: 100, overflow: "hidden", minWidth: 160 }}>
+                <button onClick={() => downloadExcel("current")} style={{ display: "block", width: "100%", padding: "11px 16px", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", textAlign: "left", cursor: "pointer", borderBottom: "1px solid var(--border-light)" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--bg-card)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                   📄 현재 매장만
                 </button>
-                <button onClick={() => downloadExcel("all")} className="cursor-pointer" style={{ display: "block", width: "100%", padding: "10px 16px", border: "none", background: "#fff", fontSize: 13, fontWeight: 600, color: "#1e293b", textAlign: "left", cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+                <button onClick={() => downloadExcel("all")} style={{ display: "block", width: "100%", padding: "11px 16px", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", textAlign: "left", cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--bg-card)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                   📚 전체 매장 (시트별)
                 </button>
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* 범례 */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {Object.entries(statusMap).map(([k, v]) => (
-          <div key={k} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <div style={{ width: 14, height: 14, borderRadius: 4, background: v.bg, border: `1px solid ${v.color}30` }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: v.color }}>{v.label}</span>
+      <div style={{ padding: "20px 24px" }}>
+        {/* 매장 + 월 선택 */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>매장 선택</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {stores.map(s => (
+                <button key={s.id} onClick={() => setSelectedStore(s.id)} style={{
+                  padding: "8px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                  border: s.id === selectedStore ? "2px solid var(--navy)" : "1px solid var(--border)",
+                  background: s.id === selectedStore ? "var(--navy)" : "var(--white)",
+                  color: s.id === selectedStore ? "#fff" : "var(--text-secondary)",
+                }}>{s.name}</button>
+              ))}
+            </div>
           </div>
-        ))}
-        <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 8 }}>💡 셀 클릭으로 상태 선택</span>
-      </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>월 선택</div>
+            <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
+              style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, fontWeight: 600, outline: "none" }} />
+          </div>
+        </div>
 
-      {storeWorkers.length === 0 ? (
-        <div style={{ padding: 40, textAlign: "center", color: "#94a3b8", fontSize: 14 }}>배정된 근무자가 없습니다</div>
-      ) : (
-        <>
-          {/* PC: 근무자=행, 날짜=열 매트릭스 */}
-          <div className="hidden md:block" style={{ overflowX: "auto", borderRadius: 12, border: "1px solid #e2e8f0" }}>
-            <table style={{ borderCollapse: "collapse", minWidth: daysInMonth * 38 + 180 }}>
-              <thead>
-                {/* 날짜 행 */}
-                <tr style={{ background: "#f8fafc" }}>
-                  <th style={{ padding: "6px 10px", fontSize: 11, fontWeight: 700, color: "#64748b", textAlign: "left", position: "sticky", left: 0, background: "#f8fafc", zIndex: 3, borderRight: "2px solid #e2e8f0", minWidth: 100 }}>근무자</th>
-                  {dates.map(d => (
-                    <th key={d.date} style={{ padding: "4px 2px", textAlign: "center", minWidth: 36, borderLeft: "1px solid #f1f5f9", background: d.isToday ? "#1428A015" : d.isSpecial ? "#fefce8" : "#f8fafc" }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#1e293b" }}>{d.day}</div>
-                      <div style={{ fontSize: 9, fontWeight: 600, color: d.dayOfWeek === 0 ? "#dc2626" : d.dayOfWeek === 6 ? "#1428A0" : "#94a3b8" }}>{d.dayName}</div>
-                      {d.holidayName && <div style={{ fontSize: 7, fontWeight: 700, color: "#dc2626", lineHeight: 1.1 }}>{d.holidayName.length > 3 ? d.holidayName.slice(0, 3) : d.holidayName}</div>}
-                    </th>
-                  ))}
-                  <th style={{ padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#64748b", textAlign: "center", borderLeft: "2px solid #e2e8f0", minWidth: 60, background: "#f8fafc", position: "sticky", right: 0, zIndex: 3 }}>합계</th>
-                </tr>
-              </thead>
-              <tbody>
-                {storeWorkers.map((w, wi) => {
-                  const stats = getWorkerStats(w.id);
-                  return (
-                    <tr key={w.id} style={{ borderTop: "1px solid #f1f5f9", background: wi % 2 === 0 ? "#fff" : "#fafbfc" }}>
-                      <td style={{ padding: "8px 10px", fontSize: 13, fontWeight: 700, color: "#1e293b", position: "sticky", left: 0, background: wi % 2 === 0 ? "#fff" : "#fafbfc", zIndex: 2, borderRight: "2px solid #e2e8f0", whiteSpace: "nowrap" }}>{w.name}</td>
-                      {dates.map(d => {
-                        const rec = records.find(r => r.worker_id === w.id && r.date === d.date);
-                        const st = rec ? statusMap[rec.status] : null;
-                        const isEditing = editCell?.workerId === w.id && editCell?.date === d.date;
-                        return (
-                          <td key={d.date} style={{ padding: "3px 1px", textAlign: "center", borderLeft: "1px solid #f1f5f9", background: d.isToday ? "#1428A008" : d.isSpecial ? "#fefce804" : "", position: "relative" }}>
-                            {isEditing ? (
-                              <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", zIndex: 10, background: "#fff", borderRadius: 10, padding: 6, boxShadow: "0 4px 20px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: 2, minWidth: 70 }}>
-                                {Object.entries(statusMap).map(([k, v]) => (
-                                  <button key={k} onClick={() => setStatus(w.id, d.date, k)} className="cursor-pointer" style={{ padding: "4px 8px", borderRadius: 6, border: "none", background: v.bg, color: v.color, fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>{v.label}</button>
-                                ))}
-                                {rec && <button onClick={() => setStatus(w.id, d.date, "delete")} className="cursor-pointer" style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#94a3b8", fontSize: 11, fontWeight: 600 }}>삭제</button>}
-                                <button onClick={() => setEditCell(null)} className="cursor-pointer" style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#f1f5f9", color: "#94a3b8", fontSize: 10, fontWeight: 600 }}>취소</button>
+        {/* 범례 */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16, alignItems: "center" }}>
+          {Object.entries(statusMap).map(([k, v]) => (
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ width: 14, height: 14, borderRadius: 4, background: v.bg, border: `1px solid ${v.color}40` }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: v.color }}>{v.label}</span>
+            </div>
+          ))}
+          <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 4 }}>💡 셀 클릭으로 상태 선택</span>
+        </div>
+
+        {storeWorkers.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>배정된 근무자가 없습니다</div>
+        ) : (
+          <>
+            {/* PC: 매트릭스 테이블 */}
+            <div className="hidden md:block" style={{ overflowX: "auto", borderRadius: 12, border: "1px solid var(--border)" }}>
+              <table style={{ borderCollapse: "collapse", minWidth: daysInMonth * 38 + 180 }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-card)" }}>
+                    <th style={{ padding: "8px 12px", fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textAlign: "left", position: "sticky", left: 0, background: "var(--bg-card)", zIndex: 3, borderRight: "2px solid var(--border)", minWidth: 100, borderBottom: "1px solid var(--border)" }}>근무자</th>
+                    {dates.map(d => (
+                      <th key={d.date} style={{
+                        padding: "5px 2px", textAlign: "center", minWidth: 36,
+                        borderLeft: "1px solid var(--border-light)",
+                        borderBottom: "1px solid var(--border)",
+                        background: d.isToday ? "var(--navy)" : d.holidayName ? "#fef9e7" : d.isSpecial ? "#f9fafb" : "var(--bg-card)",
+                        color: d.isToday ? "#fff" : d.holidayName ? "var(--error)" : "var(--text-secondary)",
+                      }}>
+                        <div style={{ fontSize: 11, fontWeight: 700 }}>{d.day}</div>
+                        <div style={{ fontSize: 9, fontWeight: 600, color: d.isToday ? "rgba(255,255,255,0.7)" : d.dayOfWeek === 0 ? "var(--error)" : d.dayOfWeek === 6 ? "var(--navy)" : "var(--text-muted)" }}>{d.dayName}</div>
+                        {d.holidayName && <div style={{ fontSize: 7, fontWeight: 700, color: "var(--error)", lineHeight: 1.1 }}>{d.holidayName.slice(0, 3)}</div>}
+                      </th>
+                    ))}
+                    <th style={{ padding: "8px 8px", fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", textAlign: "center", borderLeft: "2px solid var(--border)", borderBottom: "1px solid var(--border)", minWidth: 60, background: "var(--bg-card)", position: "sticky", right: 0, zIndex: 3 }}>합계</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {storeWorkers.map((w, wi) => {
+                    const stats = getWorkerStats(w.id);
+                    const rowBg = wi % 2 === 0 ? "var(--white)" : "#fafbfc";
+                    return (
+                      <tr key={w.id} style={{ borderTop: "1px solid var(--border-light)", background: rowBg }}>
+                        <td style={{ padding: "8px 12px", fontSize: 13, fontWeight: 700, position: "sticky", left: 0, background: rowBg, zIndex: 2, borderRight: "2px solid var(--border)", whiteSpace: "nowrap" }}>{w.name}</td>
+                        {dates.map(d => {
+                          const rec = records.find(r => r.worker_id === w.id && r.date === d.date);
+                          const st = rec ? statusMap[rec.status] : null;
+                          const isEditing = editCell?.workerId === w.id && editCell?.date === d.date;
+                          return (
+                            <td key={d.date} style={{ padding: "3px 1px", textAlign: "center", borderLeft: "1px solid var(--border-light)", background: d.isToday ? "rgba(20,40,160,0.04)" : d.isSpecial ? "rgba(254,249,231,0.3)" : "", position: "relative" }}>
+                              {isEditing && (
+                                <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", zIndex: 10, background: "var(--white)", borderRadius: 10, padding: 6, boxShadow: "0 4px 20px rgba(0,0,0,0.15)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 2, minWidth: 70 }}>
+                                  {Object.entries(statusMap).map(([k, v]) => (
+                                    <button key={k} onClick={() => setStatus(w.id, d.date, k)} style={{ padding: "5px 8px", borderRadius: 6, border: "none", background: v.bg, color: v.color, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{v.label}</button>
+                                  ))}
+                                  {rec && <button onClick={() => setStatus(w.id, d.date, "delete")} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--white)", color: "var(--text-muted)", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>삭제</button>}
+                                  <button onClick={() => setEditCell(null)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "var(--bg-card)", color: "var(--text-muted)", fontSize: 10, fontWeight: 600, cursor: "pointer" }}>취소</button>
+                                </div>
+                              )}
+                              <div onClick={() => setEditCell(isEditing ? null : { workerId: w.id, date: d.date })} style={{ cursor: "pointer", padding: "3px 2px", borderRadius: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.1s" }}
+                                onMouseEnter={e => e.currentTarget.style.background = "rgba(20,40,160,0.06)"}
+                                onMouseLeave={e => e.currentTarget.style.background = ""}>
+                                {st ? (
+                                  <span style={{ display: "inline-block", width: 28, height: 20, lineHeight: "20px", borderRadius: 4, fontSize: 9, fontWeight: 700, background: st.bg, color: st.color }}>{st.label}</span>
+                                ) : (
+                                  <span style={{ fontSize: 10, color: "var(--border)" }}>·</span>
+                                )}
                               </div>
-                            ) : null}
-                            <div onClick={() => setEditCell(isEditing ? null : { workerId: w.id, date: d.date })} style={{ cursor: "pointer", padding: "4px 2px", borderRadius: 4, transition: "background 0.1s", minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "#e0e7ff"} onMouseLeave={e => e.currentTarget.style.background = ""}>
-                              {st ? (
-                                <span style={{ display: "inline-block", width: 28, height: 20, lineHeight: "20px", borderRadius: 4, fontSize: 9, fontWeight: 700, background: st.bg, color: st.color }}>{st.label}</span>
-                              ) : (
-                                <span style={{ fontSize: 10, color: "#e2e8f0" }}>·</span>
+                            </td>
+                          );
+                        })}
+                        <td style={{ padding: "5px 8px", textAlign: "center", borderLeft: "2px solid var(--border)", position: "sticky", right: 0, background: rowBg, zIndex: 2 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--success)" }}>{stats.present}<span style={{ color: "var(--text-muted)", fontWeight: 400 }}>출</span></div>
+                          {stats.late > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--warning)" }}>{stats.late}<span style={{ color: "var(--text-muted)", fontWeight: 400 }}>지</span></div>}
+                          {stats.absent > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--error)" }}>{stats.absent}<span style={{ color: "var(--text-muted)", fontWeight: 400 }}>결</span></div>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* 모바일: 근무자별 카드 */}
+            <div className="md:hidden space-y-3">
+              {storeWorkers.map(w => {
+                const stats = getWorkerStats(w.id);
+                return (
+                  <div key={w.id} style={{ background: "var(--white)", borderRadius: 12, border: "1px solid var(--border-light)", overflow: "hidden" }}>
+                    <div style={{ padding: "10px 14px", background: "var(--bg-card)", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border-light)" }}>
+                      <span style={{ fontSize: 14, fontWeight: 700 }}>{w.name}</span>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--success)" }}>{stats.present}출</span>
+                        {stats.late > 0 && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--warning)" }}>{stats.late}지</span>}
+                        {stats.absent > 0 && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--error)" }}>{stats.absent}결</span>}
+                      </div>
+                    </div>
+                    <div style={{ overflowX: "auto", padding: "8px 10px" }}>
+                      <div style={{ display: "flex", gap: 4, minWidth: daysInMonth * 36 }}>
+                        {dates.map(d => {
+                          const rec = records.find(r => r.worker_id === w.id && r.date === d.date);
+                          const st = rec ? statusMap[rec.status] : null;
+                          const isEditing = editCell?.workerId === w.id && editCell?.date === d.date;
+                          return (
+                            <div key={d.date} style={{ position: "relative", textAlign: "center", minWidth: 32 }}>
+                              <div style={{ fontSize: 9, fontWeight: 600, color: d.dayOfWeek === 0 ? "var(--error)" : d.dayOfWeek === 6 ? "var(--navy)" : "var(--text-muted)" }}>{d.day}{d.dayName}</div>
+                              <div onClick={() => setEditCell(isEditing ? null : { workerId: w.id, date: d.date })} style={{ cursor: "pointer", padding: "3px 2px", borderRadius: 4, background: st ? st.bg : d.isSpecial ? "#fefce8" : "var(--bg-card)", minHeight: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                {st ? <span style={{ fontSize: 8, fontWeight: 700, color: st.color }}>{st.label}</span> : <span style={{ fontSize: 8, color: "var(--border)" }}>·</span>}
+                              </div>
+                              {isEditing && (
+                                <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", zIndex: 10, background: "var(--white)", borderRadius: 8, padding: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 2, minWidth: 60 }}>
+                                  {Object.entries(statusMap).map(([k, v]) => (
+                                    <button key={k} onClick={() => setStatus(w.id, d.date, k)} style={{ padding: "3px 6px", borderRadius: 4, border: "none", background: v.bg, color: v.color, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>{v.label}</button>
+                                  ))}
+                                  {rec && <button onClick={() => setStatus(w.id, d.date, "delete")} style={{ padding: "3px 6px", borderRadius: 4, border: "1px solid var(--border)", background: "var(--white)", color: "var(--text-muted)", fontSize: 10, cursor: "pointer" }}>삭제</button>}
+                                </div>
                               )}
                             </div>
-                          </td>
-                        );
-                      })}
-                      <td style={{ padding: "6px 8px", textAlign: "center", borderLeft: "2px solid #e2e8f0", position: "sticky", right: 0, background: wi % 2 === 0 ? "#fff" : "#fafbfc", zIndex: 2 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#15803d" }}>{stats.present}<span style={{ color: "#94a3b8", fontWeight: 400 }}>출</span></div>
-                        {stats.late > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "#ea580c" }}>{stats.late}<span style={{ color: "#94a3b8", fontWeight: 400 }}>지</span></div>}
-                        {stats.absent > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "#dc2626" }}>{stats.absent}<span style={{ color: "#94a3b8", fontWeight: 400 }}>결</span></div>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* 모바일: 근무자별 가로 스크롤 카드 */}
-          <div className="md:hidden space-y-3">
-            {storeWorkers.map(w => {
-              const stats = getWorkerStats(w.id);
-              return (
-                <div key={w.id} style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", overflow: "hidden" }}>
-                  <div style={{ padding: "10px 14px", background: "#f8fafc", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e2e8f0" }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>{w.name}</span>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#15803d" }}>{stats.present}출</span>
-                      {stats.late > 0 && <span style={{ fontSize: 11, fontWeight: 700, color: "#ea580c" }}>{stats.late}지</span>}
-                      {stats.absent > 0 && <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626" }}>{stats.absent}결</span>}
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                  <div style={{ overflowX: "auto", padding: "8px 10px" }}>
-                    <div style={{ display: "flex", gap: 4, minWidth: daysInMonth * 36 }}>
-                      {dates.map(d => {
-                        const rec = records.find(r => r.worker_id === w.id && r.date === d.date);
-                        const st = rec ? statusMap[rec.status] : null;
-                        const isEditing = editCell?.workerId === w.id && editCell?.date === d.date;
-                        return (
-                          <div key={d.date} style={{ position: "relative", textAlign: "center", minWidth: 32 }}>
-                            <div style={{ fontSize: 9, fontWeight: 600, color: d.dayOfWeek === 0 ? "#dc2626" : d.dayOfWeek === 6 ? "#1428A0" : "#94a3b8" }}>{d.day}{d.dayName}</div>
-                            <div onClick={() => setEditCell(isEditing ? null : { workerId: w.id, date: d.date })} style={{ cursor: "pointer", padding: "3px 2px", borderRadius: 4, background: st ? st.bg : d.isSpecial ? "#fefce8" : "#f8fafc", minHeight: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              {st ? <span style={{ fontSize: 8, fontWeight: 700, color: st.color }}>{st.label}</span> : <span style={{ fontSize: 8, color: "#e2e8f0" }}>·</span>}
-                            </div>
-                            {isEditing && (
-                              <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", zIndex: 10, background: "#fff", borderRadius: 8, padding: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: 2, minWidth: 60 }}>
-                                {Object.entries(statusMap).map(([k, v]) => (
-                                  <button key={k} onClick={() => setStatus(w.id, d.date, k)} className="cursor-pointer" style={{ padding: "3px 6px", borderRadius: 4, border: "none", background: v.bg, color: v.color, fontSize: 10, fontWeight: 700 }}>{v.label}</button>
-                                ))}
-                                {rec && <button onClick={() => setStatus(w.id, d.date, "delete")} className="cursor-pointer" style={{ padding: "3px 6px", borderRadius: 4, border: "1px solid #e2e8f0", background: "#fff", color: "#94a3b8", fontSize: 10 }}>삭제</button>}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
+// ─────────────────────────────────────────────
+// Main Page
+// ─────────────────────────────────────────────
 export default function WorkersPage() {
   const [tab, setTab] = useState("roster");
   const [workers, setWorkers] = useState([]);
+  const [stores, setStores] = useState([]);
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [formData, setFormData] = useState({ name: "", phone: "", region_id: "", district: "" });
   const [regions, setRegions] = useState([]);
   const [message, setMessage] = useState("");
 
-  // 시/도별 구/시 목록
   const districtMap: Record<string, string[]> = {
     "서울": ["강남구","강동구","강북구","강서구","관악구","광진구","구로구","금천구","노원구","도봉구","동대문구","동작구","마포구","서대문구","서초구","성동구","성북구","송파구","양천구","영등포구","용산구","은평구","종로구","중구","중랑구"],
     "경기": ["가평군","고양시","과천시","광명시","광주시","구리시","군포시","김포시","남양주시","동두천시","부천시","성남시","수원시","시흥시","안산시","안성시","안양시","양주시","양평군","여주시","연천군","오산시","용인시","의왕시","의정부시","이천시","파주시","평택시","포천시","하남시","화성시"],
@@ -361,24 +472,28 @@ export default function WorkersPage() {
     "제주": ["서귀포시","제주시"],
   };
 
-  // 선택된 region 이름 가져오기
   const selectedRegionName = regions.find(r => r.id === formData.region_id)?.name || "";
   const districts = districtMap[selectedRegionName] || [];
 
-  useEffect(() => { loadWorkers(); loadRegions(); }, []);
+  useEffect(() => { loadAll(); }, []);
 
-  const loadWorkers = async () => {
+  const loadAll = async () => {
     const supabase = createClient();
     const oid = await getOrgId();
     if (!oid) return;
-    const { data } = await supabase.from("workers").select("*, regions(name)").eq("org_id", oid).order("name");
-    if (data) setWorkers(data);
+
+    const [{ data: wData }, { data: sData }, { data: aData }, { data: rData }] = await Promise.all([
+      supabase.from("workers").select("*, regions(name)").eq("org_id", oid).order("name"),
+      supabase.from("stores").select("id, name").eq("org_id", oid).order("name"),
+      supabase.from("worker_attendance").select("*").eq("org_id", oid).eq("date", new Date().toISOString().slice(0, 10)),
+      supabase.from("regions").select("*").order("name"),
+    ]);
+    if (wData) setWorkers(wData);
+    if (sData) setStores(sData);
+    if (aData) setAttendanceRecords(aData);
+    if (rData) setRegions(rData);
   };
-  const loadRegions = async () => {
-    const supabase = createClient();
-    const { data } = await supabase.from("regions").select("*").order("name");
-    if (data) setRegions(data);
-  };
+
   const handleSave = async () => {
     if (!formData.name) { setMessage("이름을 입력하세요"); return; }
     const supabase = createClient();
@@ -390,12 +505,13 @@ export default function WorkersPage() {
       const { error } = await supabase.from("workers").insert({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, status: "active", org_id: oid });
       if (error) { setMessage(`추가 실패: ${error.message}`); return; }
     }
-    setShowForm(false); setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "" }); setMessage(""); loadWorkers();
+    setShowForm(false); setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "" }); setMessage(""); loadAll();
   };
+
   const toggleStatus = async (worker) => {
     const supabase = createClient();
     await supabase.from("workers").update({ status: worker.status === "active" ? "inactive" : "active" }).eq("id", worker.id);
-    loadWorkers();
+    loadAll();
   };
 
   const activeWorkers = workers.filter(w => w.status === "active");
@@ -403,132 +519,196 @@ export default function WorkersPage() {
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto">
-        {/* 탭 - v3 */}
+
+        {/* ── 오늘의 근무자 요약 ── */}
+        <TodaySummarySection stores={stores} workers={workers} attendanceRecords={attendanceRecords} />
+
+        {/* ── 6탭 ── */}
         <div className="v3-period-tabs overflow-x-auto mb-6" style={{ display: "flex", gap: 4, padding: 4, flexWrap: "nowrap" }}>
           {tabs.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} className={`v3-period-tab cursor-pointer whitespace-nowrap${tab === t.id ? " active" : ""}`}
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`v3-period-tab cursor-pointer whitespace-nowrap${tab === t.id ? " active" : ""}`}
               style={{ flexShrink: 0 }}>{t.label}</button>
           ))}
         </div>
 
-        {/* 출퇴근 */}
+        {/* ── 출퇴근 탭 ── */}
         {tab === "attendance" && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)" }}>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3">
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>오늘의 출퇴근 현황</div>
-              <div className="flex gap-2">
-                <span style={{ padding: "4px 12px", borderRadius: 8, background: "#dcfce7", color: "#15803d", fontSize: 13, fontWeight: 700 }}>출근 {activeWorkers.length}명</span>
-                <span style={{ padding: "4px 12px", borderRadius: 8, background: "#fee2e2", color: "#b91c1c", fontSize: 13, fontWeight: 700 }}>미출근 0명</span>
+          <div style={{ background: "var(--white)", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderBottom: "1px solid var(--border-light)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 700 }}>
+                <span>🕐</span> 오늘의 출퇴근 현황
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <span style={{ padding: "5px 12px", borderRadius: 8, background: "var(--success-bg)", color: "var(--success)", fontSize: 13, fontWeight: 700 }}>출근 {activeWorkers.length}명</span>
+                <span style={{ padding: "5px 12px", borderRadius: 8, background: "var(--error-bg)", color: "var(--error)", fontSize: 13, fontWeight: 700 }}>미출근 0명</span>
               </div>
             </div>
-
-            {/* PC: 테이블 */}
-            <div className="hidden md:block">
-              <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 4px" }}>
-                <thead><tr>{["이름", "지역", "연락처", "상태"].map(h => (<th key={h} style={{ padding: "10px 16px", fontSize: 13, fontWeight: 700, color: "#94a3b8", textAlign: "left", borderBottom: "2px solid #e2e8f0" }}>{h}</th>))}</tr></thead>
-                <tbody>{activeWorkers.map((w, i) => (
-                  <tr key={w.id} style={{ background: i % 2 === 0 ? "#f8fafc" : "#fff" }}>
-                    <td style={{ padding: "12px 16px", fontSize: 14, fontWeight: 600, color: "#1e293b" }}>{w.name}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "-"}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{w.phone || "-"}</td>
-                    <td style={{ padding: "12px 16px" }}><span style={{ padding: "3px 10px", borderRadius: 6, background: "#dcfce7", color: "#15803d", fontSize: 12, fontWeight: 600 }}>활성</span></td>
-                  </tr>))}</tbody>
-              </table>
-            </div>
-
-            {/* 모바일: 카드형 */}
-            <div className="md:hidden space-y-2">
-              {activeWorkers.map(w => (
-                <div key={w.id} style={{ background: "#f8fafc", borderRadius: 12, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>{w.name}</div>
-                    <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "-"} · {w.phone || "-"}</div>
+            <div style={{ padding: "16px 24px" }}>
+              {/* PC 테이블 */}
+              <div className="hidden md:block">
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      {["이름", "지역", "연락처", "상태"].map(h => (
+                        <th key={h} style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textAlign: "left", background: "var(--bg-card)", borderBottom: "1px solid var(--border-light)" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeWorkers.map(w => (
+                      <tr key={w.id}>
+                        <td style={{ padding: "12px 14px", fontSize: 14, fontWeight: 600 }}>{w.name}</td>
+                        <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "-"}</td>
+                        <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{w.phone || "-"}</td>
+                        <td style={{ padding: "12px 14px" }}><span style={{ padding: "4px 12px", borderRadius: 6, background: "var(--success-bg)", color: "var(--success)", fontSize: 12, fontWeight: 600 }}>활성</span></td>
+                      </tr>
+                    ))}
+                    {activeWorkers.length === 0 && (
+                      <tr><td colSpan={4} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)", fontSize: 14 }}>등록된 근무자가 없습니다</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {/* 모바일 카드 */}
+              <div className="md:hidden space-y-2">
+                {activeWorkers.map(w => (
+                  <div key={w.id} style={{ background: "var(--bg-card)", borderRadius: 12, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{w.name}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "-"} · {w.phone || "-"}</div>
+                    </div>
+                    <span style={{ padding: "4px 10px", borderRadius: 6, background: "var(--success-bg)", color: "var(--success)", fontSize: 12, fontWeight: 600 }}>활성</span>
                   </div>
-                  <span style={{ padding: "3px 10px", borderRadius: 6, background: "#dcfce7", color: "#15803d", fontSize: 12, fontWeight: 600 }}>활성</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-
-            {activeWorkers.length === 0 && <div className="text-center py-10" style={{ color: "#94a3b8", fontSize: 14 }}>등록된 근무자가 없습니다</div>}
           </div>
         )}
 
-        {/* 명부 */}
+        {/* ── 명부 탭 ── */}
         {tab === "roster" && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)" }}>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3">
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>근무자 명부 ({workers.length}명)</div>
-              <button onClick={() => { setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "" }); setShowForm(true); }} className="cursor-pointer" style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: "#1428A0", color: "#fff", fontSize: 14, fontWeight: 700 }}>+ 근무자 추가</button>
+          <div style={{ background: "var(--white)", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderBottom: "1px solid var(--border-light)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 700 }}>
+                <span>📋</span> 근무자 명부 <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-muted)" }}>({workers.length}명)</span>
+              </div>
+              <button onClick={() => { setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "" }); setShowForm(true); }}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+                + 근무자 추가
+              </button>
             </div>
+
             {showForm && (
-              <div style={{ background: "#f8fafc", borderRadius: 14, padding: 24, marginBottom: 20, border: "1px solid #e2e8f0" }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>{editItem ? "근무자 수정" : "근무자 추가"}</div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>이름 *</label><input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="이름" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
-                  <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>연락처</label><input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="010-0000-0000" className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} /></div>
-                  <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>시/도</label><select value={formData.region_id} onChange={e => setFormData({ ...formData, region_id: e.target.value, district: "" })} className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }}><option value="">선택</option>{regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
-                  <div><label className="block mb-1" style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>구/시</label><select value={formData.district} onChange={e => setFormData({ ...formData, district: e.target.value })} className="w-full" style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }} disabled={districts.length === 0}><option value="">선택</option>{districts.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
+              <div style={{ margin: "0 24px 0 24px", marginTop: 20, background: "var(--bg-card)", borderRadius: 14, padding: 24, border: "1px solid var(--border-light)" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>{editItem ? "근무자 수정" : "근무자 추가"}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>이름 *</div>
+                    <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="홍길동" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>연락처</div>
+                    <input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="010-0000-0000" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>시/도</div>
+                    <select value={formData.region_id} onChange={e => setFormData({ ...formData, region_id: e.target.value, district: "" })} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" }}>
+                      <option value="">선택</option>
+                      {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>구/시</div>
+                    <select value={formData.district} onChange={e => setFormData({ ...formData, district: e.target.value })} disabled={districts.length === 0} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", background: districts.length === 0 ? "var(--bg-card)" : "var(--white)", boxSizing: "border-box" }}>
+                      <option value="">선택</option>
+                      {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
                 </div>
-                {message && <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 8 }}>{message}</p>}
-                <div className="flex gap-2">
-                  <button onClick={handleSave} className="cursor-pointer" style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 14, fontWeight: 700 }}>{editItem ? "수정" : "추가"}</button>
-                  <button onClick={() => { setShowForm(false); setMessage(""); }} className="cursor-pointer" style={{ padding: "10px 24px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: 14, fontWeight: 600 }}>취소</button>
+                {message && <p style={{ color: "var(--error)", fontSize: 13, marginBottom: 10 }}>{message}</p>}
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={handleSave} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{editItem ? "수정" : "추가"}</button>
+                  <button onClick={() => { setShowForm(false); setMessage(""); }} style={{ padding: "10px 24px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--white)", color: "var(--text-secondary)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>취소</button>
                 </div>
               </div>
             )}
 
-            {/* PC: 테이블 */}
-            <div className="hidden md:block">
-              <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 4px" }}>
-                <thead><tr>{["이름", "지역", "연락처", "상태", "관리"].map(h => (<th key={h} style={{ padding: "10px 16px", fontSize: 13, fontWeight: 700, color: "#94a3b8", textAlign: "left", borderBottom: "2px solid #e2e8f0" }}>{h}</th>))}</tr></thead>
-                <tbody>{workers.map((w, i) => (
-                  <tr key={w.id} style={{ background: i % 2 === 0 ? "#f8fafc" : "#fff" }}>
-                    <td style={{ padding: "12px 16px", fontSize: 14, fontWeight: 600, color: "#1e293b" }}>{w.name}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "-"}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{w.phone || "-"}</td>
-                    <td style={{ padding: "12px 16px" }}><span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: w.status === "active" ? "#dcfce7" : "#fee2e2", color: w.status === "active" ? "#15803d" : "#b91c1c" }}>{w.status === "active" ? "활성" : "비활성"}</span></td>
-                    <td style={{ padding: "12px 16px" }}><div className="flex gap-2">
-                      <button onClick={() => { setEditItem(w); setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "" }); setShowForm(true); }} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569" }}>수정</button>
-                      <button onClick={() => toggleStatus(w)} className="cursor-pointer" style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, background: w.status === "active" ? "#fee2e2" : "#dcfce7", color: w.status === "active" ? "#b91c1c" : "#15803d" }}>{w.status === "active" ? "비활성" : "활성화"}</button>
-                    </div></td>
-                  </tr>))}</tbody>
-              </table>
-            </div>
-
-            {/* 모바일: 카드형 */}
-            <div className="md:hidden space-y-2">
-              {workers.map(w => (
-                <div key={w.id} style={{ background: "#f8fafc", borderRadius: 12, padding: "14px", border: "1px solid #e2e8f0" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: "#1e293b" }}>{w.name}</span>
-                      <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: w.status === "active" ? "#dcfce7" : "#fee2e2", color: w.status === "active" ? "#15803d" : "#b91c1c" }}>{w.status === "active" ? "활성" : "비활성"}</span>
+            <div style={{ padding: "16px 24px" }}>
+              {/* PC 테이블 */}
+              <div className="hidden md:block">
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      {["이름", "지역", "연락처", "상태", "관리"].map(h => (
+                        <th key={h} style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textAlign: "left", background: "var(--bg-card)", borderBottom: "1px solid var(--border-light)" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {workers.map(w => (
+                      <tr key={w.id} style={{ borderBottom: "1px solid var(--border-light)" }}>
+                        <td style={{ padding: "12px 14px", fontSize: 14, fontWeight: 600 }}>{w.name}</td>
+                        <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "-"}</td>
+                        <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{w.phone || "-"}</td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <span style={{ padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: w.status === "active" ? "var(--success-bg)" : "var(--error-bg)", color: w.status === "active" ? "var(--success)" : "var(--error)" }}>
+                            {w.status === "active" ? "활성" : "비활성"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button onClick={() => { setEditItem(w); setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "" }); setShowForm(true); }}
+                              style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--white)", fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", cursor: "pointer" }}>수정</button>
+                            <button onClick={() => toggleStatus(w)}
+                              style={{ padding: "5px 12px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", background: w.status === "active" ? "var(--error-bg)" : "var(--success-bg)", color: w.status === "active" ? "var(--error)" : "var(--success)" }}>
+                              {w.status === "active" ? "비활성" : "활성화"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {workers.length === 0 && (
+                      <tr><td colSpan={5} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)", fontSize: 14 }}>등록된 근무자가 없습니다</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {/* 모바일 카드 */}
+              <div className="md:hidden space-y-2">
+                {workers.map(w => (
+                  <div key={w.id} style={{ background: "var(--bg-card)", borderRadius: 12, padding: 14, border: "1px solid var(--border-light)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 15, fontWeight: 700 }}>{w.name}</span>
+                        <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: w.status === "active" ? "var(--success-bg)" : "var(--error-bg)", color: w.status === "active" ? "var(--success)" : "var(--error)" }}>
+                          {w.status === "active" ? "활성" : "비활성"}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 10 }}>
+                      {[w.regions?.name, w.district].filter(Boolean).join(" ") || "지역 없음"} · {w.phone || "연락처 없음"}
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => { setEditItem(w); setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "" }); setShowForm(true); }}
+                        style={{ flex: 1, padding: 8, borderRadius: 8, border: "1px solid var(--border)", background: "var(--white)", fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", cursor: "pointer" }}>수정</button>
+                      <button onClick={() => toggleStatus(w)}
+                        style={{ flex: 1, padding: 8, borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", background: w.status === "active" ? "var(--error-bg)" : "var(--success-bg)", color: w.status === "active" ? "var(--error)" : "var(--success)" }}>
+                        {w.status === "active" ? "비활성" : "활성화"}
+                      </button>
                     </div>
                   </div>
-                  <div style={{ fontSize: 13, color: "#475569", marginBottom: 10 }}>
-                    {[w.regions?.name, w.district].filter(Boolean).join(" ") || "지역 없음"} · {w.phone || "연락처 없음"}
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => { setEditItem(w); setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "" }); setShowForm(true); }} className="cursor-pointer" style={{ flex: 1, padding: "8px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569", textAlign: "center" }}>수정</button>
-                    <button onClick={() => toggleStatus(w)} className="cursor-pointer" style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, textAlign: "center", background: w.status === "active" ? "#fee2e2" : "#dcfce7", color: w.status === "active" ? "#b91c1c" : "#15803d" }}>{w.status === "active" ? "비활성" : "활성화"}</button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         )}
 
+        {/* ── 나머지 탭 ── */}
         {tab === "schedule" && <ScheduleTab />}
         {tab === "leave" && <LeaveTab />}
         {tab === "review" && <ReviewTab />}
         {tab === "report" && <ReportTab />}
-        {!["attendance", "roster", "schedule", "leave", "review", "report"].includes(tab) && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: 64, border: "1px solid #e2e8f0", textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>🚧</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>{tabs.find(t => t.id === tab)?.label} 관리</div>
-            <div style={{ fontSize: 14, color: "#94a3b8" }}>개발 예정입니다</div>
-          </div>
-        )}
       </div>
     </AppLayout>
   );
