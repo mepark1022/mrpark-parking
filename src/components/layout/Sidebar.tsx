@@ -16,13 +16,16 @@ const defaultMenuItems = [
   )},
   { id: "parking-status", href: "/parking-status", label: "입차 현황", icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="7" rx="2"/><path d="M5 11l2-5h10l2 5"/><circle cx="7.5" cy="15.5" r="1.5"/><circle cx="16.5" cy="15.5" r="1.5"/></svg>
-  )},
+  ), badge: true },
   { id: "monthly", href: "/monthly", label: "월주차 관리", icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/><circle cx="12" cy="15" r="1"/></svg>
   )},
   { id: "analytics", href: "/analytics", label: "매출 분석", icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
   )},
+];
+
+const managementMenuItems = [
   { id: "workers", href: "/workers", label: "근무자 관리", icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
   )},
@@ -40,37 +43,37 @@ const defaultMenuItems = [
   )},
 ];
 
+const allMenuItems = [...defaultMenuItems, ...managementMenuItems];
+
 export default function Sidebar() {
   const pathname = usePathname();
   const supabase = createClient();
-  const [menuItems, setMenuItems] = useState(defaultMenuItems);
+  const [menuItems, setMenuItems] = useState(allMenuItems);
   const [editMode, setEditMode] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
   const [userName, setUserName] = useState("사용자");
-  const [userRole, setUserRole] = useState("관리자");
+  const [userEmail, setUserEmail] = useState("");
+  const [userRole, setUserRole] = useState("admin");
   const saveTimer = useRef<any>(null);
 
-  useEffect(() => {
-    loadMenuOrder();
-  }, []);
+  useEffect(() => { loadMenuOrder(); }, []);
 
   async function loadMenuOrder() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    if (user.email) setUserEmail(user.email);
     const { data: profile } = await supabase.from("profiles").select("menu_order, name, role").eq("id", user.id).single();
     if (profile) {
       if (profile.name) setUserName(profile.name);
-      if (profile.role) setUserRole(profile.role === "admin" ? "관리자" : profile.role === "crew" ? "CREW" : profile.role);
+      if (profile.role) setUserRole(profile.role);
       if (profile.menu_order && Array.isArray(profile.menu_order)) {
-        // 저장된 순서로 메뉴 재배열
         const ordered = [];
         for (const id of profile.menu_order) {
-          const item = defaultMenuItems.find((m) => m.id === id);
+          const item = allMenuItems.find((m) => m.id === id);
           if (item) ordered.push(item);
         }
-        // 새로 추가된 메뉴가 있으면 뒤에 추가
-        for (const item of defaultMenuItems) {
+        for (const item of allMenuItems) {
           if (!ordered.find((o) => o.id === item.id)) ordered.push(item);
         }
         setMenuItems(ordered);
@@ -78,78 +81,51 @@ export default function Sidebar() {
     }
   }
 
-  async function saveMenuOrder(items: typeof defaultMenuItems) {
+  async function saveMenuOrder(items: typeof allMenuItems) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const order = items.map((m) => m.id);
-    await supabase.from("profiles").update({ menu_order: order }).eq("id", user.id);
+    await supabase.from("profiles").update({ menu_order: items.map((m) => m.id) }).eq("id", user.id);
   }
 
-  function handleDragStart(idx: number) {
-    setDragIdx(idx);
-  }
-
-  function handleDragOver(e: React.DragEvent, idx: number) {
-    e.preventDefault();
-    setOverIdx(idx);
-  }
-
+  function handleDragStart(idx: number) { setDragIdx(idx); }
+  function handleDragOver(e: React.DragEvent, idx: number) { e.preventDefault(); setOverIdx(idx); }
   function handleDrop(idx: number) {
-    if (dragIdx === null || dragIdx === idx) {
-      setDragIdx(null);
-      setOverIdx(null);
-      return;
-    }
+    if (dragIdx === null || dragIdx === idx) { setDragIdx(null); setOverIdx(null); return; }
     const newItems = [...menuItems];
     const [moved] = newItems.splice(dragIdx, 1);
     newItems.splice(idx, 0, moved);
     setMenuItems(newItems);
-    setDragIdx(null);
-    setOverIdx(null);
-    // 디바운스 저장 (300ms)
+    setDragIdx(null); setOverIdx(null);
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => saveMenuOrder(newItems), 300);
   }
+  function handleDragEnd() { setDragIdx(null); setOverIdx(null); }
+  function resetOrder() { setMenuItems(allMenuItems); saveMenuOrder(allMenuItems); }
 
-  function handleDragEnd() {
-    setDragIdx(null);
-    setOverIdx(null);
-  }
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  const roleLabel = userRole === "admin" ? "Admin" : userRole === "crew" ? "CREW" : userRole;
 
-  function resetOrder() {
-    setMenuItems(defaultMenuItems);
-    saveMenuOrder(defaultMenuItems);
-  }
+  // Split items: first 5 are main, rest are management
+  const mainItems = menuItems.filter((m) => defaultMenuItems.some((d) => d.id === m.id));
+  const mgmtItems = menuItems.filter((m) => managementMenuItems.some((d) => d.id === m.id));
+  const allOrdered = editMode ? menuItems : [...mainItems, null, ...mgmtItems]; // null = divider
 
   return (
-    <aside
-      className="w-60 h-screen flex flex-col fixed top-0 left-0 z-50"
-      style={{ background: "linear-gradient(180deg, #020617 0%, #0a1352 30%, #0f1d6b 70%, #162050 100%)" }}
-    >
-      {/* Decorative glow */}
-      <div
-        className="absolute pointer-events-none"
-        style={{
-          top: -60, left: -60, width: 200, height: 200, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(245,183,49,0.08) 0%, transparent 70%)",
-        }}
-      />
-
+    <aside className="v3-sidebar">
       {/* Logo */}
-      <div className="p-6 pb-5">
+      <div style={{ padding: "24px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <LogoGNB theme="dark" />
       </div>
 
-      {/* Menu Label + Edit Toggle */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 24px 6px" }}>
-        <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.5)", letterSpacing: "0.08em", textTransform: "uppercase" }}>메뉴</span>
+      {/* Edit Toggle */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px 4px" }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.45)", letterSpacing: "0.08em", textTransform: "uppercase" }}>메뉴</span>
         <button
           onClick={() => setEditMode(!editMode)}
           style={{
             fontSize: 10, fontWeight: 700, border: "none", cursor: "pointer", borderRadius: 4, padding: "3px 10px",
             background: editMode ? "#fff" : "#F5B731",
             color: editMode ? "#1428A0" : "#0a1352",
-            transition: "all 0.15s",
           }}
         >
           {editMode ? "완료" : "순서편집"}
@@ -157,107 +133,81 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 space-y-0.5" style={{ overflowY: "auto" }}>
-        {menuItems.map((item, idx) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-          const isDragging = dragIdx === idx;
-          const isOver = overIdx === idx && dragIdx !== idx;
-
-          return (
+      <nav style={{ flex: 1, padding: "8px 14px", overflowY: "auto" }}>
+        {editMode ? (
+          // Edit mode: flat list with drag
+          menuItems.map((item, idx) => (
             <div
               key={item.id}
-              draggable={editMode}
+              draggable
               onDragStart={() => handleDragStart(idx)}
               onDragOver={(e) => handleDragOver(e, idx)}
               onDrop={() => handleDrop(idx)}
               onDragEnd={handleDragEnd}
               style={{
-                opacity: isDragging ? 0.4 : 1,
-                borderTop: isOver ? "2px solid #F5B731" : "2px solid transparent",
-                transition: "border 0.1s, opacity 0.1s",
-                cursor: editMode ? "grab" : undefined,
+                opacity: dragIdx === idx ? 0.4 : 1,
+                borderTop: overIdx === idx && dragIdx !== idx ? "2px solid #F5B731" : "2px solid transparent",
               }}
             >
-              <Link
-                href={editMode ? "#" : item.href}
-                onClick={(e) => editMode && e.preventDefault()}
-                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-150 relative"
-                style={{
-                  background: isActive && !editMode ? "rgba(255,255,255,0.15)" : undefined,
-                  color: "#fff",
-                  fontWeight: isActive ? 700 : 600,
-                  fontSize: 15,
-                }}
-              >
-                {/* 편집 모드: 드래그 핸들 */}
-                {editMode && (
-                  <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 14, marginRight: -4, cursor: "grab" }}>☰</span>
-                )}
-                {isActive && !editMode && (
-                  <div
-                    className="absolute left-0 top-1/2 -translate-y-1/2"
-                    style={{ width: 3, height: 20, borderRadius: "0 3px 3px 0", background: "#F5B731" }}
-                  />
-                )}
-                <span style={{ display: "flex", alignItems: "center" }}>{item.icon}</span>
+              <div className="v3-nav-item" style={{ cursor: "grab" }}>
+                <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 14, marginRight: -4 }}>☰</span>
+                <span style={{ display: "flex", alignItems: "center", width: 22 }}>{item.icon}</span>
                 <span>{item.label}</span>
-                {item.badge && !editMode && (
-                  <span
-                    className="ml-auto flex items-center justify-center"
-                    style={{
-                      width: 18, height: 18, borderRadius: 9,
-                      background: "#dc2626", color: "#fff",
-                      fontSize: 10, fontWeight: 700,
-                    }}
-                  >2</span>
+              </div>
+            </div>
+          ))
+        ) : (
+          // Normal mode: grouped with divider
+          <>
+            {mainItems.map((item) => (
+              <Link key={item.id} href={item.href} className={`v3-nav-item ${isActive(item.href) ? "active" : ""}`}>
+                <span style={{ display: "flex", alignItems: "center", width: 22 }}>{item.icon}</span>
+                <span>{item.label}</span>
+                {item.badge && <span className="v3-nav-badge">12</span>}
+              </Link>
+            ))}
+
+            <div className="v3-nav-divider" />
+            <div className="v3-nav-section-title">관리</div>
+
+            {mgmtItems.map((item) => (
+              <Link key={item.id} href={item.href} className={`v3-nav-item ${isActive(item.href) ? "active" : ""}`}>
+                <span style={{ display: "flex", alignItems: "center", width: 22 }}>{item.icon}</span>
+                <span>{item.label}</span>
+                {item.badge && (
+                  <span style={{ marginLeft: "auto", width: 18, height: 18, borderRadius: 9, background: "#dc2626", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>2</span>
                 )}
               </Link>
-            </div>
-          );
-        })}
+            ))}
+          </>
+        )}
 
-        {/* 편집 모드: 초기화 버튼 */}
         {editMode && (
-          <button
-            onClick={resetOrder}
-            style={{
-              width: "100%", marginTop: 8, padding: "8px 0", borderRadius: 10,
-              background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
-              color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600, cursor: "pointer",
-            }}
-          >
+          <button onClick={resetOrder} style={{ width: "100%", marginTop: 8, padding: "8px 0", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
             기본 순서로 초기화
           </button>
         )}
       </nav>
 
-      {/* 기능안내 버튼 */}
-      <div className="px-3 py-3">
-        <Link
-          href="/guide"
-          className="flex items-center gap-2.5 px-4 py-3 rounded-xl transition-all duration-150"
-          style={{
-            background: "linear-gradient(135deg, rgba(245,183,49,0.15) 0%, rgba(245,183,49,0.05) 100%)",
-            border: "1px solid rgba(245,183,49,0.25)",
-          }}
-        >
+      {/* Guide Button */}
+      <div style={{ padding: "0 14px 8px" }}>
+        <Link href="/guide" className={`v3-nav-item v3-nav-highlight ${isActive("/guide") ? "active" : ""}`}>
           <span style={{ background: "#F5B731", width: 24, height: 24, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#0a1352", flexShrink: 0 }}>?</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#F5B731" }}>ME.PARK 2.0 기능안내</span>
+          <span style={{ fontSize: 13, fontWeight: 700 }}>ME.PARK 2.0 기능안내</span>
         </Link>
       </div>
 
-      {/* User */}
-      <div className="p-4 flex items-center gap-3" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-        <div
-          className="flex items-center justify-center"
-          style={{
-            width: 36, height: 36, borderRadius: 10,
-            background: "#F5B731", fontSize: 15, fontWeight: 800, color: "#0a1352",
-          }}
-        >{userName.charAt(0)}</div>
-        <div className="flex-1">
-          <div className="text-sm font-bold text-white">{userName}</div>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>{userRole}</div>
+      {/* User Footer */}
+      <div style={{ padding: "12px 14px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px", borderRadius: 12, background: "rgba(255,255,255,0.05)" }}>
+          <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#F5B731", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: "#1a237e", fontSize: 18, flexShrink: 0 }}>
+            {userName.charAt(0)}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 2 }}>{userName}</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail}</div>
+            <span style={{ display: "inline-flex", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "rgba(245,183,49,0.2)", color: "#F5B731" }}>{roleLabel}</span>
+          </div>
         </div>
       </div>
     </aside>

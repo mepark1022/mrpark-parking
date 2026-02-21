@@ -1,16 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "ME.PARK 2.0 | VALETMAN 주차운영 시스템",
@@ -25,11 +14,14 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;800;900&family=Sora:wght@800&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;800;900&family=Noto+Sans+KR:wght@400;500;600;700;800&family=Sora:wght@800&display=swap"
+          rel="stylesheet"
+        />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         {children}
       </body>
     </html>
