@@ -1,795 +1,983 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  BarChart, Bar, LineChart, Line,
-  XAxis, YAxis, Tooltip, Legend,
-  ResponsiveContainer, CartesianGrid, ComposedChart,
-} from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
-// ─── 타입 ───────────────────────────────────────────────────────────────────
-
-type PeriodKey = "today" | "week" | "month" | "custom" | "all";
+// ────────────────────────────────────────────────────────────
+// Types
+// ────────────────────────────────────────────────────────────
+type PeriodType = "today" | "week" | "month" | "quarter" | "custom";
 
 interface Store {
   id: string;
   name: string;
 }
 
-interface DailyRecord {
-  id: string;
-  store_id: string;
-  date: string;
-  total_vehicles?: number;
-  valet_revenue?: number;
-  parking_revenue?: number;
-  worker_count?: number;
-  day_type?: string;
-}
-
-interface KPI {
-  totalRevenue: number;
-  valetRevenue: number;
-  parkingRevenue: number;
-  totalVehicles: number;
-  prevTotalRevenue: number;
-  prevTotalVehicles: number;
-}
-
-interface StoreStats {
-  storeId: string;
-  storeName: string;
-  totalRevenue: number;
-  valetRevenue: number;
-  parkingRevenue: number;
-  totalVehicles: number;
-  days: number;
-}
-
-interface ChartPoint {
+interface DailySummary {
   date: string;
   label: string;
-  발렛: number;
-  주차: number;
-  입차: number;
+  valetRevenue: number;
+  parkingRevenue: number;
+  totalRevenue: number;
+  totalCars: number;
+  valetCount: number;
 }
 
-// ─── 유틸 ───────────────────────────────────────────────────────────────────
-
-function formatKRW(n: number): string {
-  if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
-  if (n >= 10_000) return `${Math.round(n / 10_000).toLocaleString()}만`;
-  return `₩${n.toLocaleString()}`;
+interface StoreSummary {
+  id: string;
+  name: string;
+  totalRevenue: number;
+  valetRevenue: number;
+  parkingRevenue: number;
+  totalCars: number;
+  valetCount: number;
+  avgPerCar: number;
 }
 
-function formatDate(d: Date): string {
-  return d.toISOString().split("T")[0];
+interface KpiData {
+  totalRevenue: number;
+  valetRevenue: number;
+  parkingRevenue: number;
+  totalCars: number;
+  valetCount: number;
+  avgPerCar: number;
+  prevTotalRevenue: number;
+  prevTotalCars: number;
 }
 
-function addDays(d: Date, n: number): Date {
-  const r = new Date(d);
-  r.setDate(r.getDate() + n);
-  return r;
-}
+// ────────────────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────────────────
+const PERIOD_OPTIONS: { key: PeriodType; label: string }[] = [
+  { key: "today", label: "오늘" },
+  { key: "week", label: "이번주" },
+  { key: "month", label: "이번달" },
+  { key: "quarter", label: "3개월" },
+  { key: "custom", label: "직접설정" },
+];
 
-function getPeriodDates(period: PeriodKey, custom: { from: string; to: string }) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+function getPeriodDates(period: PeriodType, customStart?: string, customEnd?: string) {
+  const now = new Date();
+  const toISO = (d: Date) => d.toISOString().split("T")[0];
+
   switch (period) {
     case "today":
-      return { from: formatDate(today), to: formatDate(today) };
+      return { start: toISO(now), end: toISO(now) };
     case "week": {
-      const dow = today.getDay();
-      const mon = addDays(today, -(dow === 0 ? 6 : dow - 1));
-      return { from: formatDate(mon), to: formatDate(today) };
+      const mon = new Date(now);
+      mon.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
+      return { start: toISO(mon), end: toISO(now) };
     }
-    case "month": {
-      const first = new Date(today.getFullYear(), today.getMonth(), 1);
-      return { from: formatDate(first), to: formatDate(today) };
+    case "month":
+      return { start: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`, end: toISO(now) };
+    case "quarter": {
+      const q = new Date(now);
+      q.setMonth(q.getMonth() - 2);
+      q.setDate(1);
+      return { start: toISO(q), end: toISO(now) };
     }
     case "custom":
-      return custom;
-    case "all":
-      return { from: "2020-01-01", to: formatDate(today) };
+      return { start: customStart || toISO(now), end: customEnd || toISO(now) };
+    default:
+      return { start: toISO(now), end: toISO(now) };
   }
 }
 
-function getPrevPeriodDates(period: PeriodKey, current: { from: string; to: string }) {
-  if (period === "all") return null;
-  const from = new Date(current.from);
-  const to = new Date(current.to);
-  const days = Math.round((to.getTime() - from.getTime()) / 86400000) + 1;
-  return {
-    from: formatDate(addDays(from, -days)),
-    to: formatDate(addDays(to, -days)),
-  };
+const fmt = (n: number) =>
+  n >= 100_000_000
+    ? `${(n / 100_000_000).toFixed(1)}억`
+    : n >= 10_000
+    ? `${(n / 10_000).toFixed(0)}만`
+    : n.toLocaleString();
+
+const fmtWon = (n: number) => `₩${fmt(n)}`;
+
+function diffBadge(current: number, prev: number) {
+  if (prev === 0) return null;
+  const pct = ((current - prev) / prev) * 100;
+  const up = pct >= 0;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 2,
+        fontSize: 12,
+        fontWeight: 700,
+        padding: "3px 8px",
+        borderRadius: 6,
+        background: up ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
+        color: up ? "#10b981" : "#ef4444",
+      }}
+    >
+      {up ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}%
+    </span>
+  );
 }
 
-function calcChange(curr: number, prev: number) {
-  if (!prev) return null;
-  const val = Math.round(((curr - prev) / prev) * 100);
-  return { val, up: val >= 0 };
-}
-
-// Recharts 커스텀 툴팁
+// ────────────────────────────────────────────────────────────
+// Custom Tooltip
+// ────────────────────────────────────────────────────────────
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
-  const valet = payload.find((p: any) => p.dataKey === "발렛")?.value ?? 0;
-  const parking = payload.find((p: any) => p.dataKey === "주차")?.value ?? 0;
-  const vehicles = payload.find((p: any) => p.dataKey === "입차")?.value ?? 0;
   return (
-    <div className="bg-[#1a1d26] text-white text-xs rounded-xl px-3 py-2.5 shadow-xl">
-      <div className="font-bold mb-1.5 text-[#F5B731]">{label}</div>
-      <div className="flex flex-col gap-0.5">
-        <div className="flex justify-between gap-6">
-          <span className="text-white/70">발렛</span>
-          <span className="font-semibold">{(valet as number).toLocaleString()}원</span>
+    <div
+      style={{
+        background: "#fff",
+        border: "1px solid #e2e4e9",
+        borderRadius: 10,
+        padding: "10px 14px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+        fontSize: 13,
+      }}
+    >
+      <div style={{ fontWeight: 700, marginBottom: 6, color: "#1a1d26" }}>{label}</div>
+      {payload.map((p: any) => (
+        <div key={p.name} style={{ display: "flex", gap: 8, alignItems: "center", color: "#5c6370" }}>
+          <span style={{ width: 8, height: 8, borderRadius: 2, background: p.color, display: "inline-block" }} />
+          {p.name}: <strong style={{ color: "#1a1d26" }}>{typeof p.value === "number" ? (p.name.includes("매출") ? fmtWon(p.value) : p.value.toLocaleString()) : p.value}</strong>
         </div>
-        <div className="flex justify-between gap-6">
-          <span className="text-white/70">주차</span>
-          <span className="font-semibold">{(parking as number).toLocaleString()}원</span>
-        </div>
-        <div className="border-t border-white/20 mt-1 pt-1 flex justify-between gap-6">
-          <span className="text-white/70">입차</span>
-          <span className="font-semibold">{vehicles}대</span>
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
 
-// Recharts Y축 포매터
-function yFormatter(v: number) {
-  if (v >= 1_000_000) return `${(v / 10000).toFixed(0)}만`;
-  if (v >= 10_000) return `${(v / 10000).toFixed(1)}만`;
-  return `${v}`;
-}
-
-// ─── PERIODS ────────────────────────────────────────────────────────────────
-
-const PERIODS: { key: PeriodKey; label: string }[] = [
-  { key: "today", label: "오늘" },
-  { key: "week", label: "이번 주" },
-  { key: "month", label: "이번 달" },
-  { key: "custom", label: "직접 설정" },
-  { key: "all", label: "전체" },
-];
-
-// ─── 메인 페이지 ─────────────────────────────────────────────────────────────
-
+// ────────────────────────────────────────────────────────────
+// Main Component
+// ────────────────────────────────────────────────────────────
 export default function AnalyticsPage() {
   const supabase = createClient();
 
-  const [period, setPeriod] = useState<PeriodKey>("month");
-  const [custom, setCustom] = useState({ from: "", to: "" });
-  const [stores, setStores] = useState<Store[]>([]);
+  const [period, setPeriod] = useState<PeriodType>("month");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [selectedStore, setSelectedStore] = useState<string>("all");
-  const [records, setRecords] = useState<DailyRecord[]>([]);
-  const [prevRecords, setPrevRecords] = useState<DailyRecord[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [kpi, setKpi] = useState<KpiData | null>(null);
+  const [dailyData, setDailyData] = useState<DailySummary[]>([]);
+  const [storeData, setStoreData] = useState<StoreSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [chartType, setChartType] = useState<"bar" | "line">("bar");
 
-  // 매장 목록
+  // Load stores
   useEffect(() => {
     (async () => {
       const oid = await getOrgId();
-      const { data } = await supabase
-        .from("stores")
-        .select("id, name")
-        .eq("org_id", oid)
-        .order("name");
-      if (data) setStores(data);
+      const { data } = await supabase.from("stores").select("id, name").eq("org_id", oid).order("name");
+      setStores(data || []);
     })();
   }, []);
 
-  // 데이터 로드
+  // Load analytics data
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const oid = await getOrgId();
-      const dates = getPeriodDates(period, custom);
-      if (period === "custom" && (!custom.from || !custom.to)) {
-        setLoading(false);
-        return;
-      }
+      const { start, end } = getPeriodDates(period, customStart, customEnd);
 
+      // Previous period (same duration)
+      const startD = new Date(start);
+      const endD = new Date(end);
+      const duration = endD.getTime() - startD.getTime();
+      const prevEnd = new Date(startD.getTime() - 86400000);
+      const prevStart = new Date(prevEnd.getTime() - duration);
+      const prevStartStr = prevStart.toISOString().split("T")[0];
+      const prevEndStr = prevEnd.toISOString().split("T")[0];
+
+      // Query daily_records
       let q = supabase
         .from("daily_records")
-        .select("id, store_id, date, total_vehicles, valet_revenue, parking_revenue, worker_count, day_type")
+        .select("date, store_id, valet_revenue, parking_revenue, total_cars, valet_count")
         .eq("org_id", oid)
-        .gte("date", dates.from)
-        .lte("date", dates.to)
+        .gte("date", start)
+        .lte("date", end)
         .order("date");
 
       if (selectedStore !== "all") q = q.eq("store_id", selectedStore);
 
-      const { data } = await q;
-      setRecords(data ?? []);
+      const { data: records } = await q;
 
-      const prevDates = getPrevPeriodDates(period, dates);
-      if (prevDates) {
-        let pq = supabase
-          .from("daily_records")
-          .select("id, store_id, date, total_vehicles, valet_revenue, parking_revenue")
-          .eq("org_id", oid)
-          .gte("date", prevDates.from)
-          .lte("date", prevDates.to);
-        if (selectedStore !== "all") pq = pq.eq("store_id", selectedStore);
-        const { data: pd } = await pq;
-        setPrevRecords(pd ?? []);
-      } else {
-        setPrevRecords([]);
+      // Previous period
+      let prevQ = supabase
+        .from("daily_records")
+        .select("date, valet_revenue, parking_revenue, total_cars, valet_count")
+        .eq("org_id", oid)
+        .gte("date", prevStartStr)
+        .lte("date", prevEndStr);
+      if (selectedStore !== "all") prevQ = prevQ.eq("store_id", selectedStore);
+      const { data: prevRecords } = await prevQ;
+
+      const rows = records || [];
+      const prevRows = prevRecords || [];
+
+      // Compute KPI
+      const totalRevenue = rows.reduce((s, r) => s + (r.valet_revenue || 0) + (r.parking_revenue || 0), 0);
+      const valetRevenue = rows.reduce((s, r) => s + (r.valet_revenue || 0), 0);
+      const parkingRevenue = rows.reduce((s, r) => s + (r.parking_revenue || 0), 0);
+      const totalCars = rows.reduce((s, r) => s + (r.total_cars || 0), 0);
+      const valetCount = rows.reduce((s, r) => s + (r.valet_count || 0), 0);
+      const prevTotalRevenue = prevRows.reduce((s, r) => s + (r.valet_revenue || 0) + (r.parking_revenue || 0), 0);
+      const prevTotalCars = prevRows.reduce((s, r) => s + (r.total_cars || 0), 0);
+
+      setKpi({
+        totalRevenue, valetRevenue, parkingRevenue, totalCars, valetCount,
+        avgPerCar: totalCars > 0 ? Math.round(totalRevenue / totalCars) : 0,
+        prevTotalRevenue, prevTotalCars,
+      });
+
+      // Daily aggregation
+      const dateMap: Record<string, DailySummary> = {};
+      rows.forEach((r) => {
+        if (!dateMap[r.date]) {
+          const d = new Date(r.date);
+          const mm = d.getMonth() + 1;
+          const dd = d.getDate();
+          dateMap[r.date] = {
+            date: r.date,
+            label: `${mm}/${dd}`,
+            valetRevenue: 0,
+            parkingRevenue: 0,
+            totalRevenue: 0,
+            totalCars: 0,
+            valetCount: 0,
+          };
+        }
+        const entry = dateMap[r.date];
+        entry.valetRevenue += r.valet_revenue || 0;
+        entry.parkingRevenue += r.parking_revenue || 0;
+        entry.totalRevenue += (r.valet_revenue || 0) + (r.parking_revenue || 0);
+        entry.totalCars += r.total_cars || 0;
+        entry.valetCount += r.valet_count || 0;
+      });
+      setDailyData(Object.values(dateMap).sort((a, b) => a.date.localeCompare(b.date)));
+
+      // Store breakdown (all stores view only)
+      if (selectedStore === "all") {
+        const storeMap: Record<string, StoreSummary> = {};
+        rows.forEach((r) => {
+          const store = stores.find((s) => s.id === r.store_id);
+          const name = store?.name || r.store_id;
+          if (!storeMap[r.store_id]) {
+            storeMap[r.store_id] = { id: r.store_id, name, totalRevenue: 0, valetRevenue: 0, parkingRevenue: 0, totalCars: 0, valetCount: 0, avgPerCar: 0 };
+          }
+          const e = storeMap[r.store_id];
+          e.valetRevenue += r.valet_revenue || 0;
+          e.parkingRevenue += r.parking_revenue || 0;
+          e.totalRevenue += (r.valet_revenue || 0) + (r.parking_revenue || 0);
+          e.totalCars += r.total_cars || 0;
+          e.valetCount += r.valet_count || 0;
+        });
+        const arr = Object.values(storeMap).map((s) => ({
+          ...s,
+          avgPerCar: s.totalCars > 0 ? Math.round(s.totalRevenue / s.totalCars) : 0,
+        }));
+        setStoreData(arr.sort((a, b) => b.totalRevenue - a.totalRevenue));
       }
     } finally {
       setLoading(false);
     }
-  }, [period, custom, selectedStore]);
+  }, [period, customStart, customEnd, selectedStore, stores]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    if (stores.length > 0 || selectedStore === "all") loadData();
+  }, [loadData, stores]);
 
-  // ─── 집계 ─────────────────────────────────────────────────────────────────
+  // ── Pie chart colors
+  const PIE_COLORS = ["#1428A0", "#F5B731", "#10b981", "#6366f1", "#ef4444", "#0ea5e9"];
 
-  const kpi: KPI = {
-    totalRevenue: records.reduce((s, r) => s + (r.valet_revenue ?? 0) + (r.parking_revenue ?? 0), 0),
-    valetRevenue: records.reduce((s, r) => s + (r.valet_revenue ?? 0), 0),
-    parkingRevenue: records.reduce((s, r) => s + (r.parking_revenue ?? 0), 0),
-    totalVehicles: records.reduce((s, r) => s + (r.total_vehicles ?? 0), 0),
-    prevTotalRevenue: prevRecords.reduce((s, r) => s + (r.valet_revenue ?? 0) + (r.parking_revenue ?? 0), 0),
-    prevTotalVehicles: prevRecords.reduce((s, r) => s + (r.total_vehicles ?? 0), 0),
-  };
-
-  // 차트 데이터 (일별 집계)
-  const chartData: ChartPoint[] = (() => {
-    const map = new Map<string, ChartPoint>();
-    for (const r of records) {
-      const pt = map.get(r.date) ?? {
-        date: r.date,
-        label: r.date.slice(5).replace("-", "/"),
-        발렛: 0, 주차: 0, 입차: 0,
-      };
-      pt.발렛 += r.valet_revenue ?? 0;
-      pt.주차 += r.parking_revenue ?? 0;
-      pt.입차 += r.total_vehicles ?? 0;
-      map.set(r.date, pt);
-    }
-    return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
-  })();
-
-  // 매장별 통계
-  const storeStats: StoreStats[] = (() => {
-    const map = new Map<string, StoreStats>();
-    for (const r of records) {
-      const store = stores.find(s => s.id === r.store_id);
-      if (!store) continue;
-      const st = map.get(r.store_id) ?? {
-        storeId: r.store_id,
-        storeName: store.name,
-        totalRevenue: 0, valetRevenue: 0,
-        parkingRevenue: 0, totalVehicles: 0, days: 0,
-      };
-      st.valetRevenue += r.valet_revenue ?? 0;
-      st.parkingRevenue += r.parking_revenue ?? 0;
-      st.totalRevenue += (r.valet_revenue ?? 0) + (r.parking_revenue ?? 0);
-      st.totalVehicles += r.total_vehicles ?? 0;
-      st.days += 1;
-      map.set(r.store_id, st);
-    }
-    return Array.from(map.values()).sort((a, b) => b.totalRevenue - a.totalRevenue);
-  })();
-
-  // 요일별 통계 (평균)
-  const dayOfWeekData = (() => {
-    const days = ["일", "월", "화", "수", "목", "금", "토"];
-    const agg = Array.from({ length: 7 }, (_, i) => ({ day: days[i], 총매출: 0, count: 0 }));
-    for (const r of records) {
-      const dow = new Date(r.date).getDay();
-      agg[dow].총매출 += (r.valet_revenue ?? 0) + (r.parking_revenue ?? 0);
-      agg[dow].count += 1;
-    }
-    return agg.map(d => ({
-      day: d.day,
-      평균매출: d.count ? Math.round(d.총매출 / d.count) : 0,
-    }));
-  })();
-
-  const revenueChange = calcChange(kpi.totalRevenue, kpi.prevTotalRevenue);
-  const vehicleChange = calcChange(kpi.totalVehicles, kpi.prevTotalVehicles);
-
-  // ─── 렌더 ─────────────────────────────────────────────────────────────────
-
+  // ── Render ──────────────────────────────────────────────────
   return (
-    <div className="p-4 md:p-6 max-w-[1400px]">
-
-      {/* ── 헤더 필터 영역 ── */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-5">
-        {/* 기간 탭 */}
-        <div className="flex gap-1 bg-[#f4f5f7] p-1 rounded-xl overflow-x-auto shrink-0">
-          {PERIODS.map(p => (
-            <button
-              key={p.key}
-              onClick={() => setPeriod(p.key)}
-              className={`px-3 md:px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                period === p.key
-                  ? "bg-white text-[#1a1d26] shadow-sm font-semibold"
-                  : "text-[#5c6370] hover:text-[#1a1d26]"
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-
-        {/* 매장 선택 */}
-        <select
-          value={selectedStore}
-          onChange={e => setSelectedStore(e.target.value)}
-          className="w-full md:w-44 px-3 py-2 border border-[#e2e4e9] rounded-xl text-sm bg-white
-                     text-[#1a1d26] focus:outline-none focus:border-[#1428A0]"
+    <div style={{ padding: "24px 32px", maxWidth: 1400 }}>
+      {/* ── Top Controls ────────────────────────────────────── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 24,
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
+        {/* Period tabs */}
+        <div
+          style={{
+            display: "flex",
+            gap: 4,
+            background: "#f4f5f7",
+            padding: 4,
+            borderRadius: 10,
+            border: "1px solid #e2e4e9",
+          }}
         >
-          <option value="all">🏢 전체 매장</option>
-          {stores.map(s => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+          {PERIOD_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setPeriod(opt.key)}
+              style={{
+                padding: "10px 20px",
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                border: "none",
+                transition: "all 0.2s",
+                background: period === opt.key ? "#fff" : "transparent",
+                color: period === opt.key ? "#1428A0" : "#5c6370",
+                boxShadow: period === opt.key ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+              }}
+            >
+              {opt.label}
+            </button>
           ))}
-        </select>
-      </div>
+        </div>
 
-      {/* ── 직접 설정 ── */}
-      {period === "custom" && (
-        <div className="flex flex-col md:flex-row gap-3 mb-5 p-4 bg-white border
-                        border-[#e2e4e9] rounded-xl shadow-sm">
-          <div className="flex items-center gap-2 flex-1">
-            <span className="text-sm text-[#5c6370] whitespace-nowrap">시작일</span>
-            <input
-              type="date"
-              value={custom.from}
-              onChange={e => setCustom(p => ({ ...p, from: e.target.value }))}
-              className="flex-1 px-3 py-2 border border-[#e2e4e9] rounded-lg text-sm
-                         focus:outline-none focus:border-[#1428A0]"
-            />
-          </div>
-          <div className="flex items-center gap-2 flex-1">
-            <span className="text-sm text-[#5c6370] whitespace-nowrap">종료일</span>
-            <input
-              type="date"
-              value={custom.to}
-              min={custom.from}
-              onChange={e => setCustom(p => ({ ...p, to: e.target.value }))}
-              className="flex-1 px-3 py-2 border border-[#e2e4e9] rounded-lg text-sm
-                         focus:outline-none focus:border-[#1428A0]"
-            />
-          </div>
-          <button
-            onClick={loadData}
-            className="px-5 py-2 bg-[#1428A0] text-white text-sm font-semibold
-                       rounded-lg hover:bg-[#2d3a8c] transition"
+        {/* Store filter + custom dates */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          {period === "custom" && (
+            <>
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                style={{ padding: "10px 12px", border: "1px solid #e2e4e9", borderRadius: 8, fontSize: 14 }}
+              />
+              <span style={{ color: "#8b919d" }}>~</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                style={{ padding: "10px 12px", border: "1px solid #e2e4e9", borderRadius: 8, fontSize: 14 }}
+              />
+            </>
+          )}
+          <select
+            value={selectedStore}
+            onChange={(e) => setSelectedStore(e.target.value)}
+            style={{
+              padding: "10px 14px",
+              border: "1px solid #e2e4e9",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 500,
+              background: "#fff",
+              color: "#1a1d26",
+              minWidth: 130,
+            }}
           >
-            조회
-          </button>
+            <option value="all">🏢 전체 매장</option>
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
         </div>
-      )}
-
-      {/* ── KPI 카드 4개 ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5">
-        <KPICard
-          icon="💰" iconBg="#f0f2ff"
-          value={loading ? "—" : formatKRW(kpi.totalRevenue)}
-          label="총 매출"
-          change={revenueChange}
-        />
-        <KPICard
-          icon="🅿️" iconBg="#fef9e7"
-          value={loading ? "—" : formatKRW(kpi.parkingRevenue)}
-          label="주차 매출"
-        />
-        <KPICard
-          icon="🚗" iconBg="#f0fdf4"
-          value={loading ? "—" : formatKRW(kpi.valetRevenue)}
-          label="발렛 매출"
-        />
-        <KPICard
-          icon="📊" iconBg="#faf5ff"
-          value={loading ? "—" : kpi.totalVehicles.toLocaleString()}
-          label="총 입차"
-          change={vehicleChange}
-          unit="대"
-        />
       </div>
 
-      {/* ── 메인 차트 (매출 추이) ── */}
-      <div className="bg-white border border-[#eef0f3] rounded-2xl p-5 shadow-sm mb-5">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <div className="flex items-center gap-2 text-base font-bold text-[#1a1d26]">
-            <span>📈</span> 매출 추이
-          </div>
-          {/* 바/라인 토글 */}
-          <div className="flex gap-1 bg-[#f4f5f7] p-1 rounded-lg">
-            <button
-              onClick={() => setChartType("bar")}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                chartType === "bar"
-                  ? "bg-white text-[#1428A0] shadow-sm"
-                  : "text-[#5c6370]"
-              }`}
+      {/* ── KPI Cards ───────────────────────────────────────── */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: 16,
+          marginBottom: 24,
+        }}
+      >
+        {[
+          {
+            icon: "💰",
+            label: "총 매출",
+            value: fmtWon(kpi?.totalRevenue || 0),
+            sub: diffBadge(kpi?.totalRevenue || 0, kpi?.prevTotalRevenue || 0),
+            accent: "#1428A0",
+            bg: "rgba(20,40,160,0.06)",
+          },
+          {
+            icon: "🚗",
+            label: "발렛 매출",
+            value: fmtWon(kpi?.valetRevenue || 0),
+            sub: kpi ? (
+              <span style={{ fontSize: 12, color: "#8b919d" }}>
+                {kpi.valetCount.toLocaleString()}건
+              </span>
+            ) : null,
+            accent: "#F5B731",
+            bg: "rgba(245,183,49,0.1)",
+          },
+          {
+            icon: "🅿️",
+            label: "주차 매출",
+            value: fmtWon(kpi?.parkingRevenue || 0),
+            sub: kpi ? (
+              <span style={{ fontSize: 12, color: "#8b919d" }}>
+                {kpi.totalCars.toLocaleString()}대 입차
+              </span>
+            ) : null,
+            accent: "#10b981",
+            bg: "rgba(16,185,129,0.08)",
+          },
+          {
+            icon: "💳",
+            label: "건당 매출",
+            value: fmtWon(kpi?.avgPerCar || 0),
+            sub: diffBadge(kpi?.totalCars || 0, kpi?.prevTotalCars || 0),
+            accent: "#6366f1",
+            bg: "rgba(99,102,241,0.08)",
+          },
+        ].map((card) => (
+          <div
+            key={card.label}
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              padding: "20px 24px",
+              border: "1px solid #eef0f3",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 3,
+                background: card.accent,
+                borderRadius: "16px 16px 0 0",
+              }}
+            />
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: card.bg,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 22,
+                marginBottom: 14,
+              }}
             >
-              막대
-            </button>
-            <button
-              onClick={() => setChartType("line")}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                chartType === "line"
-                  ? "bg-white text-[#1428A0] shadow-sm"
-                  : "text-[#5c6370]"
-              }`}
+              {card.icon}
+            </div>
+            <div
+              style={{
+                fontSize: 26,
+                fontWeight: 800,
+                color: "#1a1d26",
+                lineHeight: 1,
+                marginBottom: 6,
+              }}
             >
-              라인
-            </button>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="h-64 flex items-center justify-center text-[#8b919d] text-sm">
-            데이터 로딩 중...
-          </div>
-        ) : chartData.length === 0 ? (
-          <div className="h-48 flex flex-col items-center justify-center text-[#8b919d]">
-            <span className="text-3xl mb-2">📊</span>
-            <span className="text-sm">해당 기간 데이터가 없습니다</span>
-          </div>
-        ) : chartType === "bar" ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={chartData}
-              margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
-              barCategoryGap="30%"
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f1f3" vertical={false} />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 11, fill: "#8b919d" }}
-                tickLine={false}
-                axisLine={{ stroke: "#eef0f3" }}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                tickFormatter={yFormatter}
-                tick={{ fontSize: 11, fill: "#8b919d" }}
-                tickLine={false}
-                axisLine={false}
-                width={52}
-              />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f4f5f7" }} />
-              <Legend
-                wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
-                iconType="circle"
-                iconSize={8}
-              />
-              <Bar dataKey="발렛" stackId="a" fill="#1428A0" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="주차" stackId="a" fill="#F5B731" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart
-              data={chartData}
-              margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f1f3" vertical={false} />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 11, fill: "#8b919d" }}
-                tickLine={false}
-                axisLine={{ stroke: "#eef0f3" }}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                yAxisId="revenue"
-                tickFormatter={yFormatter}
-                tick={{ fontSize: 11, fill: "#8b919d" }}
-                tickLine={false}
-                axisLine={false}
-                width={52}
-              />
-              <YAxis
-                yAxisId="vehicles"
-                orientation="right"
-                tick={{ fontSize: 11, fill: "#8b919d" }}
-                tickLine={false}
-                axisLine={false}
-                width={36}
-              />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f4f5f7" }} />
-              <Legend
-                wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
-                iconType="circle"
-                iconSize={8}
-              />
-              <Bar yAxisId="revenue" dataKey="발렛" stackId="a" fill="#1428A0" radius={[0,0,0,0]} />
-              <Bar yAxisId="revenue" dataKey="주차" stackId="a" fill="#F5B731" radius={[4,4,0,0]} />
-              <Line
-                yAxisId="vehicles"
-                dataKey="입차"
-                stroke="#10b981"
-                strokeWidth={2}
-                dot={{ fill: "#10b981", r: 3 }}
-                activeDot={{ r: 5 }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
-      {/* ── 하단 2열 ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-        {/* 요일별 평균 매출 */}
-        <div className="bg-white border border-[#eef0f3] rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-base font-bold text-[#1a1d26] mb-4">
-            <span>📅</span> 요일별 평균 매출
-          </div>
-          {loading ? (
-            <div className="h-48 flex items-center justify-center text-[#8b919d] text-sm">로딩 중...</div>
-          ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={dayOfWeekData} margin={{ top: 4, right: 8, left: 0, bottom: 4 }} barCategoryGap="25%">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f1f3" vertical={false} />
-                <XAxis
-                  dataKey="day"
-                  tick={{ fontSize: 13, fill: "#8b919d" }}
-                  tickLine={false}
-                  axisLine={{ stroke: "#eef0f3" }}
-                />
-                <YAxis
-                  tickFormatter={yFormatter}
-                  tick={{ fontSize: 11, fill: "#8b919d" }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={48}
-                />
-                <Tooltip
-                  formatter={(v: number) => [`${v.toLocaleString()}원`, "평균 매출"]}
-                  contentStyle={{
-                    background: "#1a1d26", border: "none", borderRadius: 10,
-                    color: "#fff", fontSize: 12,
+              {loading ? (
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 100,
+                    height: 26,
+                    borderRadius: 6,
+                    background: "#f4f5f7",
+                    animation: "pulse 1.5s infinite",
                   }}
-                  labelStyle={{ color: "#F5B731", fontWeight: "bold" }}
-                  cursor={{ fill: "#f4f5f7" }}
                 />
-                <Bar
-                  dataKey="평균매출"
-                  radius={[6, 6, 0, 0]}
-                  fill="#1428A0"
-                />
-              </BarChart>
+              ) : (
+                card.value
+              )}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 13, color: "#8b919d" }}>{card.label}</span>
+              {!loading && card.sub}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Revenue Trend Chart ─────────────────────────────── */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          border: "1px solid #eef0f3",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+          marginBottom: 20,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "18px 24px",
+            borderBottom: "1px solid #eef0f3",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 18 }}>📈</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "#1a1d26" }}>매출 추이</span>
+          </div>
+          <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#8b919d" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 2, background: "#1428A0", display: "inline-block" }} />
+              발렛 매출
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 2, background: "#10b981", display: "inline-block" }} />
+              주차 매출
+            </span>
+          </div>
+        </div>
+        <div style={{ padding: "20px 8px 12px" }}>
+          {loading || dailyData.length === 0 ? (
+            <div
+              style={{
+                height: 260,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#8b919d",
+                fontSize: 14,
+                background: "#f8f9fb",
+                borderRadius: 12,
+                margin: "0 16px",
+              }}
+            >
+              {loading ? "데이터 로드 중..." : "해당 기간에 데이터가 없습니다"}
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <AreaChart data={dailyData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="valetGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#1428A0" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#1428A0" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="parkingGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#8b919d" }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11, fill: "#8b919d" }} axisLine={false} tickLine={false} width={60} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="valetRevenue" name="발렛 매출" stroke="#1428A0" strokeWidth={2} fill="url(#valetGrad)" dot={false} activeDot={{ r: 5, fill: "#1428A0" }} />
+                <Area type="monotone" dataKey="parkingRevenue" name="주차 매출" stroke="#10b981" strokeWidth={2} fill="url(#parkingGrad)" dot={false} activeDot={{ r: 5, fill: "#10b981" }} />
+              </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
+      </div>
 
-        {/* 발렛 vs 주차 비율 */}
-        <div className="bg-white border border-[#eef0f3] rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-base font-bold text-[#1a1d26] mb-4">
-            <span>🥧</span> 발렛 vs 주차 비율
+      {/* ── Bottom Grid: Store Comparison + Entry Chart ─────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+        {/* Store bar chart */}
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 16,
+            border: "1px solid #eef0f3",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "18px 24px",
+              borderBottom: "1px solid #eef0f3",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <span style={{ fontSize: 18 }}>🏢</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1d26" }}>매장별 매출 비교</span>
           </div>
-          {loading ? (
-            <div className="h-48 flex items-center justify-center text-[#8b919d] text-sm">로딩 중...</div>
-          ) : kpi.totalRevenue === 0 ? (
-            <div className="h-48 flex flex-col items-center justify-center text-[#8b919d]">
-              <span className="text-2xl mb-2">📊</span>
-              <span className="text-sm">데이터 없음</span>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4 pt-2">
-              {/* 발렛 */}
-              <div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <span className="text-sm font-semibold text-[#1428A0]">🚗 발렛 매출</span>
-                  <div className="text-right">
-                    <span className="text-base font-extrabold text-[#1428A0]">
-                      {formatKRW(kpi.valetRevenue)}
-                    </span>
-                    <span className="text-xs text-[#8b919d] ml-1">
-                      ({kpi.totalRevenue ? Math.round((kpi.valetRevenue / kpi.totalRevenue) * 100) : 0}%)
-                    </span>
-                  </div>
-                </div>
-                <div className="h-3 bg-[#f4f5f7] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#1428A0] rounded-full transition-all duration-700"
-                    style={{ width: `${kpi.totalRevenue ? (kpi.valetRevenue / kpi.totalRevenue) * 100 : 0}%` }}
-                  />
-                </div>
+          <div style={{ padding: "16px 8px 12px" }}>
+            {loading || storeData.length === 0 ? (
+              <div
+                style={{
+                  height: 220,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#8b919d",
+                  fontSize: 14,
+                  background: "#f8f9fb",
+                  borderRadius: 10,
+                  margin: "0 16px",
+                }}
+              >
+                {loading ? "로드 중..." : selectedStore !== "all" ? "전체 매장 선택 시 비교 가능" : "데이터 없음"}
               </div>
-              {/* 주차 */}
-              <div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <span className="text-sm font-semibold text-[#c8960a]">🅿️ 주차 매출</span>
-                  <div className="text-right">
-                    <span className="text-base font-extrabold text-[#c8960a]">
-                      {formatKRW(kpi.parkingRevenue)}
-                    </span>
-                    <span className="text-xs text-[#8b919d] ml-1">
-                      ({kpi.totalRevenue ? Math.round((kpi.parkingRevenue / kpi.totalRevenue) * 100) : 0}%)
-                    </span>
-                  </div>
-                </div>
-                <div className="h-3 bg-[#f4f5f7] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#F5B731] rounded-full transition-all duration-700"
-                    style={{ width: `${kpi.totalRevenue ? (kpi.parkingRevenue / kpi.totalRevenue) * 100 : 0}%` }}
-                  />
-                </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={storeData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#8b919d" }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11, fill: "#8b919d" }} axisLine={false} tickLine={false} width={55} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="valetRevenue" name="발렛 매출" stackId="a" fill="#1428A0" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="parkingRevenue" name="주차 매출" stackId="a" fill="#10b981" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Daily cars bar */}
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 16,
+            border: "1px solid #eef0f3",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "18px 24px",
+              borderBottom: "1px solid #eef0f3",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <span style={{ fontSize: 18 }}>🚗</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1d26" }}>일별 입차량 추이</span>
+          </div>
+          <div style={{ padding: "16px 8px 12px" }}>
+            {loading || dailyData.length === 0 ? (
+              <div
+                style={{
+                  height: 220,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#8b919d",
+                  fontSize: 14,
+                  background: "#f8f9fb",
+                  borderRadius: 10,
+                  margin: "0 16px",
+                }}
+              >
+                {loading ? "로드 중..." : "데이터 없음"}
               </div>
-              {/* 총합 요약 */}
-              <div className="mt-2 p-3 bg-[#f4f5f7] rounded-xl flex justify-between items-center">
-                <span className="text-sm text-[#5c6370] font-medium">총 매출</span>
-                <span className="text-lg font-extrabold text-[#1a1d26]">
-                  {formatKRW(kpi.totalRevenue)}
-                </span>
-              </div>
-            </div>
-          )}
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={dailyData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#8b919d" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#8b919d" }} axisLine={false} tickLine={false} width={40} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="totalCars" name="입차량" fill="#F5B731" radius={[6, 6, 0, 0]}>
+                    {dailyData.map((_, index) => (
+                      <Cell key={index} fill={index === dailyData.length - 1 ? "#1428A0" : "#F5B731"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── 매장별 비교 ── */}
-      <StoreCompare stats={storeStats} loading={loading} />
-
-    </div>
-  );
-}
-
-// ─── KPI 카드 ────────────────────────────────────────────────────────────────
-
-function KPICard({
-  icon, iconBg, value, label, change, unit,
-}: {
-  icon: string;
-  iconBg: string;
-  value: string;
-  label: string;
-  change?: { val: number; up: boolean } | null;
-  unit?: string;
-}) {
-  return (
-    <div className="bg-white border border-[#eef0f3] rounded-2xl p-4 md:p-5 shadow-sm">
-      <div
-        className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-xl md:text-2xl mb-3"
-        style={{ background: iconBg }}
-      >
-        {icon}
-      </div>
-      <div className="text-xl md:text-2xl font-extrabold text-[#1a1d26] leading-none mb-1">
-        {value}
-        {unit && value !== "—" && (
-          <span className="text-base font-normal text-[#8b919d] ml-0.5">{unit}</span>
-        )}
-      </div>
-      <div className="text-xs md:text-sm text-[#8b919d]">{label}</div>
-      {change != null && (
-        <div className={`text-xs font-semibold mt-1.5 ${change.up ? "text-[#10b981]" : "text-[#ef4444]"}`}>
-          {change.up ? "▲" : "▼"} {Math.abs(change.val)}% 전기 대비
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── 매장별 비교 ─────────────────────────────────────────────────────────────
-
-function StoreCompare({ stats, loading }: { stats: StoreStats[]; loading: boolean }) {
-  const maxRev = Math.max(...stats.map(s => s.totalRevenue), 1);
-
-  return (
-    <div className="bg-white border border-[#eef0f3] rounded-2xl p-5 shadow-sm">
-      <div className="flex items-center gap-2 text-base font-bold text-[#1a1d26] mb-5">
-        <span>🏆</span> 매장별 비교
-      </div>
-
-      {loading ? (
-        <div className="h-40 flex items-center justify-center text-[#8b919d] text-sm">로딩 중...</div>
-      ) : stats.length === 0 ? (
-        <div className="h-32 flex flex-col items-center justify-center text-[#8b919d]">
-          <span className="text-3xl mb-2">🏢</span>
-          <span className="text-sm">데이터가 없습니다</span>
-        </div>
-      ) : (
-        <>
-          {/* PC 테이블 */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm">
+      {/* ── Store Detail Table ───────────────────────────────── */}
+      {selectedStore === "all" && storeData.length > 0 && (
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 16,
+            border: "1px solid #eef0f3",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+            marginBottom: 20,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "18px 24px",
+              borderBottom: "1px solid #eef0f3",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <span style={{ fontSize: 18 }}>🏆</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1d26" }}>매장별 상세 실적</span>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr className="text-[#5c6370] border-b border-[#eef0f3]">
-                  <th className="text-center py-3 px-3 font-semibold w-10">순위</th>
-                  <th className="text-left py-3 px-3 font-semibold">매장</th>
-                  <th className="text-right py-3 px-3 font-semibold">총 매출</th>
-                  <th className="text-right py-3 px-3 font-semibold">발렛</th>
-                  <th className="text-right py-3 px-3 font-semibold">주차</th>
-                  <th className="text-right py-3 px-3 font-semibold">입차</th>
-                  <th className="text-left py-3 px-3 font-semibold w-36">비중</th>
+                <tr style={{ background: "#f4f5f7" }}>
+                  {["순위", "매장명", "총 매출", "발렛 매출", "주차 매출", "입차량", "발렛 건수", "건당 매출"].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        padding: "12px 16px",
+                        textAlign: h === "순위" || h === "입차량" || h === "발렛 건수" ? "center" : "left",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "#5c6370",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {stats.map((s, i) => (
-                  <tr key={s.storeId} className="border-b border-[#eef0f3] hover:bg-[#f8f9fb] transition">
-                    <td className="py-3 px-3 text-center">
-                      <span className={`inline-flex w-7 h-7 rounded-full items-center justify-center text-xs font-bold text-white ${
-                        i === 0 ? "bg-[#fbbf24]" : i === 1 ? "bg-[#9ca3af]" : i === 2 ? "bg-[#d97706]" : "bg-[#c5c9d3]"
-                      }`}>
-                        {i + 1}
+                {storeData.map((store, idx) => (
+                  <tr
+                    key={store.id}
+                    style={{ borderBottom: "1px solid #eef0f3", transition: "background 0.15s" }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "#f8f9fb")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "")}
+                  >
+                    <td style={{ padding: "14px 16px", textAlign: "center" }}>
+                      <span
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: "50%",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          background: idx === 0 ? "linear-gradient(135deg, #fbbf24, #f59e0b)" : idx === 1 ? "linear-gradient(135deg, #9ca3af, #6b7280)" : idx === 2 ? "linear-gradient(135deg, #d97706, #b45309)" : "#e2e4e9",
+                          color: idx < 3 ? "#fff" : "#5c6370",
+                        }}
+                      >
+                        {idx + 1}
                       </span>
                     </td>
-                    <td className="py-3 px-3 font-semibold text-[#1a1d26]">{s.storeName}</td>
-                    <td className="py-3 px-3 text-right font-bold text-[#1428A0]">
-                      {s.totalRevenue.toLocaleString()}원
-                    </td>
-                    <td className="py-3 px-3 text-right text-[#5c6370]">
-                      {s.valetRevenue.toLocaleString()}원
-                    </td>
-                    <td className="py-3 px-3 text-right text-[#5c6370]">
-                      {s.parkingRevenue.toLocaleString()}원
-                    </td>
-                    <td className="py-3 px-3 text-right text-[#5c6370]">{s.totalVehicles}대</td>
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-[#f4f5f7] rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-[#1428A0]"
-                            style={{ width: `${(s.totalRevenue / maxRev) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-[#8b919d] w-7 text-right">
-                          {Math.round((s.totalRevenue / maxRev) * 100)}%
-                        </span>
-                      </div>
-                    </td>
+                    <td style={{ padding: "14px 16px", fontWeight: 700, fontSize: 14 }}>{store.name}</td>
+                    <td style={{ padding: "14px 16px", fontWeight: 700, color: "#1428A0", fontSize: 14 }}>{fmtWon(store.totalRevenue)}</td>
+                    <td style={{ padding: "14px 16px", fontSize: 14, color: "#5c6370" }}>{fmtWon(store.valetRevenue)}</td>
+                    <td style={{ padding: "14px 16px", fontSize: 14, color: "#5c6370" }}>{fmtWon(store.parkingRevenue)}</td>
+                    <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>{store.totalCars.toLocaleString()}</td>
+                    <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>{store.valetCount.toLocaleString()}</td>
+                    <td style={{ padding: "14px 16px", fontSize: 14, color: "#10b981", fontWeight: 600 }}>{fmtWon(store.avgPerCar)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-
-          {/* 모바일 카드 */}
-          <div className="md:hidden flex flex-col gap-3">
-            {stats.map((s, i) => (
-              <div key={s.storeId} className="bg-[#f8f9fb] rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className={`inline-flex w-6 h-6 rounded-full items-center justify-center text-xs font-bold text-white ${
-                      i === 0 ? "bg-[#fbbf24]" : i === 1 ? "bg-[#9ca3af]" : i === 2 ? "bg-[#d97706]" : "bg-[#c5c9d3]"
-                    }`}>
-                      {i + 1}
-                    </span>
-                    <span className="font-bold text-[#1a1d26]">{s.storeName}</span>
-                  </div>
-                  <span className="text-base font-extrabold text-[#1428A0]">
-                    {formatKRW(s.totalRevenue)}
-                  </span>
-                </div>
-                <div className="h-1.5 bg-[#e2e4e9] rounded-full mb-3 overflow-hidden">
-                  <div
-                    className="h-full bg-[#1428A0] rounded-full"
-                    style={{ width: `${(s.totalRevenue / maxRev) * 100}%` }}
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <div className="text-xs text-[#8b919d]">발렛</div>
-                    <div className="text-sm font-semibold text-[#1a1d26]">{formatKRW(s.valetRevenue)}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-[#8b919d]">주차</div>
-                    <div className="text-sm font-semibold text-[#1a1d26]">{formatKRW(s.parkingRevenue)}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-[#8b919d]">입차</div>
-                    <div className="text-sm font-semibold text-[#1a1d26]">{s.totalVehicles}대</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
+        </div>
       )}
+
+      {/* ── Revenue Composition (Pie) ───────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+        {/* Pie chart */}
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 16,
+            border: "1px solid #eef0f3",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "18px 24px",
+              borderBottom: "1px solid #eef0f3",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <span style={{ fontSize: 18 }}>🎯</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1d26" }}>매출 구성비</span>
+          </div>
+          <div
+            style={{
+              padding: "16px 24px",
+              display: "flex",
+              alignItems: "center",
+              gap: 24,
+            }}
+          >
+            {kpi && (kpi.valetRevenue > 0 || kpi.parkingRevenue > 0) ? (
+              <>
+                <ResponsiveContainer width={180} height={180}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: "발렛", value: kpi.valetRevenue },
+                        { name: "주차", value: kpi.parkingRevenue },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={80}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      <Cell fill="#1428A0" />
+                      <Cell fill="#10b981" />
+                    </Pie>
+                    <Tooltip formatter={(v: any) => fmtWon(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ flex: 1 }}>
+                  {[
+                    { label: "발렛 매출", value: kpi.valetRevenue, color: "#1428A0" },
+                    { label: "주차 매출", value: kpi.parkingRevenue, color: "#10b981" },
+                  ].map((item) => {
+                    const total = kpi.valetRevenue + kpi.parkingRevenue;
+                    const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : "0";
+                    return (
+                      <div key={item.label} style={{ marginBottom: 16 }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            marginBottom: 6,
+                            fontSize: 13,
+                          }}
+                        >
+                          <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#5c6370" }}>
+                            <span style={{ width: 8, height: 8, borderRadius: 2, background: item.color, display: "inline-block" }} />
+                            {item.label}
+                          </span>
+                          <span style={{ fontWeight: 700, color: "#1a1d26" }}>{pct}%</span>
+                        </div>
+                        <div style={{ height: 6, background: "#f4f5f7", borderRadius: 3, overflow: "hidden" }}>
+                          <div
+                            style={{
+                              width: `${pct}%`,
+                              height: "100%",
+                              background: item.color,
+                              borderRadius: 3,
+                            }}
+                          />
+                        </div>
+                        <div style={{ fontSize: 12, color: "#8b919d", marginTop: 4 }}>{fmtWon(item.value)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <div
+                style={{
+                  height: 180,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#8b919d",
+                  fontSize: 14,
+                  width: "100%",
+                  background: "#f8f9fb",
+                  borderRadius: 10,
+                }}
+              >
+                데이터 없음
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top days ranking */}
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 16,
+            border: "1px solid #eef0f3",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "18px 24px",
+              borderBottom: "1px solid #eef0f3",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <span style={{ fontSize: 18 }}>🔥</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1d26" }}>매출 TOP 일자</span>
+          </div>
+          <div style={{ padding: "16px 24px" }}>
+            {[...dailyData]
+              .sort((a, b) => b.totalRevenue - a.totalRevenue)
+              .slice(0, 5)
+              .map((d, idx) => (
+                <div
+                  key={d.date}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    background: idx === 0 ? "rgba(20,40,160,0.04)" : "#f8f9fb",
+                    marginBottom: 8,
+                    border: idx === 0 ? "1px solid rgba(20,40,160,0.12)" : "1px solid transparent",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: "50%",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      background: idx === 0 ? "#1428A0" : idx === 1 ? "#6b7280" : idx === 2 ? "#d97706" : "#e2e4e9",
+                      color: idx < 3 ? "#fff" : "#8b919d",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {idx + 1}
+                  </span>
+                  <span style={{ fontSize: 14, color: "#5c6370", flex: 1 }}>{d.date}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#1428A0" }}>{fmtWon(d.totalRevenue)}</span>
+                  <span style={{ fontSize: 12, color: "#8b919d" }}>{d.totalCars}대</span>
+                </div>
+              ))}
+            {dailyData.length === 0 && (
+              <div style={{ color: "#8b919d", fontSize: 14, textAlign: "center", padding: "40px 0" }}>
+                데이터 없음
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      `}</style>
     </div>
   );
 }
