@@ -127,43 +127,67 @@ export default function ParkingStatusPage() {
 
   return (
     <AppLayout>
-      <div style={{maxWidth:1300}}>
+      <style>{`
+        @media (max-width: 767px) {
+          .ps-filter-bar { padding: 12px 14px !important; gap: 8px !important; }
+          .ps-filter-row1 { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px; }
+          .ps-search-wrap { max-width: 100% !important; min-width: unset !important; flex: unset !important; width: 100% !important; }
+          .ps-result-label { display: none !important; }
+          .ps-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; margin-bottom: 16px !important; }
+          .ps-kpi-card { padding: 14px 14px !important; border-radius: 12px !important; }
+          .ps-kpi-icon { width: 36px !important; height: 36px !important; font-size: 18px !important; border-radius: 10px !important; margin-bottom: 10px !important; }
+          .ps-kpi-value { font-size: 22px !important; }
+          .ps-filter-chart-grid { grid-template-columns: 1fr !important; gap: 12px !important; margin-bottom: 16px !important; }
+          .ps-filter-groups { flex-direction: row !important; flex-wrap: wrap !important; gap: 8px !important; }
+          .ps-chart-card { padding: 12px 14px !important; }
+          .ps-chart-bars { height: 60px !important; }
+          .ps-main { padding-bottom: 100px !important; }
+        }
+      `}</style>
+      <div style={{maxWidth:1300}} className="ps-main">
 
         {/* 필터 바 */}
-        <div style={{background:"#fff",borderRadius:16,border:`1px solid ${C.borderLight}`,boxShadow:"0 1px 2px rgba(0,0,0,0.04)",marginBottom:24}}>
-          <div style={{padding:"16px 24px",display:"flex",flexWrap:"wrap",gap:12,alignItems:"center"}}>
-            <select value={selectedStore} onChange={e=>setSelectedStore(e.target.value)}
-              style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${C.border}`,fontSize:14,fontWeight:600,background:"#fff",minWidth:150}}>
-              <option value="">전체 매장</option>
-              {stores.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-            <input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)}
-              style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${C.border}`,fontSize:14,background:"#fff"}} />
-            <div style={{display:"flex",alignItems:"center",gap:8,background:"#fff",borderRadius:10,
-              border:search?`2px solid ${C.navy}`:`1px solid ${C.border}`,padding:"0 14px",
-              minWidth:200,flex:1,maxWidth:320,transition:"border-color 0.2s"}}>
-              <span style={{fontSize:15,color:C.textMuted}}>🔍</span>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="차량번호 검색"
-                style={{flex:1,border:"none",outline:"none",background:"none",fontSize:14,fontWeight:600,padding:"10px 0",color:C.textPrimary}} />
-              {search&&<button onClick={()=>setSearch("")} style={{border:"none",background:C.errorBg,borderRadius:6,width:22,height:22,cursor:"pointer",fontSize:10,color:C.error,fontWeight:700}}>✕</button>}
+        <div style={{background:"#fff",borderRadius:16,border:`1px solid ${C.borderLight}`,boxShadow:"0 1px 2px rgba(0,0,0,0.04)",marginBottom:20}}>
+          <div className="ps-filter-bar" style={{padding:"16px 24px",display:"flex",flexDirection:"column",gap:12}}>
+            {/* 1행: 매장/날짜 */}
+            <div className="ps-filter-row1" style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center"}}>
+              <select value={selectedStore} onChange={e=>setSelectedStore(e.target.value)}
+                style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${C.border}`,fontSize:14,fontWeight:600,background:"#fff",minWidth:140,flex:1}}>
+                <option value="">전체 매장</option>
+                {stores.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)}
+                style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${C.border}`,fontSize:14,background:"#fff",flex:1}} />
+              <select value={workerFilter} onChange={e=>setWorkerFilter(e.target.value)}
+                className="hidden md:block"
+                style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${C.border}`,fontSize:14,background:"#fff",minWidth:120}}>
+                <option value="">전체 등록자</option>
+                {entryWorkers.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
+              </select>
             </div>
-            <select value={workerFilter} onChange={e=>setWorkerFilter(e.target.value)}
-              style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${C.border}`,fontSize:14,background:"#fff"}}>
-              <option value="">전체 등록자</option>
-              {entryWorkers.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
-            </select>
-            <div style={{marginLeft:"auto",fontSize:13,color:C.textMuted,background:C.bgCard,padding:"8px 14px",borderRadius:8}}>
-              검색 결과 <strong style={{color:C.navy,marginLeft:4}}>{filtered.length}건</strong>
+            {/* 2행: 검색 + 결과 */}
+            <div style={{display:"flex",gap:12,alignItems:"center"}}>
+              <div className="ps-search-wrap" style={{display:"flex",alignItems:"center",gap:8,background:"#fff",borderRadius:10,
+                border:search?`2px solid ${C.navy}`:`1px solid ${C.border}`,padding:"0 14px",
+                minWidth:200,flex:1,maxWidth:360,transition:"border-color 0.2s"}}>
+                <span style={{fontSize:15,color:C.textMuted}}>🔍</span>
+                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="차량번호 검색"
+                  style={{flex:1,border:"none",outline:"none",background:"none",fontSize:14,fontWeight:600,padding:"10px 0",color:C.textPrimary}} />
+                {search&&<button onClick={()=>setSearch("")} style={{border:"none",background:C.errorBg,borderRadius:6,width:22,height:22,cursor:"pointer",fontSize:10,color:C.error,fontWeight:700}}>✕</button>}
+              </div>
+              <div className="ps-result-label" style={{marginLeft:"auto",fontSize:13,color:C.textMuted,background:C.bgCard,padding:"8px 14px",borderRadius:8,whiteSpace:"nowrap"}}>
+                검색 결과 <strong style={{color:C.navy,marginLeft:4}}>{filtered.length}건</strong>
+              </div>
             </div>
           </div>
         </div>
 
         {/* KPI 카드 */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:24}}>
+        <div className="ps-kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:24}}>
           {kpiCards.map(k=>(
-            <div key={k.label} style={{background:"#fff",borderRadius:16,padding:"20px 22px",border:`1px solid ${C.borderLight}`,boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}>
-              <div style={{width:44,height:44,borderRadius:12,background:k.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,marginBottom:14}}>{k.icon}</div>
-              <div style={{fontSize:28,fontWeight:800,color:k.color,lineHeight:1}}>
+            <div key={k.label} className="ps-kpi-card" style={{background:"#fff",borderRadius:16,padding:"20px 22px",border:`1px solid ${C.borderLight}`,boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}>
+              <div className="ps-kpi-icon" style={{width:44,height:44,borderRadius:12,background:k.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,marginBottom:14}}>{k.icon}</div>
+              <div className="ps-kpi-value" style={{fontSize:28,fontWeight:800,color:k.color,lineHeight:1}}>
                 {k.value.toLocaleString()}<span style={{fontSize:14,fontWeight:600,color:C.textMuted,marginLeft:4}}>{k.unit}</span>
               </div>
               <div style={{fontSize:13,color:C.textMuted,marginTop:6}}>{k.label}</div>
@@ -172,16 +196,21 @@ export default function ParkingStatusPage() {
         </div>
 
         {/* 필터 그룹 + 시간대 차트 */}
-        <div style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:20,marginBottom:24,alignItems:"start"}}>
-          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        <div className="ps-filter-chart-grid" style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:20,marginBottom:24,alignItems:"start"}}>
+          <div className="ps-filter-groups" style={{display:"flex",flexDirection:"column",gap:10}}>
             <FilterGroup value={typeFilter} onChange={setTypeFilter}
               options={[{id:"all",label:"전체"},{id:"normal",label:"일반"},{id:"valet",label:"발렛"},{id:"monthly",label:"월주차"}]} />
             <FilterGroup value={statusFilter} onChange={setStatusFilter}
               options={[{id:"all",label:"전체"},{id:"parked",label:"🟢 주차중"},{id:"exited",label:"⚪ 출차"}]} />
           </div>
-          <div style={{background:"#fff",borderRadius:16,padding:"16px 20px",border:`1px solid ${C.borderLight}`}}>
-            <div style={{fontSize:14,fontWeight:700,color:C.textPrimary,marginBottom:12}}>⏰ 시간대별 입차</div>
-            <div style={{display:"flex",alignItems:"flex-end",gap:3,height:80}}>
+          <div className="ps-chart-card" style={{background:"#fff",borderRadius:16,padding:"16px 20px",border:`1px solid ${C.borderLight}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <div style={{fontSize:14,fontWeight:700,color:C.textPrimary}}>⏰ 시간대별 입차</div>
+              <div style={{fontSize:12,color:C.textMuted,background:C.bgCard,padding:"4px 10px",borderRadius:6}}>
+                <strong style={{color:C.navy}}>{filtered.length}</strong>건
+              </div>
+            </div>
+            <div className="ps-chart-bars" style={{display:"flex",alignItems:"flex-end",gap:3,height:80}}>
               {hourlyData.map((d,i)=>{
                 const h=Math.max((d.count/maxHour)*100,4);
                 const isPeak=d.count===maxHour&&d.count>0;
@@ -256,39 +285,80 @@ export default function ParkingStatusPage() {
         </div>
 
         {/* 카드형 (모바일) */}
-        <div className="md:hidden" style={{display:"flex",flexDirection:"column",gap:10,paddingBottom:80}}>
+        <div className="md:hidden" style={{display:"flex",flexDirection:"column",gap:10,paddingBottom:100}}>
           {loading?(
             <div style={{textAlign:"center",padding:"60px 0",color:C.textMuted}}>⏳ 로딩 중...</div>
           ):filtered.length===0?(
             <div style={{textAlign:"center",padding:"60px 0"}}>
               <div style={{fontSize:40,marginBottom:8}}>🔍</div>
-              <div style={{fontSize:14,fontWeight:700,color:C.textPrimary}}>{entries.length===0?"입차 데이터가 없습니다":"검색 결과가 없습니다"}</div>
+              <div style={{fontSize:14,fontWeight:700,color:C.textPrimary,marginBottom:4}}>{entries.length===0?"입차 데이터가 없습니다":"검색 결과가 없습니다"}</div>
+              <div style={{fontSize:12,color:C.textMuted}}>{entries.length===0?"크루앱에서 입차를 등록하면 표시됩니다":"필터를 변경해 보세요"}</div>
             </div>
           ):(
-            filtered.slice(0,30).map(e=>{
-              const ts=typeStyle(e.parking_type);
-              const isParked=e.status==="parked";
-              return(
-                <div key={e.id} style={{background:"#fff",borderRadius:14,padding:"14px 16px",border:`1px solid ${C.borderLight}`,boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                    <span style={{fontSize:17,fontWeight:800,color:C.textPrimary,letterSpacing:0.3}}>{hlPlate(e.plate_number,search)}</span>
-                    <div style={{display:"flex",gap:6}}>
-                      <span style={{padding:"3px 10px",borderRadius:5,fontSize:11,fontWeight:700,background:ts.bg,color:ts.color}}>{ts.label}</span>
-                      <span style={{padding:"3px 10px",borderRadius:5,fontSize:11,fontWeight:700,background:isParked?C.successBg:C.bgCard,color:isParked?C.success:C.textMuted}}>{isParked?"● 주차중":"출차"}</span>
+            <>
+              <div style={{fontSize:12,color:C.textMuted,padding:"0 2px",marginBottom:2}}>
+                총 <strong style={{color:C.navy}}>{filtered.length}건</strong>
+              </div>
+              {filtered.slice(0,50).map(e=>{
+                const ts=typeStyle(e.parking_type);
+                const isParked=e.status==="parked";
+                return(
+                  <div key={e.id} style={{
+                    background:"#fff",borderRadius:14,padding:"14px 16px",
+                    border:`1px solid ${isParked?`${C.success}30`:C.borderLight}`,
+                    boxShadow:"0 1px 3px rgba(0,0,0,0.05)",
+                    borderLeft:`4px solid ${isParked?C.success:C.bgCard}`
+                  }}>
+                    {/* 상단: 번호판 + 상태뱃지 */}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                      <span style={{fontSize:18,fontWeight:800,color:C.textPrimary,letterSpacing:0.3}}>{hlPlate(e.plate_number,search)}</span>
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                        <span style={{padding:"4px 10px",borderRadius:6,fontSize:11,fontWeight:700,background:ts.bg,color:ts.color}}>{ts.label}</span>
+                        <span style={{padding:"4px 10px",borderRadius:6,fontSize:11,fontWeight:700,background:isParked?C.successBg:C.bgCard,color:isParked?C.success:C.textMuted}}>
+                          {isParked?"🟢 주차중":"⚪ 출차"}
+                        </span>
+                      </div>
+                    </div>
+                    {/* 하단: 메타 정보 2열 그리드 */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 12px"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>
+                        <span style={{fontSize:11,color:C.textMuted}}>🏢</span>
+                        <span style={{fontSize:12,fontWeight:600,color:C.textSecondary}}>{e.stores?.name||"-"}</span>
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>
+                        <span style={{fontSize:11,color:C.textMuted}}>👤</span>
+                        <span style={{fontSize:12,fontWeight:600,color:C.textSecondary}}>{e.workers?.name||"-"}</span>
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>
+                        <span style={{fontSize:11,color:C.textMuted}}>⏰ 입차</span>
+                        <span style={{fontSize:12,fontWeight:700,color:C.textPrimary}}>{fmt(e.entry_time)}</span>
+                      </div>
+                      {e.exit_time&&(
+                        <div style={{display:"flex",alignItems:"center",gap:4}}>
+                          <span style={{fontSize:11,color:C.textMuted}}>🚪 출차</span>
+                          <span style={{fontSize:12,fontWeight:700,color:C.textSecondary}}>{fmt(e.exit_time)}</span>
+                        </div>
+                      )}
+                      {e.floor&&(
+                        <div style={{display:"flex",alignItems:"center",gap:4}}>
+                          <span style={{fontSize:11,color:C.textMuted}}>📍</span>
+                          <span style={{fontSize:12,color:C.textSecondary}}>{e.floor}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div style={{display:"flex",gap:12,fontSize:12,color:C.textMuted,flexWrap:"wrap"}}>
-                    <span>🏢 {e.stores?.name||"-"}</span>
-                    <span>⏰ {fmt(e.entry_time)}</span>
-                    {e.exit_time&&<span>→ {fmt(e.exit_time)}</span>}
-                    <span style={{marginLeft:"auto"}}>👤 {e.workers?.name||"-"}</span>
-                  </div>
+                );
+              })}
+              {filtered.length>50&&(
+                <div style={{textAlign:"center",padding:"14px 0",fontSize:13,fontWeight:700,color:C.navy}}>
+                  + {filtered.length-50}건 더 있음
                 </div>
-              );
-            })
+              )}
+            </>
           )}
         </div>
       </div>
     </AppLayout>
   );
 }
+
