@@ -160,6 +160,17 @@ function RegisterForm() {
 
   return (
     <AppLayout>
+      <style>{`
+        .reg-grid { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; }
+        .reg-form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .reg-form-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+        @media (max-width: 767px) {
+          .reg-grid { grid-template-columns: 1fr !important; }
+          .reg-form-2col { grid-template-columns: 1fr !important; }
+          .reg-form-3col { grid-template-columns: 1fr !important; }
+          .reg-preview { display: none; }
+        }
+      `}</style>
       <div style={{ maxWidth: 780 }}>
 
         {/* 상단 헤더 */}
@@ -187,7 +198,7 @@ function RegisterForm() {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 20, alignItems: "start" }}>
+        <div className="reg-grid">
 
           {/* 메인 폼 */}
           <div className="v3-info-card">
@@ -209,7 +220,7 @@ function RegisterForm() {
 
               {/* 차량 정보 */}
               <FormSection title="차량 정보" color="#1428A0">
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <div className="reg-form-2col">
                   <div>
                     <label style={labelStyle}>차량번호<RequiredDot /></label>
                     <input
@@ -233,7 +244,7 @@ function RegisterForm() {
 
               {/* 고객 정보 */}
               <FormSection title="고객 정보" color="#10b981">
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <div className="reg-form-2col">
                   <div>
                     <label style={labelStyle}>고객명<RequiredDot /></label>
                     <input
@@ -257,7 +268,7 @@ function RegisterForm() {
 
               {/* 계약 기간 */}
               <FormSection title="계약 기간" color="#7c3aed">
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 14 }}>
+                <div className="reg-form-2col" style={{ marginBottom: 14 }}>
                   <div>
                     <label style={labelStyle}>시작일<RequiredDot /></label>
                     <input
@@ -316,7 +327,7 @@ function RegisterForm() {
 
               {/* 요금 & 상태 */}
               <FormSection title="요금 및 상태" color="var(--gold)">
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
+                <div className="reg-form-3col">
                   <div>
                     <label style={labelStyle}>월 요금<RequiredDot /></label>
                     <div style={{ position: "relative" }}>
@@ -406,7 +417,7 @@ function RegisterForm() {
           </div>
 
           {/* 우측 미리보기 카드 */}
-          <div style={{ position: "sticky", top: 80 }}>
+          <div className="reg-preview" style={{ position: "sticky", top: 80 }}>
             <div className="v3-info-card" style={{ marginBottom: 16 }}>
               <div style={{
                 padding: "16px 18px",
