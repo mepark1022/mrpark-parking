@@ -78,30 +78,30 @@ export default function SettingsPage() {
   };
 
   const renderWorkerList = (list, dayType) => (
-    <div style={{ background: "#fff", borderRadius: 14, padding: 20, border: "1px solid #e2e8f0", flex: 1 }}>
+    <div style={{ background: "#fff", borderRadius: 14, padding: 20, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", flex: 1 }}>
       <div className="flex justify-between items-center mb-4">
-        <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
           {dayType === "weekday" ? "평일 근무자 (월~금)" : "주말 근무자 (토~일)"}
         </div>
         <button
           onClick={() => addDefaultWorker(dayType)}
           className="cursor-pointer"
-          style={{ padding: "6px 16px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700 }}
+          style={{ padding: "6px 16px", borderRadius: 8, border: "none", background: "var(--navy)", color: "#fff", fontSize: 13, fontWeight: 700 }}
         >+ 추가</button>
       </div>
       {list.length === 0 ? (
-        <div className="text-center py-6" style={{ color: "#94a3b8", fontSize: 14 }}>배정된 근무자가 없습니다</div>
+        <div className="text-center py-6" style={{ color: "var(--text-muted)", fontSize: 14 }}>배정된 근무자가 없습니다</div>
       ) : (
         list.map((dw, i) => (
           <div key={dw.id} className="flex items-center gap-3 mb-2" style={{
-            padding: "10px 14px", borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0",
+            padding: "10px 14px", borderRadius: 10, background: "var(--bg-card)", border: "1px solid var(--border-light)",
           }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#94a3b8", width: 24 }}>{i + 1}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)", width: 24 }}>{i + 1}</span>
             <select
               value={dw.worker_id}
               onChange={e => changeWorker(dw.id, e.target.value)}
               className="flex-1"
-              style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600 }}
+              style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 14, fontWeight: 600 }}
             >
               {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
@@ -110,7 +110,7 @@ export default function SettingsPage() {
               className="cursor-pointer"
               style={{
                 width: 32, height: 32, borderRadius: 8, border: "none",
-                background: "#fee2e2", color: "#dc2626", fontSize: 16, fontWeight: 700,
+                background: "var(--mp-error-bg)", color: "var(--mp-error)", fontSize: 16, fontWeight: 700,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >×</button>
@@ -123,22 +123,22 @@ export default function SettingsPage() {
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto">
-        <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 20 }}>기본 근무자 설정</div>
+        <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 20 }}>기본 근무자 설정</div>
 
           <div className="mb-6">
-            <label className="block mb-2" style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>매장 선택</label>
+            <label className="block mb-2" style={{ fontSize: 14, fontWeight: 600, color: "var(--text-secondary)" }}>매장 선택</label>
             <select
               value={selectedStore}
               onChange={e => setSelectedStore(e.target.value)}
-              style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600, color: "#1e293b", minWidth: 280 }}
+              style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", minWidth: 280 }}
             >
               {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
 
           {message && (
-            <div className="mb-4" style={{ padding: "10px 16px", borderRadius: 10, background: "#fee2e2", color: "#dc2626", fontSize: 13, fontWeight: 600 }}>{message}</div>
+            <div className="mb-4" style={{ padding: "10px 16px", borderRadius: 10, background: "var(--mp-error-bg)", color: "var(--mp-error)", fontSize: 13, fontWeight: 600 }}>{message}</div>
           )}
 
           <div className="flex gap-4">

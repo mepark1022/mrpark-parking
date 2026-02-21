@@ -89,20 +89,23 @@ export default function GuidePage() {
         {/* 기능 카드 */}
         <div className="space-y-4">
           {features.map((item, i) => (
-            <div key={i} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+            <div key={i} style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden", transition: "box-shadow 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.boxShadow = "var(--shadow-md)"}
+              onMouseLeave={e => e.currentTarget.style.boxShadow = "var(--shadow-sm)"}
+            >
               <div className="p-6">
                 <div className="flex items-start gap-4">
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--gold-light)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>
                     {item.icon}
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-[15px] font-extrabold text-gray-900 mb-1">{item.title}</h3>
-                    <p className="text-sm text-gray-500 mb-3">{item.desc}</p>
+                    <h3 style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>{item.title}</h3>
+                    <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 12 }}>{item.desc}</p>
                     <div className="space-y-1.5">
                       {item.details.map((d, j) => (
                         <div key={j} className="flex items-start gap-2">
-                          <span style={{ color: "#F5B731", fontSize: 10, marginTop: 5, flexShrink: 0 }}>●</span>
-                          <span className="text-xs text-gray-600 leading-relaxed">{d}</span>
+                          <span style={{ color: "var(--gold)", fontSize: 10, marginTop: 5, flexShrink: 0 }}>●</span>
+                          <span style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>{d}</span>
                         </div>
                       ))}
                     </div>
@@ -115,8 +118,8 @@ export default function GuidePage() {
 
         {/* 푸터 */}
         <div className="mt-8 text-center pb-4">
-          <p className="text-[11px] text-gray-400">© 주식회사 미스터팍 (Mr. Park) · ME.PARK 2.0 주차운영 시스템</p>
-          <p className="text-[11px] text-gray-400 mt-1">문의: mepark1022@gmail.com</p>
+          <p style={{ fontSize: 11, color: "var(--text-muted)" }}>© 주식회사 미스터팍 (Mr. Park) · ME.PARK 2.0 주차운영 시스템</p>
+          <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>문의: mepark1022@gmail.com</p>
         </div>
       </div>
     </AppLayout>

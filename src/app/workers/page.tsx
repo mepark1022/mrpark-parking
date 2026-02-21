@@ -166,8 +166,8 @@ function ScheduleTab() {
   };
 
   return (
-    <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
-      <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>월별 근태 현황</div>
+    <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)" }}>
+      <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 16 }}>월별 근태 현황</div>
 
       {/* 매장 선택 + 월 선택 */}
       <div className="flex flex-col md:flex-row gap-4 mb-5">
@@ -403,21 +403,17 @@ export default function WorkersPage() {
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto">
-        {/* 탭 - 모바일에서 스크롤 */}
-        <div className="flex gap-1 mb-6 overflow-x-auto" style={{ background: "#f8fafc", borderRadius: 12, padding: 4, border: "1px solid #e2e8f0" }}>
+        {/* 탭 - v3 */}
+        <div className="v3-period-tabs overflow-x-auto mb-6" style={{ display: "flex", gap: 4, padding: 4, flexWrap: "nowrap" }}>
           {tabs.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} className="cursor-pointer whitespace-nowrap" style={{
-              padding: "10px 16px", borderRadius: 10, border: "none", fontSize: 13,
-              fontWeight: tab === t.id ? 700 : 500, background: tab === t.id ? "#fff" : "transparent",
-              color: tab === t.id ? "#1428A0" : "#475569", boxShadow: tab === t.id ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-              transition: "all 0.15s", flexShrink: 0,
-            }}>{t.label}</button>
+            <button key={t.id} onClick={() => setTab(t.id)} className={`v3-period-tab cursor-pointer whitespace-nowrap${tab === t.id ? " active" : ""}`}
+              style={{ flexShrink: 0 }}>{t.label}</button>
           ))}
         </div>
 
         {/* 출퇴근 */}
         {tab === "attendance" && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)" }}>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3">
               <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>오늘의 출퇴근 현황</div>
               <div className="flex gap-2">
@@ -459,7 +455,7 @@ export default function WorkersPage() {
 
         {/* 명부 */}
         {tab === "roster" && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0" }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)" }}>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3">
               <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>근무자 명부 ({workers.length}명)</div>
               <button onClick={() => { setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "" }); setShowForm(true); }} className="cursor-pointer" style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: "#1428A0", color: "#fff", fontSize: 14, fontWeight: 700 }}>+ 근무자 추가</button>

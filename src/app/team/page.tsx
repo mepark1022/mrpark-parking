@@ -214,8 +214,8 @@ export default function TeamPage() {
     <AppLayout>
       <div className="max-w-5xl">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900">팀원 관리</h3>
-          <button onClick={() => setShowInvite(true)} className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-dark shadow-sm">+ 팀원 초대</button>
+          <h3 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>팀원 관리</h3>
+          <button onClick={() => setShowInvite(true)} style={{ padding: "10px 20px", borderRadius: 10, background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer" }}>+ 팀원 초대</button>
         </div>
 
         {message.text && (
@@ -227,23 +227,18 @@ export default function TeamPage() {
         {loading ? <div className="text-center py-10 text-gray-500">로딩 중...</div> : (
           <>
             {/* ===== 등록된 팀원 ===== */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-              <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
-                <h4 className="text-[15px] font-bold text-gray-800">등록된 팀원 ({profiles.length}명)</h4>
+            <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden", marginBottom: 20 }}>
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)" }}>
+                <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>등록된 팀원 ({profiles.length}명)</h4>
               </div>
               {/* PC */}
               <div className="hidden md:block">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead style={{ background: "var(--bg-card)", borderBottom: "1px solid var(--border-light)" }}>
                     <tr>
-                      <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">이름</th>
-                      <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">이메일</th>
-                      <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">배정매장</th>
-                      <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">초대일</th>
-                      <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">수락일</th>
-                      <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">권한</th>
-                      <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">상태</th>
-                      <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">관리</th>
+                      {["이름","이메일","배정매장","초대일","수락일","권한","상태","관리"].map(h => (
+                        <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -253,9 +248,9 @@ export default function TeamPage() {
                       const inv = inviteMap[p.email];
                       const memberStores = getMemberStores(p.id);
                       return (
-                        <tr key={p.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                          <td className="px-5 py-3.5 text-sm text-gray-900 font-bold">{p.name || "-"}</td>
-                          <td className="px-5 py-3.5 text-sm text-gray-700">{p.email}</td>
+                        <tr key={p.id} style={{ borderBottom: "1px solid var(--border-light)" }} className="hover:bg-[var(--bg-card)]">
+                          <td style={{ padding: "13px 16px", fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{p.name || "-"}</td>
+                          <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--text-secondary)" }}>{p.email}</td>
                           <td className="px-5 py-3.5 text-sm">
                             {memberStores.length > 0 ? (
                               <div className="flex flex-wrap gap-1">
@@ -267,8 +262,8 @@ export default function TeamPage() {
                               <span className="text-xs text-gray-400">{p.role === "admin" ? "전체" : "-"}</span>
                             )}
                           </td>
-                          <td className="px-5 py-3.5 text-xs text-gray-500">{inv ? fmtDate(inv.invited) : "-"}</td>
-                          <td className="px-5 py-3.5 text-xs text-gray-500">{inv ? fmtDate(inv.accepted) : "-"}</td>
+                          <td style={{ padding: "13px 16px", fontSize: 12, color: "var(--text-muted)" }}>{inv ? fmtDate(inv.invited) : "-"}</td>
+                          <td style={{ padding: "13px 16px", fontSize: 12, color: "var(--text-muted)" }}>{inv ? fmtDate(inv.accepted) : "-"}</td>
                           <td className="px-5 py-3.5 text-sm">
                             {p.id === currentUserId ? (
                               <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: rb.bg, color: rb.color }}>{rb.label}</span>
@@ -336,9 +331,9 @@ export default function TeamPage() {
             </div>
 
             {/* ===== 초대 내역 ===== */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
-                <h4 className="text-[15px] font-bold text-gray-800">초대 내역 ({pendingInvitations.length}건)</h4>
+            <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)" }}>
+                <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>초대 내역 ({pendingInvitations.length}건)</h4>
               </div>
               {pendingInvitations.length === 0 ? (
                 <div className="text-center py-8 text-sm text-gray-400">초대 내역이 없습니다</div>
@@ -346,14 +341,11 @@ export default function TeamPage() {
                 <>
                   <div className="hidden md:block">
                     <table className="w-full">
-                      <thead className="bg-gray-50 border-b border-gray-200">
+                      <thead style={{ background: "var(--bg-card)", borderBottom: "1px solid var(--border-light)" }}>
                         <tr>
-                          <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">이메일</th>
-                          <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">역할</th>
-                          <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">배정매장</th>
-                          <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">상태</th>
-                          <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">초대일</th>
-                          <th className="text-left px-5 py-3 text-sm font-bold text-gray-700">관리</th>
+                          {["이메일","역할","배정매장","상태","초대일","관리"].map(h => (
+                            <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>{h}</th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
@@ -361,12 +353,12 @@ export default function TeamPage() {
                           const rb = roleBadge(inv.role);
                           const sb = statusBadge(inv.status);
                           return (
-                            <tr key={inv.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                              <td className="px-5 py-3.5 text-sm text-gray-900 font-medium">{inv.email}</td>
-                              <td className="px-5 py-3.5 text-sm"><span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: rb.bg, color: rb.color }}>{rb.label}</span></td>
-                              <td className="px-5 py-3.5 text-sm text-gray-600">{inv.stores?.name || "-"}</td>
-                              <td className="px-5 py-3.5 text-sm"><span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: sb.bg, color: sb.color }}>{sb.label}</span></td>
-                              <td className="px-5 py-3.5 text-sm text-gray-600">{fmtDate(inv.created_at)}</td>
+                            <tr key={inv.id} style={{ borderBottom: "1px solid var(--border-light)" }} className="hover:bg-[var(--bg-card)]">
+                              <td style={{ padding: "13px 16px", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{inv.email}</td>
+                              <td style={{ padding: "13px 16px" }}><span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: rb.bg, color: rb.color }}>{rb.label}</span></td>
+                              <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--text-secondary)" }}>{inv.stores?.name || "-"}</td>
+                              <td style={{ padding: "13px 16px" }}><span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: sb.bg, color: sb.color }}>{sb.label}</span></td>
+                              <td style={{ padding: "13px 16px", fontSize: 12, color: "var(--text-muted)" }}>{fmtDate(inv.created_at)}</td>
                               <td className="px-5 py-3.5 text-sm">
                                 <div className="flex gap-2">
                                   {inv.status === "pending" && (
