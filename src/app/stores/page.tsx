@@ -335,6 +335,9 @@ const Modal = ({
 export default function StoresPage() {
   const supabase = createClient();
 
+  // 반응형
+  const [isMobile, setIsMobile] = useState(false);
+
   // 탭
   const [mainTab, setMainTab] = useState<"list" | "hours" | "shifts" | "late-check">("list");
 
@@ -373,6 +376,13 @@ export default function StoresPage() {
   const [lateForm, setLateForm] = useState({ late_minutes: 5, absent_minutes: 30 });
 
   // ── 데이터 로드 ──
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
@@ -563,15 +573,18 @@ export default function StoresPage() {
   const TabBar = () => (
     <div style={{
       display: "flex", gap: 4, background: C.bgCard, padding: 4,
-      borderRadius: 10, marginBottom: 24, width: "fit-content",
+      borderRadius: 10, marginBottom: 24,
+      width: isMobile ? "100%" : "fit-content",
+      overflowX: isMobile ? "auto" : "visible",
     }}>
       {mainTabs.map(t => (
         <button
           key={t.id}
           onClick={() => setMainTab(t.id as typeof mainTab)}
           style={{
-            padding: "10px 20px", borderRadius: 8, fontSize: 14, fontWeight: 500,
+            padding: "10px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500,
             border: "none", cursor: "pointer", transition: "all 0.2s",
+            whiteSpace: "nowrap", flexShrink: 0,
             background: mainTab === t.id ? "#fff" : "transparent",
             color: mainTab === t.id ? C.textPrimary : C.textSecondary,
             boxShadow: mainTab === t.id ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
@@ -723,7 +736,7 @@ export default function StoresPage() {
                 }} />
               )}
               {(parkingLots[store.id] ?? []).length > 0 && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
                   {parkingLots[store.id].map(lot => (
                     <div key={lot.id} style={{
                       background: C.bgCard, borderRadius: 12, padding: "16px 18px",
@@ -859,7 +872,7 @@ export default function StoresPage() {
       <Card>
         <CardHeader>
           <CardTitle icon="🕐">운영시간 설정</CardTitle>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
             <StoreSelector />
             <BtnPrimary onClick={() => {
               setHourForm({ day_category: "weekday", open_time: "08:00", close_time: "22:00" });
@@ -876,7 +889,7 @@ export default function StoresPage() {
               등록된 운영시간이 없습니다
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
               {storeHours.map(h => (
                 <div key={h.id} style={{
                   background: C.bgCard, borderRadius: 14, padding: 20,
@@ -927,7 +940,7 @@ export default function StoresPage() {
       <Card>
         <CardHeader>
           <CardTitle icon="👷">근무조 설정</CardTitle>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
             <StoreSelector />
             <BtnPrimary onClick={() => {
               setShiftForm({ name: "오전조", start_time: "08:00", end_time: "14:00" });
@@ -944,7 +957,7 @@ export default function StoresPage() {
               등록된 근무조가 없습니다
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
               {storeShifts.map(sh => (
                 <div key={sh.id} style={{
                   background: C.bgCard, borderRadius: 14, padding: 20,
@@ -1069,7 +1082,7 @@ export default function StoresPage() {
 
     if (modalType === "store") return (
       <Modal title={editingItem ? "매장 수정" : "매장 추가"} onClose={() => setModalType(null)}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
           <FormGroup label="매장명">
             <Input value={storeForm.name} onChange={e => setStoreForm(f => ({ ...f, name: e.target.value }))} />
           </FormGroup>
@@ -1077,7 +1090,7 @@ export default function StoresPage() {
             <Input value={storeForm.manager_name} onChange={e => setStoreForm(f => ({ ...f, manager_name: e.target.value }))} />
           </FormGroup>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
           <FormGroup label="시/도">
             <Select value={storeForm.region_city} onChange={e => {
               setStoreForm(f => ({ ...f, region_city: e.target.value, region_district: "" }));
@@ -1111,7 +1124,7 @@ export default function StoresPage() {
         <FormGroup label="주차장명">
           <Input value={lotForm.name} onChange={e => setLotForm(f => ({ ...f, name: e.target.value }))} placeholder="예: 본관 지하 1층" />
         </FormGroup>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
           <FormGroup label="위치 구분">
             <Select value={lotForm.lot_type} onChange={e => setLotForm(f => ({ ...f, lot_type: e.target.value }))}>
               <option value="internal">본관</option>
@@ -1143,7 +1156,7 @@ export default function StoresPage() {
         <FormGroup label="주소">
           <Input value={lotForm.road_address} onChange={e => setLotForm(f => ({ ...f, road_address: e.target.value }))} />
         </FormGroup>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12 }}>
           <FormGroup label="자주식 (면)">
             <Input type="number" value={lotForm.self_spaces}
               onChange={e => setLotForm(f => ({ ...f, self_spaces: Number(e.target.value) }))} />
@@ -1174,7 +1187,7 @@ export default function StoresPage() {
 
     if (modalType === "visit") return (
       <Modal title={editingItem ? "방문지 수정" : "방문지 추가"} onClose={() => setModalType(null)}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
           <FormGroup label="방문지명">
             <Input value={visitForm.name} onChange={e => setVisitForm(f => ({ ...f, name: e.target.value }))} placeholder="예: 1층 내과" />
           </FormGroup>
@@ -1182,7 +1195,7 @@ export default function StoresPage() {
             <Input value={visitForm.floor} onChange={e => setVisitForm(f => ({ ...f, floor: e.target.value }))} placeholder="예: B1, 1F" />
           </FormGroup>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
           <FormGroup label="무료 주차 (분)">
             <Input type="number" value={visitForm.free_minutes}
               onChange={e => setVisitForm(f => ({ ...f, free_minutes: Number(e.target.value) }))} />
@@ -1229,7 +1242,7 @@ export default function StoresPage() {
             <option value="all">전체</option>
           </Select>
         </FormGroup>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
           <FormGroup label="오픈 시간">
             <Input type="time" value={hourForm.open_time} onChange={e => setHourForm(f => ({ ...f, open_time: e.target.value }))} />
           </FormGroup>
@@ -1249,7 +1262,7 @@ export default function StoresPage() {
         <FormGroup label="근무조 이름">
           <Input value={shiftForm.name} onChange={e => setShiftForm(f => ({ ...f, name: e.target.value }))} placeholder="예: 오전조, 오후조, 야간조" />
         </FormGroup>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
           <FormGroup label="시작 시간">
             <Input type="time" value={shiftForm.start_time} onChange={e => setShiftForm(f => ({ ...f, start_time: e.target.value }))} />
           </FormGroup>
