@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";

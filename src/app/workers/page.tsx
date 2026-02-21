@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+export const dynamic = 'force-dynamic';
 import LeaveTab from "./LeaveTab";
 import ReviewTab from "./ReviewTab";
 import ReportTab from "./ReportTab";
