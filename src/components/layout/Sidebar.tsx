@@ -113,7 +113,7 @@ export default function Sidebar() {
   return (
     <aside className="v3-sidebar">
       {/* Logo */}
-      <div style={{ padding: "24px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+      <div style={{ padding: "24px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "center" }}>
         <LogoGNB theme="dark" />
       </div>
 
