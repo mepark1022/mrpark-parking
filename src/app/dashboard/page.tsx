@@ -59,6 +59,7 @@ export default function DashboardPage() {
   const [parkingStatus, setParkingStatus] = useState([]);
   const [parkingStoreId, setParkingStoreId] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const [parkingViewMode, setParkingViewMode] = useState<"card"|"list">("card");
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -195,34 +196,42 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      {/* 매장 탭 */}
-      <div className="v3-store-tabs">
-        <button className={`v3-store-tab company ${!selectedStore ? "active" : ""}`} onClick={() => setSelectedStore("")}>🏢 전사</button>
-        <span className="v3-tab-divider" />
-        {stores.map((s) => {
-          const hasLots = parkingStatus.some(p => p.storeId === s.id);
-          return <button key={s.id} className={`v3-store-tab ${selectedStore === s.id ? "active" : ""}`} onClick={() => setSelectedStore(s.id)}>{s.name} {hasLots && "🅿️"}</button>;
-        })}
-      </div>
-
-      {/* 기간 선택 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
+      {/* 필터바: 전사버튼 + 매장 드롭다운 + 기간 탭 한 줄 */}
+      <div className="v3-filter-bar">
+        <div className="v3-filter-left">
+          <button
+            className={`v3-btn-all ${selectedStore ? "inactive" : ""}`}
+            onClick={() => setSelectedStore("")}
+          >🏢 전사</button>
+          <div className="v3-filter-divider" />
+          <div className="v3-store-dropdown-wrap">
+            <select
+              className="v3-store-dropdown"
+              value={selectedStore}
+              onChange={(e) => setSelectedStore(e.target.value)}
+            >
+              <option value="">매장 선택</option>
+              {stores.map((s) => {
+                const hasLots = parkingStatus.some(p => p.storeId === s.id);
+                return <option key={s.id} value={s.id}>{s.name}{hasLots ? " 🅿️" : ""}</option>;
+              })}
+            </select>
+          </div>
+        </div>
         <div className="v3-period-tabs">
-          {(["today","week","month"] as const).map((p) => (
-            <button key={p} className={`v3-period-tab ${period === p ? "active" : ""}`} onClick={() => setPeriod(p)}>
-              {p === "today" ? "오늘" : p === "week" ? "이번 주" : "이번 달"}
-            </button>
+          {([["today","오늘"],["week","이번 주"],["month","이번 달"]] as const).map(([p, label]) => (
+            <button key={p} className={`v3-period-tab ${period === p ? "active" : ""}`} onClick={() => setPeriod(p)}>{label}</button>
           ))}
           <button className={`v3-period-tab ${period === "custom" ? "active" : ""}`} onClick={() => setPeriod("custom")}>직접 설정</button>
         </div>
-        {period === "custom" && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 13 }} />
-            <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>~</span>
-            <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 13 }} />
-          </div>
-        )}
       </div>
+      {period === "custom" && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 13 }} />
+          <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>~</span>
+          <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 13 }} />
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)" }}>
@@ -260,10 +269,17 @@ export default function DashboardPage() {
                 {!selectedStore && (
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                     <span style={{ fontSize: 15, fontWeight: 700 }}>📍 매장별 현황</span>
-                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>주차장 보유 {parkingStatus.length}개 매장</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 12, color: "var(--text-muted)" }}>주차장 보유 {parkingStatus.length}개 매장</span>
+                      <div className="v3-view-toggle">
+                        <button className={`v3-view-btn ${parkingViewMode === "card" ? "active" : ""}`} onClick={() => setParkingViewMode("card")} title="카드 뷰">⊞</button>
+                        <button className={`v3-view-btn ${parkingViewMode === "list" ? "active" : ""}`} onClick={() => setParkingViewMode("list")} title="리스트 뷰">≡</button>
+                      </div>
+                    </div>
                   </div>
                 )}
                 {!selectedStore ? (
+                  parkingViewMode === "card" ? (
                   <div className="dash-store-lot-grid">
                     {parkingStatus.map((pItem) => {
                       const pOcc = pItem.totalSpaces > 0 ? Math.round((pItem.currentCars / pItem.totalSpaces) * 100) : 0;
@@ -297,6 +313,45 @@ export default function DashboardPage() {
                       </div>
                     )}
                   </div>
+                  ) : (
+                  /* 리스트 뷰 */
+                  <table className="v3-parking-list-table">
+                    <thead>
+                      <tr>
+                        <th>매장</th>
+                        <th>점유율</th>
+                        <th>상태</th>
+                        <th style={{ textAlign: "right" }}>현재 / 전체</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {parkingStatus.length === 0 ? (
+                        <tr><td colSpan={4} style={{ textAlign: "center", padding: "32px", color: "var(--text-muted)" }}>등록된 주차장이 없습니다</td></tr>
+                      ) : parkingStatus.map((pItem) => {
+                        const pOcc = pItem.totalSpaces > 0 ? Math.round((pItem.currentCars / pItem.totalSpaces) * 100) : 0;
+                        const oc = getOccColor(pOcc);
+                        return (
+                          <tr key={pItem.storeId}>
+                            <td>
+                              <div style={{ fontWeight: 700, fontSize: 14 }}>{pItem.storeName}</div>
+                              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{pItem.lots.length}개 주차장</div>
+                            </td>
+                            <td>
+                              <div className="v3-list-bar-wrap">
+                                <div className="v3-list-bar"><div className="v3-list-bar-fill" style={{ width: `${Math.min(pOcc,100)}%`, background: oc.bar }} /></div>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: oc.text, minWidth: 36 }}>{pOcc}%</span>
+                              </div>
+                            </td>
+                            <td><span style={{ fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 6, background: oc.bg, color: oc.text }}>{oc.label}</span></td>
+                            <td style={{ textAlign: "right", fontSize: 13, color: "var(--text-secondary)" }}>
+                              <strong style={{ fontSize: 15, color: "var(--text-primary)" }}>{pItem.currentCars}</strong> / {pItem.totalSpaces}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  )
                 ) : ps ? (
                   <div className="dash-lot-grid">
                     {ps.lots.map(lot => {
