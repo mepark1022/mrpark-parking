@@ -289,3 +289,120 @@
 }
 .v3-period-tab.active { background: #fff; color: var(--text-primary); box-shadow: var(--shadow-sm); }
 .v3-period-tab:hover:not(.active) { color: var(--text-primary); }
+
+/* ============================================================
+   Dashboard Layout Classes (PC Default)
+   ============================================================ */
+
+/* 주차장 현황 메인 그리드 */
+.dash-parking-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+}
+
+/* 전사 매장별 3열 / 매장 개별 주차장 3열 */
+.dash-store-lot-grid,
+.dash-lot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* 하이라이트 카드 stats */
+.dash-highlight-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+/* 3열 인포 그리드 */
+.dash-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+/* 차트 2열 그리드 */
+.dash-chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* ============================================================
+   Dashboard Mobile Responsive (≤ 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+
+  /* 매장 탭 — 가로 스크롤 */
+  .v3-store-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    padding: 6px 4px;
+  }
+  .v3-store-tabs::-webkit-scrollbar { display: none; }
+  .v3-store-tab { white-space: nowrap; padding: 10px 14px; font-size: 13px; }
+
+  /* 기간 탭 — 가로 스크롤 */
+  .v3-period-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+  .v3-period-tabs::-webkit-scrollbar { display: none; }
+  .v3-period-tab { white-space: nowrap; padding: 8px 12px; }
+
+  /* 주차장 현황: 2열 PC → 1열 세로 스택 */
+  .dash-parking-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* 요약 카드 숫자 크기 축소 */
+  .v3-summary-value { font-size: 22px; }
+
+  /* 매장별 카드: 3열 → 1열 */
+  .dash-store-lot-grid,
+  .dash-lot-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* 주차장 카드 내부 lot-stats 숫자 크기 축소 */
+  .v3-lot-card { padding: 16px; }
+
+  /* 하이라이트 카드 stats: 4열 flex → 2×2 그리드 */
+  .dash-highlight-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  /* 구분선 숨기기 */
+  .dash-stat-divider {
+    display: none !important;
+  }
+  /* stat 텍스트 크기 조정 */
+  .dash-highlight-stats > div > span:first-child {
+    font-size: 24px !important;
+  }
+
+  /* 3열 인포 그리드 → 1열 */
+  .dash-info-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* 차트 2열 → 1열 */
+  .dash-chart-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* 전체 콘텐츠 패딩 */
+  main {
+    padding: 14px !important;
+  }
+}

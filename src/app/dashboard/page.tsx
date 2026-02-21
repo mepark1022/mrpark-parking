@@ -226,7 +226,7 @@ export default function DashboardPage() {
 
           {/* 주차장 현황 (좌측 요약 + 우측 매장별) */}
           {stores.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 20 }}>
+            <div className="dash-parking-grid">
               <div className="v3-summary-card">
                 <div className="v3-summary-header">
                   <span style={{ fontSize: 16, fontWeight: 800, color: "var(--navy)" }}>
@@ -256,7 +256,7 @@ export default function DashboardPage() {
                   </div>
                 )}
                 {!selectedStore ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+                  <div className="dash-store-lot-grid">
                     {parkingStatus.map((pItem) => {
                       const pOcc = pItem.totalSpaces > 0 ? Math.round((pItem.currentCars / pItem.totalSpaces) * 100) : 0;
                       const oc = getOccColor(pOcc);
@@ -290,7 +290,7 @@ export default function DashboardPage() {
                     )}
                   </div>
                 ) : ps ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+                  <div className="dash-lot-grid">
                     {ps.lots.map(lot => {
                       const lotTotal = (lot.self_spaces || 0) + (lot.mechanical_normal || 0) + (lot.mechanical_suv || 0);
                       const lotCurrent = lot.current_cars || 0;
@@ -335,28 +335,28 @@ export default function DashboardPage() {
                 {period === "today" ? "오늘의 실적" : period === "week" ? "이번 주 실적" : period === "month" ? "이번 달 실적" : "기간 실적"}
               </span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around" }}>
+            <div className="dash-highlight-stats">
               <div style={{ textAlign: "center", flex: 1 }}>
                 <span style={{ display: "block", fontSize: 32, fontWeight: 800, color: "#fff", marginBottom: 6 }}>{totalSales >= 100000000 ? `₩${(totalSales/100000000).toFixed(1)}억` : `₩${totalSales.toLocaleString()}`}</span>
                 <span style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.7)" }}>총 매출</span>
               </div>
-              <div style={{ width: 1, height: 60, background: "rgba(255,255,255,0.15)" }} />
+              <div className="dash-stat-divider" style={{ width: 1, height: 60, background: "rgba(255,255,255,0.15)" }} />
               <div style={{ textAlign: "center", flex: 1 }}>
                 <span style={{ display: "block", fontSize: 32, fontWeight: 800, color: "#fff", marginBottom: 6 }}>{kpi.totalCars.toLocaleString()}</span>
                 <span style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.7)" }}>총 입차</span>
               </div>
-              <div style={{ width: 1, height: 60, background: "rgba(255,255,255,0.15)" }} />
+              <div className="dash-stat-divider" style={{ width: 1, height: 60, background: "rgba(255,255,255,0.15)" }} />
               <div style={{ textAlign: "center", flex: 1 }}>
                 <span style={{ display: "block", fontSize: 32, fontWeight: 800, color: "#fff", marginBottom: 6 }}>{kpi.workerCount}</span>
                 <span style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.7)" }}>근무 인원</span>
               </div>
-              <div style={{ width: 1, height: 60, background: "rgba(255,255,255,0.15)" }} />
+              <div className="dash-stat-divider" style={{ width: 1, height: 60, background: "rgba(255,255,255,0.15)" }} />
               <div style={{ textAlign: "center", flex: 1 }}>
                 <span style={{ display: "block", fontSize: 32, fontWeight: 800, color: "#fff", marginBottom: 6 }}>{selectedStore ? kpi.activeContracts : stores.length}</span>
                 <span style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.7)" }}>{selectedStore ? "월주차 계약" : "운영 매장"}</span>
               </div>
             </div>
-            <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.12)", display: "flex", gap: 24 }}>
+            <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.12)", display: "flex", gap: 24, flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 8, height: 8, borderRadius: 4, background: "#F5B731" }} />
                 <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>발렛</span>
@@ -377,7 +377,7 @@ export default function DashboardPage() {
           </div>
 
           {/* 3열 인포 그리드 */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
+          <div className="dash-info-grid">
             <div className="v3-info-card">
               <div className="v3-info-card-header"><span className="v3-info-card-title">⏰ 시간대별 입차</span><span className="v3-info-card-badge">{period === "today" ? "오늘" : period === "week" ? "이번 주" : "이번 달"}</span></div>
               <div className="v3-info-card-body">
@@ -422,7 +422,7 @@ export default function DashboardPage() {
           </div>
 
           {/* 차트 2열 */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <div className="dash-chart-grid">
             <div className="v3-info-card">
               <div className="v3-info-card-header"><span className="v3-info-card-title">📈 일별 추이</span></div>
               <div className="v3-info-card-body">
