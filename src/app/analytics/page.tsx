@@ -175,6 +175,14 @@ export default function AnalyticsPage() {
   const [dailyData, setDailyData] = useState<DailySummary[]>([]);
   const [storeData, setStoreData] = useState<StoreSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   // Load stores
   useEffect(() => {
@@ -304,9 +312,10 @@ export default function AnalyticsPage() {
 
   // ── Render ──────────────────────────────────────────────────
   return (
-    <div style={{ padding: "24px 32px", maxWidth: 1400 }}>
+    <div className="analytics-page" style={{ padding: "24px 32px", maxWidth: 1400 }}>
       {/* ── Top Controls ────────────────────────────────────── */}
       <div
+        className="analytics-controls"
         style={{
           display: "flex",
           alignItems: "center",
@@ -318,6 +327,7 @@ export default function AnalyticsPage() {
       >
         {/* Period tabs */}
         <div
+          className="analytics-period-tabs"
           style={{
             display: "flex",
             gap: 4,
@@ -350,7 +360,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Store filter + custom dates */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div className="analytics-filter-wrap" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           {period === "custom" && (
             <>
               <input
@@ -392,6 +402,7 @@ export default function AnalyticsPage() {
 
       {/* ── KPI Cards ───────────────────────────────────────── */}
       <div
+        className="analytics-kpi-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
@@ -546,7 +557,7 @@ export default function AnalyticsPage() {
             </span>
           </div>
         </div>
-        <div style={{ padding: "20px 8px 12px" }}>
+          <div style={{ padding: "20px 8px 12px" }}>
           {loading || dailyData.length === 0 ? (
             <div
               style={{
@@ -564,7 +575,7 @@ export default function AnalyticsPage() {
               {loading ? "데이터 로드 중..." : "해당 기간에 데이터가 없습니다"}
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" height={isMobile ? 180 : 260} className="analytics-chart-area">
               <AreaChart data={dailyData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="valetGrad" x1="0" y1="0" x2="0" y2="1">
@@ -589,7 +600,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* ── Bottom Grid: Store Comparison + Entry Chart ─────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+      <div className="analytics-charts-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Store bar chart */}
         <div
           style={{
@@ -630,7 +641,7 @@ export default function AnalyticsPage() {
                 {loading ? "로드 중..." : selectedStore !== "all" ? "전체 매장 선택 시 비교 가능" : "데이터 없음"}
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height={isMobile ? 160 : 220}>
                 <BarChart data={storeData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                   <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#8b919d" }} axisLine={false} tickLine={false} />
@@ -684,7 +695,7 @@ export default function AnalyticsPage() {
                 {loading ? "로드 중..." : "데이터 없음"}
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height={isMobile ? 160 : 220}>
                 <BarChart data={dailyData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#8b919d" }} axisLine={false} tickLine={false} />
@@ -789,7 +800,7 @@ export default function AnalyticsPage() {
       )}
 
       {/* ── Revenue Composition (Pie) ───────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+      <div className="analytics-charts-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Pie chart */}
         <div
           style={{
@@ -976,6 +987,49 @@ export default function AnalyticsPage() {
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
+        }
+        @media (max-width: 768px) {
+          .analytics-page {
+            padding: 16px !important;
+          }
+          .analytics-controls {
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+          .analytics-period-tabs {
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            -webkit-overflow-scrolling: touch !important;
+            flex-shrink: 0;
+            white-space: nowrap;
+            scrollbar-width: none;
+          }
+          .analytics-period-tabs::-webkit-scrollbar {
+            display: none;
+          }
+          .analytics-period-tabs button {
+            flex-shrink: 0 !important;
+            padding: 8px 16px !important;
+            font-size: 13px !important;
+          }
+          .analytics-kpi-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+          }
+          .analytics-charts-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .analytics-chart-area {
+            height: 180px !important;
+          }
+          .analytics-filter-wrap {
+            width: 100%;
+          }
+          .analytics-filter-wrap select,
+          .analytics-filter-wrap input[type="date"] {
+            width: 100% !important;
+            min-width: unset !important;
+          }
         }
       `}</style>
     </div>
