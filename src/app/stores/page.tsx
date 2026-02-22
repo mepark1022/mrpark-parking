@@ -1524,6 +1524,24 @@ export default function StoresPage() {
         border-radius: 10px; margin-bottom: 24px;
         width: fit-content; overflow-x: visible;
       }
+      .stores-tab-btn {
+        padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
+        border: none; cursor: pointer; transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+        white-space: nowrap; flex-shrink: 0;
+      }
+      .stores-tab-btn:hover:not(.active) {
+        background: rgba(20, 40, 160, 0.07) !important;
+        color: ${C.navy} !important;
+      }
+      .stores-tab-btn:active:not(.active) {
+        background: rgba(20, 40, 160, 0.14) !important;
+        transform: scale(0.97);
+      }
+      .stores-tab-btn.active {
+        background: #fff; color: ${C.textPrimary};
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        font-weight: 700;
+      }
       .stores-card-body > div { padding: 0; }
       .stores-mobile-view { display: none !important; }
       .stores-desktop-view { display: block; }
@@ -1555,13 +1573,10 @@ export default function StoresPage() {
           <button
             key={t.id}
             onClick={() => setMainTab(t.id as typeof mainTab)}
+            className={`stores-tab-btn${mainTab === t.id ? " active" : ""}`}
             style={{
-              padding: "10px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500,
-              border: "none", cursor: "pointer", transition: "all 0.2s",
-              whiteSpace: "nowrap", flexShrink: 0,
-              background: mainTab === t.id ? "#fff" : "transparent",
               color: mainTab === t.id ? C.textPrimary : C.textSecondary,
-              boxShadow: mainTab === t.id ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
+              background: mainTab === t.id ? "#fff" : "transparent",
             }}
           >
             {t.label}
