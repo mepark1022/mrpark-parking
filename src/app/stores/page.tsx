@@ -471,9 +471,21 @@ export default function StoresPage() {
 
       const storeIds = storeData.map((s: Store) => s.id);
 
-      // 주차장
-      const { data: lotData } = await supabase
-        .from("parking_lots").select("*").in("store_id", storeIds).order("name");
+      // 5개 테이블 병렬 조회
+      const [
+        { data: lotData },
+        { data: visitData },
+        { data: hourData },
+        { data: shiftData },
+        { data: ruleData },
+      ] = await Promise.all([
+        supabase.from("parking_lots").select("*").in("store_id", storeIds).order("name"),
+        supabase.from("visit_places").select("*").in("store_id", storeIds).order("name"),
+        supabase.from("store_operating_hours").select("*").in("store_id", storeIds),
+        supabase.from("store_shifts").select("*").in("store_id", storeIds),
+        supabase.from("store_late_rules").select("*").in("store_id", storeIds),
+      ]);
+
       if (lotData) {
         const grouped: Record<string, ParkingLot[]> = {};
         lotData.forEach((lot: ParkingLot) => {
@@ -483,9 +495,6 @@ export default function StoresPage() {
         setParkingLots(grouped);
       }
 
-      // 방문지
-      const { data: visitData } = await supabase
-        .from("visit_places").select("*").in("store_id", storeIds).order("name");
       if (visitData) {
         const grouped: Record<string, VisitPlace[]> = {};
         visitData.forEach((vp: VisitPlace) => {
@@ -495,9 +504,6 @@ export default function StoresPage() {
         setVisitPlaces(grouped);
       }
 
-      // 운영시간
-      const { data: hourData } = await supabase
-        .from("store_operating_hours").select("*").in("store_id", storeIds);
       if (hourData) {
         const grouped: Record<string, OperatingHours[]> = {};
         hourData.forEach((h: OperatingHours) => {
@@ -507,9 +513,6 @@ export default function StoresPage() {
         setOperatingHours(grouped);
       }
 
-      // 근무조
-      const { data: shiftData } = await supabase
-        .from("store_shifts").select("*").in("store_id", storeIds);
       if (shiftData) {
         const grouped: Record<string, Shift[]> = {};
         shiftData.forEach((sh: Shift) => {
@@ -519,9 +522,6 @@ export default function StoresPage() {
         setShifts(grouped);
       }
 
-      // 정상출근체크 규칙
-      const { data: ruleData } = await supabase
-        .from("store_late_rules").select("*").in("store_id", storeIds);
       if (ruleData) {
         const mapped: Record<string, LateRule> = {};
         ruleData.forEach((r: LateRule) => { mapped[r.store_id] = r; });
@@ -534,7 +534,6 @@ export default function StoresPage() {
       setLoading(false);
     }
   }
-
   // ── CRUD 핸들러 ──
   async function saveStore() {
     if (!storeForm.name.trim()) { alert("매장명을 입력해주세요."); return; }

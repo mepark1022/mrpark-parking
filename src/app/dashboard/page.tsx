@@ -366,22 +366,32 @@ export default function DashboardPage() {
   async function loadData() {
     setLoading(true);
     const { start, end } = getDateRange();
-    let q = supabase.from("daily_records").select("*, stores(name)").gte("date", start).lte("date", end).order("date");
-    if (selectedStore) q = q.eq("store_id", selectedStore);
-    const { data: rData } = await q;
+
+    // daily_records + monthly_parking 병렬 실행
+    let recQ = supabase.from("daily_records").select("id, store_id, date, total_cars, valet_count, valet_revenue, daily_revenue, stores(name)").gte("date", start).lte("date", end).order("date");
+    if (selectedStore) recQ = recQ.eq("store_id", selectedStore);
+    let mpQ = supabase.from("monthly_parking").select("id, store_id, contract_status, monthly_fee, end_date, stores(name)");
+    if (selectedStore) mpQ = mpQ.eq("store_id", selectedStore);
+
+    const [{ data: rData }, { data: mpData }] = await Promise.all([recQ, mpQ]);
+
     const recs = rData || [];
     setRecords(recs);
+    setMonthlyContracts(mpData || []);
+
     if (recs.length > 0) {
       const ids = recs.map(r => r.id);
-      const { data: hData } = await supabase.from("hourly_data").select("hour, car_count, record_id").in("record_id", ids);
+      // hourly_data + worker_assignments 병렬 실행
+      const [{ data: hData }, { data: aData }] = await Promise.all([
+        supabase.from("hourly_data").select("hour, car_count, record_id").in("record_id", ids),
+        supabase.from("worker_assignments").select("worker_id, worker_type, workers:worker_id(name), record_id").in("record_id", ids),
+      ]);
       setHourlyData(hData || []);
-      const { data: aData } = await supabase.from("worker_assignments").select("worker_id, worker_type, workers:worker_id(name), record_id").in("record_id", ids);
       setAssignments(aData || []);
-    } else { setHourlyData([]); setAssignments([]); }
-    let mpQ = supabase.from("monthly_parking").select("*, stores(name)");
-    if (selectedStore) mpQ = mpQ.eq("store_id", selectedStore);
-    const { data: mpData } = await mpQ;
-    setMonthlyContracts(mpData || []);
+    } else {
+      setHourlyData([]);
+      setAssignments([]);
+    }
     setLoading(false);
   }
 
