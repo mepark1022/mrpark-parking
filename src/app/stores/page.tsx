@@ -770,7 +770,6 @@ export default function StoresPage() {
               </tbody>
             </Table>
             </div>
-          )}
         </CardBody>
       </Card>
 
@@ -970,7 +969,7 @@ export default function StoresPage() {
                     ))}
                   </tbody>
                 </Table></div>
-                </>)
+                </>)}
             </div>
           </div>
         </div>
