@@ -466,44 +466,73 @@ function ScheduleTab() {
               </table>
             </div>
 
-            {/* 모바일: 근무자별 카드 */}
-            <div className="md:hidden space-y-3">
+            {/* 모바일: 근무자별 카드 v3 */}
+            <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {storeWorkers.map(w => {
                 const stats = getWorkerStats(w.id);
                 return (
-                  <div key={w.id} style={{ background: "var(--white)", borderRadius: 12, border: "1px solid var(--border-light)", overflow: "hidden" }}>
-                    <div style={{ padding: "10px 14px", background: "var(--bg-card)", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border-light)" }}>
-                      <span style={{ fontSize: 14, fontWeight: 700 }}>{w.name}</span>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--success)" }}>{stats.present}출</span>
-                        {stats.late > 0 && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--warning)" }}>{stats.late}지</span>}
-                        {stats.absent > 0 && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--error)" }}>{stats.absent}결</span>}
+                  <div key={w.id} style={{ background: "#fff", borderRadius: 20, boxShadow: "0 2px 12px rgba(20,40,160,0.07)", overflow: "hidden" }}>
+                    {/* 카드 헤더 */}
+                    <div style={{ padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f0f2f7" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: "#ecf0ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>👤</div>
+                        <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1d2b" }}>{w.name}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 5 }}>
+                        <span style={{ padding: "3px 9px", borderRadius: 7, fontSize: 11, fontWeight: 700, background: "#dcfce7", color: "#16A34A" }}>{stats.present}출</span>
+                        {stats.late > 0 && <span style={{ padding: "3px 9px", borderRadius: 7, fontSize: 11, fontWeight: 700, background: "#fff7ed", color: "#EA580C" }}>{stats.late}지</span>}
+                        {stats.absent > 0 && <span style={{ padding: "3px 9px", borderRadius: 7, fontSize: 11, fontWeight: 700, background: "#fee2e2", color: "#DC2626" }}>{stats.absent}결</span>}
+                        {stats.vacation > 0 && <span style={{ padding: "3px 9px", borderRadius: 7, fontSize: 11, fontWeight: 700, background: "#ede9fe", color: "#7c3aed" }}>{stats.vacation}연</span>}
                       </div>
                     </div>
-                    <div style={{ overflowX: "auto", padding: "8px 10px" }}>
-                      <div style={{ display: "flex", gap: 4, minWidth: daysInMonth * 36 }}>
+                    {/* 달력 가로스크롤 */}
+                    <div style={{ overflowX: "auto", padding: "10px 12px 4px" }}>
+                      <div style={{ display: "flex", gap: 4, minWidth: daysInMonth * 34 }}>
                         {dates.map(d => {
                           const rec = records.find(r => r.worker_id === w.id && r.date === d.date);
                           const st = rec ? statusMap[rec.status] : null;
                           const isEditing = editCell?.workerId === w.id && editCell?.date === d.date;
+                          const numColor = d.dayOfWeek === 0 || d.holidayName ? "#DC2626" : d.dayOfWeek === 6 ? "#1428A0" : "#94a3b8";
                           return (
-                            <div key={d.date} style={{ position: "relative", textAlign: "center", minWidth: 32 }}>
-                              <div style={{ fontSize: 9, fontWeight: 600, color: d.dayOfWeek === 0 ? "var(--error)" : d.dayOfWeek === 6 ? "var(--navy)" : "var(--text-muted)" }}>{d.day}{d.dayName}</div>
-                              <div onClick={() => setEditCell(isEditing ? null : { workerId: w.id, date: d.date })} style={{ cursor: "pointer", padding: "3px 2px", borderRadius: 4, background: st ? st.bg : d.isSpecial ? "#fefce8" : "var(--bg-card)", minHeight: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                {st ? <span style={{ fontSize: 8, fontWeight: 700, color: st.color }}>{st.label}</span> : <span style={{ fontSize: 8, color: "var(--border)" }}>·</span>}
+                            <div key={d.date} style={{ position: "relative", textAlign: "center", minWidth: 30 }}>
+                              <div style={{ fontSize: 9, fontWeight: 700, color: numColor, marginBottom: 3 }}>{d.day}{d.dayName}</div>
+                              <div onClick={() => setEditCell(isEditing ? null : { workerId: w.id, date: d.date })}
+                                style={{ cursor: "pointer", borderRadius: 5, minHeight: 22, display: "flex", alignItems: "center", justifyContent: "center",
+                                  background: d.isToday ? "#1428A0" : st ? st.bg : d.holidayName ? "#fff1f2" : d.isSpecial ? "#f0f5ff" : "#f8fafc" }}>
+                                {st
+                                  ? <span style={{ fontSize: 8, fontWeight: 700, color: d.isToday ? "#fff" : st.color }}>{st.label}</span>
+                                  : d.holidayName
+                                    ? <span style={{ fontSize: 7, fontWeight: 700, color: "#DC2626" }}>공</span>
+                                    : <span style={{ fontSize: 8, color: "#e2e8f0" }}>·</span>}
                               </div>
                               {isEditing && (
-                                <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", zIndex: 10, background: "var(--white)", borderRadius: 8, padding: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 2, minWidth: 60 }}>
+                                <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", zIndex: 20, background: "#fff", borderRadius: 10, padding: 6, boxShadow: "0 6px 24px rgba(0,0,0,0.18)", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: 3, minWidth: 62 }}>
                                   {Object.entries(statusMap).map(([k, v]) => (
-                                    <button key={k} onClick={() => setStatus(w.id, d.date, k)} style={{ padding: "3px 6px", borderRadius: 4, border: "none", background: v.bg, color: v.color, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>{v.label}</button>
+                                    <button key={k} onClick={() => setStatus(w.id, d.date, k)} style={{ padding: "4px 6px", borderRadius: 6, border: "none", background: v.bg, color: v.color, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>{v.label}</button>
                                   ))}
-                                  {rec && <button onClick={() => setStatus(w.id, d.date, "delete")} style={{ padding: "3px 6px", borderRadius: 4, border: "1px solid var(--border)", background: "var(--white)", color: "var(--text-muted)", fontSize: 10, cursor: "pointer" }}>삭제</button>}
+                                  {rec && <button onClick={() => setStatus(w.id, d.date, "delete")} style={{ padding: "4px 6px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#94a3b8", fontSize: 10, cursor: "pointer" }}>삭제</button>}
+                                  <button onClick={() => setEditCell(null)} style={{ padding: "3px 6px", borderRadius: 6, border: "none", background: "#f1f5f9", color: "#94a3b8", fontSize: 9, cursor: "pointer" }}>취소</button>
                                 </div>
                               )}
                             </div>
                           );
                         })}
                       </div>
+                    </div>
+                    {/* 하단 통계 바 */}
+                    <div style={{ display: "flex", padding: "10px 12px 14px", gap: 6 }}>
+                      {[
+                        { val: stats.present, lbl: "출근", color: "#16A34A", bg: "#dcfce7" },
+                        { val: stats.late,    lbl: "지각", color: "#EA580C", bg: "#fff7ed" },
+                        { val: stats.absent,  lbl: "결근", color: "#DC2626", bg: "#fee2e2" },
+                        { val: stats.vacation,lbl: "연차", color: "#7c3aed", bg: "#ede9fe" },
+                        { val: stats.weekendWork, lbl: "주말", color: "#1428A0", bg: "#e0e8ff" },
+                      ].map(item => (
+                        <div key={item.lbl} style={{ flex: 1, textAlign: "center", background: item.bg, borderRadius: 8, padding: "5px 2px" }}>
+                          <div style={{ fontFamily: "Outfit, sans-serif", fontSize: 15, fontWeight: 900, color: item.color, lineHeight: 1 }}>{item.val}</div>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: item.color, opacity: 0.7, marginTop: 2 }}>{item.lbl}</div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
