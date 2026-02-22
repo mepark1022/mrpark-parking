@@ -42,6 +42,189 @@ function getOccColor(occ) {
   return { text: "#10b981", bg: "#ecfdf5", bar: "#10b981", label: "여유" };
 }
 
+// ── v3 커스텀 캘린더 컴포넌트 ──────────────────────────────────────────────
+function CustomDateRangePicker({ startDate, endDate, onApply, onClose }: {
+  startDate: string; endDate: string;
+  onApply: (start: string, end: string) => void;
+  onClose: () => void;
+}) {
+  const today = new Date();
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [selStart, setSelStart] = useState(startDate || "");
+  const [selEnd, setSelEnd] = useState(endDate || "");
+  const [hoverDate, setHoverDate] = useState("");
+  const WEEK_DAYS = ["일","월","화","수","목","금","토"];
+
+  function toStr(y: number, m: number, d: number) {
+    return `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  }
+  function cmp(a: string, b: string) { return a < b ? -1 : a > b ? 1 : 0; }
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  function handleDayClick(ds: string) {
+    if (!selStart || (selStart && selEnd)) { setSelStart(ds); setSelEnd(""); }
+    else {
+      if (cmp(ds, selStart) < 0) { setSelEnd(selStart); setSelStart(ds); }
+      else { setSelEnd(ds); }
+    }
+  }
+
+  function inRange(ds: string) {
+    const end = selEnd || hoverDate;
+    if (!selStart || !end) return false;
+    const lo = cmp(selStart, end) <= 0 ? selStart : end;
+    const hi = cmp(selStart, end) <= 0 ? end : selStart;
+    return cmp(ds, lo) > 0 && cmp(ds, hi) < 0;
+  }
+
+  function isStart(ds: string) { return ds === selStart; }
+  function isEnd(ds: string) {
+    const end = selEnd || (hoverDate && selStart ? hoverDate : "");
+    return ds === end && end !== selStart;
+  }
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewYear(y => y-1); setViewMonth(11); } else setViewMonth(m => m-1);
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewYear(y => y+1); setViewMonth(0); } else setViewMonth(m => m+1);
+  };
+
+  const formatDisplay = (ds: string) => {
+    if (!ds) return "";
+    const d = new Date(ds + "T00:00:00");
+    return `${d.getMonth()+1}월 ${d.getDate()}일`;
+  };
+
+  const todayStr = today.toISOString().split("T")[0];
+  const cells: (number|null)[] = [...Array(firstDay).fill(null), ...Array.from({length: daysInMonth}, (_,i) => i+1)];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:2000, padding:20 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background:"#fff", borderRadius:20, width:"100%", maxWidth:380, boxShadow:"0 20px 60px rgba(0,0,0,0.2)", overflow:"hidden" }}>
+        {/* 헤더 */}
+        <div style={{ background:"var(--navy)", padding:"20px 24px" }}>
+          <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", fontWeight:600, marginBottom:6 }}>기간 설정</div>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", marginBottom:2 }}>시작일</div>
+              <div style={{ fontSize:18, fontWeight:800, color:selStart?"#fff":"rgba(255,255,255,0.35)" }}>
+                {selStart ? formatDisplay(selStart) : "날짜 선택"}
+              </div>
+            </div>
+            <div style={{ color:"rgba(255,255,255,0.4)", fontSize:18 }}>→</div>
+            <div style={{ flex:1, textAlign:"right" }}>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", marginBottom:2 }}>종료일</div>
+              <div style={{ fontSize:18, fontWeight:800, color:selEnd?"#fff":"rgba(255,255,255,0.35)" }}>
+                {selEnd ? formatDisplay(selEnd) : (selStart ? "종료일 선택" : "-")}
+              </div>
+            </div>
+          </div>
+          {selStart && !selEnd && (
+            <div style={{ marginTop:8, fontSize:11, color:"var(--gold)", fontWeight:600 }}>✦ 종료 날짜를 선택하세요</div>
+          )}
+        </div>
+
+        {/* 캘린더 본체 */}
+        <div style={{ padding:"16px 20px" }}>
+          {/* 월 네비게이션 */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+            <button onClick={prevMonth} className="cursor-pointer"
+              style={{ width:34, height:34, borderRadius:10, border:"1px solid var(--border)", background:"#fff", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center", color:"var(--text-secondary)", fontFamily:"inherit" }}>‹</button>
+            <span style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)" }}>{viewYear}년 {viewMonth+1}월</span>
+            <button onClick={nextMonth} className="cursor-pointer"
+              style={{ width:34, height:34, borderRadius:10, border:"1px solid var(--border)", background:"#fff", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center", color:"var(--text-secondary)", fontFamily:"inherit" }}>›</button>
+          </div>
+          {/* 요일 헤더 */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", marginBottom:4 }}>
+            {WEEK_DAYS.map((w,i) => (
+              <div key={w} style={{ textAlign:"center", fontSize:12, fontWeight:700, padding:"4px 0",
+                color: i===0?"#ef4444": i===6?"#3b82f6":"var(--text-muted)" }}>{w}</div>
+            ))}
+          </div>
+          {/* 날짜 그리드 */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:"1px 0" }}>
+            {cells.map((day, idx) => {
+              if (!day) return <div key={idx} style={{ height:38 }} />;
+              const ds = toStr(viewYear, viewMonth, day);
+              const isS = isStart(ds);
+              const isE = isEnd(ds);
+              const isIn = inRange(ds);
+              const isToday = ds === todayStr;
+              const dow = idx % 7;
+              const hasRange = selEnd && selStart !== selEnd;
+              return (
+                <div key={idx} style={{ display:"flex", alignItems:"center", justifyContent:"center",
+                  background: isIn ? "rgba(20,40,160,0.07)" : "transparent",
+                  borderRadius: isIn ? (idx%7===0?"8px 0 0 8px": idx%7===6?"0 8px 8px 0":"0") : undefined }}>
+                  <div onClick={() => handleDayClick(ds)}
+                    onMouseEnter={() => selStart && !selEnd && setHoverDate(ds)}
+                    onMouseLeave={() => setHoverDate("")}
+                    className="cursor-pointer"
+                    style={{
+                      width:36, height:36, borderRadius:"50%",
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      background: isS||isE ? "var(--navy)" : "transparent",
+                      color: isS||isE ? "#fff" : dow===0?"#ef4444":dow===6?"#3b82f6":"var(--text-primary)",
+                      fontSize:14, fontWeight: isToday?800: isS||isE?700:400,
+                      outline: isToday&&!isS&&!isE ? "2px solid var(--navy)" : "none",
+                      outlineOffset:-2, zIndex:1, position:"relative",
+                      transition:"background 0.1s",
+                    }}>
+                    {day}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 빠른 선택 */}
+        <div style={{ padding:"0 20px 14px", display:"flex", gap:6, flexWrap:"wrap" }}>
+          {[
+            { label:"오늘", fn:() => { const t=todayStr; setSelStart(t); setSelEnd(t); }},
+            { label:"이번 주", fn:() => { const r=getThisWeekRange(); setSelStart(r.start); setSelEnd(r.end); }},
+            { label:"이번 달", fn:() => { const r=getThisMonthRange(); setSelStart(r.start); setSelEnd(r.end); }},
+            { label:"지난 7일", fn:() => {
+              const e=todayStr; const s=new Date(today); s.setDate(today.getDate()-6);
+              setSelStart(s.toISOString().split("T")[0]); setSelEnd(e);
+            }},
+          ].map(q => (
+            <button key={q.label} onClick={q.fn} className="cursor-pointer"
+              style={{ padding:"5px 11px", borderRadius:8, border:"1px solid var(--border)",
+                background:"#fff", fontSize:12, fontWeight:600, color:"var(--text-secondary)", fontFamily:"inherit" }}>
+              {q.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 액션 버튼 */}
+        <div style={{ padding:"12px 20px 20px", display:"flex", gap:8, borderTop:"1px solid var(--border-light)" }}>
+          <button onClick={() => { setSelStart(""); setSelEnd(""); }} className="cursor-pointer"
+            style={{ padding:"10px 14px", borderRadius:10, border:"1px solid #fecaca", background:"#fef2f2",
+              fontSize:13, fontWeight:600, color:"#dc2626", fontFamily:"inherit" }}>초기화</button>
+          <button onClick={onClose} className="cursor-pointer"
+            style={{ flex:1, padding:"10px", borderRadius:10, border:"1px solid var(--border)",
+              background:"#fff", fontSize:13, fontWeight:600, color:"var(--text-secondary)", fontFamily:"inherit" }}>취소</button>
+          <button onClick={() => { if(selStart&&selEnd) onApply(selStart,selEnd); else if(selStart) onApply(selStart,selStart); }}
+            disabled={!selStart} className="cursor-pointer"
+            style={{ flex:2, padding:"10px", borderRadius:10, border:"none",
+              background:selStart?"var(--navy)":"var(--border)",
+              color:selStart?"#fff":"var(--text-muted)", fontSize:14, fontWeight:700, fontFamily:"inherit" }}>
+            적용
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
 export default function DashboardPage() {
   const supabase = createClient();
   const [stores, setStores] = useState<Store[]>([]);
@@ -49,6 +232,7 @@ export default function DashboardPage() {
   const [period, setPeriod] = useState<"today"|"week"|"month"|"custom">("month");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [records, setRecords] = useState<DailyRecord[]>([]);
   const [hourlyData, setHourlyData] = useState<HourlyRow[]>([]);
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
@@ -223,15 +407,28 @@ export default function DashboardPage() {
           {([["today","오늘"],["week","이번 주"],["month","이번 달"]] as const).map(([p, label]) => (
             <button key={p} className={`v3-period-tab ${period === p ? "active" : ""}`} onClick={() => setPeriod(p)}>{label}</button>
           ))}
-          <button className={`v3-period-tab ${period === "custom" ? "active" : ""}`} onClick={() => setPeriod("custom")}>직접 설정</button>
+          <button className={`v3-period-tab ${period === "custom" ? "active" : ""}`} onClick={() => { setPeriod("custom"); setShowDatePicker(true); }}>직접 설정</button>
         </div>
       </div>
-      {period === "custom" && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-          <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 13 }} />
-          <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>~</span>
-          <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 13 }} />
+      {period === "custom" && (customStart || customEnd) && (
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
+          <button onClick={() => setShowDatePicker(true)} className="cursor-pointer"
+            style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 14px", borderRadius:10,
+              border:"1px solid var(--navy)", background:"rgba(20,40,160,0.04)", fontSize:13, fontWeight:600,
+              color:"var(--navy)", fontFamily:"inherit" }}>
+            📅{" "}
+            {customStart ? new Date(customStart+"T00:00:00").toLocaleDateString("ko-KR",{month:"short",day:"numeric"}) : "시작"}
+            {" ~ "}
+            {customEnd ? new Date(customEnd+"T00:00:00").toLocaleDateString("ko-KR",{month:"short",day:"numeric"}) : "종료"}
+          </button>
         </div>
+      )}
+      {showDatePicker && (
+        <CustomDateRangePicker
+          startDate={customStart} endDate={customEnd}
+          onApply={(s, e) => { setCustomStart(s); setCustomEnd(e); setShowDatePicker(false); }}
+          onClose={() => { setShowDatePicker(false); if (!customStart) setPeriod("month"); }}
+        />
       )}
 
       {loading ? (
