@@ -435,9 +435,7 @@ ${alimModal.contract.stores?.name ?? ""} 월주차 계약 만료가 임박했습
 만기일 이후에는 일반 주차 요금이 부과됩니다.
 연장을 원하시면 매장으로 연락해 주세요 😊`}
                     </div>
-                    <div style={{ marginTop: 12, padding: "10px 14px", background: "#1428A0", borderRadius: 8, color: "#fff", fontWeight: 700, fontSize: 13, textAlign: "center" }}>
-                      📞 문의하기 (1899-1871)
-                    </div>
+
                   </div>
                 </div>
 
