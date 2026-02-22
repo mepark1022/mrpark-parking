@@ -12,7 +12,7 @@ const leaveTypeMap = {
   special: { label: "특별",  bg: "#e0f2fe", color: "#0284c7" },
 };
 
-const statusColors = {
+const leaveStatusColors = {
   pending:  { label: "대기", bg: "#fff7ed", color: "#ea580c" },
   approved: { label: "승인", bg: "#dcfce7", color: "#15803d" },
   rejected: { label: "반려", bg: "#fee2e2", color: "#dc2626" },
@@ -217,7 +217,7 @@ export default function LeaveTab() {
                   <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600 }}>{r.start_date} ~ {r.end_date}</td>
                   <td style={{ padding: "10px 14px", fontSize: 14, fontWeight: 700 }}>{r.days}일</td>
                   <td style={{ padding: "10px 14px" }}><span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: leaveTypeMap[r.leave_type]?.bg, color: leaveTypeMap[r.leave_type]?.color }}>{leaveTypeMap[r.leave_type]?.label}</span></td>
-                  <td style={{ padding: "10px 14px" }}><span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: statusColors[r.status]?.bg, color: statusColors[r.status]?.color }}>{statusColors[r.status]?.label}</span></td>
+                  <td style={{ padding: "10px 14px" }}><span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: leaveStatusColors[r.status]?.bg, color: leaveStatusColors[r.status]?.color }}>{leaveStatusColors[r.status]?.label}</span></td>
                   <td style={{ padding: "10px 14px", fontSize: 13, color: "#475569" }}>{r.reason || "-"}</td>
                   <td style={{ padding: "10px 14px" }}><button onClick={() => deleteRecord(r)} style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "#fee2e2", color: "#dc2626", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>삭제</button></td>
                 </tr>))}</tbody>
@@ -228,7 +228,7 @@ export default function LeaveTab() {
           <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {records.map(r => {
               const lt = leaveTypeMap[r.leave_type];
-              const sc = statusColors[r.status];
+              const sc = leaveStatusColors[r.status];
               return (
                 <div key={r.id} style={{ background: "#fff", borderRadius: 16, boxShadow: "0 1px 6px rgba(0,0,0,0.05)", overflow: "hidden", display: "flex" }}>
                   {/* 왼쪽 컬러 바 */}
