@@ -635,84 +635,154 @@ export default function StoresPage() {
             + 매장 추가
           </BtnPrimary>
         </CardHeader>
-        <CardBody style={{ padding: 0 }}>
-          <Table>
-            <thead>
-              <tr>
-                <Th>매장명</Th>
-                <Th>지역</Th>
-                <Th>주소</Th>
-                <Th>담당자</Th>
-                <Th>주차장</Th>
-                <Th>방문지</Th>
-                <Th style={{ width: 120 }}>액션</Th>
-              </tr>
-            </thead>
-            <tbody>
+        <CardBody style={{ padding: isMobile ? 16 : 0 }}>
+          {isMobile ? (
+            /* ── 모바일: 카드 리스트 ── */
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {stores.map(store => {
                 const lots = parkingLots[store.id] ?? [];
                 const visits = visitPlaces[store.id] ?? [];
+                const isExpanded = expandedStore === store.id;
                 return (
-                  <tr key={store.id} style={{ cursor: "pointer" }} onClick={() =>
-                    setExpandedStore(expandedStore === store.id ? null : store.id)
-                  }>
-                    <Td>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <strong>{store.name}</strong>
-                        {lots.length === 0 && (
-                          <span style={{
-                            background: C.errorBg, color: C.error,
-                            fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
-                            border: `1px solid ${C.error}22`
-                          }}>
-                            ⚠️ 주차장 필수
-                          </span>
-                        )}
+                  <div key={store.id} style={{
+                    background: C.bgCard, borderRadius: 14, border: `1px solid ${C.borderLight}`,
+                    overflow: "hidden",
+                  }}>
+                    <div
+                      style={{ padding: "14px 16px", cursor: "pointer" }}
+                      onClick={() => setExpandedStore(isExpanded ? null : store.id)}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                            <span style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary }}>{store.name}</span>
+                            {lots.length === 0 && (
+                              <span style={{
+                                background: C.errorBg, color: C.error,
+                                fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 4,
+                              }}>⚠️ 주차장 필수</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 12, color: C.textSecondary, marginBottom: 4 }}>
+                            {[store.region_city, store.region_district].filter(Boolean).join(" ") || "-"}
+                            {store.road_address && <span style={{ marginLeft: 6 }}>· {store.road_address}</span>}
+                          </div>
+                          <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                            {lots.length > 0
+                              ? <Badge variant="navy">🅿️ {lots.length}개</Badge>
+                              : <Badge variant="error">⚠️ 주차장 미등록</Badge>}
+                            {visits.length > 0 && <Badge variant="default">방문지 {visits.length}개</Badge>}
+                            {store.manager_name && (
+                              <span style={{ fontSize: 12, color: C.textMuted }}>👤 {store.manager_name}</span>
+                            )}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 18, color: C.textMuted, marginLeft: 8 }}>{isExpanded ? "▲" : "▼"}</span>
                       </div>
-                    </Td>
-                    <Td style={{ color: C.textSecondary }}>
-                      {[store.region_city, store.region_district].filter(Boolean).join(" ") || "-"}
-                    </Td>
-                    <Td style={{ color: C.textSecondary, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {store.road_address || "-"}
-                    </Td>
-                    <Td>{store.manager_name || "-"}</Td>
-                    <Td>
-                      {lots.length > 0
-                        ? <Badge variant="navy">🅿️ {lots.length}개</Badge>
-                        : <Badge variant="error">⚠️ 미등록</Badge>}
-                    </Td>
-                    <Td>
-                      {visits.length > 0
-                        ? <Badge variant="default">{visits.length}개</Badge>
-                        : <span style={{ color: C.textMuted }}>-</span>}
-                    </Td>
-                    <Td onClick={e => e.stopPropagation()}>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <BtnGhost onClick={() => {
-                          setStoreForm({
-                            name: store.name, region_city: store.region_city ?? "",
-                            region_district: store.region_district ?? "",
-                            road_address: store.road_address ?? "", manager_name: store.manager_name ?? "",
-                          });
-                          setEditingItem(store as unknown as Record<string, unknown>);
-                          setModalType("store");
-                        }} style={{ padding: "6px 10px" }}>수정</BtnGhost>
-                        <BtnGhost onClick={() => deleteStore(store.id)}
-                          style={{ padding: "6px 10px", color: C.error, borderColor: C.error + "44" }}>삭제</BtnGhost>
-                      </div>
-                    </Td>
-                  </tr>
+                    </div>
+                    {/* 모바일 확장 액션 영역 */}
+                    <div style={{
+                      display: "flex", gap: 8, padding: "10px 16px 14px",
+                      borderTop: `1px solid ${C.borderLight}`, background: "#fff",
+                    }}>
+                      <BtnGhost onClick={() => {
+                        setStoreForm({
+                          name: store.name, region_city: store.region_city ?? "",
+                          region_district: store.region_district ?? "",
+                          road_address: store.road_address ?? "", manager_name: store.manager_name ?? "",
+                        });
+                        setEditingItem(store as unknown as Record<string, unknown>);
+                        setModalType("store");
+                      }} style={{ flex: 1, padding: "8px", fontSize: 13 }}>✏️ 수정</BtnGhost>
+                      <BtnGhost onClick={() => deleteStore(store.id)}
+                        style={{ flex: 1, padding: "8px", fontSize: 13, color: C.error, borderColor: C.error + "44" }}>
+                        🗑️ 삭제
+                      </BtnGhost>
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </Table>
+            </div>
+          ) : (
+            /* ── PC: 테이블 ── */
+            <Table>
+              <thead>
+                <tr>
+                  <Th>매장명</Th>
+                  <Th>지역</Th>
+                  <Th>주소</Th>
+                  <Th>담당자</Th>
+                  <Th>주차장</Th>
+                  <Th>방문지</Th>
+                  <Th style={{ width: 120 }}>액션</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {stores.map(store => {
+                  const lots = parkingLots[store.id] ?? [];
+                  const visits = visitPlaces[store.id] ?? [];
+                  return (
+                    <tr key={store.id} style={{ cursor: "pointer" }} onClick={() =>
+                      setExpandedStore(expandedStore === store.id ? null : store.id)
+                    }>
+                      <Td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <strong>{store.name}</strong>
+                          {lots.length === 0 && (
+                            <span style={{
+                              background: C.errorBg, color: C.error,
+                              fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
+                              border: `1px solid ${C.error}22`
+                            }}>
+                              ⚠️ 주차장 필수
+                            </span>
+                          )}
+                        </div>
+                      </Td>
+                      <Td style={{ color: C.textSecondary }}>
+                        {[store.region_city, store.region_district].filter(Boolean).join(" ") || "-"}
+                      </Td>
+                      <Td style={{ color: C.textSecondary, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {store.road_address || "-"}
+                      </Td>
+                      <Td>{store.manager_name || "-"}</Td>
+                      <Td>
+                        {lots.length > 0
+                          ? <Badge variant="navy">🅿️ {lots.length}개</Badge>
+                          : <Badge variant="error">⚠️ 미등록</Badge>}
+                      </Td>
+                      <Td>
+                        {visits.length > 0
+                          ? <Badge variant="default">{visits.length}개</Badge>
+                          : <span style={{ color: C.textMuted }}>-</span>}
+                      </Td>
+                      <Td onClick={e => e.stopPropagation()}>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <BtnGhost onClick={() => {
+                            setStoreForm({
+                              name: store.name, region_city: store.region_city ?? "",
+                              region_district: store.region_district ?? "",
+                              road_address: store.road_address ?? "", manager_name: store.manager_name ?? "",
+                            });
+                            setEditingItem(store as unknown as Record<string, unknown>);
+                            setModalType("store");
+                          }} style={{ padding: "6px 10px" }}>수정</BtnGhost>
+                          <BtnGhost onClick={() => deleteStore(store.id)}
+                            style={{ padding: "6px 10px", color: C.error, borderColor: C.error + "44" }}>삭제</BtnGhost>
+                        </div>
+                      </Td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </Table>
+          )}
         </CardBody>
       </Card>
 
       {/* 확장: 매장 상세 (방문지 + 주차장) */}
       {stores.map(store => expandedStore === store.id && (
-        <div key={`detail-${store.id}`} style={{ marginTop: -8, marginBottom: 20 }}>
+        <div key={`detail-${store.id}`} style={{ marginTop: isMobile ? 8 : -8, marginBottom: 20 }}>
           {/* 주차장 섹션 */}
           <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${C.borderLight}`, marginBottom: 16, overflow: "hidden" }}>
             <SectionHeader
@@ -729,7 +799,7 @@ export default function StoresPage() {
                 </BtnGold>
               }
             />
-            <div style={{ padding: "20px 24px" }}>
+            <div style={{ padding: isMobile ? "16px" : "20px 24px" }}>
               {(parkingLots[store.id]?.length ?? 0) === 0 && (
                 <ParkingRequiredBanner onAdd={() => {
                   setLotForm({ name: "", lot_type: "internal", parking_type: ["self"], road_address: store.road_address ?? "", self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0 });
@@ -806,12 +876,62 @@ export default function StoresPage() {
                 </BtnPrimary>
               }
             />
-            <div style={{ padding: "20px 24px" }}>
+            <div style={{ padding: isMobile ? "16px" : "20px 24px" }}>
               {(visitPlaces[store.id] ?? []).length === 0 ? (
                 <div style={{ textAlign: "center", color: C.textMuted, padding: "30px 0", fontSize: 14 }}>
                   등록된 방문지가 없습니다
                 </div>
+              ) : isMobile ? (
+                /* ── 모바일: 방문지 카드 ── */
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {visitPlaces[store.id].map(vp => (
+                    <div key={vp.id} style={{
+                      background: C.bgCard, borderRadius: 12, padding: 16,
+                      borderLeft: `4px solid ${C.navy}`,
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary }}>{vp.name}</div>
+                          {vp.floor && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>{vp.floor}</div>}
+                        </div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <BtnGhost onClick={() => {
+                            setVisitForm({
+                              name: vp.name, floor: vp.floor ?? "", free_minutes: vp.free_minutes,
+                              base_fee: vp.base_fee, base_minutes: vp.base_minutes, extra_fee: vp.extra_fee,
+                              daily_max: vp.daily_max, valet_fee: vp.valet_fee, monthly_fee: vp.monthly_fee,
+                            });
+                            setEditingItem(vp as unknown as Record<string, unknown>);
+                            setStoreForAction(store.id);
+                            setModalType("visit");
+                          }} style={{ padding: "5px 10px", fontSize: 12 }}>수정</BtnGhost>
+                          <BtnGhost onClick={async () => {
+                            if (!confirm("방문지를 삭제하시겠습니까?")) return;
+                            await supabase.from("visit_places").delete().eq("id", vp.id);
+                            loadData();
+                          }} style={{ padding: "5px 10px", fontSize: 12, color: C.error }}>삭제</BtnGhost>
+                        </div>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        {[
+                          { label: "무료", value: `${vp.free_minutes}분` },
+                          { label: "기본요금", value: `₩${vp.base_fee.toLocaleString()}/${vp.base_minutes}분` },
+                          { label: "추가요금", value: `₩${vp.extra_fee.toLocaleString()}/10분` },
+                          { label: "발렛요금", value: `₩${vp.valet_fee.toLocaleString()}` },
+                          { label: "월정기", value: `₩${vp.monthly_fee.toLocaleString()}` },
+                          { label: "일일최대", value: vp.daily_max > 0 ? `₩${vp.daily_max.toLocaleString()}` : "제한없음" },
+                        ].map(item => (
+                          <div key={item.label} style={{ background: "#fff", borderRadius: 8, padding: "8px 12px" }}>
+                            <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 2 }}>{item.label}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary }}>{item.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
+                /* ── PC: 테이블 ── */
                 <Table>
                   <thead>
                     <tr>
