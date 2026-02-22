@@ -598,45 +598,57 @@ export default function StoresPage() {
 
   async function saveVisit() {
     const oid = await getOrgId();
+    if (!oid) { alert("로그인 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요."); return; }
+    let error: any;
     if (editingItem?.id) {
-      await supabase.from("visit_places").update({ ...visitForm }).eq("id", editingItem.id);
+      ({ error } = await supabase.from("visit_places").update({ ...visitForm }).eq("id", editingItem.id));
     } else {
-      await supabase.from("visit_places").insert({ ...visitForm, store_id: storeForAction, org_id: oid });
+      ({ error } = await supabase.from("visit_places").insert({ ...visitForm, store_id: storeForAction, org_id: oid }));
     }
+    if (error) { alert("저장 실패: " + error.message); return; }
     setModalType(null);
     loadData();
   }
 
   async function saveHours() {
     const oid = await getOrgId();
+    if (!oid) { alert("로그인 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요."); return; }
+    let error: any;
     if (editingItem?.id) {
-      await supabase.from("store_operating_hours").update({ ...hourForm }).eq("id", editingItem.id);
+      ({ error } = await supabase.from("store_operating_hours").update({ ...hourForm }).eq("id", editingItem.id));
     } else {
-      await supabase.from("store_operating_hours").insert({ ...hourForm, store_id: selectedStoreId, org_id: oid });
+      ({ error } = await supabase.from("store_operating_hours").insert({ ...hourForm, store_id: selectedStoreId, org_id: oid }));
     }
+    if (error) { alert("저장 실패: " + error.message); return; }
     setModalType(null);
     loadData();
   }
 
   async function saveShift() {
     const oid = await getOrgId();
+    if (!oid) { alert("로그인 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요."); return; }
+    let error: any;
     if (editingItem?.id) {
-      await supabase.from("store_shifts").update({ ...shiftForm }).eq("id", editingItem.id);
+      ({ error } = await supabase.from("store_shifts").update({ ...shiftForm }).eq("id", editingItem.id));
     } else {
-      await supabase.from("store_shifts").insert({ ...shiftForm, store_id: selectedStoreId, org_id: oid });
+      ({ error } = await supabase.from("store_shifts").insert({ ...shiftForm, store_id: selectedStoreId, org_id: oid }));
     }
+    if (error) { alert("저장 실패: " + error.message); return; }
     setModalType(null);
     loadData();
   }
 
   async function saveLateRule() {
     const oid = await getOrgId();
+    if (!oid) { alert("로그인 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요."); return; }
     const existing = lateRules[selectedStoreId!];
+    let error: any;
     if (existing?.id) {
-      await supabase.from("store_late_rules").update({ ...lateForm }).eq("id", existing.id);
+      ({ error } = await supabase.from("store_late_rules").update({ ...lateForm }).eq("id", existing.id));
     } else {
-      await supabase.from("store_late_rules").insert({ ...lateForm, store_id: selectedStoreId, org_id: oid });
+      ({ error } = await supabase.from("store_late_rules").insert({ ...lateForm, store_id: selectedStoreId, org_id: oid }));
     }
+    if (error) { alert("저장 실패: " + error.message); return; }
     setModalType(null);
     loadData();
   }
