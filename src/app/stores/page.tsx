@@ -612,19 +612,6 @@ export default function StoresPage() {
   );
 
   // 매장 선택 드롭다운 (운영시간/근무조/출근체크 공통)
-  const StoreSelector = () => (
-    <select
-      value={selectedStoreId ?? ""}
-      onChange={e => setSelectedStoreId(e.target.value)}
-      style={{
-        padding: "8px 12px", border: `1px solid ${C.border}`,
-        borderRadius: 8, fontSize: 14, background: "#fff",
-      }}
-    >
-      {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-    </select>
-  );
-
   if (loading) return (
     <AppLayout>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 400 }}>
@@ -1006,7 +993,16 @@ export default function StoresPage() {
         <CardHeader>
           <CardTitle icon="🕐">운영시간 설정</CardTitle>
           <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <StoreSelector />
+            <select
+          value={selectedStoreId ?? ""}
+          onChange={e => setSelectedStoreId(e.target.value)}
+          style={{
+            padding: "8px 12px", border: `1px solid ${C.border}`,
+            borderRadius: 8, fontSize: 14, background: "#fff",
+          }}
+        >
+          {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
             <BtnPrimary onClick={() => {
               setHourForm({ day_category: "weekday", open_time: "08:00", close_time: "22:00" });
               setEditingItem(null);
@@ -1074,7 +1070,16 @@ export default function StoresPage() {
         <CardHeader>
           <CardTitle icon="👷">근무조 설정</CardTitle>
           <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <StoreSelector />
+            <select
+          value={selectedStoreId ?? ""}
+          onChange={e => setSelectedStoreId(e.target.value)}
+          style={{
+            padding: "8px 12px", border: `1px solid ${C.border}`,
+            borderRadius: 8, fontSize: 14, background: "#fff",
+          }}
+        >
+          {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
             <BtnPrimary onClick={() => {
               setShiftForm({ name: "오전조", start_time: "08:00", end_time: "14:00" });
               setEditingItem(null);
@@ -1137,7 +1142,16 @@ export default function StoresPage() {
       <Card>
         <CardHeader>
           <CardTitle icon="⏰">정상출근 체크 규칙</CardTitle>
-          <StoreSelector />
+          <select
+          value={selectedStoreId ?? ""}
+          onChange={e => setSelectedStoreId(e.target.value)}
+          style={{
+            padding: "8px 12px", border: `1px solid ${C.border}`,
+            borderRadius: 8, fontSize: 14, background: "#fff",
+          }}
+        >
+          {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
         </CardHeader>
         <CardBody>
           <div style={{ maxWidth: 520 }}>
