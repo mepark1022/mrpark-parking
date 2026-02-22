@@ -1075,11 +1075,98 @@ export default function WorkersPage() {
                         <div style={{ display: "flex", gap: 10, padding: "0 18px" }}>
                           <button onClick={() => setRosterPopup({ type: null, worker: null })}
                             style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#f1f5f9", color: "#64748b", border: "none", fontFamily: "inherit" }}>취소</button>
-                          <button onClick={() => { setRosterPopup({ type: null, worker: null }); setEditItem(rosterPopup.worker); setFormData({ name: rosterPopup.worker.name, phone: rosterPopup.worker.phone || "", region_id: rosterPopup.worker.region_id || "", district: rosterPopup.worker.district || "" }); setShowForm(true); }}
-                            style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#1428A0", color: "#fff", border: "none", fontFamily: "inherit" }}>수정 화면으로</button>
+                          <button onClick={() => {
+                              setFormData({ name: rosterPopup.worker.name, phone: rosterPopup.worker.phone || "", region_id: rosterPopup.worker.region_id || "", district: rosterPopup.worker.district || "" });
+                              setRosterPopup({ type: "edit_form", worker: rosterPopup.worker });
+                            }}
+                            style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#1428A0", color: "#fff", border: "none", fontFamily: "inherit" }}>수정 시작</button>
                         </div>
                       </>
                     )}
+
+                    {/* 인라인 수정 폼 팝업 */}
+                    {rosterPopup.type === "edit_form" && (() => {
+                      const w = rosterPopup.worker;
+                      const selectedRegionName = regions.find(r => r.id === formData.region_id)?.name || "";
+                      const distMap: Record<string, string[]> = {
+                        "서울": ["강남구","강동구","강북구","강서구","관악구","광진구","구로구","금천구","노원구","도봉구","동대문구","동작구","마포구","서대문구","서초구","성동구","성북구","송파구","양천구","영등포구","용산구","은평구","종로구","중구","중랑구"],
+                        "경기": ["가평군","고양시","과천시","광명시","광주시","구리시","군포시","김포시","남양주시","동두천시","부천시","성남시","수원시","시흥시","안산시","안성시","안양시","양주시","양평군","여주시","연천군","오산시","용인시","의왕시","의정부시","이천시","파주시","평택시","포천시","하남시","화성시"],
+                        "부산": ["강서구","금정구","기장군","남구","동구","동래구","부산진구","북구","사상구","사하구","서구","수영구","연제구","영도구","중구","해운대구"],
+                        "인천": ["강화군","계양구","남동구","동구","미추홀구","부평구","서구","연수구","옹진군","중구"],
+                        "대구": ["남구","달서구","달성군","동구","북구","서구","수성구","중구"],
+                        "대전": ["대덕구","동구","서구","유성구","중구"],
+                        "광주": ["광산구","남구","동구","북구","서구"],
+                        "울산": ["남구","동구","북구","울주군","중구"],
+                        "세종": ["세종시"],
+                        "강원": ["강릉시","고성군","동해시","삼척시","속초시","양구군","양양군","영월군","원주시","인제군","정선군","철원군","춘천시","태백시","평창군","홍천군","화천군","횡성군"],
+                        "충북": ["괴산군","단양군","보은군","영동군","옥천군","음성군","제천시","증평군","진천군","청주시","충주시"],
+                        "충남": ["계룡시","공주시","금산군","논산시","당진시","보령시","부여군","서산시","서천군","아산시","예산군","천안시","청양군","태안군","홍성군"],
+                        "전북": ["고창군","군산시","김제시","남원시","무주군","부안군","순창군","완주군","익산시","임실군","장수군","전주시","정읍시","진안군"],
+                        "전남": ["강진군","고흥군","곡성군","광양시","구례군","나주시","담양군","목포시","무안군","보성군","순천시","신안군","여수시","영광군","영암군","완도군","장성군","장흥군","진도군","함평군","해남군","화순군"],
+                        "경북": ["경산시","경주시","고령군","구미시","군위군","김천시","문경시","봉화군","상주시","성주군","안동시","영덕군","영양군","영주시","영천시","예천군","울릉군","울진군","의성군","청도군","청송군","칠곡군","포항시"],
+                        "경남": ["거제시","거창군","고성군","김해시","남해군","밀양시","사천시","산청군","양산시","의령군","진주시","창녕군","창원시","통영시","하동군","함안군","함양군","합천군"],
+                        "제주": ["서귀포시","제주시"],
+                      };
+                      const dists = distMap[selectedRegionName] || [];
+                      return (
+                        <>
+                          <div style={{ padding: "0 20px 4px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div style={{ fontSize: 16, fontWeight: 800, color: "#1a1d2b" }}>✏️ {w.name} 수정</div>
+                          </div>
+                          <div style={{ padding: "12px 20px 0", display: "flex", flexDirection: "column", gap: 12 }}>
+                            <div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 5 }}>이름 *</div>
+                              <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="홍길동"
+                                style={{ width: "100%", padding: "11px 14px", borderRadius: 11, border: "1.5px solid #e2e8f0", fontSize: 15, fontWeight: 600, outline: "none", boxSizing: "border-box" as const }} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 5 }}>연락처</div>
+                              <input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                placeholder="010-0000-0000"
+                                style={{ width: "100%", padding: "11px 14px", borderRadius: 11, border: "1.5px solid #e2e8f0", fontSize: 15, outline: "none", boxSizing: "border-box" as const }} />
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                              <div>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 5 }}>시/도</div>
+                                <select value={formData.region_id} onChange={e => setFormData({ ...formData, region_id: e.target.value, district: "" })}
+                                  style={{ width: "100%", padding: "11px 10px", borderRadius: 11, border: "1.5px solid #e2e8f0", fontSize: 14, outline: "none", boxSizing: "border-box" as const }}>
+                                  <option value="">선택</option>
+                                  {regions.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 5 }}>구/시</div>
+                                <select value={formData.district} onChange={e => setFormData({ ...formData, district: e.target.value })}
+                                  disabled={dists.length === 0}
+                                  style={{ width: "100%", padding: "11px 10px", borderRadius: 11, border: "1.5px solid #e2e8f0", fontSize: 14, outline: "none", background: dists.length === 0 ? "#f8f9fb" : "#fff", boxSizing: "border-box" as const }}>
+                                  <option value="">선택</option>
+                                  {dists.map((d: string) => <option key={d} value={d}>{d}</option>)}
+                                </select>
+                              </div>
+                            </div>
+                            {message && <p style={{ fontSize: 12, color: "#DC2626", margin: 0 }}>{message}</p>}
+                          </div>
+                          <div style={{ display: "flex", gap: 10, padding: "14px 20px 0" }}>
+                            <button onClick={() => { setRosterPopup({ type: null, worker: null }); setMessage(""); }}
+                              style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#f1f5f9", color: "#64748b", border: "none", fontFamily: "inherit" }}>취소</button>
+                            <button onClick={async () => {
+                                if (!formData.name) { setMessage("이름을 입력하세요"); return; }
+                                const supabase = createClient();
+                                const { error } = await supabase.from("workers").update({
+                                  name: formData.name, phone: formData.phone || null,
+                                  region_id: formData.region_id || null, district: formData.district || null
+                                }).eq("id", w.id);
+                                if (error) { setMessage(`수정 실패: ${error.message}`); return; }
+                                setRosterPopup({ type: null, worker: null });
+                                setMessage("");
+                                loadAll();
+                              }}
+                              style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#1428A0", color: "#fff", border: "none", fontFamily: "inherit" }}>저장</button>
+                          </div>
+                        </>
+                      );
+                    })()}
 
                     {/* 비활성 팝업 */}
                     {rosterPopup.type === "deact" && (
