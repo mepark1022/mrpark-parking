@@ -201,19 +201,30 @@ export default function EntryPage() {
   }, [selectedStore, selectedDate]);
 
   async function loadStoreHours() {
-    const d = new Date(selectedDate);
-    const dow = d.getDay();
-    const { data } = await supabase
-      .from("store_operating_hours").select("open_time, close_time, is_closed")
-      .eq("store_id", selectedStore).eq("day_of_week", dow).single();
-    if (data && !data.is_closed) {
-      setStoreHours({
-        open: parseInt(data.open_time?.split(":")[0] || "7"),
-        close: parseInt(data.close_time?.split(":")[0] || "22"),
-      });
-    } else {
-      setStoreHours({ open: 7, close: 22 });
+    // day_category: "weekday" | "weekend" | "holiday"
+    // 공휴일은 별도 설정 없으면 평일 운영시간으로 fallback
+    const categoryOrder =
+      dayType === "holiday" ? ["holiday", "weekday"] :
+      dayType === "weekend" ? ["weekend"] :
+      ["weekday"];
+
+    for (const cat of categoryOrder) {
+      const { data } = await supabase
+        .from("store_operating_hours").select("open_time, close_time, is_closed")
+        .eq("store_id", selectedStore).eq("day_category", cat).maybeSingle();
+      if (data) {
+        if (data.is_closed) {
+          setStoreHours({ open: 7, close: 22 });
+        } else {
+          setStoreHours({
+            open: parseInt(data.open_time?.split(":")[0] || "7"),
+            close: parseInt(data.close_time?.split(":")[0] || "22"),
+          });
+        }
+        return;
+      }
     }
+    setStoreHours({ open: 7, close: 22 });
   }
 
   async function loadStoresAndWorkers() {
