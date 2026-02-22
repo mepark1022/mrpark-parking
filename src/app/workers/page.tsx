@@ -668,7 +668,7 @@ export default function WorkersPage() {
   const [manualMsg, setManualMsg] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [formData, setFormData] = useState({ name: "", phone: "", region_id: "", district: "" });
+  const [formData, setFormData] = useState({ name: "", phone: "", region_id: "", district: "", daily_wage: "" });
   const [regions, setRegions] = useState([]);
   // 명부 팝업 state
   const [rosterPopup, setRosterPopup] = useState<{ type: "edit"|"edit_form"|"deact"|"del"|null; worker: any }>({ type: null, worker: null });
@@ -817,14 +817,15 @@ export default function WorkersPage() {
     if (!formData.name) { setMessage("이름을 입력하세요"); return; }
     const supabase = createClient();
     const oid = await getOrgId();
+    const wageValue = formData.daily_wage ? parseInt(formData.daily_wage.replace(/,/g, ""), 10) || null : null;
     if (editItem) {
-      const { error } = await supabase.from("workers").update({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null }).eq("id", editItem.id);
+      const { error } = await supabase.from("workers").update({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, daily_wage: wageValue }).eq("id", editItem.id);
       if (error) { setMessage(`수정 실패: ${error.message}`); return; }
     } else {
-      const { error } = await supabase.from("workers").insert({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, status: "active", org_id: oid });
+      const { error } = await supabase.from("workers").insert({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, daily_wage: wageValue, status: "active", org_id: oid });
       if (error) { setMessage(`추가 실패: ${error.message}`); return; }
     }
-    setShowForm(false); setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "" }); setMessage(""); loadAll(); showToast(editItem ? "✅ 근무자 정보가 수정되었습니다" : "✅ 근무자가 추가되었습니다");
+    setShowForm(false); setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "", daily_wage: "" }); setMessage(""); loadAll(); showToast(editItem ? "✅ 근무자 정보가 수정되었습니다" : "✅ 근무자가 추가되었습니다");
   };
 
   const toggleStatus = async (worker) => {
@@ -1049,7 +1050,7 @@ export default function WorkersPage() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 700 }}>
                 <span>📋</span> 근무자 명부 <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-muted)" }}>({workers.length}명)</span>
               </div>
-              <button onClick={() => { setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "" }); setShowForm(true); }}
+              <button onClick={() => { setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "", daily_wage: "" }); setShowForm(true); }}
                 style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
                 + 근무자 추가
               </button>
@@ -1081,6 +1082,29 @@ export default function WorkersPage() {
                       {districts.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                   </div>
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>
+                      일당 <span style={{ fontSize: 11, fontWeight: 500, color: "#ea580c", marginLeft: 4 }}>공휴일 수당 자동 계산에 사용</span>
+                    </div>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        value={formData.daily_wage}
+                        onChange={e => {
+                          const raw = e.target.value.replace(/[^0-9]/g, "");
+                          const formatted = raw ? Number(raw).toLocaleString("ko-KR") : "";
+                          setFormData({ ...formData, daily_wage: formatted });
+                        }}
+                        placeholder="예: 80,000"
+                        style={{ width: "100%", padding: "10px 44px 10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+                      />
+                      <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--text-muted)", pointerEvents: "none" }}>원</span>
+                    </div>
+                    {formData.daily_wage && (
+                      <div style={{ marginTop: 6, fontSize: 12, color: "#dc2626", fontWeight: 600 }}>
+                        🎌 공휴일 근무 시 추가 수당: {Math.round(parseInt(formData.daily_wage.replace(/,/g, ""), 10) * 0.5).toLocaleString()}원
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {message && <p style={{ color: "var(--error)", fontSize: 13, marginBottom: 10 }}>{message}</p>}
                 <div style={{ display: "flex", gap: 10 }}>
@@ -1096,7 +1120,7 @@ export default function WorkersPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
-                      {["이름", "배정매장", "지역", "연락처", "상태", "관리"].map(h => (
+                      {["이름", "배정매장", "지역", "연락처", "일당", "상태", "관리"].map(h => (
                         <th key={h} style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textAlign: "left", background: "var(--bg-card)", borderBottom: "1px solid var(--border-light)" }}>{h}</th>
                       ))}
                     </tr>
@@ -1118,6 +1142,12 @@ export default function WorkersPage() {
                         <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "-"}</td>
                         <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{w.phone || "-"}</td>
                         <td style={{ padding: "12px 14px" }}>
+                          {w.daily_wage > 0
+                            ? <span style={{ fontSize: 13, fontWeight: 700, color: "#1428A0" }}>{w.daily_wage.toLocaleString()}원</span>
+                            : <span style={{ fontSize: 12, color: "#ea580c", background: "#fff7ed", padding: "2px 8px", borderRadius: 5, fontWeight: 600 }}>미설정</span>
+                          }
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
                           <span style={{ padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: w.status === "active" ? "var(--success-bg)" : "var(--error-bg)", color: w.status === "active" ? "var(--success)" : "var(--error)" }}>
                             {w.status === "active" ? "활성" : "비활성"}
                           </span>
@@ -1126,7 +1156,7 @@ export default function WorkersPage() {
                           <div style={{ display: "flex", gap: 6 }}>
                             <button onClick={() => {
                                 setEditItem(w);
-                                setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "" });
+                                setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", daily_wage: w.daily_wage ? w.daily_wage.toLocaleString("ko-KR") : "" });
                                 setShowForm(true);
                                 requestAnimationFrame(() => {
                                   setTimeout(() => {
@@ -1186,7 +1216,13 @@ export default function WorkersPage() {
                         {w.status === "active" ? "활성" : "비활성"}
                       </span>
                     </div>
-                    {w.phone && <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>📱 {w.phone}</div>}
+                    {w.phone && <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>📱 {w.phone}</div>}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                      {w.daily_wage > 0
+                        ? <span style={{ fontSize: 12, fontWeight: 700, color: "#1428A0", background: "#e0e8ff", padding: "2px 10px", borderRadius: 6 }}>💰 일당 {w.daily_wage.toLocaleString()}원</span>
+                        : <span style={{ fontSize: 11, fontWeight: 600, color: "#ea580c", background: "#fff7ed", padding: "2px 10px", borderRadius: 6 }}>💰 일당 미설정</span>
+                      }
+                    </div>
                     <div style={{ display: "flex", gap: 7 }}>
                       <button onClick={() => setRosterPopup({ type: "edit", worker: w })}
                         style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1.5px solid #c7d2fe", background: "#fff", color: "#1428A0" }}>✏️ 수정</button>
@@ -1226,7 +1262,7 @@ export default function WorkersPage() {
                           <button onClick={() => {
                               setRosterPopup({ type: null, worker: null });
                               setEditItem(rosterPopup.worker);
-                              setFormData({ name: rosterPopup.worker.name, phone: rosterPopup.worker.phone || "", region_id: rosterPopup.worker.region_id || "", district: rosterPopup.worker.district || "" });
+                              setFormData({ name: rosterPopup.worker.name, phone: rosterPopup.worker.phone || "", region_id: rosterPopup.worker.region_id || "", district: rosterPopup.worker.district || "", daily_wage: rosterPopup.worker.daily_wage ? rosterPopup.worker.daily_wage.toLocaleString("ko-KR") : "" });
                               setShowForm(true);
                               setTimeout(() => {
                                 // form은 페이지 상단에 있으므로 main을 최상단으로 스크롤
@@ -1305,6 +1341,29 @@ export default function WorkersPage() {
                               </div>
                             </div>
                             {message && <p style={{ fontSize: 12, color: "#DC2626", margin: 0 }}>{message}</p>}
+                            <div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 5 }}>
+                                일당 <span style={{ fontSize: 10, color: "#ea580c", fontWeight: 500 }}>공휴일 수당 계산 기준</span>
+                              </div>
+                              <div style={{ position: "relative" }}>
+                                <input
+                                  value={formData.daily_wage}
+                                  onChange={e => {
+                                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                                    const formatted = raw ? Number(raw).toLocaleString("ko-KR") : "";
+                                    setFormData({ ...formData, daily_wage: formatted });
+                                  }}
+                                  placeholder="예: 80,000"
+                                  style={{ width: "100%", padding: "11px 44px 11px 14px", borderRadius: 11, border: "1.5px solid #e2e8f0", fontSize: 15, outline: "none", boxSizing: "border-box" as const }}
+                                />
+                                <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#94a3b8", pointerEvents: "none" }}>원</span>
+                              </div>
+                              {formData.daily_wage && (
+                                <div style={{ marginTop: 5, fontSize: 11, color: "#dc2626", fontWeight: 600 }}>
+                                  🎌 공휴일 수당 +{Math.round(parseInt(formData.daily_wage.replace(/,/g, ""), 10) * 0.5).toLocaleString()}원
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <div style={{ display: "flex", gap: 10, padding: "14px 20px 0" }}>
                             <button onClick={() => { setRosterPopup({ type: null, worker: null }); setMessage(""); }}
@@ -1312,9 +1371,11 @@ export default function WorkersPage() {
                             <button onClick={async () => {
                                 if (!formData.name) { setMessage("이름을 입력하세요"); return; }
                                 const supabase = createClient();
+                                const wageVal = formData.daily_wage ? parseInt(formData.daily_wage.replace(/,/g, ""), 10) || null : null;
                                 const { error } = await supabase.from("workers").update({
                                   name: formData.name, phone: formData.phone || null,
-                                  region_id: formData.region_id || null, district: formData.district || null
+                                  region_id: formData.region_id || null, district: formData.district || null,
+                                  daily_wage: wageVal,
                                 }).eq("id", w.id);
                                 if (error) { setMessage(`수정 실패: ${error.message}`); return; }
                                 setRosterPopup({ type: null, worker: null });
