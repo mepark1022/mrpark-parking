@@ -547,10 +547,7 @@ export default function StoresPage() {
       const { data, error } = await supabase.from("stores").insert(payload).select();
       if (error) { alert("저장 실패: " + error.message); return; }
       if (!data || data.length === 0) {
-        alert("저장에 실패했습니다. (권한 오류일 수 있습니다)
-
-org_id: " + oid + "
-매장명: " + storeForm.name);
+        alert("저장에 실패했습니다. (RLS 권한 오류)\norg_id: " + oid + "\n매장명: " + storeForm.name);
         return;
       }
     }
@@ -580,10 +577,7 @@ org_id: " + oid + "
       const { data, error } = await supabase.from("parking_lots").insert(payload).select();
       if (error) { alert("저장 실패: " + error.message); return; }
       if (!data || data.length === 0) {
-        alert("저장에 실패했습니다. (권한 오류일 수 있습니다)
-
-org_id: " + oid + "
-store_id: " + storeForAction);
+        alert("저장에 실패했습니다. (RLS 권한 오류)\norg_id: " + oid + "\nstore_id: " + storeForAction);
         return;
       }
     }
