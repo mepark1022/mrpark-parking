@@ -43,6 +43,7 @@ const Card = ({ children, style }: { children: React.ReactNode; style?: React.CS
     background: "#fff", borderRadius: 16,
     border: `1px solid ${C.borderLight}`,
     boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+    overflow: "hidden",
     ...style,
   }}>
     {children}
@@ -366,7 +367,7 @@ export default function EntryPage() {
             { label: "발렛 건수", value: valetCount, unit: "건", setter: (v: number) => { setValetCount(v); setValetRevenue(v * (currentStore?.valet_fee || 5000)); } },
             { label: "발렛 매출", value: valetRevenue, unit: "원", setter: setValetRevenue },
           ].map(item => (
-            <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 12, overflow: "visible" }}>
+            <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <label style={{ width: isMobile ? 72 : 80, fontSize: isMobile ? 13 : 14, fontWeight: 600, color: C.textPrimary, flexShrink: 0 }}>
                 {item.label}
               </label>
