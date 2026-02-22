@@ -53,7 +53,8 @@ const Card = ({ children, style }: { children: React.ReactNode; style?: React.CS
 const CardHeader = ({ children }: { children: React.ReactNode }) => (
   <div style={{
     display: "flex", alignItems: "center", justifyContent: "space-between",
-    padding: "18px 24px", borderBottom: `1px solid ${C.borderLight}`,
+    padding: "14px 20px", borderBottom: `1px solid ${C.borderLight}`,
+    gap: 10,
   }}>
     {children}
   </div>
@@ -95,29 +96,37 @@ const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
 );
 
 // ── 토글 버튼 그룹 ──
+const TOGGLE_COLORS: Record<string, { activeBg: string; activeShadow: string }> = {
+  total:  { activeBg: C.navy, activeShadow: "0 2px 6px rgba(20,40,160,0.25)" },
+  hourly: { activeBg: C.gold, activeShadow: "0 2px 6px rgba(245,183,49,0.35)" },
+};
 const ToggleGroup = ({
   value, options, onChange,
 }: { value: string; options: { id: string; label: string }[]; onChange: (v: string) => void }) => (
   <div style={{
     display: "flex", gap: 3, background: C.bgCard,
-    padding: 3, borderRadius: 10, flexShrink: 0,
+    padding: 3, borderRadius: 10, flexShrink: 0, flexWrap: "nowrap",
   }}>
-    {options.map(opt => (
-      <button
-        key={opt.id}
-        onClick={() => onChange(opt.id)}
-        style={{
-          padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700,
-          border: "none", cursor: "pointer", transition: "all 0.2s",
-          whiteSpace: "nowrap",
-          background: value === opt.id ? C.navy : "transparent",
-          color: value === opt.id ? "#fff" : C.textMuted,
-          boxShadow: value === opt.id ? "0 2px 6px rgba(20,40,160,0.25)" : "none",
-        }}
-      >
-        {opt.label}
-      </button>
-    ))}
+    {options.map(opt => {
+      const tc = TOGGLE_COLORS[opt.id] ?? TOGGLE_COLORS.total;
+      const isActive = value === opt.id;
+      return (
+        <button
+          key={opt.id}
+          onClick={() => onChange(opt.id)}
+          style={{
+            padding: "7px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+            border: "none", cursor: "pointer", transition: "all 0.2s",
+            whiteSpace: "nowrap", lineHeight: 1,
+            background: isActive ? tc.activeBg : "transparent",
+            color: isActive ? (opt.id === "hourly" ? C.textPrimary : "#fff") : C.textMuted,
+            boxShadow: isActive ? tc.activeShadow : "none",
+          }}
+        >
+          {opt.label}
+        </button>
+      );
+    })}
   </div>
 );
 
