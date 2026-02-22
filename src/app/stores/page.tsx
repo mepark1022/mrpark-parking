@@ -153,7 +153,7 @@ const BtnGhost = ({ onClick, children, style }: { onClick?: () => void; children
       display: "inline-flex", alignItems: "center", gap: 8,
       padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500,
       background: "transparent", color: C.textSecondary,
-      border: `1px solid ${C.border}`, cursor: "pointer",
+      border: `1px solid ${C.border}`, cursor: "pointer", whiteSpace: "nowrap",
       ...style,
     }}
   >
@@ -737,9 +737,9 @@ export default function StoresPage() {
                             });
                             setEditingItem(store as unknown as Record<string, unknown>);
                             setModalType("store");
-                          }} style={{ padding: "6px 10px" }}>수정</BtnGhost>
+                          }} style={{ padding: "6px 14px", whiteSpace: "nowrap" }}>수정</BtnGhost>
                           <BtnGhost onClick={() => deleteStore(store.id)}
-                            style={{ padding: "6px 10px", color: C.error, borderColor: C.error + "44" }}>삭제</BtnGhost>
+                            style={{ padding: "6px 14px", whiteSpace: "nowrap", color: C.error, borderColor: C.error + "44" }}>삭제</BtnGhost>
                         </div>
                       </Td>
                     </tr>
