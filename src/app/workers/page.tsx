@@ -533,6 +533,8 @@ export default function WorkersPage() {
   const [editItem, setEditItem] = useState(null);
   const [formData, setFormData] = useState({ name: "", phone: "", region_id: "", district: "" });
   const [regions, setRegions] = useState([]);
+  // 명부 팝업 state
+  const [rosterPopup, setRosterPopup] = useState<{ type: "edit"|"deact"|"del"|null; worker: any }>({ type: null, worker: null });
   const [message, setMessage] = useState("");
 
   const districtMap: Record<string, string[]> = {
@@ -823,28 +825,30 @@ export default function WorkersPage() {
                     const rec = attendanceRecords.find(r => r.worker_id === w.id);
                     const sm = rec ? statusMap[rec.status] : null;
                     return (
-                      <div key={w.id} style={{ background: "var(--bg-card)", borderRadius: 12, padding: "14px 16px" }}>
+                      <div key={w.id} style={{
+                        background: "#fff", borderRadius: 16, padding: "14px 16px",
+                        marginBottom: 8, boxShadow: "0 1px 6px rgba(0,0,0,0.05)",
+                        borderLeft: `3.5px solid ${sm ? sm.color : "#cbd5e1"}`,
+                      }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                           <div style={{ fontSize: 15, fontWeight: 700 }}>{w.name}</div>
                           {sm ? (
-                            <span style={{ padding: "4px 12px", borderRadius: 6, background: sm.bg, color: sm.color, fontSize: 12, fontWeight: 700 }}>{sm.label}</span>
+                            <span style={{ padding: "4px 12px", borderRadius: 8, background: sm.bg, color: sm.color, fontSize: 11, fontWeight: 700 }}>{sm.label}</span>
                           ) : (
-                            <span style={{ padding: "4px 12px", borderRadius: 6, background: "#fff", color: "var(--text-muted)", fontSize: 12, fontWeight: 600, border: "1px solid var(--border)" }}>미기록</span>
+                            <span style={{ padding: "4px 12px", borderRadius: 8, background: "#f1f5f9", color: "#64748b", fontSize: 11, fontWeight: 700 }}>미기록</span>
                           )}
                         </div>
-                        <div style={{ display: "flex", gap: 16, fontSize: 13, color: "var(--text-secondary)", marginBottom: 10 }}>
-                          <span>출근: <strong>{rec?.check_in || "-"}</strong></span>
-                          <span>퇴근: <strong>{rec?.check_out || "-"}</strong></span>
-                          {rec && <span>근무: <strong>{calcWorkHours(rec.check_in, rec.check_out)}</strong></span>}
+                        <div style={{ display: "flex", gap: 14, fontSize: 12, color: "#64748b", marginBottom: 8 }}>
+                          <span>출근 <strong style={{ color: "#1a1d2b" }}>{rec?.check_in || "-"}</strong></span>
+                          <span>퇴근 <strong style={{ color: "#1a1d2b" }}>{rec?.check_out || "-"}</strong></span>
+                          {rec && <span>근무 <strong style={{ color: "#1a1d2b" }}>{calcWorkHours(rec.check_in, rec.check_out)}</strong></span>}
                         </div>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button onClick={() => { setManualForm({ workerId: w.id, status: rec?.status || "present", checkIn: rec?.check_in || "", checkOut: rec?.check_out || "" }); setManualMsg(""); setManualModal({ show: true, record: rec }); }}
-                            style={{ flex: 1, padding: "8px", borderRadius: 8, border: "1px solid var(--border)", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--navy)" }}>수정</button>
-                          {rec && (
-                            <button onClick={() => deleteAttendance(rec.id)}
-                              style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid var(--border)", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--error)" }}>삭제</button>
-                          )}
-                        </div>
+                        {w.phone && <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 10 }}>📱 {w.phone}</div>}
+                        {/* 수정만 — 삭제 없음 */}
+                        <button onClick={() => { setManualForm({ workerId: w.id, status: rec?.status || "present", checkIn: rec?.check_in || "", checkOut: rec?.check_out || "" }); setManualMsg(""); setManualModal({ show: true, record: rec }); }}
+                          style={{ width: "100%", padding: 10, borderRadius: 11, border: "none", background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                          {rec ? "✏️ 수정" : "+ 등록"}
+                        </button>
                       </div>
                     );
                   })}
@@ -946,29 +950,124 @@ export default function WorkersPage() {
               {/* 모바일 카드 */}
               <div className="md:hidden space-y-2">
                 {workers.map(w => (
-                  <div key={w.id} style={{ background: "var(--bg-card)", borderRadius: 12, padding: 14, border: "1px solid var(--border-light)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 15, fontWeight: 700 }}>{w.name}</span>
-                        <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600, background: w.status === "active" ? "var(--success-bg)" : "var(--error-bg)", color: w.status === "active" ? "var(--success)" : "var(--error)" }}>
-                          {w.status === "active" ? "활성" : "비활성"}
-                        </span>
+                  <div key={w.id} style={{ background: "#fff", borderRadius: 16, padding: 16, boxShadow: "0 1px 6px rgba(0,0,0,0.05)", marginBottom: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: w.status === "active" ? "#ecf0ff" : "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, opacity: w.status === "active" ? 1 : 0.6 }}>👤</div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 700 }}>{w.name}</div>
+                          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "지역 없음"}</div>
+                        </div>
                       </div>
+                      <span style={{ padding: "4px 11px", borderRadius: 8, fontSize: 11, fontWeight: 700, background: w.status === "active" ? "#dcfce7" : "#f1f5f9", color: w.status === "active" ? "#16A34A" : "#94a3b8" }}>
+                        {w.status === "active" ? "활성" : "비활성"}
+                      </span>
                     </div>
-                    <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 10 }}>
-                      {[w.regions?.name, w.district].filter(Boolean).join(" ") || "지역 없음"} · {w.phone || "연락처 없음"}
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={() => { setEditItem(w); setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "" }); setShowForm(true); }}
-                        style={{ flex: 1, padding: 8, borderRadius: 8, border: "1px solid var(--border)", background: "var(--white)", fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", cursor: "pointer" }}>수정</button>
-                      <button onClick={() => toggleStatus(w)}
-                        style={{ flex: 1, padding: 8, borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", background: w.status === "active" ? "var(--error-bg)" : "var(--success-bg)", color: w.status === "active" ? "var(--error)" : "var(--success)" }}>
+                    {w.phone && <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>📱 {w.phone}</div>}
+                    <div style={{ display: "flex", gap: 7 }}>
+                      <button onClick={() => setRosterPopup({ type: "edit", worker: w })}
+                        style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1.5px solid #c7d2fe", background: "#fff", color: "#1428A0" }}>✏️ 수정</button>
+                      <button onClick={() => setRosterPopup({ type: "deact", worker: w })}
+                        style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1.5px solid #fed7aa", background: "#fff", color: "#EA580C" }}>
                         {w.status === "active" ? "비활성" : "활성화"}
                       </button>
+                      <button onClick={() => setRosterPopup({ type: "del", worker: w })}
+                        style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1.5px solid #fecaca", background: "#fff", color: "#DC2626" }}>🗑 삭제</button>
                     </div>
                   </div>
                 ))}
               </div>
+
+              {/* ── 명부 팝업 ── */}
+              {rosterPopup.type && rosterPopup.worker && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(20,28,60,0.55)", backdropFilter: "blur(3px)", zIndex: 1000, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+                  onClick={e => { if (e.target === e.currentTarget) setRosterPopup({ type: null, worker: null }); }}>
+                  <div style={{ background: "#fff", width: "100%", maxWidth: 480, borderRadius: "24px 24px 0 0", paddingBottom: 28, boxShadow: "0 -8px 40px rgba(0,0,0,0.18)" }}>
+                    <div style={{ width: 36, height: 4, borderRadius: 2, background: "#e2e8f0", margin: "12px auto 18px" }}></div>
+
+                    {/* 수정 팝업 */}
+                    {rosterPopup.type === "edit" && (
+                      <>
+                        <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>✏️</div>
+                        <div style={{ fontSize: 17, fontWeight: 800, textAlign: "center", marginBottom: 6 }}>근무자 정보 수정</div>
+                        <div style={{ fontSize: 13, color: "#64748b", textAlign: "center", lineHeight: 1.65, padding: "0 24px", marginBottom: 18 }}>
+                          {rosterPopup.worker.name} 근무자의 정보를 수정합니다.
+                        </div>
+                        <div style={{ margin: "0 18px 18px", background: "#f0f7ff", border: "1.5px solid #c7d9f9", borderRadius: 12, padding: "12px 14px" }}>
+                          <div style={{ fontSize: 12, fontWeight: 800, color: "#1428A0", marginBottom: 5 }}>📝 수정 가능 항목</div>
+                          <div style={{ fontSize: 12, color: "#1e3a8a", lineHeight: 1.6 }}>이름 · 연락처 · 담당 지역(시/도, 구/시)<br/>변경 사항은 즉시 저장됩니다.</div>
+                        </div>
+                        <div style={{ display: "flex", gap: 10, padding: "0 18px" }}>
+                          <button onClick={() => setRosterPopup({ type: null, worker: null })}
+                            style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#f1f5f9", color: "#64748b", border: "none", fontFamily: "inherit" }}>취소</button>
+                          <button onClick={() => { setRosterPopup({ type: null, worker: null }); setEditItem(rosterPopup.worker); setFormData({ name: rosterPopup.worker.name, phone: rosterPopup.worker.phone || "", region_id: rosterPopup.worker.region_id || "", district: rosterPopup.worker.district || "" }); setShowForm(true); }}
+                            style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#1428A0", color: "#fff", border: "none", fontFamily: "inherit" }}>수정 화면으로</button>
+                        </div>
+                      </>
+                    )}
+
+                    {/* 비활성 팝업 */}
+                    {rosterPopup.type === "deact" && (
+                      <>
+                        <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>{rosterPopup.worker.status === "active" ? "😴" : "✅"}</div>
+                        <div style={{ fontSize: 17, fontWeight: 800, textAlign: "center", marginBottom: 6 }}>
+                          {rosterPopup.worker.status === "active" ? "근무자 비활성 처리" : "근무자 재활성화"}
+                        </div>
+                        <div style={{ fontSize: 13, color: "#64748b", textAlign: "center", lineHeight: 1.65, padding: "0 24px", marginBottom: 18 }}>
+                          {rosterPopup.worker.name} 근무자를<br/>
+                          {rosterPopup.worker.status === "active" ? "비활성 상태로 변경합니다." : "다시 활성화합니다."}
+                        </div>
+                        {rosterPopup.worker.status === "active" && (
+                          <div style={{ margin: "0 18px 18px", background: "#fff7ed", border: "1.5px solid #fed7aa", borderRadius: 12, padding: "12px 14px" }}>
+                            <div style={{ fontSize: 12, fontWeight: 800, color: "#EA580C", marginBottom: 5 }}>⚠️ 비활성 처리 시 변경사항</div>
+                            <div style={{ fontSize: 12, color: "#9a3412", lineHeight: 1.6 }}>
+                              · 출퇴근 배정에서 제외됩니다<br/>
+                              · 근태 매트릭스에 표시되지 않습니다<br/>
+                              · 데이터는 <strong>보존</strong>되며 언제든 재활성화 가능합니다
+                            </div>
+                          </div>
+                        )}
+                        <div style={{ display: "flex", gap: 10, padding: "0 18px" }}>
+                          <button onClick={() => setRosterPopup({ type: null, worker: null })}
+                            style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#f1f5f9", color: "#64748b", border: "none", fontFamily: "inherit" }}>취소</button>
+                          <button onClick={() => { setRosterPopup({ type: null, worker: null }); toggleStatus(rosterPopup.worker); }}
+                            style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: rosterPopup.worker.status === "active" ? "#EA580C" : "#16A34A", color: "#fff", border: "none", fontFamily: "inherit" }}>
+                            {rosterPopup.worker.status === "active" ? "비활성 처리" : "활성화"}
+                          </button>
+                        </div>
+                      </>
+                    )}
+
+                    {/* 삭제 팝업 */}
+                    {rosterPopup.type === "del" && (
+                      <>
+                        <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>🗑️</div>
+                        <div style={{ fontSize: 17, fontWeight: 800, textAlign: "center", color: "#DC2626", marginBottom: 6 }}>근무자 영구 삭제</div>
+                        <div style={{ fontSize: 13, color: "#64748b", textAlign: "center", lineHeight: 1.65, padding: "0 24px", marginBottom: 14 }}>
+                          {rosterPopup.worker.name} 근무자의 모든 데이터를<br/>영구적으로 삭제합니다.
+                        </div>
+                        <div style={{ margin: "0 18px 12px", background: "#fef2f2", border: "1.5px solid #fecaca", borderRadius: 12, padding: "12px 14px" }}>
+                          <div style={{ fontSize: 12, fontWeight: 800, color: "#DC2626", marginBottom: 7 }}>🚨 삭제되는 데이터 (복구 불가)</div>
+                          <ul style={{ paddingLeft: 16 }}>
+                            {["근무자 기본 정보 (이름·연락처·지역)", "전체 출퇴근 기록", "근태 이력 (출근·지각·결근·연차)", "근무 리뷰 및 평가 내역", "시말서 전체 기록"].map((t, i) => (
+                              <li key={i} style={{ fontSize: 12, color: "#991b1b", marginBottom: 3, lineHeight: 1.5 }}>{t}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div style={{ margin: "0 18px 18px", background: "#fffbeb", border: "1.5px solid #fde68a", borderRadius: 12, padding: "11px 14px", fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
+                          💡 데이터 보존이 필요하면 <strong style={{ color: "#EA580C" }}>삭제 대신 비활성</strong> 처리를 권장합니다.
+                        </div>
+                        <div style={{ display: "flex", gap: 10, padding: "0 18px" }}>
+                          <button onClick={() => setRosterPopup({ type: null, worker: null })}
+                            style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#f1f5f9", color: "#64748b", border: "none", fontFamily: "inherit" }}>취소</button>
+                          <button onClick={async () => { setRosterPopup({ type: null, worker: null }); const supabase = createClient(); await supabase.from("workers").delete().eq("id", rosterPopup.worker.id); setWorkers(prev => prev.filter(x => x.id !== rosterPopup.worker.id)); }}
+                            style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#DC2626", color: "#fff", border: "none", fontFamily: "inherit" }}>영구 삭제</button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
