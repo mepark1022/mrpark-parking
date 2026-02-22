@@ -402,6 +402,7 @@ export default function StoresPage() {
 
   async function loadData() {
     setLoading(true);
+    try {
     const oid = await getOrgId();
 
     const { data: storeData } = await supabase
@@ -472,7 +473,11 @@ export default function StoresPage() {
         setLateRules(mapped);
       }
     }
-    setLoading(false);
+    } catch (err) {
+      console.error("[StoresPage] loadData 에러:", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   // ── CRUD 핸들러 ──
