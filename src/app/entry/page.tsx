@@ -457,7 +457,7 @@ export default function EntryPage() {
                       { label: "발렛 건수", value: valetCount, unit: "건", setter: (v: number) => { setValetCount(v); setValetRevenue(v * (currentStore?.valet_fee || 5000)); } },
                       { label: "발렛 매출", value: valetRevenue, unit: "원", setter: setValetRevenue },
                     ].map(item => (
-                      <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 12, overflow: "visible" }}>
                         <label style={{ width: 80, fontSize: 14, fontWeight: 600, color: C.textPrimary, flexShrink: 0 }}>
                           {item.label}
                         </label>
@@ -465,9 +465,9 @@ export default function EntryPage() {
                           type="number" min={0} value={item.value || ""}
                           onChange={e => item.setter(Number(e.target.value))}
                           placeholder="0"
-                          style={{ flex: 1, textAlign: "center", fontWeight: 700 }}
+                          style={{ flex: 1, minWidth: 0, textAlign: "center", fontWeight: 700, boxSizing: "border-box" }}
                         />
-                        <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0 }}>{item.unit}</span>
+                        <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0, whiteSpace: "nowrap" }}>{item.unit}</span>
                       </div>
                     ))}
                   </div>
