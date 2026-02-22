@@ -176,7 +176,23 @@ function CustomDateRangePicker({ startDate, endDate, onApply, onClose }: {
       <div style={{ background:"#fff", borderRadius:20, width:"100%", maxWidth:380, boxShadow:"0 20px 60px rgba(0,0,0,0.2)", overflow:"hidden" }}>
         {/* 선택된 날짜 헤더 */}
         <div style={{ background:"#1428A0", padding:"18px 24px" }}>
-          <div style={{ fontSize:11, color:"rgba(255,255,255,0.55)", fontWeight:600, marginBottom:6 }}>기간 설정</div>
+          {/* 헤더 상단: 기간 설정 텍스트 + 미팍Ticket 로고 */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.55)", fontWeight:600 }}>기간 설정</div>
+            {/* 미팍Ticket 로고 */}
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              {/* P 아이콘 */}
+              <div style={{ width:26, height:26, borderRadius:7, background:"#fff", border:"2px solid rgba(255,255,255,0.9)", position:"relative", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <div style={{ position:"absolute", bottom:0, left:0, right:0, height:7, background:"#F5B731" }} />
+                <span style={{ fontFamily:"'Outfit',sans-serif", fontSize:13, fontWeight:900, color:"#1A1D2B", position:"relative", zIndex:1, marginBottom:3 }}>P</span>
+              </div>
+              {/* 미팍Ticket 텍스트 */}
+              <div style={{ display:"flex", alignItems:"baseline", gap:2 }}>
+                <span style={{ fontFamily:"'Noto Sans KR',sans-serif", fontSize:13, fontWeight:800, color:"#fff", letterSpacing:"-0.3px" }}>미팍</span>
+                <span style={{ fontFamily:"'Outfit',sans-serif", fontSize:13, fontWeight:700, color:"#F5B731", letterSpacing:"-0.2px" }}>Ticket</span>
+              </div>
+            </div>
+          </div>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", marginBottom:2 }}>시작일</div>
