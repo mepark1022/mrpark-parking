@@ -384,6 +384,58 @@ export default function StoresPage() {
   const [shiftForm, setShiftForm] = useState({ name: "오전조", start_time: "08:00", end_time: "14:00" });
   const [lateForm, setLateForm] = useState({ late_minutes: 5, absent_minutes: 30 });
 
+  // 카카오 주소 API 스크립트 로드
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+    script.async = true;
+    document.head.appendChild(script);
+    return () => { try { document.head.removeChild(script); } catch(e) {} };
+  }, []);
+
+  // 카카오 주소 검색 팝업
+  const openAddressSearch = () => {
+    if (!(window as any).daum?.Postcode) {
+      alert("주소 검색 로딩 중입니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+    new (window as any).daum.Postcode({
+      oncomplete: (data: any) => {
+        const fullAddr = data.roadAddress || data.jibunAddress;
+        const parts = fullAddr.split(" ");
+        let city = parts[0] ?? "";
+        const cityMap: Record<string, string> = {
+          "서울특별시": "서울", "서울시": "서울",
+          "인천광역시": "인천", "인천시": "인천",
+          "경기도": "경기",
+          "부산광역시": "부산", "대구광역시": "대구",
+          "광주광역시": "광주", "대전광역시": "대전",
+          "울산광역시": "울산", "세종특별자치시": "세종",
+          "강원도": "강원", "강원특별자치도": "강원",
+          "충청북도": "충북", "충청남도": "충남",
+          "전라북도": "전북", "전북특별자치도": "전북",
+          "전라남도": "전남", "경상북도": "경북",
+          "경상남도": "경남", "제주특별자치도": "제주",
+        };
+        city = cityMap[city] ?? city;
+        let district = "";
+        for (let i = 1; i < parts.length; i++) {
+          if (parts[i].endsWith("구") || parts[i].endsWith("군") ||
+              (parts[i].endsWith("시") && i > 1)) {
+            district = parts[i];
+            break;
+          }
+        }
+        setStoreForm(f => ({
+          ...f,
+          road_address: fullAddr,
+          region_city: city,
+          region_district: district,
+        }));
+      },
+    }).open();
+  };
+
   // ── 데이터 로드 ──
   useEffect(() => {
     setMounted(true);
@@ -1202,26 +1254,55 @@ export default function StoresPage() {
             <Input value={storeForm.manager_name} onChange={e => setStoreForm(f => ({ ...f, manager_name: e.target.value }))} />
           </FormGroup>
         </div>
+        <FormGroup label="도로명주소">
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              readOnly
+              value={storeForm.road_address}
+              placeholder="🔍 아래 버튼으로 주소를 검색해주세요"
+              onClick={openAddressSearch}
+              style={{
+                flex: 1, padding: "10px 14px", border: `1.5px solid ${C.border}`,
+                borderRadius: 8, fontSize: 14, background: "#f8f9fc",
+                cursor: "pointer", color: storeForm.road_address ? C.textPrimary : C.textMuted,
+                outline: "none",
+              }}
+            />
+            <button
+              type="button"
+              onClick={openAddressSearch}
+              style={{
+                padding: "10px 16px", background: C.navy, color: "#fff",
+                border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+              }}
+            >
+              주소 검색
+            </button>
+          </div>
+        </FormGroup>
         <div className="stores-grid-2col" style={{ display: "grid", gap: 16 }}>
           <FormGroup label="시/도">
-            <Select value={storeForm.region_city} onChange={e => {
-              setStoreForm(f => ({ ...f, region_city: e.target.value, region_district: "" }));
-              setRegionCity(e.target.value);
+            <div style={{
+              padding: "10px 14px", border: `1.5px solid ${C.borderLight}`,
+              borderRadius: 8, fontSize: 14, background: "#f0f2f8",
+              color: storeForm.region_city ? C.textPrimary : C.textMuted,
+              minHeight: 42,
             }}>
-              <option value="">선택</option>
-              {Object.keys(REGIONS).map(c => <option key={c} value={c}>{c}</option>)}
-            </Select>
+              {storeForm.region_city || "주소 검색 시 자동입력"}
+            </div>
           </FormGroup>
           <FormGroup label="구/시">
-            <Select value={storeForm.region_district} onChange={e => setStoreForm(f => ({ ...f, region_district: e.target.value }))}>
-              <option value="">선택</option>
-              {(REGIONS[storeForm.region_city] ?? []).map(d => <option key={d} value={d}>{d}</option>)}
-            </Select>
+            <div style={{
+              padding: "10px 14px", border: `1.5px solid ${C.borderLight}`,
+              borderRadius: 8, fontSize: 14, background: "#f0f2f8",
+              color: storeForm.region_district ? C.textPrimary : C.textMuted,
+              minHeight: 42,
+            }}>
+              {storeForm.region_district || "주소 검색 시 자동입력"}
+            </div>
           </FormGroup>
         </div>
-        <FormGroup label="도로명주소">
-          <Input value={storeForm.road_address} onChange={e => setStoreForm(f => ({ ...f, road_address: e.target.value }))} placeholder="예: 서울시 강서구 화곡로 123" />
-        </FormGroup>
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
           <BtnGhost onClick={() => setModalType(null)}>취소</BtnGhost>
           <BtnPrimary onClick={saveStore}>
