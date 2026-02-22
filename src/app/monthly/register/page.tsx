@@ -50,7 +50,6 @@ function RegisterForm() {
 
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
-  const [orgId, setOrgId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
@@ -73,7 +72,6 @@ function RegisterForm() {
   async function loadStores() {
     const oid = await getOrgId();
     if (!oid) return;
-    setOrgId(oid);
     const { data } = await supabase.from("stores").select("*").eq("org_id", oid).eq("is_active", true).order("name");
     if (data) {
       setStores(data);
@@ -115,29 +113,38 @@ function RegisterForm() {
       return;
     }
     setSaving(true);
-    const data = {
-      store_id: form.store_id,
-      vehicle_number: form.vehicle_number.toUpperCase(),
-      vehicle_type: form.vehicle_type || null,
-      customer_name: form.customer_name,
-      customer_phone: form.customer_phone,
-      start_date: form.start_date,
-      end_date: form.end_date,
-      monthly_fee: form.monthly_fee,
-      payment_status: form.payment_status,
-      contract_status: form.contract_status,
-      note: form.note || null,
-    };
     try {
+      // orgId를 state에서 읽지 않고 저장 시점에 직접 조회 (null 방지)
+      const oid = await getOrgId();
+      if (!oid) {
+        alert("로그인 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.");
+        setSaving(false);
+        return;
+      }
+      const data = {
+        store_id: form.store_id,
+        vehicle_number: form.vehicle_number.toUpperCase(),
+        vehicle_type: form.vehicle_type || null,
+        customer_name: form.customer_name,
+        customer_phone: form.customer_phone,
+        start_date: form.start_date,
+        end_date: form.end_date,
+        monthly_fee: form.monthly_fee,
+        payment_status: form.payment_status,
+        contract_status: form.contract_status,
+        note: form.note || null,
+      };
       if (editId) {
-        await supabase.from("monthly_parking").update(data).eq("id", editId);
+        const { error } = await supabase.from("monthly_parking").update(data).eq("id", editId);
+        if (error) { alert("수정 실패: " + error.message); setSaving(false); return; }
       } else {
-        await supabase.from("monthly_parking").insert({ ...data, org_id: orgId });
+        const { error } = await supabase.from("monthly_parking").insert({ ...data, org_id: oid });
+        if (error) { alert("저장 실패: " + error.message); setSaving(false); return; }
       }
       router.push("/monthly");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("저장 실패. 다시 시도해주세요.");
+      alert("저장 실패: " + (err?.message || "다시 시도해주세요."));
     } finally {
       setSaving(false);
     }

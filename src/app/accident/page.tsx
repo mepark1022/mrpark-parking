@@ -237,27 +237,31 @@ export default function AccidentPage() {
   };
 
   const handleStatusChange = async (id: string, newStatus: string) => {
+    if (!ctx?.orgId) return;
     const supabase = createClient();
-    await supabase.from("accident_reports")
+    const { error } = await supabase.from("accident_reports")
       .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq("id", id).eq("org_id", ctx.orgId);
+    if (error) { alert("상태 변경 실패: " + error.message); return; }
     setAccidents(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
     if (selected?.id === id) setSelected((prev: any) => ({ ...prev, status: newStatus }));
   };
 
   const handleSaveMemo = async () => {
-    if (!selected) return;
+    if (!selected || !ctx?.orgId) return;
     setSavingMemo(true);
     const supabase = createClient();
     const { error } = await supabase.from("accident_reports")
       .update({ admin_memo: memo, updated_at: new Date().toISOString() })
       .eq("id", selected.id).eq("org_id", ctx.orgId);
     setSavingMemo(false);
-    if (!error) {
-      setMemoSaved(true);
-      setAccidents(prev => prev.map(a => a.id === selected.id ? { ...a, admin_memo: memo } : a));
-      setTimeout(() => setMemoSaved(false), 2000);
+    if (error) {
+      alert("메모 저장 실패: " + error.message);
+      return;
     }
+    setMemoSaved(true);
+    setAccidents(prev => prev.map(a => a.id === selected.id ? { ...a, admin_memo: memo } : a));
+    setTimeout(() => setMemoSaved(false), 2000);
   };
 
   const handleExcelDownload = (mode: "current" | "monthly") => {
@@ -314,9 +318,11 @@ export default function AccidentPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!ctx?.orgId) return;
     if (!confirm("이 사고보고를 삭제하시겠습니까?")) return;
     const supabase = createClient();
-    await supabase.from("accident_reports").delete().eq("id", id).eq("org_id", ctx.orgId);
+    const { error } = await supabase.from("accident_reports").delete().eq("id", id).eq("org_id", ctx.orgId);
+    if (error) { alert("삭제 실패: " + error.message); return; }
     setAccidents(prev => prev.filter(a => a.id !== id));
     setSelected(null);
   };
