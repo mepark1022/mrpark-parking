@@ -538,14 +538,22 @@ export default function StoresPage() {
   async function saveStore() {
     if (!storeForm.name.trim()) { alert("매장명을 입력해주세요."); return; }
     const oid = await getOrgId();
-    if (!oid) { alert("조직 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요."); return; }
-    let error;
+    if (!oid) { alert("로그인 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요."); return; }
     if (editingItem?.id) {
-      ({ error } = await supabase.from("stores").update({ ...storeForm }).eq("id", editingItem.id));
+      const { error } = await supabase.from("stores").update({ ...storeForm }).eq("id", editingItem.id);
+      if (error) { alert("수정 실패: " + error.message); return; }
     } else {
-      ({ error } = await supabase.from("stores").insert({ ...storeForm, org_id: oid }));
+      const payload = { ...storeForm, org_id: oid };
+      const { data, error } = await supabase.from("stores").insert(payload).select();
+      if (error) { alert("저장 실패: " + error.message); return; }
+      if (!data || data.length === 0) {
+        alert("저장에 실패했습니다. (권한 오류일 수 있습니다)
+
+org_id: " + oid + "
+매장명: " + storeForm.name);
+        return;
+      }
     }
-    if (error) { alert("저장 실패: " + error.message); return; }
     setModalType(null);
     loadData();
   }
@@ -563,14 +571,22 @@ export default function StoresPage() {
   async function saveLot() {
     if (!lotForm.name.trim()) { alert("주차장명을 입력해주세요."); return; }
     const oid = await getOrgId();
-    if (!oid) { alert("조직 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요."); return; }
-    let error;
+    if (!oid) { alert("로그인 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요."); return; }
     if (editingItem?.id) {
-      ({ error } = await supabase.from("parking_lots").update({ ...lotForm }).eq("id", editingItem.id));
+      const { error } = await supabase.from("parking_lots").update({ ...lotForm }).eq("id", editingItem.id);
+      if (error) { alert("수정 실패: " + error.message); return; }
     } else {
-      ({ error } = await supabase.from("parking_lots").insert({ ...lotForm, store_id: storeForAction, org_id: oid }));
+      const payload = { ...lotForm, store_id: storeForAction, org_id: oid };
+      const { data, error } = await supabase.from("parking_lots").insert(payload).select();
+      if (error) { alert("저장 실패: " + error.message); return; }
+      if (!data || data.length === 0) {
+        alert("저장에 실패했습니다. (권한 오류일 수 있습니다)
+
+org_id: " + oid + "
+store_id: " + storeForAction);
+        return;
+      }
     }
-    if (error) { alert("저장 실패: " + error.message); return; }
     setModalType(null);
     loadData();
   }
