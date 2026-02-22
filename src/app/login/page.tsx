@@ -4,7 +4,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { login, signup } from "./actions";
 import { createClient } from "@/lib/supabase/client";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 /* ────────────────────────────────────────────
    인라인 로고 (LogoHero dark 버전)
@@ -79,12 +79,15 @@ function LoginContent() {
   const [socialLoading, setSocialLoading] = useState("");
   const [signupSuccess, setSignupSuccess] = useState(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   useEffect(() => {
     const msg = searchParams.get("message");
-    if (msg === "pending")  setError("관리자 승인 대기 중입니다. 승인 후 로그인 가능합니다.");
+    if (msg === "pending")       setError("관리자 승인 대기 중입니다. 승인 후 로그인 가능합니다.");
     else if (msg === "disabled") setError("비활성화된 계정입니다. 관리자에게 문의하세요.");
     else if (msg === "error")    setError("로그인 중 오류가 발생했습니다. 다시 시도해주세요.");
+    // URL에서 message 파라미터 제거 (새로고침 시 에러 재표시 방지)
+    if (msg) router.replace("/login");
   }, [searchParams]);
 
   async function handleSubmit(formData: FormData) {

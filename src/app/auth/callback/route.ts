@@ -162,6 +162,12 @@ export async function GET(request: Request) {
 
       return NextResponse.redirect(`${origin}${next}`);
     }
+    // code exchange 실패 - 잘못된 state/PKCE 불일치 → 깨끗하게 재시도
+    const response = NextResponse.redirect(`${origin}/login?message=error`);
+    // Supabase auth 쿠키 제거하여 PKCE 상태 초기화
+    response.cookies.set("sb-xwkatswgojahuaimbuhw-auth-token", "", { maxAge: 0, path: "/" });
+    response.cookies.set("sb-xwkatswgojahuaimbuhw-auth-token-code-verifier", "", { maxAge: 0, path: "/" });
+    return response;
   }
 
   return NextResponse.redirect(`${origin}/login?message=error`);
