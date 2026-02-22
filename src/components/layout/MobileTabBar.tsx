@@ -9,8 +9,9 @@ const tabs = [
     path: "/dashboard",
     label: "홈",
     accentColor: "#1428A0",
+    shadowColor: "rgba(20, 40, 160, 0.50)",
     icon: (active: boolean) => (
-      <svg width="27" height="27" viewBox="0 0 24 24" fill="none"
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
         stroke={active ? "#ffffff" : "#9ba3be"}
         strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="4" />
@@ -23,8 +24,9 @@ const tabs = [
     path: "/entry",
     label: "입력",
     accentColor: "#1428A0",
+    shadowColor: "rgba(20, 40, 160, 0.50)",
     icon: (active: boolean) => (
-      <svg width="27" height="27" viewBox="0 0 24 24" fill="none"
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
         stroke={active ? "#ffffff" : "#9ba3be"}
         strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
@@ -39,8 +41,9 @@ const tabs = [
     path: "/workers",
     label: "근무자",
     accentColor: "#1428A0",
+    shadowColor: "rgba(20, 40, 160, 0.50)",
     icon: (active: boolean) => (
-      <svg width="27" height="27" viewBox="0 0 24 24" fill="none"
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
         stroke={active ? "#ffffff" : "#9ba3be"}
         strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="9" cy="7" r="3.2" />
@@ -55,13 +58,14 @@ const tabs = [
     path: "/accident",
     label: "사고",
     accentColor: "#EA580C",
+    shadowColor: "rgba(234, 88, 12, 0.50)",
     icon: (active: boolean) => (
-      <svg width="27" height="27" viewBox="0 0 24 24" fill="none"
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
         stroke={active ? "#ffffff" : "#9ba3be"}
         strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 3.5 2.5 20.5h19L12 3.5z" />
         <line x1="12" y1="10.5" x2="12" y2="15.5" strokeWidth={2.4} />
-        <circle cx="12" cy="18" r="1.2" fill={active ? "#ffffff" : "#9ba3be"} stroke="none" />
+        <circle cx="12" cy="18" r="1.3" fill={active ? "#ffffff" : "#9ba3be"} stroke="none" />
       </svg>
     ),
   },
@@ -70,11 +74,12 @@ const tabs = [
     path: "/more",
     label: "더보기",
     accentColor: "#1428A0",
+    shadowColor: "rgba(20, 40, 160, 0.50)",
     icon: (active: boolean) => (
-      <svg width="27" height="27" viewBox="0 0 24 24" fill={active ? "#ffffff" : "#9ba3be"}>
-        <circle cx="5.5" cy="12" r="2.2" />
-        <circle cx="12" cy="12" r="2.2" />
-        <circle cx="18.5" cy="12" r="2.2" />
+      <svg width="36" height="36" viewBox="0 0 24 24" fill={active ? "#ffffff" : "#9ba3be"}>
+        <circle cx="5.5" cy="12" r="2.3" />
+        <circle cx="12" cy="12" r="2.3" />
+        <circle cx="18.5" cy="12" r="2.3" />
       </svg>
     ),
   },
@@ -89,9 +94,7 @@ export default function MobileTabBar() {
   if (pathname === "/login") return null;
 
   const isActive = (tab: typeof tabs[0]) => {
-    if (tab.id === "more") {
-      return moreRoutes.some((r) => pathname.startsWith(r));
-    }
+    if (tab.id === "more") return moreRoutes.some((r) => pathname.startsWith(r));
     return pathname.startsWith(tab.path);
   };
 
@@ -117,9 +120,8 @@ export default function MobileTabBar() {
           borderTop: "2.5px solid #e8edf8",
           justifyContent: "space-around",
           alignItems: "center",
-          padding: "10px 6px 28px",
+          padding: "10px 4px 30px",
           boxShadow: "0 -10px 28px rgba(20, 40, 160, 0.09)",
-          gap: 2,
         }}
       >
         {tabs.map((tab) => {
@@ -133,43 +135,40 @@ export default function MobileTabBar() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 5,
-                padding: "8px 2px",
+                gap: 0,
+                padding: "4px 1px",
                 cursor: "pointer",
-                borderRadius: 16,
                 WebkitTapHighlightColor: "transparent",
               }}
             >
+              {/* 아이콘 박스 64px */}
               <div
                 style={{
-                  width: 50,
-                  height: 50,
-                  borderRadius: 15,
+                  width: 64,
+                  height: 64,
+                  borderRadius: 20,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   background: active ? tab.accentColor : "transparent",
-                  boxShadow: active
-                    ? tab.id === "accident"
-                      ? "0 5px 16px rgba(234, 88, 12, 0.45)"
-                      : "0 5px 16px rgba(20, 40, 160, 0.45)"
-                    : "none",
+                  boxShadow: active ? `0 6px 22px ${tab.shadowColor}` : "none",
                   transition: "all 0.2s",
                 }}
               >
                 {tab.icon(active)}
               </div>
-              <span
+
+              {/* 활성 도트 인디케이터 */}
+              <div
                 style={{
-                  fontSize: 11,
-                  fontWeight: active ? 800 : 700,
-                  color: active ? tab.accentColor : "#9ba3be",
-                  letterSpacing: "-0.4px",
-                  fontFamily: "'Noto Sans KR', sans-serif",
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  marginTop: 4,
+                  background: active ? tab.accentColor : "transparent",
+                  transition: "background 0.2s",
                 }}
-              >
-                {tab.label}
-              </span>
+              />
             </div>
           );
         })}
