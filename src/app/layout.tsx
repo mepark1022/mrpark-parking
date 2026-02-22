@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "미팍 | 주차운영 관리시스템",
+  title: "미팍티켓 | 주차운영플랫폼",
   description: "주식회사 미스터팍 — ME.PARK 2.0 스마트 주차운영 관리 플랫폼 · 미팍Ticket",
   icons: {
     icon: [
