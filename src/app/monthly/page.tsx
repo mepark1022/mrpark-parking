@@ -238,23 +238,67 @@ export default function MonthlyPage() {
         </div>
 
         {/* 만료 예정 배너 */}
-        {expiringSoon.length > 0 && (
-          <div style={{ background: "linear-gradient(135deg,#fff7ed,#ffedd5)", border: "1px solid #fed7aa", borderRadius: 14, padding: "16px 20px", marginBottom: 20, borderLeft: "4px solid #ea580c" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-              <span style={{ fontSize: 20 }}>⚠️</span>
-              <div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: "#9a3412", marginBottom: 8 }}>만료 예정 계약 {expiringSoon.length}건 (7일 이내)</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {expiringSoon.map((c) => (
-                    <span key={c.id} style={{ fontSize: 12, padding: "4px 12px", background: "#fff", borderRadius: 6, border: "1px solid #fed7aa", color: "#ea580c", fontWeight: 600 }}>
-                      {c.stores?.name} · {c.vehicle_number} · D-{getDaysLeft(c.end_date)}
-                    </span>
-                  ))}
+        {expiringSoon.length > 0 && (() => {
+          const urgent = expiringSoon.filter(c => getDaysLeft(c.end_date) <= 3);
+          const isUrgent = urgent.length > 0;
+          return (
+            <div style={{
+              background: isUrgent ? "linear-gradient(135deg,#fef2f2,#fee2e2)" : "linear-gradient(135deg,#fff7ed,#ffedd5)",
+              border: `1px solid ${isUrgent ? "#fecaca" : "#fed7aa"}`,
+              borderLeft: `4px solid ${isUrgent ? "#dc2626" : "#ea580c"}`,
+              borderRadius: 14, padding: "18px 20px", marginBottom: 20
+            }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 18 }}>{isUrgent ? "🚨" : "⚠️"}</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: isUrgent ? "#991b1b" : "#9a3412" }}>
+                    {isUrgent
+                      ? `긴급! D-3 이하 ${urgent.length}건 포함 · 만료 임박 총 ${expiringSoon.length}건`
+                      : `만료 예정 ${expiringSoon.length}건 (7일 이내) · 알림톡을 보내 연장을 유도하세요`
+                    }
+                  </span>
                 </div>
               </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {expiringSoon
+                  .sort((a, b) => getDaysLeft(a.end_date) - getDaysLeft(b.end_date))
+                  .map((c) => {
+                    const days = getDaysLeft(c.end_date);
+                    const isD3 = days <= 3;
+                    return (
+                      <div key={c.id} style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        background: isD3 ? "#fff5f5" : "#fff",
+                        border: `1px solid ${isD3 ? "#fecaca" : "#fed7aa"}`,
+                        borderRadius: 10, padding: "10px 14px", flexWrap: "wrap", gap: 8
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                          <span style={{
+                            fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 6,
+                            background: isD3 ? "#dc2626" : "#ea580c", color: "#fff"
+                          }}>D-{days}</span>
+                          <span style={{ fontSize: 14, fontWeight: 800, color: "#1428A0", fontFamily: "monospace" }}>{c.vehicle_number}</span>
+                          <span style={{ fontSize: 13, color: "#374151", fontWeight: 600 }}>{c.customer_name}</span>
+                          <span style={{ fontSize: 12, color: "#6b7280" }}>{c.stores?.name}</span>
+                          <span style={{ fontSize: 12, color: "#6b7280" }}>{c.end_date} 만료</span>
+                        </div>
+                        <button
+                          onClick={() => openAlimModal(c)}
+                          style={{
+                            padding: "7px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+                            border: "none", cursor: "pointer", fontFamily: "inherit",
+                            background: isD3 ? "#dc2626" : "#ea580c", color: "#fff",
+                            display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap"
+                          }}>
+                          📨 알림톡 발송
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         <div className="v3-info-card" style={{ marginBottom: 20 }}>
           <div className="m-filter-row">
