@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import LeaveTab from "./LeaveTab";
 import ReviewTab from "./ReviewTab";
 import ReportTab from "./ReportTab";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";

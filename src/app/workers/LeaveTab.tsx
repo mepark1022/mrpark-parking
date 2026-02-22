@@ -264,9 +264,3 @@ export default function LeaveTab() {
   );
 }
 
-const statusColors = {
-  pending: { label: "대기", bg: "#fff7ed", color: "#ea580c" },
-  approved: { label: "승인", bg: "#dcfce7", color: "#15803d" },
-  rejected: { label: "반려", bg: "#fee2e2", color: "#dc2626" },
-};
-
