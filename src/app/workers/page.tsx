@@ -1081,8 +1081,16 @@ export default function WorkersPage() {
                               setFormData({ name: rosterPopup.worker.name, phone: rosterPopup.worker.phone || "", region_id: rosterPopup.worker.region_id || "", district: rosterPopup.worker.district || "" });
                               setShowForm(true);
                               setTimeout(() => {
-                                document.getElementById("worker-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                              }, 100);
+                                const formEl = document.getElementById("worker-edit-form");
+                                if (!formEl) return;
+                                // AppLayout의 main(overflow:auto)이 실제 스크롤 컨테이너
+                                const scrollContainer = formEl.closest("main") || document.documentElement;
+                                const top = formEl.getBoundingClientRect().top
+                                  + scrollContainer.scrollTop
+                                  - (scrollContainer.getBoundingClientRect?.()?.top ?? 0)
+                                  - 16;
+                                scrollContainer.scrollTo({ top, behavior: "smooth" });
+                              }, 150);
                             }}
                             style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#1428A0", color: "#fff", border: "none", fontFamily: "inherit" }}>수정 화면으로</button>
                         </div>
