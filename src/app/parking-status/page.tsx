@@ -384,7 +384,7 @@ export default function ParkingStatusPage() {
               </div>
             </div>
           ):(
-            <div style={{display:"flex",flexDirection:"column",gap:7}}>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {filtered.slice(0,80).map(e=>{
                 const ts = typeStyle(e.parking_type);
                 const isParked = e.status === "parked";
@@ -395,35 +395,34 @@ export default function ParkingStatusPage() {
 
                 return (
                   <div key={e.id} style={{
-                    background:"white",borderRadius:12,overflow:"hidden",
-                    boxShadow:"0 1px 4px rgba(0,0,0,0.07)",
-                    border:`1px solid ${isParked&&e.parking_type==="valet"?"#fbcba7":"#ededf2"}`,
+                    background:"white",borderRadius:20,overflow:"hidden",
+                    boxShadow:"0 2px 12px rgba(20,40,160,0.08)",
                     display:"flex",alignItems:"stretch",
                   }}>
-                    <div style={{width:4,background:barColor,flexShrink:0}} />
-                    <div style={{flex:1,padding:"9px 10px",display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{width:5,background:barColor,flexShrink:0,borderRadius:"20px 0 0 20px"}} />
+                    <div style={{flex:1,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-                          <span style={{fontFamily:"'Outfit',sans-serif",fontSize:15,fontWeight:800,color:"#1A1D2B",letterSpacing:"-0.3px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5}}>
+                          <span style={{fontFamily:"'Outfit',sans-serif",fontSize:16,fontWeight:900,color:"#1A1D2B",letterSpacing:"-0.3px"}}>
                             {hlPlate(e.plate_number,search)}
                           </span>
-                          <span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:4,background:ts.bg,color:ts.color,flexShrink:0}}>
+                          <span style={{fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:6,background:ts.bg,color:ts.color,flexShrink:0}}>
                             {ts.label}
                           </span>
                         </div>
                         <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                          {e.stores?.name&&<span style={{fontSize:10,color:"#999",fontWeight:500}}>🏢 {e.stores.name}</span>}
-                          {e.floor&&<><span style={{color:"#e0e0e0",fontSize:10}}>|</span><span style={{fontSize:10,color:"#999"}}>📍 {e.floor}</span></>}
-                          <span style={{color:"#e0e0e0",fontSize:10}}>|</span>
-                          <span style={{fontSize:10,color:"#999"}}>⏰ {fmt(e.entry_time)}</span>
-                          {!isParked&&e.exit_time&&<><span style={{color:"#e0e0e0",fontSize:10}}>|</span><span style={{fontSize:10,color:"#aaa"}}>→ {fmt(e.exit_time)}</span></>}
-                          {e.workers?.name&&<><span style={{color:"#e0e0e0",fontSize:10}}>|</span><span style={{fontSize:10,color:"#aaa"}}>👤 {e.workers.name}</span></>}
+                          {e.stores?.name&&<span style={{fontSize:11,color:"#94a3b8",fontWeight:600}}>🏢 {e.stores.name}</span>}
+                          {e.floor&&<><span style={{color:"#e2e8f0",fontSize:10}}>|</span><span style={{fontSize:11,color:"#94a3b8"}}>📍 {e.floor}</span></>}
+                          <span style={{color:"#e2e8f0",fontSize:10}}>|</span>
+                          <span style={{fontSize:11,color:"#94a3b8"}}>⏰ {fmt(e.entry_time)}</span>
+                          {!isParked&&e.exit_time&&<><span style={{color:"#e2e8f0",fontSize:10}}>|</span><span style={{fontSize:11,color:"#bbb"}}>→ {fmt(e.exit_time)}</span></>}
+                          {e.workers?.name&&<><span style={{color:"#e2e8f0",fontSize:10}}>|</span><span style={{fontSize:11,color:"#bbb"}}>👤 {e.workers.name}</span></>}
                         </div>
                       </div>
-                      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,flexShrink:0}}>
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
                         <span style={{
-                          fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:5,
-                          background: isParked ? C.successBg : C.bgCard,
+                          fontSize:10,fontWeight:800,padding:"3px 9px",borderRadius:7,
+                          background: isParked ? C.successBg : "#f1f5f9",
                           color: isParked ? C.success : C.textMuted,
                         }}>
                           {isParked ? "주차중" : "출차"}
@@ -431,10 +430,10 @@ export default function ParkingStatusPage() {
                         {elapsed&&(
                           <>
                             <span style={{
-                              fontFamily:"'Outfit',sans-serif",fontSize:16,fontWeight:800,lineHeight:1,
+                              fontFamily:"'Outfit',sans-serif",fontSize:20,fontWeight:900,lineHeight:1,
                               color: e.parking_type==="valet" ? C.warning : C.navy,
                             }}>{elapsed.val}</span>
-                            <span style={{fontSize:9,color:"#bbb"}}>{elapsed.unit}</span>
+                            <span style={{fontSize:10,color:"#bbb",fontWeight:700}}>{elapsed.unit}</span>
                           </>
                         )}
                       </div>

@@ -645,7 +645,7 @@ export default function StoresPage() {
                 const isExpanded = expandedStore === store.id;
                 return (
                   <div key={store.id} style={{
-                    background: C.bgCard, borderRadius: 14, border: `1px solid ${C.borderLight}`,
+                    background: "#fff", borderRadius: 20, boxShadow: "0 2px 12px rgba(20,40,160,0.07)",
                     overflow: "hidden",
                   }}>
                     <div
@@ -886,7 +886,7 @@ export default function StoresPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {visitPlaces[store.id].map(vp => (
                     <div key={vp.id} style={{
-                      background: C.bgCard, borderRadius: 12, padding: 16,
+                      background: "#fff", borderRadius: 18, padding: 16, boxShadow: "0 2px 10px rgba(20,40,160,0.07)",
                       borderLeft: `4px solid ${C.navy}`,
                     }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>

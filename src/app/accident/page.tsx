@@ -49,10 +49,10 @@ const styles = `
   /* 모바일 카드 v3 */
   .ac-mob-card {
     background: #fff;
-    border-radius: 16px;
-    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    border: none;
     padding: 16px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 12px rgba(20,40,160,0.08);
     cursor: pointer;
     transition: all 0.2s;
   }

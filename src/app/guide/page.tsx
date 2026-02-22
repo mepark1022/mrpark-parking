@@ -103,7 +103,7 @@ export default function GuidePage() {
         {/* 기능 카드 */}
         <div className="space-y-4">
           {features.map((item, i) => (
-            <div key={i} style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden", transition: "box-shadow 0.2s" }}
+            <div key={i} style={{ background: "#fff", borderRadius: 20, border: "none", boxShadow: "0 2px 12px rgba(20,40,160,0.07)", overflow: "hidden", transition: "box-shadow 0.2s" }}
               onMouseEnter={e => e.currentTarget.style.boxShadow = "var(--shadow-md)"}
               onMouseLeave={e => e.currentTarget.style.boxShadow = "var(--shadow-sm)"}
             >

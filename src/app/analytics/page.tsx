@@ -379,7 +379,7 @@ export default function AnalyticsPage() {
                 { accent: "#1428A0", bg: "rgba(20,40,160,0.07)", icon: "🚗", label: "총 입차", value: `${(kpi?.totalCars || 0).toLocaleString()}대`, badge: <DiffBadge current={kpi?.totalCars || 0} prev={kpi?.prevTotalCars || 0} /> },
                 { accent: "#F5B731", bg: "rgba(245,183,49,0.1)", icon: "🤵", label: "발렛 건수", value: `${(kpi?.valetCount || 0).toLocaleString()}건`, badge: null },
               ].map(card => (
-                <div key={card.label} style={{ background: "#fff", borderRadius: 14, padding: 14, border: "1px solid #e2e8f0", position: "relative", overflow: "hidden" }}>
+                <div key={card.label} style={{ background: "#fff", borderRadius: 18, padding: 14, boxShadow: "0 2px 10px rgba(20,40,160,0.07)", position: "relative", overflow: "hidden" }}>
                   <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: card.accent, borderRadius: "14px 14px 0 0" }} />
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: card.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, marginBottom: 10 }}>{card.icon}</div>
                   {loading ? <span className="an-sk" style={{ width: "70%", height: 22, marginBottom: 4 }} /> : (
@@ -411,7 +411,7 @@ export default function AnalyticsPage() {
           {/* 매출 구성비 */}
           {!loading && kpi && totalRevenueForPie > 0 && (
             <div style={{ padding: "14px 16px 0" }}>
-              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+              <div style={{ background: "#fff", borderRadius: 20, boxShadow: "0 2px 12px rgba(20,40,160,0.08)", overflow: "hidden" }}>
                 <div style={{ padding: "14px 16px", borderBottom: "1px solid #f1f5f9" }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: "#1a1d2b" }}>🎯 매출 구성비</div>
                 </div>
@@ -448,7 +448,7 @@ export default function AnalyticsPage() {
                 <div style={{ width: 4, height: 18, background: "#F5B731", borderRadius: 2 }} />
                 <div style={{ fontSize: 14, fontWeight: 800, color: "#1a1d2b" }}>매장별 순위</div>
               </div>
-              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+              <div style={{ background: "#fff", borderRadius: 20, boxShadow: "0 2px 12px rgba(20,40,160,0.08)", overflow: "hidden" }}>
                 {storeData.map((store, idx) => (
                   <div key={store.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", borderBottom: idx < storeData.length - 1 ? "1px solid #f1f5f9" : "none" }}>
                     <div style={{
@@ -479,7 +479,7 @@ export default function AnalyticsPage() {
                 <div style={{ width: 4, height: 18, background: "#EA580C", borderRadius: 2 }} />
                 <div style={{ fontSize: 14, fontWeight: 800, color: "#1a1d2b" }}>매출 TOP 일자</div>
               </div>
-              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+              <div style={{ background: "#fff", borderRadius: 20, boxShadow: "0 2px 12px rgba(20,40,160,0.08)", overflow: "hidden" }}>
                 {[...dailyData].sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 5).map((d, idx) => (
                   <div key={d.date} style={{
                     display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
