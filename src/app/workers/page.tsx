@@ -1193,7 +1193,6 @@ export default function WorkersPage() {
                                 setRosterPopup({ type: null, worker: null });
                                 setMessage("");
                                 loadAll();
-                                loadAll();
                                 showToast("✅ 근무자 정보가 수정되었습니다");
                               }}
                               style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#1428A0", color: "#fff", border: "none", fontFamily: "inherit" }}>저장</button>

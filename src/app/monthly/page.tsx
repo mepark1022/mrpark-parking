@@ -110,7 +110,8 @@ export default function MonthlyPage() {
 
   async function cancelContract(id: string) {
     if (!confirm("계약을 해지하시겠습니까?")) return;
-    await supabase.from("monthly_parking").update({ contract_status: "cancelled" }).eq("id", id);
+    const { error } = await supabase.from("monthly_parking").update({ contract_status: "cancelled" }).eq("id", id);
+    if (error) { alert("해지 실패: " + error.message); return; }
     loadContracts();
   }
 
