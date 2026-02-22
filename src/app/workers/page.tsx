@@ -566,6 +566,7 @@ export default function WorkersPage() {
   const [rosterPopup, setRosterPopup] = useState<{ type: "edit"|"deact"|"del"|null; worker: any }>({ type: null, worker: null });
   // 근무자별 배정 매장 map
   const [workerStoreMap, setWorkerStoreMap] = useState<Record<string, string[]>>({});
+  const editFormRef = useRef<HTMLDivElement>(null);
   const [message, setMessage] = useState("");
 
   const districtMap: Record<string, string[]> = {
@@ -927,7 +928,7 @@ export default function WorkersPage() {
             </div>
 
             {showForm && (
-              <div id="worker-edit-form" style={{ margin: "0 24px 0 24px", marginTop: 20, background: "var(--bg-card)", borderRadius: 14, padding: 24, border: "1px solid var(--border-light)" }}>
+              <div ref={editFormRef} style={{ margin: "0 24px 0 24px", marginTop: 20, background: "var(--bg-card)", borderRadius: 14, padding: 24, border: "1px solid var(--border-light)" }}>
                 <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>{editItem ? "근무자 수정" : "근무자 추가"}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                   <div>
@@ -1081,15 +1082,15 @@ export default function WorkersPage() {
                               setFormData({ name: rosterPopup.worker.name, phone: rosterPopup.worker.phone || "", region_id: rosterPopup.worker.region_id || "", district: rosterPopup.worker.district || "" });
                               setShowForm(true);
                               setTimeout(() => {
-                                const formEl = document.getElementById("worker-edit-form");
+                                const formEl = editFormRef.current;
                                 if (!formEl) return;
-                                // AppLayout의 main(overflow:auto)이 실제 스크롤 컨테이너
-                                const scrollContainer = formEl.closest("main") || document.documentElement;
-                                const top = formEl.getBoundingClientRect().top
-                                  + scrollContainer.scrollTop
-                                  - (scrollContainer.getBoundingClientRect?.()?.top ?? 0)
-                                  - 16;
-                                scrollContainer.scrollTo({ top, behavior: "smooth" });
+                                const main = formEl.closest("main");
+                                if (main) {
+                                  const offset = formEl.offsetTop - 16;
+                                  main.scrollTo({ top: offset, behavior: "smooth" });
+                                } else {
+                                  formEl.scrollIntoView({ behavior: "smooth", block: "start" });
+                                }
                               }, 150);
                             }}
                             style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#1428A0", color: "#fff", border: "none", fontFamily: "inherit" }}>수정 화면으로</button>
