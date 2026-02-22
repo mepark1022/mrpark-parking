@@ -2,27 +2,46 @@
 "use client";
 export const dynamic = 'force-dynamic';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
+
+const SETTINGS_KEY = "mepark_notif_settings";
+
+const DEFAULT_SETTINGS = {
+  crew_entry: true,
+  crew_exit: true,
+  kakao_entry: true,
+  kakao_settled: true,
+  admin_monthly: true,
+  admin_monthly_days: [7, 3, 1] as number[],
+  admin_unsettled: true,
+  admin_unsettled_time: "09:00",
+  admin_accident: true,
+  admin_lateness: true,
+  admin_fullness: true,
+  admin_fullness_pct: 90,
+};
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return DEFAULT_SETTINGS;
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
 
 export default function SettingsPage() {
   const [notifTab, setNotifTab] = useState<"crew"|"kakao"|"admin">("crew");
   const [toast, setToast] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const [s, setS] = useState({
-    crew_entry: true,
-    crew_exit: true,
-    kakao_entry: true,
-    kakao_settled: true,
-    admin_monthly: true,
-    admin_monthly_days: [7, 3, 1] as number[],
-    admin_unsettled: true,
-    admin_unsettled_time: "09:00",
-    admin_accident: true,
-    admin_lateness: true,
-    admin_fullness: true,
-    admin_fullness_pct: 90,
-  });
+  const [s, setS] = useState(DEFAULT_SETTINGS);
+
+  useEffect(() => {
+    setS(loadSettings());
+  }, []);
 
   const toggle = (key: string) => setS(p => ({ ...p, [key]: !p[key] }));
   const toggleDay = (d: number) => setS(p => ({
@@ -32,9 +51,18 @@ export default function SettingsPage() {
       : [...p.admin_monthly_days, d].sort((a, b) => b - a),
   }));
 
-  const save = () => {
-    setToast("✅ 알림 설정이 저장되었습니다");
-    setTimeout(() => setToast(""), 2500);
+  const save = async () => {
+    setSaving(true);
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+      await new Promise(r => setTimeout(r, 400)); // 저장 UX
+      setToast("✅ 알림 설정이 저장되었습니다");
+    } catch {
+      setToast("❌ 저장 실패. 다시 시도해주세요.");
+    } finally {
+      setSaving(false);
+      setTimeout(() => setToast(""), 2500);
+    }
   };
 
   const copyEmail = () => {
@@ -332,8 +360,8 @@ export default function SettingsPage() {
         )}
 
         {/* 저장 버튼 */}
-        <button className="sp-save-btn" onClick={save}>
-          <span>💾</span> 알림 설정 저장
+        <button className="sp-save-btn" onClick={save} disabled={saving} style={{ opacity: saving ? 0.7 : 1, cursor: saving ? "not-allowed" : "pointer" }}>
+          <span>{saving ? "⏳" : "💾"}</span> {saving ? "저장 중..." : "알림 설정 저장"}
         </button>
 
         {/* ── 앱 정보 ── */}

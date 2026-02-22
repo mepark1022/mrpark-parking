@@ -77,6 +77,7 @@ export default function ParkingStatusPage() {
   const [typeFilter,setTypeFilter]=useState("all");
   const [statusFilter,setStatusFilter]=useState("all");
   const [workerFilter,setWorkerFilter]=useState("");
+  const [showAll,setShowAll]=useState(false);
 
   useEffect(()=>{loadInitial();},[]);
   useEffect(()=>{loadEntries();},[selectedStore,selectedDate]);
@@ -257,7 +258,7 @@ export default function ParkingStatusPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.slice(0,50).map((e,i)=>{
+                {(showAll ? filtered : filtered.slice(0,50)).map((e,i)=>{
                   const ts=typeStyle(e.parking_type);
                   const isParked=e.status==="parked";
                   return(
@@ -282,9 +283,24 @@ export default function ParkingStatusPage() {
               </tbody>
             </table>
           )}
-          {filtered.length>50&&(
-            <div style={{textAlign:"center",padding:"14px 0",borderTop:`1px solid ${C.borderLight}`,fontSize:13,fontWeight:700,color:C.navy}}>
-              + {filtered.length-50}건 더보기
+          {!showAll && filtered.length>50&&(
+            <div
+              onClick={()=>setShowAll(true)}
+              style={{textAlign:"center",padding:"14px 0",borderTop:`1px solid ${C.borderLight}`,fontSize:13,fontWeight:700,color:C.navy,cursor:"pointer",background:"#f8faff",transition:"background 0.15s"}}
+              onMouseEnter={e=>(e.currentTarget.style.background="#eef2ff")}
+              onMouseLeave={e=>(e.currentTarget.style.background="#f8faff")}
+            >
+              ▼ 나머지 {filtered.length-50}건 더보기
+            </div>
+          )}
+          {showAll && filtered.length>50&&(
+            <div
+              onClick={()=>setShowAll(false)}
+              style={{textAlign:"center",padding:"14px 0",borderTop:`1px solid ${C.borderLight}`,fontSize:13,fontWeight:700,color:C.textMuted,cursor:"pointer",background:"#f8faff",transition:"background 0.15s"}}
+              onMouseEnter={e=>(e.currentTarget.style.background="#f1f5f9")}
+              onMouseLeave={e=>(e.currentTarget.style.background="#f8faff")}
+            >
+              ▲ 접기
             </div>
           )}
         </div>
@@ -385,7 +401,7 @@ export default function ParkingStatusPage() {
             </div>
           ):(
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              {filtered.slice(0,80).map(e=>{
+              {(showAll ? filtered : filtered.slice(0,80)).map(e=>{
                 const ts = typeStyle(e.parking_type);
                 const isParked = e.status === "parked";
                 const elapsed = isParked ? elapsedStr(e.entry_time) : null;
@@ -441,9 +457,14 @@ export default function ParkingStatusPage() {
                   </div>
                 );
               })}
-              {filtered.length>80&&(
-                <div style={{textAlign:"center",padding:"12px 0",fontSize:12,fontWeight:700,color:C.navy}}>
-                  + {filtered.length-80}건 더 있음
+              {!showAll && filtered.length>80&&(
+                <div onClick={()=>setShowAll(true)} style={{textAlign:"center",padding:"14px 0",fontSize:12,fontWeight:700,color:C.navy,background:"#f8faff",borderRadius:12,cursor:"pointer",border:`1px solid ${C.borderLight}`}}>
+                  ▼ 나머지 {filtered.length-80}건 더보기
+                </div>
+              )}
+              {showAll && filtered.length>80&&(
+                <div onClick={()=>setShowAll(false)} style={{textAlign:"center",padding:"14px 0",fontSize:12,fontWeight:700,color:C.textMuted,background:"#f8faff",borderRadius:12,cursor:"pointer",border:`1px solid ${C.borderLight}`}}>
+                  ▲ 접기
                 </div>
               )}
             </div>
