@@ -665,11 +665,11 @@ export default function EntryPage() {
             <div style={{ marginBottom: 10 }}>{workerCard}</div>
 
             {/* 메모 */}
-            <div style={{ marginBottom: 100 }}>{memoCard}</div>
+            <div style={{ marginBottom: 160 }}>{memoCard}</div>
 
             {/* 모바일 하단 고정 저장 버튼 */}
             <div style={{
-              position: "fixed", bottom: 60, left: 0, right: 0, zIndex: 150,
+              position: "fixed", bottom: 120, left: 0, right: 0, zIndex: 150,
               padding: "10px 16px", background: "#fff",
               borderTop: `1px solid ${C.borderLight}`,
               boxShadow: "0 -2px 10px rgba(0,0,0,0.06)",
