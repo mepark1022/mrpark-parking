@@ -563,7 +563,7 @@ export default function WorkersPage() {
   const [formData, setFormData] = useState({ name: "", phone: "", region_id: "", district: "" });
   const [regions, setRegions] = useState([]);
   // 명부 팝업 state
-  const [rosterPopup, setRosterPopup] = useState<{ type: "edit"|"deact"|"del"|null; worker: any }>({ type: null, worker: null });
+  const [rosterPopup, setRosterPopup] = useState<{ type: "edit"|"edit_form"|"deact"|"del"|null; worker: any }>({ type: null, worker: null });
   // 근무자별 배정 매장 map
   const [workerStoreMap, setWorkerStoreMap] = useState<Record<string, string[]>>({});
   const editFormRef = useRef<HTMLDivElement>(null);
@@ -1020,10 +1020,13 @@ export default function WorkersPage() {
                                 setEditItem(w);
                                 setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "" });
                                 setShowForm(true);
-                                setTimeout(() => {
-                                  const main = document.querySelector("main");
-                                  if (main) main.scrollTo({ top: 0, behavior: "smooth" });
-                                }, 100);
+                                requestAnimationFrame(() => {
+                                  setTimeout(() => {
+                                    const main = document.querySelector("main");
+                                    if (main) main.scrollTo({ top: 0, behavior: "smooth" });
+                                    else window.scrollTo({ top: 0, behavior: "smooth" });
+                                  }, 80);
+                                });
                               }}
                               style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #c7d2fe", background: "#fff", fontSize: 12, fontWeight: 700, color: "#1428A0", cursor: "pointer" }}>✏️ 수정</button>
                             <button onClick={() => toggleStatus(w)}
@@ -1208,6 +1211,7 @@ export default function WorkersPage() {
                                 if (error) { setMessage(`수정 실패: ${error.message}`); return; }
                                 setRosterPopup({ type: null, worker: null });
                                 setMessage("");
+                                loadAll();
                                 loadAll();
                                 showToast("✅ 근무자 정보가 수정되었습니다");
                               }}
