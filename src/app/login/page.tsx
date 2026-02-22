@@ -377,7 +377,7 @@ function LoginContent() {
           {/* 상단: 로고 영역 */}
           <div className="login-top">
             <InlineLogo dark={true} />
-            <div className="login-top-sub">주차운영 시스템</div>
+            <div className="login-top-sub">AI 스마트주차운영솔루션</div>
           </div>
 
           {/* 하단: 카드 */}
