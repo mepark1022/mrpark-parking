@@ -1016,12 +1016,28 @@ export default function WorkersPage() {
                         </td>
                         <td style={{ padding: "12px 14px" }}>
                           <div style={{ display: "flex", gap: 6 }}>
-                            <button onClick={() => { setEditItem(w); setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "" }); setShowForm(true); }}
-                              style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--white)", fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", cursor: "pointer" }}>수정</button>
+                            <button onClick={() => {
+                                setEditItem(w);
+                                setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "" });
+                                setShowForm(true);
+                                setTimeout(() => {
+                                  const main = document.querySelector("main");
+                                  if (main) main.scrollTo({ top: 0, behavior: "smooth" });
+                                }, 100);
+                              }}
+                              style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #c7d2fe", background: "#fff", fontSize: 12, fontWeight: 700, color: "#1428A0", cursor: "pointer" }}>✏️ 수정</button>
                             <button onClick={() => toggleStatus(w)}
-                              style={{ padding: "5px 12px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", background: w.status === "active" ? "var(--error-bg)" : "var(--success-bg)", color: w.status === "active" ? "var(--error)" : "var(--success)" }}>
-                              {w.status === "active" ? "비활성" : "활성화"}
+                              style={{ padding: "5px 12px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", background: w.status === "active" ? "var(--error-bg)" : "var(--success-bg)", color: w.status === "active" ? "var(--error)" : "var(--success)" }}>
+                              {w.status === "active" ? "비활성" : "✅ 활성화"}
                             </button>
+                            <button onClick={async () => {
+                                if (!confirm(`${w.name} 근무자를 삭제하시겠습니까?`)) return;
+                                const supabase = createClient();
+                                await supabase.from("workers").delete().eq("id", w.id);
+                                setWorkers((prev: any[]) => prev.filter((x: any) => x.id !== w.id));
+                                showToast("🗑️ 근무자가 삭제되었습니다");
+                              }}
+                              style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #fecaca", background: "#fff", fontSize: 12, fontWeight: 700, color: "#DC2626", cursor: "pointer" }}>🗑 삭제</button>
                           </div>
                         </td>
                       </tr>
