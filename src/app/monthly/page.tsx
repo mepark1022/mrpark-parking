@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserContext } from "@/lib/utils/org";
+import { showToast } from "@/lib/utils/toast";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
 import type { Store } from "@/lib/types/database";
@@ -112,6 +113,7 @@ export default function MonthlyPage() {
     if (!confirm("계약을 해지하시겠습니까?")) return;
     const { error } = await supabase.from("monthly_parking").update({ contract_status: "cancelled" }).eq("id", id);
     if (error) { alert("해지 실패: " + error.message); return; }
+    showToast("✅ 계약이 해지되었습니다");
     loadContracts();
   }
 

@@ -6,6 +6,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
+import { showToast } from "@/lib/utils/toast";
 
 // ──────────────────────────────────────────────
 // Types
@@ -551,6 +552,7 @@ export default function StoresPage() {
         return;
       }
     }
+    showToast(editingItem?.id ? "✅ 매장이 수정되었습니다" : "✅ 매장이 추가되었습니다");
     setModalType(null);
     loadData();
   }
@@ -561,7 +563,9 @@ export default function StoresPage() {
       ? `${stores.find(s => s.id === id)?.name} 매장을 삭제하면 주차장 ${lotsCount}개도 함께 삭제됩니다. 계속하시겠습니까?`
       : `${stores.find(s => s.id === id)?.name} 매장을 삭제하시겠습니까?`;
     if (!confirm(msg)) return;
-    await supabase.from("stores").delete().eq("id", id);
+    const { error } = await supabase.from("stores").delete().eq("id", id);
+    if (error) { alert("삭제 실패: " + error.message); return; }
+    showToast("🗑️ 매장이 삭제되었습니다");
     loadData();
   }
 
@@ -581,6 +585,7 @@ export default function StoresPage() {
         return;
       }
     }
+    showToast(editingItem?.id ? "✅ 주차장이 수정되었습니다" : "✅ 주차장이 추가되었습니다");
     setModalType(null);
     loadData();
   }
@@ -592,7 +597,9 @@ export default function StoresPage() {
     } else {
       if (!confirm("주차장을 삭제하시겠습니까?")) return;
     }
-    await supabase.from("parking_lots").delete().eq("id", lotId);
+    const { error } = await supabase.from("parking_lots").delete().eq("id", lotId);
+    if (error) { alert("삭제 실패: " + error.message); return; }
+    showToast("🗑️ 주차장이 삭제되었습니다");
     loadData();
   }
 
@@ -606,6 +613,7 @@ export default function StoresPage() {
       ({ error } = await supabase.from("visit_places").insert({ ...visitForm, store_id: storeForAction, org_id: oid }));
     }
     if (error) { alert("저장 실패: " + error.message); return; }
+    showToast(editingItem?.id ? "✅ 방문지가 수정되었습니다" : "✅ 방문지가 추가되었습니다");
     setModalType(null);
     loadData();
   }
@@ -620,6 +628,7 @@ export default function StoresPage() {
       ({ error } = await supabase.from("store_operating_hours").insert({ ...hourForm, store_id: selectedStoreId, org_id: oid }));
     }
     if (error) { alert("저장 실패: " + error.message); return; }
+    showToast(editingItem?.id ? "✅ 운영시간이 수정되었습니다" : "✅ 운영시간이 추가되었습니다");
     setModalType(null);
     loadData();
   }
@@ -634,6 +643,7 @@ export default function StoresPage() {
       ({ error } = await supabase.from("store_shifts").insert({ ...shiftForm, store_id: selectedStoreId, org_id: oid }));
     }
     if (error) { alert("저장 실패: " + error.message); return; }
+    showToast(editingItem?.id ? "✅ 근무조가 수정되었습니다" : "✅ 근무조가 추가되었습니다");
     setModalType(null);
     loadData();
   }
@@ -649,6 +659,7 @@ export default function StoresPage() {
       ({ error } = await supabase.from("store_late_rules").insert({ ...lateForm, store_id: selectedStoreId, org_id: oid }));
     }
     if (error) { alert("저장 실패: " + error.message); return; }
+    showToast("✅ 정상출근 규칙이 저장되었습니다");
     setModalType(null);
     loadData();
   }

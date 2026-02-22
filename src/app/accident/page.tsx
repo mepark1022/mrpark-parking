@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
 import { getUserContext } from "@/lib/utils/org";
+import { showToast } from "@/lib/utils/toast";
 import * as XLSX from "xlsx";
 
 const styles = `
@@ -245,6 +246,7 @@ export default function AccidentPage() {
     if (error) { alert("상태 변경 실패: " + error.message); return; }
     setAccidents(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
     if (selected?.id === id) setSelected((prev: any) => ({ ...prev, status: newStatus }));
+    showToast("✅ 상태가 변경되었습니다");
   };
 
   const handleSaveMemo = async () => {
@@ -255,13 +257,11 @@ export default function AccidentPage() {
       .update({ admin_memo: memo, updated_at: new Date().toISOString() })
       .eq("id", selected.id).eq("org_id", ctx.orgId);
     setSavingMemo(false);
-    if (error) {
-      alert("메모 저장 실패: " + error.message);
-      return;
-    }
+    if (error) { alert("메모 저장 실패: " + error.message); return; }
     setMemoSaved(true);
     setAccidents(prev => prev.map(a => a.id === selected.id ? { ...a, admin_memo: memo } : a));
     setTimeout(() => setMemoSaved(false), 2000);
+    showToast("✅ 메모가 저장되었습니다");
   };
 
   const handleExcelDownload = (mode: "current" | "monthly") => {
@@ -325,6 +325,7 @@ export default function AccidentPage() {
     if (error) { alert("삭제 실패: " + error.message); return; }
     setAccidents(prev => prev.filter(a => a.id !== id));
     setSelected(null);
+    showToast("🗑️ 사고보고가 삭제되었습니다");
   };
 
   const filtered = accidents.filter(a => {

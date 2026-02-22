@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
+import { showToast as _showToast } from "@/lib/utils/toast";
 import { getDayType, getHolidayName, getDayTypeLabel } from "@/utils/holidays";
 import * as XLSX from "xlsx";
 
@@ -568,23 +569,7 @@ export default function WorkersPage() {
   const [workerStoreMap, setWorkerStoreMap] = useState<Record<string, string[]>>({});
   const editFormRef = useRef<HTMLDivElement>(null);
   const [successToast, setSuccessToast] = useState("");
-  const showToast = (msg: string) => {
-    // DOM에 직접 주입 - position:fixed가 overflow:auto 안에서 막히는 문제 해결
-    const el = document.createElement("div");
-    el.innerText = msg;
-    Object.assign(el.style, {
-      position: "fixed", bottom: "88px", left: "50%",
-      transform: "translateX(-50%)",
-      background: "#1428A0", color: "#fff",
-      padding: "12px 22px", borderRadius: "24px",
-      fontSize: "14px", fontWeight: "700",
-      boxShadow: "0 4px 20px rgba(20,40,160,0.35)",
-      zIndex: "99999", whiteSpace: "nowrap",
-      transition: "opacity 0.3s",
-    });
-    document.body.appendChild(el);
-    setTimeout(() => { el.style.opacity = "0"; setTimeout(() => el.remove(), 300); }, 2200);
-  };
+  const showToast = (msg: string) => _showToast(msg);
   const [message, setMessage] = useState("");
 
   const districtMap: Record<string, string[]> = {
