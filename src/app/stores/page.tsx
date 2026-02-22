@@ -583,34 +583,6 @@ export default function StoresPage() {
   };
 
   // ── 탭 헤더 ──
-  const mainTabs = [
-    { id: "list", label: "매장 목록" },
-    { id: "hours", label: "운영시간" },
-    { id: "shifts", label: "근무조" },
-    { id: "late-check", label: "정상출근체크" },
-  ];
-
-  const TabBar = () => (
-    <div className="stores-tab-bar">
-      {mainTabs.map(t => (
-        <button
-          key={t.id}
-          onClick={() => setMainTab(t.id as typeof mainTab)}
-          style={{
-            padding: "10px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500,
-            border: "none", cursor: "pointer", transition: "all 0.2s",
-            whiteSpace: "nowrap", flexShrink: 0,
-            background: mainTab === t.id ? "#fff" : "transparent",
-            color: mainTab === t.id ? C.textPrimary : C.textSecondary,
-            boxShadow: mainTab === t.id ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
-          }}
-        >
-          {t.label}
-        </button>
-      ))}
-    </div>
-  );
-
   // 매장 선택 드롭다운 (운영시간/근무조/출근체크 공통)
   if (loading) return (
     <AppLayout>
@@ -1447,7 +1419,29 @@ export default function StoresPage() {
       }
     `}</style>
     <div style={{ background: C.bgPage, minHeight: "100vh" }}>
-      <TabBar />
+      <div className="stores-tab-bar">
+        {[
+          { id: "list", label: "매장 목록" },
+          { id: "hours", label: "운영시간" },
+          { id: "shifts", label: "근무조" },
+          { id: "late-check", label: "정상출근체크" },
+        ].map(t => (
+          <button
+            key={t.id}
+            onClick={() => setMainTab(t.id as typeof mainTab)}
+            style={{
+              padding: "10px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500,
+              border: "none", cursor: "pointer", transition: "all 0.2s",
+              whiteSpace: "nowrap", flexShrink: 0,
+              background: mainTab === t.id ? "#fff" : "transparent",
+              color: mainTab === t.id ? C.textPrimary : C.textSecondary,
+              boxShadow: mainTab === t.id ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
       {mainTab === "list" && renderStoreList()}
       {mainTab === "hours" && renderHours()}
       {mainTab === "shifts" && renderShifts()}
