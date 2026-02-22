@@ -157,6 +157,14 @@ export default function EntryPage() {
   const [existingRecordId, setExistingRecordId] = useState<string | null>(null);
   const [storeHours, setStoreHours] = useState<{ open: number; close: number }>({ open: 7, close: 22 });
   const [oid, setOid] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const dayType = useMemo(() => getDayType(selectedDate), [selectedDate]);
   const dayLabel = useMemo(() => getDayTypeLabel(selectedDate), [selectedDate]);
@@ -301,308 +309,380 @@ export default function EntryPage() {
   const currentStore = stores.find(s => s.id === selectedStore);
   const dayTypeKo = dayType === "holiday" ? "공휴일" : dayType === "weekday" ? "평일" : "주말";
 
+  // ── 공용 서브 컴포넌트 (입차/발렛/근무자/메모) ──
+  const hourlyGrid = (
+    <div style={{ maxHeight: isMobile ? undefined : 420, overflowY: isMobile ? undefined : "auto", paddingRight: isMobile ? 0 : 4 }}>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(auto-fill, minmax(160px, 1fr))",
+        gap: isMobile ? 6 : 10,
+      }}>
+        {Array.from(
+          { length: storeHours.close - storeHours.open + 1 },
+          (_, i) => i + storeHours.open
+        ).map(hour => (
+          <div key={hour} style={{
+            display: "flex", alignItems: "center", gap: isMobile ? 4 : 10,
+            background: C.bgCard, borderRadius: isMobile ? 8 : 10,
+            padding: isMobile ? "8px 8px" : "10px 14px",
+          }}>
+            <span style={{
+              width: isMobile ? 28 : 36, fontSize: isMobile ? 11 : 13, fontWeight: 700,
+              color: C.textSecondary, textAlign: "right", flexShrink: 0,
+            }}>
+              {String(hour).padStart(2, "0")}시
+            </span>
+            <input
+              type="number" min={0}
+              value={hourlyData[hour] || ""}
+              onChange={e => setHourlyData({ ...hourlyData, [hour]: Number(e.target.value) })}
+              placeholder="0"
+              style={{
+                width: "100%", minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 6,
+                padding: isMobile ? "6px 4px" : "8px 10px", textAlign: "center",
+                fontSize: isMobile ? 13 : 15, fontWeight: 700, color: C.textPrimary,
+                background: "#fff", outline: "none",
+              }}
+              onFocus={e => (e.target.style.borderColor = C.navy)}
+              onBlur={e => (e.target.style.borderColor = C.border)}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const valetCard = currentStore?.has_valet ? (
+    <Card>
+      <CardHeader>
+        <CardTitle icon="🚙">발렛 정보</CardTitle>
+        <span style={{ fontSize: 12, color: C.textMuted, background: C.bgCard, padding: "4px 10px", borderRadius: 6 }}>
+          단가 ₩{(currentStore?.valet_fee || 5000).toLocaleString()}
+        </span>
+      </CardHeader>
+      <CardBody>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {[
+            { label: "발렛 건수", value: valetCount, unit: "건", setter: (v: number) => { setValetCount(v); setValetRevenue(v * (currentStore?.valet_fee || 5000)); } },
+            { label: "발렛 매출", value: valetRevenue, unit: "원", setter: setValetRevenue },
+          ].map(item => (
+            <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 12, overflow: "visible" }}>
+              <label style={{ width: isMobile ? 72 : 80, fontSize: isMobile ? 13 : 14, fontWeight: 600, color: C.textPrimary, flexShrink: 0 }}>
+                {item.label}
+              </label>
+              <Input
+                type="number" min={0} value={item.value || ""}
+                onChange={e => item.setter(Number(e.target.value))}
+                placeholder="0"
+                style={{ flex: 1, minWidth: 0, textAlign: "center", fontWeight: 700, boxSizing: "border-box" }}
+              />
+              <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0, whiteSpace: "nowrap" }}>{item.unit}</span>
+            </div>
+          ))}
+        </div>
+      </CardBody>
+    </Card>
+  ) : null;
+
+  const workerCard = (
+    <Card>
+      <CardHeader>
+        <CardTitle icon="👥">근무자 ({dayTypeKo} 기본)</CardTitle>
+        <div style={{ display: "flex", gap: isMobile ? 6 : 8 }}>
+          <button
+            onClick={() => addWorker("substitute")}
+            style={{
+              padding: isMobile ? "5px 10px" : "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+              background: C.warningBg, color: C.warning, border: "none", cursor: "pointer",
+            }}
+          >+ 대체</button>
+          <button
+            onClick={() => addWorker("hq")}
+            style={{
+              padding: isMobile ? "5px 10px" : "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+              background: C.purpleBg, color: C.purple, border: "none", cursor: "pointer",
+            }}
+          >+ 본사</button>
+        </div>
+      </CardHeader>
+      <CardBody>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {assignedWorkers.length === 0 ? (
+            <p style={{ textAlign: "center", color: C.textMuted, padding: "20px 0", fontSize: 14 }}>
+              배정된 근무자가 없습니다
+            </p>
+          ) : (
+            assignedWorkers.map((w, idx) => (
+              <div key={idx} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <WorkerTypeBadge type={w.worker_type} />
+                <select
+                  value={w.worker_id}
+                  onChange={e => updateWorker(idx, e.target.value)}
+                  style={{
+                    flex: 1, padding: "9px 12px", border: `1px solid ${C.border}`,
+                    borderRadius: 8, fontSize: isMobile ? 13 : 14, background: "#fff", outline: "none",
+                  }}
+                >
+                  <option value="">선택</option>
+                  {workers.map(wk => <option key={wk.id} value={wk.id}>{wk.name}</option>)}
+                </select>
+                {w.worker_type !== "default" && (
+                  <button
+                    onClick={() => removeWorker(idx)}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      color: C.error, fontSize: 18, fontWeight: 700, lineHeight: 1,
+                      padding: "0 4px",
+                    }}
+                  >✕</button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </CardBody>
+    </Card>
+  );
+
+  const memoCard = (
+    <Card>
+      <CardHeader>
+        <CardTitle icon="📝">메모</CardTitle>
+      </CardHeader>
+      <CardBody>
+        <textarea
+          value={memo}
+          onChange={e => setMemo(e.target.value)}
+          rows={3}
+          placeholder="특이사항 입력..."
+          style={{
+            width: "100%", padding: "12px 14px",
+            border: `1px solid ${C.border}`, borderRadius: 10,
+            fontSize: 14, resize: "none", outline: "none",
+            fontFamily: "inherit", color: C.textPrimary,
+          }}
+          onFocus={e => (e.target.style.borderColor = C.navy)}
+          onBlur={e => (e.target.style.borderColor = C.border)}
+        />
+      </CardBody>
+    </Card>
+  );
+
+  const totalSummary = (
+    <div style={{
+      display: "flex", justifyContent: "space-between", alignItems: "center",
+      marginTop: isMobile ? 14 : 20, paddingTop: isMobile ? 12 : 16,
+      borderTop: `2px solid ${C.borderLight}`,
+    }}>
+      <span style={{ fontSize: isMobile ? 14 : 15, fontWeight: 700, color: C.textPrimary }}>총 입차량</span>
+      <span style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: C.navy }}>
+        {totalCars.toLocaleString()}
+        <span style={{ fontSize: isMobile ? 13 : 16, fontWeight: 600, marginLeft: 4 }}>대</span>
+      </span>
+    </div>
+  );
+
   return (
     <AppLayout>
-      <div style={{ maxWidth: 1100 }}>
+      <div style={{ maxWidth: isMobile ? "100%" : 1100 }}>
 
-        {/* ── 상단 필터 바 ── */}
-        <Card style={{ marginBottom: 24 }}>
-          <CardBody style={{ padding: "16px 24px" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 20 }}>
-              {/* 매장 선택 */}
-              <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>
-                  매장 선택
-                </label>
-                <Select value={selectedStore} onChange={e => setSelectedStore(e.target.value)} style={{ minWidth: 160 }}>
+        {/* ══ 모바일 레이아웃 ══ */}
+        {isMobile ? (
+          <>
+            {/* 모바일 필터 바: 가로 스크롤 칩 */}
+            <div style={{
+              display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4,
+              marginBottom: 12, WebkitOverflowScrolling: "touch",
+            }}>
+              {/* 매장 칩 */}
+              <div style={{
+                flexShrink: 0, background: "#fff", border: `1px solid ${C.border}`,
+                borderRadius: 10, padding: "8px 14px",
+                display: "flex", flexDirection: "column", gap: 2,
+              }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: C.textMuted, letterSpacing: "0.3px" }}>매장</span>
+                <select
+                  value={selectedStore} onChange={e => setSelectedStore(e.target.value)}
+                  style={{ border: "none", outline: "none", fontSize: 13, fontWeight: 600, color: C.textPrimary, background: "transparent", fontFamily: "inherit", cursor: "pointer" }}
+                >
                   {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </Select>
+                </select>
               </div>
-
-              {/* 날짜 선택 */}
-              <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>
-                  날짜
-                </label>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <Input
-                    type="date" value={selectedDate}
-                    onChange={e => setSelectedDate(e.target.value)}
-                    style={{ width: 160 }}
-                  />
-                  <span style={{
-                    padding: "5px 14px", borderRadius: 20,
-                    fontSize: 12, fontWeight: 700,
-                    background: dayLabel.bg, color: dayLabel.color,
-                    whiteSpace: "nowrap",
-                  }}>
-                    {dayLabel.label}
-                  </span>
-                </div>
+              {/* 날짜 칩 */}
+              <div style={{
+                flexShrink: 0, background: "#fff", border: `1px solid ${C.border}`,
+                borderRadius: 10, padding: "8px 14px",
+                display: "flex", flexDirection: "column", gap: 2,
+              }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: C.textMuted }}>날짜</span>
+                <input
+                  type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
+                  style={{ border: "none", outline: "none", fontSize: 12, fontWeight: 600, color: C.textPrimary, background: "transparent", fontFamily: "inherit", cursor: "pointer" }}
+                />
               </div>
-
-              {/* 기존 기록 표시 */}
+              {/* 요일 뱃지 */}
+              <span style={{
+                flexShrink: 0, alignSelf: "center",
+                padding: "5px 12px", borderRadius: 20,
+                fontSize: 11, fontWeight: 700,
+                background: dayLabel.bg, color: dayLabel.color, whiteSpace: "nowrap",
+              }}>
+                {dayLabel.label}
+              </span>
+              {/* 수정 중 뱃지 */}
               {existingRecordId && (
-                <div style={{
-                  marginLeft: "auto", display: "flex", alignItems: "center", gap: 8,
-                  padding: "8px 16px", borderRadius: 10,
-                  background: C.navyDark + "10", border: `1px solid ${C.navy}22`,
+                <span style={{
+                  flexShrink: 0, alignSelf: "center",
+                  display: "flex", alignItems: "center", gap: 4,
+                  padding: "5px 12px", borderRadius: 20,
+                  background: `${C.navy}10`, border: `1px solid ${C.navy}22`,
+                  fontSize: 11, fontWeight: 700, color: C.navy, whiteSpace: "nowrap",
                 }}>
-                  <span style={{ fontSize: 14, color: C.navy }}>📋</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>기존 기록 수정 중</span>
-                </div>
+                  📋 수정 중
+                </span>
               )}
             </div>
-          </CardBody>
-        </Card>
 
-        {/* ── 메인 그리드 ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 24 }}>
-
-          {/* 왼쪽: 입차량 */}
-          <Card>
-            <CardHeader>
-              <CardTitle icon="🚗">입차량 입력</CardTitle>
-              <ToggleGroup
-                value={inputMode}
-                options={[{ id: "total", label: "총 대수만" }, { id: "hourly", label: "시간대별" }]}
-                onChange={v => setInputMode(v as "total" | "hourly")}
-              />
-            </CardHeader>
-            <CardBody>
-              {inputMode === "total" ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 20, padding: "32px 0" }}>
-                  <label style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary, whiteSpace: "nowrap" }}>
-                    총 입차량
-                  </label>
-                  <Input
-                    type="number" min={0} value={totalCarsOnly || ""}
-                    onChange={e => setTotalCarsOnly(Number(e.target.value))}
-                    placeholder="0"
-                    style={{
-                      width: 140, textAlign: "center",
-                      fontSize: 28, fontWeight: 800, color: C.navy,
-                      padding: "12px 16px",
-                    }}
-                  />
-                  <span style={{ fontSize: 16, fontWeight: 600, color: C.textSecondary }}>대</span>
-                </div>
-              ) : (
-                <div style={{ maxHeight: 420, overflowY: "auto", paddingRight: 4 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10 }}>
-                    {Array.from(
-                      { length: storeHours.close - storeHours.open + 1 },
-                      (_, i) => i + storeHours.open
-                    ).map(hour => (
-                      <div key={hour} style={{
-                        display: "flex", alignItems: "center", gap: 10,
-                        background: C.bgCard, borderRadius: 10, padding: "10px 14px",
-                      }}>
-                        <span style={{
-                          width: 36, fontSize: 13, fontWeight: 700,
-                          color: C.textSecondary, textAlign: "right", flexShrink: 0,
-                        }}>
-                          {String(hour).padStart(2, "0")}시
-                        </span>
-                        <input
-                          type="number" min={0}
-                          value={hourlyData[hour] || ""}
-                          onChange={e => setHourlyData({ ...hourlyData, [hour]: Number(e.target.value) })}
-                          placeholder="0"
-                          style={{
-                            width: "100%", border: `1px solid ${C.border}`, borderRadius: 8,
-                            padding: "8px 10px", textAlign: "center",
-                            fontSize: 15, fontWeight: 700, color: C.textPrimary,
-                            background: "#fff", outline: "none",
-                          }}
-                          onFocus={e => (e.target.style.borderColor = C.navy)}
-                          onBlur={e => (e.target.style.borderColor = C.border)}
-                        />
-                        <span style={{ fontSize: 12, color: C.textMuted, flexShrink: 0 }}>대</span>
-                      </div>
-                    ))}
+            {/* 모바일 카드들: 1열 풀폭 */}
+            {/* 입차량 */}
+            <Card style={{ marginBottom: 10 }}>
+              <CardHeader>
+                <CardTitle icon="🚗">입차량 입력</CardTitle>
+                <ToggleGroup
+                  value={inputMode}
+                  options={[{ id: "total", label: "총 대수" }, { id: "hourly", label: "시간대별" }]}
+                  onChange={v => setInputMode(v as "total" | "hourly")}
+                />
+              </CardHeader>
+              <CardBody>
+                {inputMode === "total" ? (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, padding: "20px 0 8px" }}>
+                    <Input
+                      type="number" min={0} value={totalCarsOnly || ""}
+                      onChange={e => setTotalCarsOnly(Number(e.target.value))}
+                      placeholder="0"
+                      style={{ width: 110, textAlign: "center", fontSize: 36, fontWeight: 800, color: C.navy, padding: "10px 12px", borderRadius: 14 }}
+                    />
+                    <span style={{ fontSize: 18, fontWeight: 700, color: C.textSecondary }}>대</span>
                   </div>
-                </div>
-              )}
+                ) : hourlyGrid}
+                {totalSummary}
+              </CardBody>
+            </Card>
 
-              {/* 총합 표시 */}
-              <div style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                marginTop: 20, paddingTop: 16, borderTop: `2px solid ${C.borderLight}`,
-              }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary }}>총 입차량</span>
-                <span style={{ fontSize: 28, fontWeight: 800, color: C.navy }}>
-                  {totalCars.toLocaleString()}
-                  <span style={{ fontSize: 16, fontWeight: 600, marginLeft: 4 }}>대</span>
-                </span>
-              </div>
-            </CardBody>
-          </Card>
-
-          {/* 오른쪽: 발렛 + 근무자 + 메모 */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-            {/* 발렛 정보 */}
-            {currentStore?.has_valet && (
-              <Card>
-                <CardHeader>
-                  <CardTitle icon="🚙">발렛 정보</CardTitle>
-                  <span style={{ fontSize: 12, color: C.textMuted, background: C.bgCard, padding: "4px 10px", borderRadius: 6 }}>
-                    단가 ₩{(currentStore?.valet_fee || 5000).toLocaleString()}
-                  </span>
-                </CardHeader>
-                <CardBody>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    {[
-                      { label: "발렛 건수", value: valetCount, unit: "건", setter: (v: number) => { setValetCount(v); setValetRevenue(v * (currentStore?.valet_fee || 5000)); } },
-                      { label: "발렛 매출", value: valetRevenue, unit: "원", setter: setValetRevenue },
-                    ].map(item => (
-                      <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 12, overflow: "visible" }}>
-                        <label style={{ width: 80, fontSize: 14, fontWeight: 600, color: C.textPrimary, flexShrink: 0 }}>
-                          {item.label}
-                        </label>
-                        <Input
-                          type="number" min={0} value={item.value || ""}
-                          onChange={e => item.setter(Number(e.target.value))}
-                          placeholder="0"
-                          style={{ flex: 1, minWidth: 0, textAlign: "center", fontWeight: 700, boxSizing: "border-box" }}
-                        />
-                        <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0, whiteSpace: "nowrap" }}>{item.unit}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardBody>
-              </Card>
-            )}
+            {/* 발렛 */}
+            {valetCard && <div style={{ marginBottom: 10 }}>{valetCard}</div>}
 
             {/* 근무자 */}
-            <Card>
-              <CardHeader>
-                <CardTitle icon="👥">근무자 ({dayTypeKo} 기본)</CardTitle>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    onClick={() => addWorker("substitute")}
-                    style={{
-                      padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
-                      background: C.warningBg, color: C.warning, border: "none", cursor: "pointer",
-                    }}
-                  >+ 대체</button>
-                  <button
-                    onClick={() => addWorker("hq")}
-                    style={{
-                      padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
-                      background: C.purpleBg, color: C.purple, border: "none", cursor: "pointer",
-                    }}
-                  >+ 본사</button>
-                </div>
-              </CardHeader>
-              <CardBody>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {assignedWorkers.length === 0 ? (
-                    <p style={{ textAlign: "center", color: C.textMuted, padding: "20px 0", fontSize: 14 }}>
-                      배정된 근무자가 없습니다
-                    </p>
-                  ) : (
-                    assignedWorkers.map((w, idx) => (
-                      <div key={idx} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <WorkerTypeBadge type={w.worker_type} />
-                        <select
-                          value={w.worker_id}
-                          onChange={e => updateWorker(idx, e.target.value)}
-                          style={{
-                            flex: 1, padding: "9px 12px", border: `1px solid ${C.border}`,
-                            borderRadius: 8, fontSize: 14, background: "#fff", outline: "none",
-                          }}
-                        >
-                          <option value="">선택</option>
-                          {workers.map(wk => <option key={wk.id} value={wk.id}>{wk.name}</option>)}
-                        </select>
-                        {w.worker_type !== "default" && (
-                          <button
-                            onClick={() => removeWorker(idx)}
-                            style={{
-                              background: "none", border: "none", cursor: "pointer",
-                              color: C.error, fontSize: 18, fontWeight: 700, lineHeight: 1,
-                              padding: "0 4px",
-                            }}
-                          >✕</button>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardBody>
-            </Card>
+            <div style={{ marginBottom: 10 }}>{workerCard}</div>
 
             {/* 메모 */}
-            <Card>
-              <CardHeader>
-                <CardTitle icon="📝">메모</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <textarea
-                  value={memo}
-                  onChange={e => setMemo(e.target.value)}
-                  rows={3}
-                  placeholder="특이사항 입력..."
-                  style={{
-                    width: "100%", padding: "12px 14px",
-                    border: `1px solid ${C.border}`, borderRadius: 10,
-                    fontSize: 14, resize: "none", outline: "none",
-                    fontFamily: "inherit", color: C.textPrimary,
-                  }}
-                  onFocus={e => (e.target.style.borderColor = C.navy)}
-                  onBlur={e => (e.target.style.borderColor = C.border)}
-                />
-              </CardBody>
-            </Card>
+            <div style={{ marginBottom: 100 }}>{memoCard}</div>
 
-            {/* PC 저장 버튼 */}
-            <div className="hidden md:block">
+            {/* 모바일 하단 고정 저장 버튼 */}
+            <div style={{
+              position: "fixed", bottom: 60, left: 0, right: 0, zIndex: 150,
+              padding: "10px 16px", background: "#fff",
+              borderTop: `1px solid ${C.borderLight}`,
+              boxShadow: "0 -2px 10px rgba(0,0,0,0.06)",
+            }}>
               <button
-                onClick={handleSave}
-                disabled={saving}
+                onClick={handleSave} disabled={saving}
                 style={{
-                  width: "100%", padding: "16px 0", borderRadius: 14,
+                  width: "100%", padding: "14px 0", borderRadius: 12,
                   background: saving ? C.textMuted : C.navy,
-                  color: "#fff", fontSize: 16, fontWeight: 700,
+                  color: "#fff", fontSize: 15, fontWeight: 700,
                   border: "none", cursor: saving ? "not-allowed" : "pointer",
-                  boxShadow: saving ? "none" : "0 4px 12px rgba(20,40,160,0.25)",
-                  transition: "all 0.2s",
+                  boxShadow: saving ? "none" : "0 4px 12px rgba(20,40,160,0.2)",
                 }}
               >
                 {saving ? "⏳ 저장 중..." : existingRecordId ? "✏️ 수정 저장" : "💾 저장"}
               </button>
             </div>
+          </>
+        ) : (
+          /* ══ PC 레이아웃 (기존 유지) ══ */
+          <>
+            {/* 필터 바 */}
+            <Card style={{ marginBottom: 24 }}>
+              <CardBody style={{ padding: "16px 24px" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 20 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>매장 선택</label>
+                    <Select value={selectedStore} onChange={e => setSelectedStore(e.target.value)} style={{ minWidth: 160 }}>
+                      {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </Select>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>날짜</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <Input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} style={{ width: 160 }} />
+                      <span style={{ padding: "5px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: dayLabel.bg, color: dayLabel.color, whiteSpace: "nowrap" }}>
+                        {dayLabel.label}
+                      </span>
+                    </div>
+                  </div>
+                  {existingRecordId && (
+                    <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 10, background: C.navyDark + "10", border: `1px solid ${C.navy}22` }}>
+                      <span style={{ fontSize: 14, color: C.navy }}>📋</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>기존 기록 수정 중</span>
+                    </div>
+                  )}
+                </div>
+              </CardBody>
+            </Card>
 
-            {/* 모바일 여백 */}
-            <div className="md:hidden" style={{ height: 80 }} />
-          </div>
-        </div>
-      </div>
+            {/* 2열 그리드 */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 24 }}>
+              {/* 입차량 */}
+              <Card>
+                <CardHeader>
+                  <CardTitle icon="🚗">입차량 입력</CardTitle>
+                  <ToggleGroup
+                    value={inputMode}
+                    options={[{ id: "total", label: "총 대수만" }, { id: "hourly", label: "시간대별" }]}
+                    onChange={v => setInputMode(v as "total" | "hourly")}
+                  />
+                </CardHeader>
+                <CardBody>
+                  {inputMode === "total" ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 20, padding: "32px 0" }}>
+                      <label style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary, whiteSpace: "nowrap" }}>총 입차량</label>
+                      <Input
+                        type="number" min={0} value={totalCarsOnly || ""}
+                        onChange={e => setTotalCarsOnly(Number(e.target.value))}
+                        placeholder="0"
+                        style={{ width: 140, textAlign: "center", fontSize: 28, fontWeight: 800, color: C.navy, padding: "12px 16px" }}
+                      />
+                      <span style={{ fontSize: 16, fontWeight: 600, color: C.textSecondary }}>대</span>
+                    </div>
+                  ) : hourlyGrid}
+                  {totalSummary}
+                </CardBody>
+              </Card>
 
-      {/* 모바일 하단 고정 저장 버튼 */}
-      <div
-        className="md:hidden"
-        style={{
-          position: "fixed", bottom: 60, left: 0, right: 0, zIndex: 150,
-          padding: "10px 16px", background: "#fff",
-          borderTop: `1px solid ${C.borderLight}`,
-          boxShadow: "0 -2px 10px rgba(0,0,0,0.06)",
-        }}
-      >
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          style={{
-            width: "100%", padding: "14px 0", borderRadius: 12,
-            background: saving ? C.textMuted : C.navy,
-            color: "#fff", fontSize: 16, fontWeight: 700,
-            border: "none", cursor: saving ? "not-allowed" : "pointer",
-          }}
-        >
-          {saving ? "⏳ 저장 중..." : existingRecordId ? "✏️ 수정 저장" : "💾 저장"}
-        </button>
+              {/* 오른쪽 */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {valetCard}
+                {workerCard}
+                {memoCard}
+                <button
+                  onClick={handleSave} disabled={saving}
+                  style={{
+                    width: "100%", padding: "16px 0", borderRadius: 14,
+                    background: saving ? C.textMuted : C.navy,
+                    color: "#fff", fontSize: 16, fontWeight: 700,
+                    border: "none", cursor: saving ? "not-allowed" : "pointer",
+                    boxShadow: saving ? "none" : "0 4px 12px rgba(20,40,160,0.25)",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {saving ? "⏳ 저장 중..." : existingRecordId ? "✏️ 수정 저장" : "💾 저장"}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* 토스트 알림 */}
