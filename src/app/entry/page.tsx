@@ -2,7 +2,8 @@
 "use client";
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId, getUserContext } from "@/lib/utils/org";
 import { getDayType, getDayTypeLabel } from "@/utils/holidays";
@@ -152,6 +153,7 @@ const WorkerTypeBadge = ({ type }: { type: string }) => {
 
 export default function EntryPage() {
   const supabase = createClient();
+  const router = useRouter();
   const [stores, setStores] = useState<Store[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [selectedStore, setSelectedStore] = useState("");
@@ -169,6 +171,12 @@ export default function EntryPage() {
   const [storeHours, setStoreHours] = useState<{ open: number; close: number }>({ open: 7, close: 22 });
   const [oid, setOid] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [valetToast, setValetToast] = useState(false);
+
+  const showValetToast = () => {
+    setValetToast(true);
+    setTimeout(() => setValetToast(false), 3500);
+  };
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -367,8 +375,10 @@ export default function EntryPage() {
     <Card>
       <CardHeader>
         <CardTitle icon="🚙">발렛 정보</CardTitle>
-        <span style={{ fontSize: 12, color: C.textMuted, background: C.bgCard, padding: "4px 10px", borderRadius: 6 }}>
-          단가 ₩{(currentStore?.valet_fee || 5000).toLocaleString()}
+        <span
+          onClick={showValetToast}
+          style={{ fontSize: 12, color: C.navy, background: "#eef1fb", padding: "4px 10px", borderRadius: 6, cursor: "pointer", fontWeight: 600, border: "1px solid #d0d8f5" }}>
+          단가 ₩{(currentStore?.valet_fee || 5000).toLocaleString()} ✏️
         </span>
       </CardHeader>
       <CardBody>
@@ -495,6 +505,62 @@ export default function EntryPage() {
 
   return (
     <AppLayout>
+      {/* ── 발렛 단가 토스트 ── */}
+      {valetToast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: isMobile ? 100 : 32,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            background: "#1A1D2B",
+            color: "#fff",
+            borderRadius: 14,
+            padding: "14px 20px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            minWidth: 280,
+            maxWidth: 340,
+            animation: "fadeInUp 0.25s ease",
+          }}
+        >
+          <style>{`
+            @keyframes fadeInUp {
+              from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+              to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
+          `}</style>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 18 }}>💡</span>
+            <span style={{ fontSize: 14, fontWeight: 700 }}>발렛 단가 변경 방법</span>
+          </div>
+          <div style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.6, paddingLeft: 26 }}>
+            <b style={{ color: "#F5B731" }}>매장 관리</b> → 해당 매장 선택<br/>
+            → <b style={{ color: "#F5B731" }}>방문지 관리</b> 탭 → 발렛비 수정
+          </div>
+          <button
+            onClick={() => { setValetToast(false); router.push("/stores"); }}
+            style={{
+              marginTop: 4,
+              background: "#1428A0",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "9px 0",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              width: "100%",
+            }}
+          >
+            매장 관리로 이동 →
+          </button>
+        </div>
+      )}
+
       <div style={{ maxWidth: isMobile ? "100%" : 1100 }}>
 
         {/* ══ 모바일 레이아웃 ══ */}
