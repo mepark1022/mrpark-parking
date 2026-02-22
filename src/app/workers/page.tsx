@@ -598,29 +598,38 @@ export default function WorkersPage() {
     const oid = await getOrgId();
     if (!oid) return;
 
-    const [{ data: wData }, { data: sData }, { data: aData }, { data: rData }, { data: mData }] = await Promise.all([
+    const [{ data: wData }, { data: sData }, { data: aData }, { data: rData }] = await Promise.all([
       supabase.from("workers").select("*, regions(name)").eq("org_id", oid).order("name"),
       supabase.from("stores").select("id, name").eq("org_id", oid).order("name"),
       supabase.from("worker_attendance").select("*").eq("org_id", oid).eq("date", new Date().toISOString().slice(0, 10)),
       supabase.from("regions").select("*").order("name"),
-      supabase.from("store_members").select("user_id, store_id").eq("org_id", oid),
     ]);
     if (wData) setWorkers(wData);
     if (sData) setStores(sData);
     if (aData) setAttendanceRecords(aData);
     if (rData) setRegions(rData);
-    // store_members → workerStoreMap 생성
-    if (mData && sData) {
+    // store_members → workerStoreMap 생성 (별도 처리, 실패해도 영향 없음)
+    if (sData) {
       const storeNameMap: Record<string, string> = {};
       sData.forEach((s: any) => { storeNameMap[s.id] = s.name; });
-      const map: Record<string, string[]> = {};
-      mData.forEach((m: any) => {
-        const storeName = storeNameMap[m.store_id];
-        if (!storeName) return;
-        if (!map[m.user_id]) map[m.user_id] = [];
-        if (!map[m.user_id].includes(storeName)) map[m.user_id].push(storeName);
-      });
-      setWorkerStoreMap(map);
+      // org_id 없이 store_id 기반으로 조회 (store는 이미 org 필터됨)
+      const storeIds = sData.map((s: any) => s.id);
+      if (storeIds.length > 0) {
+        const { data: mData } = await supabase
+          .from("store_members")
+          .select("user_id, store_id")
+          .in("store_id", storeIds);
+        if (mData) {
+          const map: Record<string, string[]> = {};
+          mData.forEach((m: any) => {
+            const storeName = storeNameMap[m.store_id];
+            if (!storeName) return;
+            if (!map[m.user_id]) map[m.user_id] = [];
+            if (!map[m.user_id].includes(storeName)) map[m.user_id].push(storeName);
+          });
+          setWorkerStoreMap(map);
+        }
+      }
     }
   };
 
@@ -997,7 +1006,7 @@ export default function WorkersPage() {
                       </tr>
                     ))}
                     {workers.length === 0 && (
-                      <tr><td colSpan={5} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)", fontSize: 14 }}>등록된 근무자가 없습니다</td></tr>
+                      <tr><td colSpan={6} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)", fontSize: 14 }}>등록된 근무자가 없습니다</td></tr>
                     )}
                   </tbody>
                 </table>
