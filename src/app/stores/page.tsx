@@ -822,7 +822,7 @@ export default function StoresPage() {
               )}
               {(parkingLots[store.id] ?? []).length > 0 && (
                 <div className="stores-grid-auto" style={{ display: "grid", gap: 14 }}>
-                  {parkingLots[store.id].map(lot => (
+                  {( parkingLots[store.id] ?? [] ).map(lot => (
                     <div key={lot.id} style={{
                       background: C.bgCard, borderRadius: 12, padding: "16px 18px",
                       border: `1px solid ${C.borderLight}`, position: "relative",
@@ -896,7 +896,7 @@ export default function StoresPage() {
               ) : (<>
                 {/* 모바일 카드 & 데스크톱 테이블 (CSS로 show/hide) */}
                 <div className="stores-mobile-view" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {visitPlaces[store.id].map(vp => (
+                  {( visitPlaces[store.id] ?? [] ).map(vp => (
                     <div key={vp.id} style={{
                       background: "#fff", borderRadius: 18, padding: 16, boxShadow: "0 2px 10px rgba(20,40,160,0.07)",
                       borderLeft: `4px solid ${C.navy}`,
@@ -956,7 +956,7 @@ export default function StoresPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {visitPlaces[store.id].map(vp => (
+                    {( visitPlaces[store.id] ?? [] ).map(vp => (
                       <tr key={vp.id}>
                         <Td><strong>{vp.name}</strong></Td>
                         <Td style={{ color: C.textSecondary }}>{vp.floor || "-"}</Td>
