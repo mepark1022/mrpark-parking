@@ -114,7 +114,9 @@ const CardHeader = ({ children }: { children: React.ReactNode }) => (
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "18px 24px",
+    flexWrap: "wrap",
+    gap: 10,
+    padding: "16px 20px",
     borderBottom: `1px solid ${C.borderLight}`,
   }}>
     {children}
@@ -964,22 +966,23 @@ export default function StoresPage() {
       <Card>
         <CardHeader>
           <CardTitle icon="🕐">운영시간 설정</CardTitle>
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <select
-          value={selectedStoreId ?? ""}
-          onChange={e => setSelectedStoreId(e.target.value)}
-          style={{
-            padding: "8px 12px", border: `1px solid ${C.border}`,
-            borderRadius: 8, fontSize: 14, background: "#fff",
-          }}
-        >
-          {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+              value={selectedStoreId ?? ""}
+              onChange={e => setSelectedStoreId(e.target.value)}
+              style={{
+                padding: "8px 12px", border: `1px solid ${C.border}`,
+                borderRadius: 8, fontSize: 14, background: "#fff",
+                flex: "1 1 auto", maxWidth: "100%",
+              }}
+            >
+              {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
             <BtnPrimary onClick={() => {
               setHourForm({ day_category: "weekday", open_time: "08:00", close_time: "22:00" });
               setEditingItem(null);
               setModalType("hours");
-            }}>
+            }} style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
               + 추가
             </BtnPrimary>
           </div>
@@ -1041,22 +1044,23 @@ export default function StoresPage() {
       <Card>
         <CardHeader>
           <CardTitle icon="👷">근무조 설정</CardTitle>
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <select
-          value={selectedStoreId ?? ""}
-          onChange={e => setSelectedStoreId(e.target.value)}
-          style={{
-            padding: "8px 12px", border: `1px solid ${C.border}`,
-            borderRadius: 8, fontSize: 14, background: "#fff",
-          }}
-        >
-          {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+              value={selectedStoreId ?? ""}
+              onChange={e => setSelectedStoreId(e.target.value)}
+              style={{
+                padding: "8px 12px", border: `1px solid ${C.border}`,
+                borderRadius: 8, fontSize: 14, background: "#fff",
+                maxWidth: "100%", flex: "1 1 auto",
+              }}
+            >
+              {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
             <BtnPrimary onClick={() => {
               setShiftForm({ name: "오전조", start_time: "08:00", end_time: "14:00" });
               setEditingItem(null);
               setModalType("shifts");
-            }}>
+            }} style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
               + 근무조 추가
             </BtnPrimary>
           </div>
@@ -1115,15 +1119,16 @@ export default function StoresPage() {
         <CardHeader>
           <CardTitle icon="⏰">정상출근 체크 규칙</CardTitle>
           <select
-          value={selectedStoreId ?? ""}
-          onChange={e => setSelectedStoreId(e.target.value)}
-          style={{
-            padding: "8px 12px", border: `1px solid ${C.border}`,
-            borderRadius: 8, fontSize: 14, background: "#fff",
-          }}
-        >
-          {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+            value={selectedStoreId ?? ""}
+            onChange={e => setSelectedStoreId(e.target.value)}
+            style={{
+              padding: "8px 12px", border: `1px solid ${C.border}`,
+              borderRadius: 8, fontSize: 14, background: "#fff",
+              flex: "1 1 auto", maxWidth: "100%",
+            }}
+          >
+            {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
         </CardHeader>
         <CardBody>
           <div style={{ maxWidth: 520 }}>
