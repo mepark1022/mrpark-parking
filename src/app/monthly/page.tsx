@@ -25,6 +25,14 @@ type MonthlyRow = {
   stores: { name: string } | null;
 };
 
+type AlimtalkModal = {
+  open: boolean;
+  contract: MonthlyRow | null;
+  sending: boolean;
+  sent: boolean;
+  error: string;
+};
+
 export default function MonthlyPage() {
   const supabase = createClient();
   const router = useRouter();
@@ -34,6 +42,7 @@ export default function MonthlyPage() {
   const [filterStore, setFilterStore] = useState("");
   const [filterStatus, setFilterStatus] = useState("active");
   const [searchText, setSearchText] = useState("");
+  const [alimModal, setAlimModal] = useState<AlimtalkModal>({ open: false, contract: null, sending: false, sent: false, error: "" });
 
   useEffect(() => { loadStores(); }, []);
   useEffect(() => { loadContracts(); }, [filterStore, filterStatus]);
@@ -103,6 +112,43 @@ export default function MonthlyPage() {
     if (!confirm("계약을 해지하시겠습니까?")) return;
     await supabase.from("monthly_parking").update({ contract_status: "cancelled" }).eq("id", id);
     loadContracts();
+  }
+
+  function openAlimModal(c: MonthlyRow) {
+    setAlimModal({ open: true, contract: c, sending: false, sent: false, error: "" });
+  }
+
+  function closeAlimModal() {
+    setAlimModal(m => ({ ...m, open: false }));
+  }
+
+  async function sendAlimtalk() {
+    const c = alimModal.contract;
+    if (!c) return;
+    setAlimModal(m => ({ ...m, sending: true, error: "" }));
+    try {
+      const res = await fetch("/api/alimtalk/monthly", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: c.customer_phone,
+          customerName: c.customer_name,
+          vehicleNumber: c.vehicle_number,
+          storeName: c.stores?.name ?? "",
+          endDate: c.end_date,
+          fee: c.monthly_fee,
+          templateType: "renewal_remind",
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAlimModal(m => ({ ...m, sending: false, sent: true }));
+      } else {
+        setAlimModal(m => ({ ...m, sending: false, error: data.error || "발송 실패" }));
+      }
+    } catch {
+      setAlimModal(m => ({ ...m, sending: false, error: "네트워크 오류" }));
+    }
   }
 
   const filtered = getFiltered();
@@ -283,8 +329,11 @@ export default function MonthlyPage() {
                           <td style={{ padding: "14px 16px" }}>{getPaymentBadge(c.payment_status)}</td>
                           <td style={{ padding: "14px 16px" }}>{getContractBadge(c)}</td>
                           <td style={{ padding: "14px 16px" }}>
-                            <div style={{ display: "flex", gap: 8 }}>
+                            <div style={{ display: "flex", gap: 8, flexWrap: "nowrap" }}>
                               <button className="btn-sm navy" onClick={() => router.push(`/monthly/register?id=${c.id}`)}>수정</button>
+                              {c.contract_status === "active" && (
+                                <button className="btn-sm" style={{ borderColor: "#7c3aed", color: "#7c3aed" }} onClick={() => openAlimModal(c)}>📨 알림톡</button>
+                              )}
                               {c.contract_status === "active" && <button className="btn-sm red" onClick={() => cancelContract(c.id)}>해지</button>}
                             </div>
                           </td>
@@ -328,6 +377,9 @@ export default function MonthlyPage() {
                       </div>
                       <div className="m-card-footer-actions" style={{ display: "flex", gap: 8 }}>
                         <button className="btn-sm navy" onClick={() => router.push(`/monthly/register?id=${c.id}`)}>수정</button>
+                        {c.contract_status === "active" && (
+                          <button className="btn-sm" style={{ borderColor: "#7c3aed", color: "#7c3aed" }} onClick={() => openAlimModal(c)}>📨</button>
+                        )}
                         {c.contract_status === "active" && <button className="btn-sm red" onClick={() => cancelContract(c.id)}>해지</button>}
                       </div>
                     </div>
@@ -337,6 +389,89 @@ export default function MonthlyPage() {
             </>
           )}
         </div>
+
+        {/* ─── 알림톡 발송 모달 ─── */}
+        {alimModal.open && alimModal.contract && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={closeAlimModal}>
+            <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.15)", overflow: "hidden" }} onClick={e => e.stopPropagation()}>
+              {/* 모달 헤더 */}
+              <div style={{ background: "linear-gradient(135deg, #1a237e, #0d1442)", padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ color: "#F5B731", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>카카오 알림톡</div>
+                  <div style={{ color: "#fff", fontSize: 17, fontWeight: 800 }}>월주차 연장 안내 발송</div>
+                </div>
+                <button onClick={closeAlimModal} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "#fff", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              </div>
+
+              <div style={{ padding: "20px 24px" }}>
+                {/* 수신자 정보 */}
+                <div style={{ background: "#f8f9fb", borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, color: "#8b919d", fontWeight: 600, marginBottom: 8 }}>수신자 정보</div>
+                  <div style={{ display: "flex", gap: 20 }}>
+                    <div><div style={{ fontSize: 11, color: "#8b919d" }}>고객명</div><div style={{ fontSize: 14, fontWeight: 700 }}>{alimModal.contract.customer_name}</div></div>
+                    <div><div style={{ fontSize: 11, color: "#8b919d" }}>연락처</div><div style={{ fontSize: 14, fontWeight: 700 }}>{alimModal.contract.customer_phone}</div></div>
+                    <div><div style={{ fontSize: 11, color: "#8b919d" }}>차량번호</div><div style={{ fontSize: 14, fontWeight: 700, color: "#1428A0" }}>{alimModal.contract.vehicle_number}</div></div>
+                  </div>
+                </div>
+
+                {/* 알림톡 미리보기 */}
+                <div style={{ border: "1px solid #e2e4e9", borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
+                  <div style={{ background: "#FEE500", padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#1a1a1a", display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 14 }}>💬</span> 카카오 알림톡 미리보기
+                  </div>
+                  <div style={{ padding: "16px", background: "#fff", fontFamily: "inherit" }}>
+                    <div style={{ fontSize: 13, color: "#1a1a1a", lineHeight: 1.8, whiteSpace: "pre-line" }}>
+{`[미팍 월주차 안내]
+
+안녕하세요, ${alimModal.contract.customer_name}님! 🚗
+
+${alimModal.contract.stores?.name ?? ""} 월주차 계약 만료가 임박했습니다.
+
+📋 계약 정보
+• 차량번호: ${alimModal.contract.vehicle_number}
+• 계약기간: ${alimModal.contract.start_date} ~ ${alimModal.contract.end_date}
+• 월 요금: ${alimModal.contract.monthly_fee.toLocaleString()}원
+
+만기일 이후에는 일반 주차 요금이 부과됩니다.
+연장을 원하시면 매장으로 연락해 주세요 😊`}
+                    </div>
+                    <div style={{ marginTop: 12, padding: "10px 14px", background: "#1428A0", borderRadius: 8, color: "#fff", fontWeight: 700, fontSize: 13, textAlign: "center" }}>
+                      📞 문의하기 (1899-1871)
+                    </div>
+                  </div>
+                </div>
+
+                {/* 에러/성공 메시지 */}
+                {alimModal.error && (
+                  <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#dc2626", marginBottom: 12 }}>
+                    ⚠️ {alimModal.error}
+                  </div>
+                )}
+                {alimModal.sent && (
+                  <div style={{ background: "#ecfdf5", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#10b981", marginBottom: 12 }}>
+                    ✅ 알림톡이 정상 발송되었습니다!
+                  </div>
+                )}
+
+                {/* 버튼 */}
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={closeAlimModal} style={{ flex: 1, padding: "13px", borderRadius: 10, border: "1px solid #e2e4e9", background: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", color: "#5c6370" }}>
+                    취소
+                  </button>
+                  {!alimModal.sent ? (
+                    <button onClick={sendAlimtalk} disabled={alimModal.sending} style={{ flex: 2, padding: "13px", borderRadius: 10, border: "none", background: alimModal.sending ? "#c7d2fe" : "#1428A0", color: "#fff", fontSize: 14, fontWeight: 700, cursor: alimModal.sending ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.2s" }}>
+                      {alimModal.sending ? "⏳ 발송 중..." : "📨 알림톡 발송"}
+                    </button>
+                  ) : (
+                    <button onClick={closeAlimModal} style={{ flex: 2, padding: "13px", borderRadius: 10, border: "none", background: "#10b981", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                      ✓ 완료
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </AppLayout>
