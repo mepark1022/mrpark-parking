@@ -128,8 +128,8 @@ const CardTitle = ({ icon, children }: { icon: string; children: React.ReactNode
   </div>
 );
 
-const CardBody = ({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) => (
-  <div style={{ padding: "20px 24px", ...style }}>{children}</div>
+const CardBody = ({ children, style, className }: { children: React.ReactNode; style?: React.CSSProperties; className?: string }) => (
+  <div style={{ padding: "20px 24px", ...style }} className={className}>{children}</div>
 );
 
 const BtnPrimary = ({ onClick, children, style }: { onClick?: () => void; children: React.ReactNode; style?: React.CSSProperties }) => (
@@ -338,8 +338,9 @@ const Modal = ({
 export default function StoresPage() {
   const supabase = createClient();
 
-  // 반응형
-  const [isMobile, setIsMobile] = useState(false);
+  // 반응형 - CSS 클래스 기반으로 hydration 에러 방지
+  // isMobile JS state 제거 → 아래 <style> CSS media query로 처리
+  const [mounted, setMounted] = useState(false);
 
   // 탭
   const [mainTab, setMainTab] = useState<"list" | "hours" | "shifts" | "late-check">("list");
@@ -380,10 +381,7 @@ export default function StoresPage() {
 
   // ── 데이터 로드 ──
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
+    setMounted(true);
   }, []);
 
   useEffect(() => { loadData(); }, []);
@@ -574,12 +572,7 @@ export default function StoresPage() {
   ];
 
   const TabBar = () => (
-    <div style={{
-      display: "flex", gap: 4, background: C.bgCard, padding: 4,
-      borderRadius: 10, marginBottom: 24,
-      width: isMobile ? "100%" : "fit-content",
-      overflowX: isMobile ? "auto" : "visible",
-    }}>
+    <div className="stores-tab-bar">
       {mainTabs.map(t => (
         <button
           key={t.id}
@@ -614,9 +607,11 @@ export default function StoresPage() {
   );
 
   if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 400 }}>
-      <div style={{ fontSize: 16, color: C.textMuted }}>⏳ 로딩 중...</div>
-    </div>
+    <AppLayout>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 400 }}>
+        <div style={{ fontSize: 16, color: C.textMuted }}>⏳ 로딩 중...</div>
+      </div>
+    </AppLayout>
   );
 
   // ════════════════════════════════════════════
@@ -635,10 +630,9 @@ export default function StoresPage() {
             + 매장 추가
           </BtnPrimary>
         </CardHeader>
-        <CardBody style={{ padding: isMobile ? 16 : 0 }}>
-          {isMobile ? (
-            /* ── 모바일: 카드 리스트 ── */
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <CardBody style={{ padding: 0 }} className="stores-card-body">
+          {/* 모바일 카드 & 데스크톱 테이블 (CSS로 show/hide) */}
+          <div className="stores-mobile-view" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {stores.map(store => {
                 const lots = parkingLots[store.id] ?? [];
                 const visits = visitPlaces[store.id] ?? [];
@@ -703,8 +697,7 @@ export default function StoresPage() {
                 );
               })}
             </div>
-          ) : (
-            /* ── PC: 테이블 ── */
+          <div className="stores-desktop-view">
             <Table>
               <thead>
                 <tr>
@@ -776,13 +769,14 @@ export default function StoresPage() {
                 })}
               </tbody>
             </Table>
+            </div>
           )}
         </CardBody>
       </Card>
 
       {/* 확장: 매장 상세 (방문지 + 주차장) */}
       {stores.map(store => expandedStore === store.id && (
-        <div key={`detail-${store.id}`} style={{ marginTop: isMobile ? 8 : -8, marginBottom: 20 }}>
+        <div key={`detail-${store.id}`} className="stores-detail-wrap">
           {/* 주차장 섹션 */}
           <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${C.borderLight}`, marginBottom: 16, overflow: "hidden" }}>
             <SectionHeader
@@ -799,7 +793,7 @@ export default function StoresPage() {
                 </BtnGold>
               }
             />
-            <div style={{ padding: isMobile ? "16px" : "20px 24px" }}>
+            <div className="stores-section-pad">
               {(parkingLots[store.id]?.length ?? 0) === 0 && (
                 <ParkingRequiredBanner onAdd={() => {
                   setLotForm({ name: "", lot_type: "internal", parking_type: ["self"], road_address: store.road_address ?? "", self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0 });
@@ -809,7 +803,7 @@ export default function StoresPage() {
                 }} />
               )}
               {(parkingLots[store.id] ?? []).length > 0 && (
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
+                <div className="stores-grid-auto" style={{ display: "grid", gap: 14 }}>
                   {parkingLots[store.id].map(lot => (
                     <div key={lot.id} style={{
                       background: C.bgCard, borderRadius: 12, padding: "16px 18px",
@@ -876,14 +870,14 @@ export default function StoresPage() {
                 </BtnPrimary>
               }
             />
-            <div style={{ padding: isMobile ? "16px" : "20px 24px" }}>
+            <div className="stores-section-pad">
               {(visitPlaces[store.id] ?? []).length === 0 ? (
                 <div style={{ textAlign: "center", color: C.textMuted, padding: "30px 0", fontSize: 14 }}>
                   등록된 방문지가 없습니다
                 </div>
-              ) : isMobile ? (
-                /* ── 모바일: 방문지 카드 ── */
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              ) : (<>
+                {/* 모바일 카드 & 데스크톱 테이블 (CSS로 show/hide) */}
+                <div className="stores-mobile-view" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {visitPlaces[store.id].map(vp => (
                     <div key={vp.id} style={{
                       background: "#fff", borderRadius: 18, padding: 16, boxShadow: "0 2px 10px rgba(20,40,160,0.07)",
@@ -930,9 +924,7 @@ export default function StoresPage() {
                     </div>
                   ))}
                 </div>
-              ) : (
-                /* ── PC: 테이블 ── */
-                <Table>
+                <div className="stores-desktop-view"><Table>
                   <thead>
                     <tr>
                       <Th>방문지명</Th>
@@ -977,8 +969,8 @@ export default function StoresPage() {
                       </tr>
                     ))}
                   </tbody>
-                </Table>
-              )}
+                </Table></div>
+                </>)
             </div>
           </div>
         </div>
@@ -1012,7 +1004,7 @@ export default function StoresPage() {
               등록된 운영시간이 없습니다
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
+            <div className="stores-grid-auto" style={{ display: "grid", gap: 16 }}>
               {storeHours.map(h => (
                 <div key={h.id} style={{
                   background: C.bgCard, borderRadius: 14, padding: 20,
@@ -1080,7 +1072,7 @@ export default function StoresPage() {
               등록된 근무조가 없습니다
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
+            <div className="stores-grid-3col" style={{ display: "grid", gap: 16 }}>
               {storeShifts.map(sh => (
                 <div key={sh.id} style={{
                   background: C.bgCard, borderRadius: 14, padding: 20,
@@ -1205,7 +1197,7 @@ export default function StoresPage() {
 
     if (modalType === "store") return (
       <Modal title={editingItem ? "매장 수정" : "매장 추가"} onClose={() => setModalType(null)}>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+        <div className="stores-grid-2col" style={{ display: "grid", gap: 16 }}>
           <FormGroup label="매장명">
             <Input value={storeForm.name} onChange={e => setStoreForm(f => ({ ...f, name: e.target.value }))} />
           </FormGroup>
@@ -1213,7 +1205,7 @@ export default function StoresPage() {
             <Input value={storeForm.manager_name} onChange={e => setStoreForm(f => ({ ...f, manager_name: e.target.value }))} />
           </FormGroup>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+        <div className="stores-grid-2col" style={{ display: "grid", gap: 16 }}>
           <FormGroup label="시/도">
             <Select value={storeForm.region_city} onChange={e => {
               setStoreForm(f => ({ ...f, region_city: e.target.value, region_district: "" }));
@@ -1247,7 +1239,7 @@ export default function StoresPage() {
         <FormGroup label="주차장명">
           <Input value={lotForm.name} onChange={e => setLotForm(f => ({ ...f, name: e.target.value }))} placeholder="예: 본관 지하 1층" />
         </FormGroup>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+        <div className="stores-grid-2col" style={{ display: "grid", gap: 16 }}>
           <FormGroup label="위치 구분">
             <Select value={lotForm.lot_type} onChange={e => setLotForm(f => ({ ...f, lot_type: e.target.value }))}>
               <option value="internal">본관</option>
@@ -1279,7 +1271,7 @@ export default function StoresPage() {
         <FormGroup label="주소">
           <Input value={lotForm.road_address} onChange={e => setLotForm(f => ({ ...f, road_address: e.target.value }))} />
         </FormGroup>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12 }}>
+        <div className="stores-grid-3col" style={{ display: "grid", gap: 12 }}>
           <FormGroup label="자주식 (면)">
             <Input type="number" value={lotForm.self_spaces}
               onChange={e => setLotForm(f => ({ ...f, self_spaces: Number(e.target.value) }))} />
@@ -1310,7 +1302,7 @@ export default function StoresPage() {
 
     if (modalType === "visit") return (
       <Modal title={editingItem ? "방문지 수정" : "방문지 추가"} onClose={() => setModalType(null)}>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+        <div className="stores-grid-2col" style={{ display: "grid", gap: 16 }}>
           <FormGroup label="방문지명">
             <Input value={visitForm.name} onChange={e => setVisitForm(f => ({ ...f, name: e.target.value }))} placeholder="예: 1층 내과" />
           </FormGroup>
@@ -1318,7 +1310,7 @@ export default function StoresPage() {
             <Input value={visitForm.floor} onChange={e => setVisitForm(f => ({ ...f, floor: e.target.value }))} placeholder="예: B1, 1F" />
           </FormGroup>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+        <div className="stores-grid-2col" style={{ display: "grid", gap: 16 }}>
           <FormGroup label="무료 주차 (분)">
             <Input type="number" value={visitForm.free_minutes}
               onChange={e => setVisitForm(f => ({ ...f, free_minutes: Number(e.target.value) }))} />
@@ -1365,7 +1357,7 @@ export default function StoresPage() {
             <option value="all">전체</option>
           </Select>
         </FormGroup>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+        <div className="stores-grid-2col" style={{ display: "grid", gap: 16 }}>
           <FormGroup label="오픈 시간">
             <Input type="time" value={hourForm.open_time} onChange={e => setHourForm(f => ({ ...f, open_time: e.target.value }))} />
           </FormGroup>
@@ -1385,7 +1377,7 @@ export default function StoresPage() {
         <FormGroup label="근무조 이름">
           <Input value={shiftForm.name} onChange={e => setShiftForm(f => ({ ...f, name: e.target.value }))} placeholder="예: 오전조, 오후조, 야간조" />
         </FormGroup>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+        <div className="stores-grid-2col" style={{ display: "grid", gap: 16 }}>
           <FormGroup label="시작 시간">
             <Input type="time" value={shiftForm.start_time} onChange={e => setShiftForm(f => ({ ...f, start_time: e.target.value }))} />
           </FormGroup>
@@ -1408,6 +1400,32 @@ export default function StoresPage() {
   // ════════════════════════════════════════════
   return (
     <AppLayout>
+    <style>{`
+      .stores-tab-bar {
+        display: flex; gap: 4px; background: ${C.bgCard}; padding: 4px;
+        border-radius: 10px; margin-bottom: 24px;
+        width: fit-content; overflow-x: visible;
+      }
+      .stores-card-body > div { padding: 0; }
+      .stores-mobile-view { display: none !important; }
+      .stores-desktop-view { display: block; }
+      .stores-detail-wrap { margin-top: -8px; margin-bottom: 20px; }
+      .stores-section-pad { padding: 20px 24px; }
+      .stores-grid-auto { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+      .stores-grid-2col { grid-template-columns: 1fr 1fr; }
+      .stores-grid-3col { grid-template-columns: repeat(3, 1fr); }
+      @media (max-width: 767px) {
+        .stores-tab-bar { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .stores-card-body > div { padding: 16px; }
+        .stores-mobile-view { display: flex !important; }
+        .stores-desktop-view { display: none !important; }
+        .stores-detail-wrap { margin-top: 8px; }
+        .stores-section-pad { padding: 16px; }
+        .stores-grid-auto { grid-template-columns: 1fr; }
+        .stores-grid-2col { grid-template-columns: 1fr; }
+        .stores-grid-3col { grid-template-columns: 1fr; }
+      }
+    `}</style>
     <div style={{ background: C.bgPage, minHeight: "100vh" }}>
       <TabBar />
       {mainTab === "list" && renderStoreList()}
