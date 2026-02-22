@@ -927,7 +927,7 @@ export default function WorkersPage() {
             </div>
 
             {showForm && (
-              <div style={{ margin: "0 24px 0 24px", marginTop: 20, background: "var(--bg-card)", borderRadius: 14, padding: 24, border: "1px solid var(--border-light)" }}>
+              <div id="worker-edit-form" style={{ margin: "0 24px 0 24px", marginTop: 20, background: "var(--bg-card)", borderRadius: 14, padding: 24, border: "1px solid var(--border-light)" }}>
                 <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>{editItem ? "근무자 수정" : "근무자 추가"}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                   <div>
@@ -1040,10 +1040,7 @@ export default function WorkersPage() {
                     </div>
                     {w.phone && <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>📱 {w.phone}</div>}
                     <div style={{ display: "flex", gap: 7 }}>
-                      <button onClick={() => {
-                          setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "" });
-                          setRosterPopup({ type: "edit_form", worker: w });
-                        }}
+                      <button onClick={() => setRosterPopup({ type: "edit", worker: w })}
                         style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1.5px solid #c7d2fe", background: "#fff", color: "#1428A0" }}>✏️ 수정</button>
                       <button onClick={() => setRosterPopup({ type: "deact", worker: w })}
                         style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1.5px solid #fed7aa", background: "#fff", color: "#EA580C" }}>
@@ -1079,10 +1076,15 @@ export default function WorkersPage() {
                           <button onClick={() => setRosterPopup({ type: null, worker: null })}
                             style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#f1f5f9", color: "#64748b", border: "none", fontFamily: "inherit" }}>취소</button>
                           <button onClick={() => {
+                              setRosterPopup({ type: null, worker: null });
+                              setEditItem(rosterPopup.worker);
                               setFormData({ name: rosterPopup.worker.name, phone: rosterPopup.worker.phone || "", region_id: rosterPopup.worker.region_id || "", district: rosterPopup.worker.district || "" });
-                              setRosterPopup({ type: "edit_form", worker: rosterPopup.worker });
+                              setShowForm(true);
+                              setTimeout(() => {
+                                document.getElementById("worker-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                              }, 100);
                             }}
-                            style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#1428A0", color: "#fff", border: "none", fontFamily: "inherit" }}>수정 시작</button>
+                            style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#1428A0", color: "#fff", border: "none", fontFamily: "inherit" }}>수정 화면으로</button>
                         </div>
                       </>
                     )}
