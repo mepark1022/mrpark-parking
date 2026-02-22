@@ -389,6 +389,17 @@ export default function StoresPage() {
 
   useEffect(() => { loadData(); }, []);
 
+  // 정상출근체크 폼 초기화: selectedStoreId 바뀔 때 (early return 이전에 선언 - Rules of Hooks 준수)
+  useEffect(() => {
+    if (!selectedStoreId) return;
+    const rule = lateRules[selectedStoreId];
+    if (rule) {
+      setLateForm({ late_minutes: rule.late_minutes, absent_minutes: rule.absent_minutes });
+    } else {
+      setLateForm({ late_minutes: 5, absent_minutes: 30 });
+    }
+  }, [selectedStoreId, lateRules]);
+
   async function loadData() {
     setLoading(true);
     const oid = await getOrgId();
@@ -1172,17 +1183,6 @@ export default function StoresPage() {
       </Card>
     );
   };
-
-  // ── 정상출근체크 폼 초기화: selectedStoreId 바뀔 때
-  useEffect(() => {
-    if (!selectedStoreId) return;
-    const rule = lateRules[selectedStoreId];
-    if (rule) {
-      setLateForm({ late_minutes: rule.late_minutes, absent_minutes: rule.absent_minutes });
-    } else {
-      setLateForm({ late_minutes: 5, absent_minutes: 30 });
-    }
-  }, [selectedStoreId, lateRules]);
 
   // ════════════════════════════════════════════
   // Modals
