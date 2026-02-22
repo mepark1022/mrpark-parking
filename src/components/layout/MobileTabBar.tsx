@@ -11,7 +11,7 @@ const tabs = [
     accentColor: "#1428A0",
     shadowColor: "rgba(20, 40, 160, 0.50)",
     icon: (active: boolean) => (
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
         stroke={active ? "#ffffff" : "#9ba3be"}
         strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="4" />
@@ -26,7 +26,7 @@ const tabs = [
     accentColor: "#1428A0",
     shadowColor: "rgba(20, 40, 160, 0.50)",
     icon: (active: boolean) => (
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
         stroke={active ? "#ffffff" : "#9ba3be"}
         strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
@@ -43,7 +43,7 @@ const tabs = [
     accentColor: "#1428A0",
     shadowColor: "rgba(20, 40, 160, 0.50)",
     icon: (active: boolean) => (
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
         stroke={active ? "#ffffff" : "#9ba3be"}
         strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="9" cy="7" r="3.2" />
@@ -60,7 +60,7 @@ const tabs = [
     accentColor: "#EA580C",
     shadowColor: "rgba(234, 88, 12, 0.50)",
     icon: (active: boolean) => (
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
         stroke={active ? "#ffffff" : "#9ba3be"}
         strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 3.5 2.5 20.5h19L12 3.5z" />
@@ -76,10 +76,10 @@ const tabs = [
     accentColor: "#1428A0",
     shadowColor: "rgba(20, 40, 160, 0.50)",
     icon: (active: boolean) => (
-      <svg width="36" height="36" viewBox="0 0 24 24" fill={active ? "#ffffff" : "#9ba3be"}>
-        <circle cx="5.5" cy="12" r="2.3" />
-        <circle cx="12" cy="12" r="2.3" />
-        <circle cx="18.5" cy="12" r="2.3" />
+      <svg width="30" height="30" viewBox="0 0 24 24" fill={active ? "#ffffff" : "#9ba3be"}>
+        <circle cx="5.5" cy="12" r="2.2" />
+        <circle cx="12" cy="12" r="2.2" />
+        <circle cx="18.5" cy="12" r="2.2" />
       </svg>
     ),
   },
@@ -120,7 +120,7 @@ export default function MobileTabBar() {
           borderTop: "2.5px solid #e8edf8",
           justifyContent: "space-around",
           alignItems: "center",
-          padding: "10px 4px 30px",
+          padding: "8px 2px 28px",
           boxShadow: "0 -10px 28px rgba(20, 40, 160, 0.09)",
         }}
       >
@@ -135,40 +135,41 @@ export default function MobileTabBar() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 0,
-                padding: "4px 1px",
+                gap: 5,
+                padding: "6px 0px",
                 cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
               }}
             >
-              {/* 아이콘 박스 64px */}
+              {/* 아이콘 박스 56px */}
               <div
                 style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 20,
+                  width: 56,
+                  height: 56,
+                  borderRadius: 16,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   background: active ? tab.accentColor : "transparent",
-                  boxShadow: active ? `0 6px 22px ${tab.shadowColor}` : "none",
+                  boxShadow: active ? `0 6px 20px ${tab.shadowColor}` : "none",
                   transition: "all 0.2s",
                 }}
               >
                 {tab.icon(active)}
               </div>
 
-              {/* 활성 도트 인디케이터 */}
-              <div
+              {/* 라벨 12px */}
+              <span
                 style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: "50%",
-                  marginTop: 4,
-                  background: active ? tab.accentColor : "transparent",
-                  transition: "background 0.2s",
+                  fontSize: 12,
+                  fontWeight: active ? 800 : 700,
+                  color: active ? tab.accentColor : "#9ba3be",
+                  letterSpacing: "-0.5px",
+                  fontFamily: "'Noto Sans KR', sans-serif",
                 }}
-              />
+              >
+                {tab.label}
+              </span>
             </div>
           );
         })}
