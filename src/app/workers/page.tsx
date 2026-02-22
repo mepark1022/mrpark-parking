@@ -564,6 +564,8 @@ export default function WorkersPage() {
   const [regions, setRegions] = useState([]);
   // 명부 팝업 state
   const [rosterPopup, setRosterPopup] = useState<{ type: "edit"|"deact"|"del"|null; worker: any }>({ type: null, worker: null });
+  // 근무자별 배정 매장 map
+  const [workerStoreMap, setWorkerStoreMap] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState("");
 
   const districtMap: Record<string, string[]> = {
@@ -596,16 +598,30 @@ export default function WorkersPage() {
     const oid = await getOrgId();
     if (!oid) return;
 
-    const [{ data: wData }, { data: sData }, { data: aData }, { data: rData }] = await Promise.all([
+    const [{ data: wData }, { data: sData }, { data: aData }, { data: rData }, { data: mData }] = await Promise.all([
       supabase.from("workers").select("*, regions(name)").eq("org_id", oid).order("name"),
       supabase.from("stores").select("id, name").eq("org_id", oid).order("name"),
       supabase.from("worker_attendance").select("*").eq("org_id", oid).eq("date", new Date().toISOString().slice(0, 10)),
       supabase.from("regions").select("*").order("name"),
+      supabase.from("store_members").select("user_id, store_id").eq("org_id", oid),
     ]);
     if (wData) setWorkers(wData);
     if (sData) setStores(sData);
     if (aData) setAttendanceRecords(aData);
     if (rData) setRegions(rData);
+    // store_members → workerStoreMap 생성
+    if (mData && sData) {
+      const storeNameMap: Record<string, string> = {};
+      sData.forEach((s: any) => { storeNameMap[s.id] = s.name; });
+      const map: Record<string, string[]> = {};
+      mData.forEach((m: any) => {
+        const storeName = storeNameMap[m.store_id];
+        if (!storeName) return;
+        if (!map[m.user_id]) map[m.user_id] = [];
+        if (!map[m.user_id].includes(storeName)) map[m.user_id].push(storeName);
+      });
+      setWorkerStoreMap(map);
+    }
   };
 
   // ── 출퇴근 탭: 매장별 근무자 로드 ──
@@ -942,7 +958,7 @@ export default function WorkersPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
-                      {["이름", "지역", "연락처", "상태", "관리"].map(h => (
+                      {["이름", "배정매장", "지역", "연락처", "상태", "관리"].map(h => (
                         <th key={h} style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textAlign: "left", background: "var(--bg-card)", borderBottom: "1px solid var(--border-light)" }}>{h}</th>
                       ))}
                     </tr>
@@ -951,6 +967,16 @@ export default function WorkersPage() {
                     {workers.map(w => (
                       <tr key={w.id} style={{ borderBottom: "1px solid var(--border-light)" }}>
                         <td style={{ padding: "12px 14px", fontSize: 14, fontWeight: 600 }}>{w.name}</td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                            {(workerStoreMap[w.id] || []).length > 0
+                              ? (workerStoreMap[w.id] || []).map((sn, si) => (
+                                  <span key={si} style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: "#e0e8ff", color: "#1428A0" }}>{sn}</span>
+                                ))
+                              : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>-</span>
+                            }
+                          </div>
+                        </td>
                         <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "-"}</td>
                         <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{w.phone || "-"}</td>
                         <td style={{ padding: "12px 14px" }}>
@@ -983,12 +1009,23 @@ export default function WorkersPage() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <div style={{ width: 40, height: 40, borderRadius: 12, background: w.status === "active" ? "#ecf0ff" : "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, opacity: w.status === "active" ? 1 : 0.6 }}>👤</div>
-                        <div>
-                          <div style={{ fontSize: 15, fontWeight: 700 }}>{w.name}</div>
-                          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "지역 없음"}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
+                            <span style={{ fontSize: 15, fontWeight: 800, color: "#1a1d2b" }}>{w.name}</span>
+                            {/* 배정 매장 태그 */}
+                            {(workerStoreMap[w.id] || []).map((sn, si) => (
+                              <span key={si} style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: "#e0e8ff", color: "#1428A0", whiteSpace: "nowrap" as const }}>
+                                🏢 {sn}
+                              </span>
+                            ))}
+                            {(workerStoreMap[w.id] || []).length === 0 && (
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 6, background: "#f1f5f9", color: "#94a3b8" }}>미배정</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#94a3b8" }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "지역 없음"}</div>
                         </div>
                       </div>
-                      <span style={{ padding: "4px 11px", borderRadius: 8, fontSize: 11, fontWeight: 700, background: w.status === "active" ? "#dcfce7" : "#f1f5f9", color: w.status === "active" ? "#16A34A" : "#94a3b8" }}>
+                      <span style={{ padding: "4px 11px", borderRadius: 8, fontSize: 11, fontWeight: 700, background: w.status === "active" ? "#dcfce7" : "#f1f5f9", color: w.status === "active" ? "#16A34A" : "#94a3b8", flexShrink: 0 }}>
                         {w.status === "active" ? "활성" : "비활성"}
                       </span>
                     </div>
