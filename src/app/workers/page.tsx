@@ -567,6 +567,11 @@ export default function WorkersPage() {
   // 근무자별 배정 매장 map
   const [workerStoreMap, setWorkerStoreMap] = useState<Record<string, string[]>>({});
   const editFormRef = useRef<HTMLDivElement>(null);
+  const [successToast, setSuccessToast] = useState("");
+  const showToast = (msg: string) => {
+    setSuccessToast(msg);
+    setTimeout(() => setSuccessToast(""), 2500);
+  };
   const [message, setMessage] = useState("");
 
   const districtMap: Record<string, string[]> = {
@@ -711,19 +716,34 @@ export default function WorkersPage() {
       const { error } = await supabase.from("workers").insert({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, status: "active", org_id: oid });
       if (error) { setMessage(`추가 실패: ${error.message}`); return; }
     }
-    setShowForm(false); setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "" }); setMessage(""); loadAll();
+    setShowForm(false); setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "" }); setMessage(""); loadAll(); showToast(editItem ? "✅ 근무자 정보가 수정되었습니다" : "✅ 근무자가 추가되었습니다");
   };
 
   const toggleStatus = async (worker) => {
     const supabase = createClient();
     await supabase.from("workers").update({ status: worker.status === "active" ? "inactive" : "active" }).eq("id", worker.id);
     loadAll();
+    showToast(worker.status === "active" ? "⏸️ 비활성 처리되었습니다" : "✅ 활성화되었습니다");
   };
 
   const activeWorkers = workers.filter(w => w.status === "active");
 
   return (
     <AppLayout>
+      {/* 완료 토스트 */}
+      {successToast && (
+        <div style={{
+          position: "fixed", bottom: 88, left: "50%", transform: "translateX(-50%)",
+          background: "#1428A0", color: "#fff", padding: "12px 22px",
+          borderRadius: 24, fontSize: 14, fontWeight: 700,
+          boxShadow: "0 4px 20px rgba(20,40,160,0.35)",
+          zIndex: 9999, whiteSpace: "nowrap" as const,
+          animation: "fadeInUp 0.25s ease",
+        }}>
+          {successToast}
+        </div>
+      )}
+      <style>{`@keyframes fadeInUp { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }`}</style>
       <div className="max-w-6xl mx-auto">
 
         {/* ── 오늘의 근무자 요약 ── */}
@@ -1082,16 +1102,14 @@ export default function WorkersPage() {
                               setFormData({ name: rosterPopup.worker.name, phone: rosterPopup.worker.phone || "", region_id: rosterPopup.worker.region_id || "", district: rosterPopup.worker.district || "" });
                               setShowForm(true);
                               setTimeout(() => {
-                                const formEl = editFormRef.current;
-                                if (!formEl) return;
-                                const main = formEl.closest("main");
+                                // form은 페이지 상단에 있으므로 main을 최상단으로 스크롤
+                                const main = document.querySelector("main");
                                 if (main) {
-                                  const offset = formEl.offsetTop - 16;
-                                  main.scrollTo({ top: offset, behavior: "smooth" });
+                                  main.scrollTo({ top: 0, behavior: "smooth" });
                                 } else {
-                                  formEl.scrollIntoView({ behavior: "smooth", block: "start" });
+                                  window.scrollTo({ top: 0, behavior: "smooth" });
                                 }
-                              }, 150);
+                              }, 100);
                             }}
                             style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#1428A0", color: "#fff", border: "none", fontFamily: "inherit" }}>수정 화면으로</button>
                         </div>
@@ -1175,6 +1193,7 @@ export default function WorkersPage() {
                                 setRosterPopup({ type: null, worker: null });
                                 setMessage("");
                                 loadAll();
+                                showToast("✅ 근무자 정보가 수정되었습니다");
                               }}
                               style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#1428A0", color: "#fff", border: "none", fontFamily: "inherit" }}>저장</button>
                           </div>
@@ -1236,7 +1255,7 @@ export default function WorkersPage() {
                         <div style={{ display: "flex", gap: 10, padding: "0 18px" }}>
                           <button onClick={() => setRosterPopup({ type: null, worker: null })}
                             style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#f1f5f9", color: "#64748b", border: "none", fontFamily: "inherit" }}>취소</button>
-                          <button onClick={async () => { setRosterPopup({ type: null, worker: null }); const supabase = createClient(); await supabase.from("workers").delete().eq("id", rosterPopup.worker.id); setWorkers(prev => prev.filter(x => x.id !== rosterPopup.worker.id)); }}
+                          <button onClick={async () => { setRosterPopup({ type: null, worker: null }); const supabase = createClient(); await supabase.from("workers").delete().eq("id", rosterPopup.worker.id); setWorkers(prev => prev.filter(x => x.id !== rosterPopup.worker.id)); showToast("🗑️ 근무자가 삭제되었습니다"); }}
                             style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#DC2626", color: "#fff", border: "none", fontFamily: "inherit" }}>영구 삭제</button>
                         </div>
                       </>
