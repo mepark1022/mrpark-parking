@@ -1040,7 +1040,10 @@ export default function WorkersPage() {
                     </div>
                     {w.phone && <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>📱 {w.phone}</div>}
                     <div style={{ display: "flex", gap: 7 }}>
-                      <button onClick={() => setRosterPopup({ type: "edit", worker: w })}
+                      <button onClick={() => {
+                          setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "" });
+                          setRosterPopup({ type: "edit_form", worker: w });
+                        }}
                         style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1.5px solid #c7d2fe", background: "#fff", color: "#1428A0" }}>✏️ 수정</button>
                       <button onClick={() => setRosterPopup({ type: "deact", worker: w })}
                         style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1.5px solid #fed7aa", background: "#fff", color: "#EA580C" }}>
