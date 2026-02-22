@@ -65,16 +65,7 @@ const SOCIAL_BUTTONS = [
       </svg>
     ),
   },
-  {
-    provider: "naver" as const,
-    label: "네이버로 시작하기",
-    bg: "#03C75A", color: "#ffffff", hoverBg: "#02b351",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M11.35 10.25L8.4 6H6.5V14H8.65V9.75L11.6 14H13.5V6H11.35V10.25Z" fill="white"/>
-      </svg>
-    ),
-  },
+
 ];
 
 /* ────────────────────────────────────────────
