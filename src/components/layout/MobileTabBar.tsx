@@ -8,9 +8,13 @@ const tabs = [
     id: "dashboard",
     path: "/dashboard",
     label: "홈",
+    accentColor: "#1428A0",
     icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "#1428A0" : "#94a3b8"} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 12l9-8 9 8M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10" />
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#ffffff" : "#9ba3be"}
+        strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="4" />
+        <path d="M9 17V7h5a3.5 3.5 0 0 1 0 7H9" />
       </svg>
     ),
   },
@@ -18,10 +22,15 @@ const tabs = [
     id: "entry",
     path: "/entry",
     label: "입력",
+    accentColor: "#1428A0",
     icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "#1428A0" : "#94a3b8"} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#ffffff" : "#9ba3be"}
+        strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+        <rect x="9" y="3" width="6" height="4" rx="1" />
+        <line x1="9" y1="12" x2="15" y2="12" />
+        <line x1="9" y1="16" x2="13" y2="16" />
       </svg>
     ),
   },
@@ -29,12 +38,15 @@ const tabs = [
     id: "workers",
     path: "/workers",
     label: "근무자",
+    accentColor: "#1428A0",
     icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "#1428A0" : "#94a3b8"} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 00-3-3.87" />
-        <path d="M16 3.13a4 4 0 010 7.75" />
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#ffffff" : "#9ba3be"}
+        strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="9" cy="7" r="3.2" />
+        <path d="M2.5 21c0-3.59 2.91-6.5 6.5-6.5s6.5 2.91 6.5 6.5" />
+        <circle cx="18" cy="8.5" r="2.3" strokeWidth={2} />
+        <path d="M21.5 21c0-2.9-1.57-5.4-3.5-5.4" strokeWidth={2} />
       </svg>
     ),
   },
@@ -42,11 +54,14 @@ const tabs = [
     id: "accident",
     path: "/accident",
     label: "사고",
+    accentColor: "#EA580C",
     icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "#1428A0" : "#94a3b8"} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-        <line x1="12" y1="9" x2="12" y2="13" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#ffffff" : "#9ba3be"}
+        strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3.5 2.5 20.5h19L12 3.5z" />
+        <line x1="12" y1="10.5" x2="12" y2="15.5" strokeWidth={2.4} />
+        <circle cx="12" cy="18" r="1.2" fill={active ? "#ffffff" : "#9ba3be"} stroke="none" />
       </svg>
     ),
   },
@@ -54,24 +69,23 @@ const tabs = [
     id: "more",
     path: "/more",
     label: "더보기",
+    accentColor: "#1428A0",
     icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <circle cx="5" cy="12" r="1.5" fill={active ? "#1428A0" : "#94a3b8"} />
-        <circle cx="12" cy="12" r="1.5" fill={active ? "#1428A0" : "#94a3b8"} />
-        <circle cx="19" cy="12" r="1.5" fill={active ? "#1428A0" : "#94a3b8"} />
+      <svg width="27" height="27" viewBox="0 0 24 24" fill={active ? "#ffffff" : "#9ba3be"}>
+        <circle cx="5.5" cy="12" r="2.2" />
+        <circle cx="12" cy="12" r="2.2" />
+        <circle cx="18.5" cy="12" r="2.2" />
       </svg>
     ),
   },
 ];
 
-// "더보기" 메뉴에 포함될 경로들
 const moreRoutes = ["/parking-status", "/monthly", "/analytics", "/stores", "/team", "/settings", "/guide", "/more"];
 
 export default function MobileTabBar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // 로그인 페이지에서는 탭바 숨김
   if (pathname === "/login") return null;
 
   const isActive = (tab: typeof tabs[0]) => {
@@ -82,11 +96,7 @@ export default function MobileTabBar() {
   };
 
   const handleClick = (tab: typeof tabs[0]) => {
-    if (tab.id === "more") {
-      router.push("/more");
-    } else {
-      router.push(tab.path);
-    }
+    router.push(tab.id === "more" ? "/more" : tab.path);
   };
 
   return (
@@ -104,55 +114,66 @@ export default function MobileTabBar() {
           right: 0,
           zIndex: 200,
           background: "#ffffff",
-          borderTop: "1px solid #e2e8f0",
+          borderTop: "2.5px solid #e8edf8",
           justifyContent: "space-around",
-          padding: "6px 0 8px",
-          boxShadow: "0 -2px 12px rgba(0,0,0,0.06)",
+          alignItems: "center",
+          padding: "10px 6px 28px",
+          boxShadow: "0 -10px 28px rgba(20, 40, 160, 0.09)",
+          gap: 2,
         }}
       >
-      {tabs.map((tab) => {
-        const active = isActive(tab);
-        return (
-          <div
-            key={tab.id}
-            onClick={() => handleClick(tab)}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 2,
-              cursor: "pointer",
-              padding: "4px 12px",
-              WebkitTapHighlightColor: "transparent",
-            }}
-          >
+        {tabs.map((tab) => {
+          const active = isActive(tab);
+          return (
             <div
+              key={tab.id}
+              onClick={() => handleClick(tab)}
               style={{
-                width: 36,
-                height: 28,
-                borderRadius: 14,
+                flex: 1,
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
-                justifyContent: "center",
-                background: active ? "rgba(20,40,160,0.08)" : "transparent",
-                transition: "background 0.2s",
+                gap: 5,
+                padding: "8px 2px",
+                cursor: "pointer",
+                borderRadius: 16,
+                WebkitTapHighlightColor: "transparent",
               }}
             >
-              {tab.icon(active)}
+              <div
+                style={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: 15,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: active ? tab.accentColor : "transparent",
+                  boxShadow: active
+                    ? tab.id === "accident"
+                      ? "0 5px 16px rgba(234, 88, 12, 0.45)"
+                      : "0 5px 16px rgba(20, 40, 160, 0.45)"
+                    : "none",
+                  transition: "all 0.2s",
+                }}
+              >
+                {tab.icon(active)}
+              </div>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: active ? 800 : 700,
+                  color: active ? tab.accentColor : "#9ba3be",
+                  letterSpacing: "-0.4px",
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                }}
+              >
+                {tab.label}
+              </span>
             </div>
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: active ? 700 : 500,
-                color: active ? "#1428A0" : "#94a3b8",
-              }}
-            >
-              {tab.label}
-            </span>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
     </>
   );
 }
