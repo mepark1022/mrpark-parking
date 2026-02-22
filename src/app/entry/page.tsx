@@ -99,19 +99,20 @@ const ToggleGroup = ({
   value, options, onChange,
 }: { value: string; options: { id: string; label: string }[]; onChange: (v: string) => void }) => (
   <div style={{
-    display: "flex", gap: 4, background: C.bgCard,
-    padding: 4, borderRadius: 10,
+    display: "flex", gap: 3, background: C.bgCard,
+    padding: 3, borderRadius: 10, flexShrink: 0,
   }}>
     {options.map(opt => (
       <button
         key={opt.id}
         onClick={() => onChange(opt.id)}
         style={{
-          padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 500,
+          padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700,
           border: "none", cursor: "pointer", transition: "all 0.2s",
-          background: value === opt.id ? "#fff" : "transparent",
-          color: value === opt.id ? C.textPrimary : C.textSecondary,
-          boxShadow: value === opt.id ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
+          whiteSpace: "nowrap",
+          background: value === opt.id ? C.navy : "transparent",
+          color: value === opt.id ? "#fff" : C.textMuted,
+          boxShadow: value === opt.id ? "0 2px 6px rgba(20,40,160,0.25)" : "none",
         }}
       >
         {opt.label}
