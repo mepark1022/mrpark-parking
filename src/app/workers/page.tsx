@@ -136,7 +136,7 @@ function ScheduleTab() {
     const oid = await getOrgId();
     setOrgId(oid);
     const supabase = createClient();
-    const { data: w } = await supabase.from("workers").select("id, name, daily_wage").eq("org_id", oid).eq("status", "active").order("name");
+    const { data: w } = await supabase.from("workers").select("id, name").eq("org_id", oid).eq("status", "active").order("name");
     const { data: s } = await supabase.from("stores").select("id, name").eq("org_id", oid).eq("is_active", true).order("name");
     if (w) setWorkers(w);
     if (s) { setStores(s); if (s.length > 0) setSelectedStore(s[0].id); }
@@ -190,22 +190,14 @@ function ScheduleTab() {
   const getWorkerStats = (workerId) => {
     const wr = records.filter(r => r.worker_id === workerId);
     const workedDates = wr.filter(r => r.status === "present" || r.status === "late");
-    const worker = storeWorkers.find(w => w.id === workerId);
-    const dailyWage = worker?.daily_wage ?? 0;
-
-    let holidayWork = 0, weekendWork = 0, holidayBonus = 0, weekendBonus = 0;
-    workedDates.forEach(r => {
+    const holidayWork = workedDates.filter(r => {
       const d = dates.find(d => d.date === r.date);
-      if (!d) return;
-      if (d.holidayName) {
-        holidayWork++;
-        holidayBonus += dailyWage > 0 ? Math.round(dailyWage * 0.5) : 0; // 50% 추가
-      } else if (d.dayOfWeek === 0 || d.dayOfWeek === 6) {
-        weekendWork++;
-        // 주말 추가수당은 회사 정책에 따라 0 (기본값)
-      }
-    });
-
+      return d?.holidayName;
+    }).length;
+    const weekendWork = workedDates.filter(r => {
+      const d = dates.find(d => d.date === r.date);
+      return d && !d.holidayName && (d.dayOfWeek === 0 || d.dayOfWeek === 6);
+    }).length;
     return {
       present: wr.filter(r => r.status === "present").length,
       late: wr.filter(r => r.status === "late").length,
@@ -215,10 +207,6 @@ function ScheduleTab() {
       total: wr.length,
       holidayWork,
       weekendWork,
-      holidayBonus,
-      weekendBonus,
-      totalBonus: holidayBonus + weekendBonus,
-      dailyWage,
     };
   };
 
@@ -233,71 +221,23 @@ function ScheduleTab() {
   const downloadExcel = async (mode) => {
     setShowDownMenu(false);
     const wb = XLSX.utils.book_new();
-    const header = ["근무자", "일당(원)", ...dates.map(d => {
+    const holidayDates = dates.filter(d => d.holidayName);
+    const header = ["근무자", ...dates.map(d => {
       let label = `${d.day}일(${d.dayName})`;
       if (d.holidayName) label = `${d.day}일(${d.holidayName.slice(0,3)})🎌`;
       else if (d.dayOfWeek === 0 || d.dayOfWeek === 6) label = `${d.day}일(${d.dayName})☆`;
       return label;
-    }), "출근", "지각", "결근", "휴무", "연차", "공휴일근무", "주말근무", "공휴일수당(원)", "합계"];
-    const colWidths = [{ wch: 10 }, { wch: 10 }, ...dates.map(() => ({ wch: 8 })), { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 5 }];
+    }), "출근", "지각", "결근", "휴무", "연차", "공휴일근무", "주말근무", "합계"];
+    const colWidths = [{ wch: 10 }, ...dates.map(() => ({ wch: 8 })), { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 5 }, { wch: 8 }, { wch: 8 }, { wch: 5 }];
 
     if (mode === "current") {
       const storeName = stores.find(s => s.id === selectedStore)?.name || "매장";
       const rows = storeWorkers.map(w => {
         const stats = getWorkerStats(w.id);
-        return [
-          w.name,
-          w.daily_wage > 0 ? w.daily_wage : "",
-          ...dates.map(d => { const rec = records.find(r => r.worker_id === w.id && r.date === d.date); return rec ? statusMap[rec.status]?.label || "" : ""; }),
-          stats.present, stats.late, stats.absent, stats.dayoff, stats.vacation,
-          stats.holidayWork, stats.weekendWork,
-          stats.holidayBonus > 0 ? stats.holidayBonus : (stats.holidayWork > 0 ? "일당미설정" : ""),
-          stats.present + stats.late,
-        ];
+        return [w.name, ...dates.map(d => { const rec = records.find(r => r.worker_id === w.id && r.date === d.date); return rec ? statusMap[rec.status]?.label || "" : ""; }), stats.present, stats.late, stats.absent, stats.dayoff, stats.vacation, stats.holidayWork, stats.weekendWork, stats.total];
       });
-
-      // 합계 행
-      const sumRow = [
-        "합계", "",
-        ...dates.map(() => ""),
-        rows.reduce((s, r) => s + (r[2 + dates.length] as number || 0), 0),
-        rows.reduce((s, r) => s + (r[3 + dates.length] as number || 0), 0),
-        rows.reduce((s, r) => s + (r[4 + dates.length] as number || 0), 0),
-        rows.reduce((s, r) => s + (r[5 + dates.length] as number || 0), 0),
-        rows.reduce((s, r) => s + (r[6 + dates.length] as number || 0), 0),
-        rows.reduce((s, r) => s + (r[7 + dates.length] as number || 0), 0),
-        rows.reduce((s, r) => s + (r[8 + dates.length] as number || 0), 0),
-        rows.reduce((s, r) => s + (typeof r[9 + dates.length] === "number" ? r[9 + dates.length] as number : 0), 0),
-        "",
-      ];
-
-      const ws = XLSX.utils.aoa_to_sheet([header, ...rows, sumRow]);
+      const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
       ws["!cols"] = colWidths;
-
-      // 공휴일 열 배경색 (빨강), 주말 열 (파랑)
-      dates.forEach((d, i) => {
-        const colLetter = XLSX.utils.encode_col(i + 2); // 0=근무자, 1=일당
-        const cellRef = `${colLetter}1`;
-        if (!ws[cellRef]) return;
-        if (d.holidayName) {
-          ws[cellRef].s = { fill: { fgColor: { rgb: "FEE2E2" } }, font: { color: { rgb: "DC2626" }, bold: true } };
-        } else if (d.dayOfWeek === 0 || d.dayOfWeek === 6) {
-          ws[cellRef].s = { fill: { fgColor: { rgb: "EFF6FF" } }, font: { color: { rgb: "1D4ED8" } } };
-        }
-      });
-
-      // 공휴일수당 헤더 강조 (빨강)
-      const bonusColIdx = 2 + dates.length + 7; // 근무자+일당+날짜들+출근지각결근휴무연차+공휴일근무+주말근무
-      const bonusColLetter = XLSX.utils.encode_col(bonusColIdx);
-      if (ws[`${bonusColLetter}1`]) {
-        ws[`${bonusColLetter}1`].s = { fill: { fgColor: { rgb: "FEE2E2" } }, font: { color: { rgb: "DC2626" }, bold: true } };
-      }
-
-      // 합계 행 강조
-      const lastRowIdx = rows.length + 2; // 1-indexed, +1 for header
-      const sumRowRef = `A${lastRowIdx}`;
-      if (ws[sumRowRef]) ws[sumRowRef].s = { font: { bold: true } };
-
       XLSX.utils.book_append_sheet(wb, ws, storeName.slice(0, 31));
       XLSX.writeFile(wb, `근태현황_${storeName}_${selectedMonth}.xlsx`);
     } else {
@@ -318,30 +258,16 @@ function ScheduleTab() {
         const rows = sw.map(w => {
           const wr = storeRecs.filter(r => r.worker_id === w.id);
           const workedDates = wr.filter(r => r.status === "present" || r.status === "late");
-          const dailyWage = w.daily_wage ?? 0;
-          let holidayWork = 0, weekendWork = 0, holidayBonus = 0;
-          workedDates.forEach(r => {
-            const d = dates.find(d => d.date === r.date);
-            if (!d) return;
-            if (d.holidayName) { holidayWork++; holidayBonus += dailyWage > 0 ? Math.round(dailyWage * 0.5) : 0; }
-            else if (d.dayOfWeek === 0 || d.dayOfWeek === 6) weekendWork++;
-          });
           const st = {
             present: wr.filter(r => r.status === "present").length,
             late: wr.filter(r => r.status === "late").length,
             absent: wr.filter(r => r.status === "absent").length,
             dayoff: wr.filter(r => r.status === "dayoff").length,
             vacation: wr.filter(r => r.status === "vacation").length,
+            holidayWork: workedDates.filter(r => { const d = dates.find(d => d.date === r.date); return d?.holidayName; }).length,
+            weekendWork: workedDates.filter(r => { const d = dates.find(d => d.date === r.date); return d && !d.holidayName && (d.dayOfWeek === 0 || d.dayOfWeek === 6); }).length,
           };
-          return [
-            w.name,
-            dailyWage > 0 ? dailyWage : "",
-            ...dates.map(d => { const rec = storeRecs.find(r => r.worker_id === w.id && r.date === d.date); return rec ? statusMap[rec.status]?.label || "" : ""; }),
-            st.present, st.late, st.absent, st.dayoff, st.vacation,
-            holidayWork, weekendWork,
-            holidayBonus > 0 ? holidayBonus : (holidayWork > 0 ? "일당미설정" : ""),
-            st.present + st.late,
-          ];
+          return [w.name, ...dates.map(d => { const rec = storeRecs.find(r => r.worker_id === w.id && r.date === d.date); return rec ? statusMap[rec.status]?.label || "" : ""; }), st.present, st.late, st.absent, st.dayoff, st.vacation, st.holidayWork, st.weekendWork, st.present + st.late + st.absent + st.dayoff + st.vacation];
         });
         const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
         ws["!cols"] = colWidths;
@@ -412,56 +338,35 @@ function ScheduleTab() {
           if (holidayDatesThisMonth.length === 0 || storeWorkers.length === 0) return null;
           const bonusSummary = storeWorkers.map(w => {
             const stats = getWorkerStats(w.id);
-            return { name: w.name, dailyWage: stats.dailyWage, holidayWork: stats.holidayWork, weekendWork: stats.weekendWork, holidayBonus: stats.holidayBonus, totalBonus: stats.totalBonus };
+            return { name: w.name, holidayWork: stats.holidayWork, weekendWork: stats.weekendWork };
           }).filter(w => w.holidayWork > 0 || w.weekendWork > 0);
-          const totalHolidayBonus = bonusSummary.reduce((s, w) => s + w.holidayBonus, 0);
-          const noWageWorkers = bonusSummary.filter(w => w.holidayWork > 0 && w.dailyWage === 0);
           return (
             <div style={{ background: "linear-gradient(135deg, #fff9e6 0%, #fffdf5 100%)", border: "1px solid rgba(245,183,49,0.4)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                 <span style={{ fontSize: 18 }}>🎌</span>
                 <span style={{ fontSize: 15, fontWeight: 700, color: "#92400e" }}>공휴일 · 주말 근무 현황</span>
-                <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-                  {totalHolidayBonus > 0 && (
-                    <span style={{ fontSize: 13, fontWeight: 800, color: "#dc2626", background: "#fee2e2", padding: "3px 12px", borderRadius: 8 }}>
-                      💰 {totalHolidayBonus.toLocaleString()}원
-                    </span>
-                  )}
-                  <span style={{ fontSize: 12, color: "var(--text-muted)", background: "rgba(245,183,49,0.2)", padding: "3px 10px", borderRadius: 6, fontWeight: 600 }}>
-                    이번 달 공휴일 {holidayDatesThisMonth.length}일
-                  </span>
-                </div>
+                <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-muted)", background: "rgba(245,183,49,0.2)", padding: "3px 10px", borderRadius: 6, fontWeight: 600 }}>
+                  이번 달 공휴일 {holidayDatesThisMonth.length}일
+                </span>
               </div>
               {bonusSummary.length === 0 ? (
                 <div style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>공휴일/주말 근무 기록 없음</div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
                   {bonusSummary.map(w => (
                     <div key={w.name} style={{ background: "var(--white)", borderRadius: 10, padding: "10px 14px", border: "1px solid rgba(245,183,49,0.3)" }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span>{w.name}</span>
-                        {w.dailyWage > 0
-                          ? <span style={{ fontSize: 11, color: "var(--text-muted)" }}>일당 {w.dailyWage.toLocaleString()}원</span>
-                          : <span style={{ fontSize: 10, color: "#ea580c", background: "#fff7ed", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>일당 미설정</span>
-                        }
-                      </div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{w.name}</div>
+                      <div style={{ display: "flex", gap: 8 }}>
                         {w.holidayWork > 0 && (
                           <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 22, fontWeight: 800, color: "#dc2626", lineHeight: 1 }}>{w.holidayWork}</div>
+                            <div style={{ fontSize: 20, fontWeight: 800, color: "#dc2626", lineHeight: 1 }}>{w.holidayWork}</div>
                             <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>공휴일근무</div>
                           </div>
                         )}
                         {w.weekendWork > 0 && (
                           <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--navy)", lineHeight: 1 }}>{w.weekendWork}</div>
+                            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--navy)", lineHeight: 1 }}>{w.weekendWork}</div>
                             <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>주말근무</div>
-                          </div>
-                        )}
-                        {w.holidayBonus > 0 && (
-                          <div style={{ marginLeft: "auto", textAlign: "right" }}>
-                            <div style={{ fontSize: 14, fontWeight: 800, color: "#dc2626" }}>+{w.holidayBonus.toLocaleString()}원</div>
-                            <div style={{ fontSize: 10, color: "var(--text-muted)" }}>공휴일수당</div>
                           </div>
                         )}
                       </div>
@@ -469,13 +374,8 @@ function ScheduleTab() {
                   ))}
                 </div>
               )}
-              {noWageWorkers.length > 0 && (
-                <div style={{ marginTop: 10, fontSize: 11, color: "#92400e", background: "rgba(234,88,12,0.08)", padding: "6px 12px", borderRadius: 6, border: "1px solid rgba(234,88,12,0.15)" }}>
-                  ⚠️ <strong>{noWageWorkers.map(w => w.name).join(", ")}</strong> — 일당 미설정으로 수당 계산 불가. 명부 탭에서 일당을 입력해주세요.
-                </div>
-              )}
-              <div style={{ marginTop: 8, fontSize: 11, color: "#92400e", background: "rgba(245,183,49,0.15)", padding: "6px 12px", borderRadius: 6 }}>
-                💡 근로기준법 기준: 공휴일 근무 시 통상임금의 150% (= 일당 × 1.5배 지급, 추가분 50% 표시)
+              <div style={{ marginTop: 10, fontSize: 11, color: "#92400e", background: "rgba(245,183,49,0.15)", padding: "6px 12px", borderRadius: 6 }}>
+                💡 근로기준법 기준: 공휴일 근무 시 통상임금의 150% 지급 (8시간 초과 시 200%)
               </div>
             </div>
           );
@@ -556,15 +456,7 @@ function ScheduleTab() {
                           <div style={{ fontSize: 11, fontWeight: 700, color: "var(--success)" }}>{stats.present}<span style={{ color: "var(--text-muted)", fontWeight: 400 }}>출</span></div>
                           {stats.late > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--warning)" }}>{stats.late}<span style={{ color: "var(--text-muted)", fontWeight: 400 }}>지</span></div>}
                           {stats.absent > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--error)" }}>{stats.absent}<span style={{ color: "var(--text-muted)", fontWeight: 400 }}>결</span></div>}
-                          {stats.holidayWork > 0 && (
-                            <div style={{ marginTop: 3, paddingTop: 3, borderTop: "1px solid var(--border-light)" }}>
-                              <div style={{ fontSize: 10, fontWeight: 700, color: "#dc2626" }}>{stats.holidayWork}<span style={{ fontSize: 8, fontWeight: 400, color: "var(--text-muted)" }}>공휴</span></div>
-                              {stats.holidayBonus > 0
-                                ? <div style={{ fontSize: 9, fontWeight: 700, color: "#dc2626" }}>+{stats.holidayBonus.toLocaleString()}원</div>
-                                : <div style={{ fontSize: 8, color: "#ea580c" }}>일당미설정</div>
-                              }
-                            </div>
-                          )}
+                          {stats.holidayWork > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", marginTop: 2 }}>{stats.holidayWork}<span style={{ fontSize: 8, fontWeight: 400, color: "var(--text-muted)" }}>공휴</span></div>}
                           {stats.weekendWork > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--navy)", marginTop: 1 }}>{stats.weekendWork}<span style={{ fontSize: 8, fontWeight: 400, color: "var(--text-muted)" }}>주말</span></div>}
                         </td>
                       </tr>
@@ -668,7 +560,7 @@ export default function WorkersPage() {
   const [manualMsg, setManualMsg] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [formData, setFormData] = useState({ name: "", phone: "", region_id: "", district: "", daily_wage: "" });
+  const [formData, setFormData] = useState({ name: "", phone: "", region_id: "", district: "" });
   const [regions, setRegions] = useState([]);
   // 명부 팝업 state
   const [rosterPopup, setRosterPopup] = useState<{ type: "edit"|"edit_form"|"deact"|"del"|null; worker: any }>({ type: null, worker: null });
@@ -677,8 +569,21 @@ export default function WorkersPage() {
   const editFormRef = useRef<HTMLDivElement>(null);
   const [successToast, setSuccessToast] = useState("");
   const showToast = (msg: string) => {
-    setSuccessToast(msg);
-    setTimeout(() => setSuccessToast(""), 2500);
+    // DOM에 직접 주입 - position:fixed가 overflow:auto 안에서 막히는 문제 해결
+    const el = document.createElement("div");
+    el.innerText = msg;
+    Object.assign(el.style, {
+      position: "fixed", bottom: "88px", left: "50%",
+      transform: "translateX(-50%)",
+      background: "#1428A0", color: "#fff",
+      padding: "12px 22px", borderRadius: "24px",
+      fontSize: "14px", fontWeight: "700",
+      boxShadow: "0 4px 20px rgba(20,40,160,0.35)",
+      zIndex: "99999", whiteSpace: "nowrap",
+      transition: "opacity 0.3s",
+    });
+    document.body.appendChild(el);
+    setTimeout(() => { el.style.opacity = "0"; setTimeout(() => el.remove(), 300); }, 2200);
   };
   const [message, setMessage] = useState("");
 
@@ -817,15 +722,14 @@ export default function WorkersPage() {
     if (!formData.name) { setMessage("이름을 입력하세요"); return; }
     const supabase = createClient();
     const oid = await getOrgId();
-    const wageValue = formData.daily_wage ? parseInt(formData.daily_wage.replace(/,/g, ""), 10) || null : null;
     if (editItem) {
-      const { error } = await supabase.from("workers").update({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, daily_wage: wageValue }).eq("id", editItem.id);
+      const { error } = await supabase.from("workers").update({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null }).eq("id", editItem.id);
       if (error) { setMessage(`수정 실패: ${error.message}`); return; }
     } else {
-      const { error } = await supabase.from("workers").insert({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, daily_wage: wageValue, status: "active", org_id: oid });
+      const { error } = await supabase.from("workers").insert({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, status: "active", org_id: oid });
       if (error) { setMessage(`추가 실패: ${error.message}`); return; }
     }
-    setShowForm(false); setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "", daily_wage: "" }); setMessage(""); loadAll(); showToast(editItem ? "✅ 근무자 정보가 수정되었습니다" : "✅ 근무자가 추가되었습니다");
+    setShowForm(false); setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "" }); setMessage(""); loadAll(); showToast(editItem ? "✅ 근무자 정보가 수정되었습니다" : "✅ 근무자가 추가되었습니다");
   };
 
   const toggleStatus = async (worker) => {
@@ -839,20 +743,7 @@ export default function WorkersPage() {
 
   return (
     <AppLayout>
-      {/* 완료 토스트 */}
-      {successToast && (
-        <div style={{
-          position: "fixed", bottom: 88, left: "50%", transform: "translateX(-50%)",
-          background: "#1428A0", color: "#fff", padding: "12px 22px",
-          borderRadius: 24, fontSize: 14, fontWeight: 700,
-          boxShadow: "0 4px 20px rgba(20,40,160,0.35)",
-          zIndex: 9999, whiteSpace: "nowrap" as const,
-          animation: "fadeInUp 0.25s ease",
-        }}>
-          {successToast}
-        </div>
-      )}
-      <style>{`@keyframes fadeInUp { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }`}</style>
+
       <div className="max-w-6xl mx-auto">
 
         {/* ── 오늘의 근무자 요약 ── */}
@@ -1050,7 +941,7 @@ export default function WorkersPage() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 700 }}>
                 <span>📋</span> 근무자 명부 <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-muted)" }}>({workers.length}명)</span>
               </div>
-              <button onClick={() => { setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "", daily_wage: "" }); setShowForm(true); }}
+              <button onClick={() => { setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "" }); setShowForm(true); }}
                 style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
                 + 근무자 추가
               </button>
@@ -1082,29 +973,6 @@ export default function WorkersPage() {
                       {districts.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                   </div>
-                  <div style={{ gridColumn: "1 / -1" }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>
-                      일당 <span style={{ fontSize: 11, fontWeight: 500, color: "#ea580c", marginLeft: 4 }}>공휴일 수당 자동 계산에 사용</span>
-                    </div>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        value={formData.daily_wage}
-                        onChange={e => {
-                          const raw = e.target.value.replace(/[^0-9]/g, "");
-                          const formatted = raw ? Number(raw).toLocaleString("ko-KR") : "";
-                          setFormData({ ...formData, daily_wage: formatted });
-                        }}
-                        placeholder="예: 80,000"
-                        style={{ width: "100%", padding: "10px 44px 10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" }}
-                      />
-                      <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--text-muted)", pointerEvents: "none" }}>원</span>
-                    </div>
-                    {formData.daily_wage && (
-                      <div style={{ marginTop: 6, fontSize: 12, color: "#dc2626", fontWeight: 600 }}>
-                        🎌 공휴일 근무 시 추가 수당: {Math.round(parseInt(formData.daily_wage.replace(/,/g, ""), 10) * 0.5).toLocaleString()}원
-                      </div>
-                    )}
-                  </div>
                 </div>
                 {message && <p style={{ color: "var(--error)", fontSize: 13, marginBottom: 10 }}>{message}</p>}
                 <div style={{ display: "flex", gap: 10 }}>
@@ -1120,7 +988,7 @@ export default function WorkersPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
-                      {["이름", "배정매장", "지역", "연락처", "일당", "상태", "관리"].map(h => (
+                      {["이름", "배정매장", "지역", "연락처", "상태", "관리"].map(h => (
                         <th key={h} style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textAlign: "left", background: "var(--bg-card)", borderBottom: "1px solid var(--border-light)" }}>{h}</th>
                       ))}
                     </tr>
@@ -1142,12 +1010,6 @@ export default function WorkersPage() {
                         <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "-"}</td>
                         <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{w.phone || "-"}</td>
                         <td style={{ padding: "12px 14px" }}>
-                          {w.daily_wage > 0
-                            ? <span style={{ fontSize: 13, fontWeight: 700, color: "#1428A0" }}>{w.daily_wage.toLocaleString()}원</span>
-                            : <span style={{ fontSize: 12, color: "#ea580c", background: "#fff7ed", padding: "2px 8px", borderRadius: 5, fontWeight: 600 }}>미설정</span>
-                          }
-                        </td>
-                        <td style={{ padding: "12px 14px" }}>
                           <span style={{ padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: w.status === "active" ? "var(--success-bg)" : "var(--error-bg)", color: w.status === "active" ? "var(--success)" : "var(--error)" }}>
                             {w.status === "active" ? "활성" : "비활성"}
                           </span>
@@ -1155,16 +1017,8 @@ export default function WorkersPage() {
                         <td style={{ padding: "12px 14px" }}>
                           <div style={{ display: "flex", gap: 6 }}>
                             <button onClick={() => {
-                                setEditItem(w);
-                                setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", daily_wage: w.daily_wage ? w.daily_wage.toLocaleString("ko-KR") : "" });
-                                setShowForm(true);
-                                requestAnimationFrame(() => {
-                                  setTimeout(() => {
-                                    const main = document.querySelector("main");
-                                    if (main) main.scrollTo({ top: 0, behavior: "smooth" });
-                                    else window.scrollTo({ top: 0, behavior: "smooth" });
-                                  }, 80);
-                                });
+                                setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "" });
+                                setRosterPopup({ type: "edit_form", worker: w });
                               }}
                               style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #c7d2fe", background: "#fff", fontSize: 12, fontWeight: 700, color: "#1428A0", cursor: "pointer" }}>✏️ 수정</button>
                             <button onClick={() => toggleStatus(w)}
@@ -1216,13 +1070,7 @@ export default function WorkersPage() {
                         {w.status === "active" ? "활성" : "비활성"}
                       </span>
                     </div>
-                    {w.phone && <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>📱 {w.phone}</div>}
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                      {w.daily_wage > 0
-                        ? <span style={{ fontSize: 12, fontWeight: 700, color: "#1428A0", background: "#e0e8ff", padding: "2px 10px", borderRadius: 6 }}>💰 일당 {w.daily_wage.toLocaleString()}원</span>
-                        : <span style={{ fontSize: 11, fontWeight: 600, color: "#ea580c", background: "#fff7ed", padding: "2px 10px", borderRadius: 6 }}>💰 일당 미설정</span>
-                      }
-                    </div>
+                    {w.phone && <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>📱 {w.phone}</div>}
                     <div style={{ display: "flex", gap: 7 }}>
                       <button onClick={() => setRosterPopup({ type: "edit", worker: w })}
                         style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1.5px solid #c7d2fe", background: "#fff", color: "#1428A0" }}>✏️ 수정</button>
@@ -1260,19 +1108,8 @@ export default function WorkersPage() {
                           <button onClick={() => setRosterPopup({ type: null, worker: null })}
                             style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#f1f5f9", color: "#64748b", border: "none", fontFamily: "inherit" }}>취소</button>
                           <button onClick={() => {
-                              setRosterPopup({ type: null, worker: null });
-                              setEditItem(rosterPopup.worker);
-                              setFormData({ name: rosterPopup.worker.name, phone: rosterPopup.worker.phone || "", region_id: rosterPopup.worker.region_id || "", district: rosterPopup.worker.district || "", daily_wage: rosterPopup.worker.daily_wage ? rosterPopup.worker.daily_wage.toLocaleString("ko-KR") : "" });
-                              setShowForm(true);
-                              setTimeout(() => {
-                                // form은 페이지 상단에 있으므로 main을 최상단으로 스크롤
-                                const main = document.querySelector("main");
-                                if (main) {
-                                  main.scrollTo({ top: 0, behavior: "smooth" });
-                                } else {
-                                  window.scrollTo({ top: 0, behavior: "smooth" });
-                                }
-                              }, 100);
+                              setFormData({ name: rosterPopup.worker.name, phone: rosterPopup.worker.phone || "", region_id: rosterPopup.worker.region_id || "", district: rosterPopup.worker.district || "" });
+                              setRosterPopup({ type: "edit_form", worker: rosterPopup.worker });
                             }}
                             style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#1428A0", color: "#fff", border: "none", fontFamily: "inherit" }}>수정 화면으로</button>
                         </div>
@@ -1341,29 +1178,6 @@ export default function WorkersPage() {
                               </div>
                             </div>
                             {message && <p style={{ fontSize: 12, color: "#DC2626", margin: 0 }}>{message}</p>}
-                            <div>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 5 }}>
-                                일당 <span style={{ fontSize: 10, color: "#ea580c", fontWeight: 500 }}>공휴일 수당 계산 기준</span>
-                              </div>
-                              <div style={{ position: "relative" }}>
-                                <input
-                                  value={formData.daily_wage}
-                                  onChange={e => {
-                                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                                    const formatted = raw ? Number(raw).toLocaleString("ko-KR") : "";
-                                    setFormData({ ...formData, daily_wage: formatted });
-                                  }}
-                                  placeholder="예: 80,000"
-                                  style={{ width: "100%", padding: "11px 44px 11px 14px", borderRadius: 11, border: "1.5px solid #e2e8f0", fontSize: 15, outline: "none", boxSizing: "border-box" as const }}
-                                />
-                                <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#94a3b8", pointerEvents: "none" }}>원</span>
-                              </div>
-                              {formData.daily_wage && (
-                                <div style={{ marginTop: 5, fontSize: 11, color: "#dc2626", fontWeight: 600 }}>
-                                  🎌 공휴일 수당 +{Math.round(parseInt(formData.daily_wage.replace(/,/g, ""), 10) * 0.5).toLocaleString()}원
-                                </div>
-                              )}
-                            </div>
                           </div>
                           <div style={{ display: "flex", gap: 10, padding: "14px 20px 0" }}>
                             <button onClick={() => { setRosterPopup({ type: null, worker: null }); setMessage(""); }}
@@ -1371,11 +1185,9 @@ export default function WorkersPage() {
                             <button onClick={async () => {
                                 if (!formData.name) { setMessage("이름을 입력하세요"); return; }
                                 const supabase = createClient();
-                                const wageVal = formData.daily_wage ? parseInt(formData.daily_wage.replace(/,/g, ""), 10) || null : null;
                                 const { error } = await supabase.from("workers").update({
                                   name: formData.name, phone: formData.phone || null,
-                                  region_id: formData.region_id || null, district: formData.district || null,
-                                  daily_wage: wageVal,
+                                  region_id: formData.region_id || null, district: formData.district || null
                                 }).eq("id", w.id);
                                 if (error) { setMessage(`수정 실패: ${error.message}`); return; }
                                 setRosterPopup({ type: null, worker: null });
