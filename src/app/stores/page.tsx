@@ -345,6 +345,9 @@ export default function StoresPage() {
   // 탭
   const [mainTab, setMainTab] = useState<"list" | "hours" | "shifts" | "late-check">("list");
 
+  // 모달 내 지역 선택 (early return 이전에 선언 - Rules of Hooks 준수)
+  const [regionCity, setRegionCity] = useState("");
+
   // 데이터
   const [stores, setStores] = useState<Store[]>([]);
   const [parkingLots, setParkingLots] = useState<Record<string, ParkingLot[]>>({});
@@ -1189,7 +1192,6 @@ export default function StoresPage() {
     "인천": ["부평구", "남동구", "연수구", "서구", "계양구", "미추홀구", "중구", "강화군"],
     "경기": ["수원시", "성남시", "고양시", "용인시", "부천시", "안산시", "안양시", "남양주시"],
   };
-  const [regionCity, setRegionCity] = useState("");
 
   const renderModal = () => {
     if (!modalType) return null;
