@@ -200,6 +200,7 @@ function ScheduleTab() {
       const d = dates.find(d => d.date === r.date);
       return d && !d.holidayName && (d.dayOfWeek === 0 || d.dayOfWeek === 6);
     }).length;
+    const checkoutApproved = wr.filter(r => r.check_out_type === "manual_approved").length;
     return {
       present: wr.filter(r => r.status === "present").length,
       late: wr.filter(r => r.status === "late").length,
@@ -209,6 +210,7 @@ function ScheduleTab() {
       total: wr.length,
       holidayWork,
       weekendWork,
+      checkoutApproved,
     };
   };
 
@@ -234,7 +236,18 @@ function ScheduleTab() {
     return { date, day: i + 1, dayOfWeek, dayName: dayNames[dayOfWeek], holidayName, isSpecial: dtype !== "weekday", isToday: date === today };
   });
 
-  const downloadExcel = async (mode) => {
+  // 소정근로일: 해당 월의 평일(공휴일 제외) 수
+  const scheduledWorkDays = dates.filter(d =>
+    d.dayOfWeek !== 0 && d.dayOfWeek !== 6 && !d.holidayName
+  ).length;
+  // 오늘까지의 소정근로일 (현재 월일 경우 부분 계산)
+  const todayStr0 = new Date().toISOString().split("T")[0];
+  const isCurrentMonth = `${y}-${m}` === todayStr0.slice(0, 7);
+  const elapsedWorkDays = isCurrentMonth
+    ? dates.filter(d => d.dayOfWeek !== 0 && d.dayOfWeek !== 6 && !d.holidayName && d.date <= todayStr0).length
+    : scheduledWorkDays;
+
+ = async (mode) => {
     setShowDownMenu(false);
     const wb = XLSX.utils.book_new();
     const holidayDates = dates.filter(d => d.holidayName);
@@ -386,17 +399,52 @@ function ScheduleTab() {
           const hasIssues = totalNoCheckin > 0 || totalNoCheckout > 0;
           return (
             <div style={{ marginBottom: 16 }}>
-              {/* 월간 요약 카드 4종 */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 14 }}>
+              {/* 월간 집계 헤더 */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>📊 월간 집계</span>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)", background: "var(--bg-card)", padding: "3px 10px", borderRadius: 6 }}>
+                    소정근로일 <strong style={{ color: "var(--navy)" }}>{scheduledWorkDays}일</strong>
+                    {isCurrentMonth && <span style={{ color: "var(--text-muted)" }}> (경과 {elapsedWorkDays}일)</span>}
+                  </span>
+                </div>
+                {/* 팀 전체 출근율 */}
+                {elapsedWorkDays > 0 && storeWorkers.length > 0 && (() => {
+                  const teamRate = Math.round(((totalPresent + totalLate) / (elapsedWorkDays * storeWorkers.length)) * 100);
+                  const rateColor = teamRate >= 90 ? "#16A34A" : teamRate >= 70 ? "#EA580C" : "#DC2626";
+                  return (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 12, color: "var(--text-muted)" }}>팀 출근율</span>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: rateColor, fontFamily: "Outfit, sans-serif" }}>{teamRate}%</span>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* 월간 요약 카드 6종 */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
                 {[
-                  { label: "정상 출근", value: totalPresent, color: "#16A34A", bg: "#dcfce7", icon: "✓" },
-                  { label: "지각", value: totalLate, color: "#EA580C", bg: "#fff7ed", icon: "🕐" },
-                  { label: "미출근(결근)", value: totalNoCheckin, color: "#DC2626", bg: "#fee2e2", icon: "✗" },
-                  { label: "미퇴근", value: totalNoCheckout, color: "#D97706", bg: "#FEF3C7", icon: "⚠" },
+                  { label: "정상 출근", value: totalPresent, color: "#16A34A", bg: "#dcfce7", icon: "✓",
+                    sub: elapsedWorkDays > 0 ? `${Math.round((totalPresent / (elapsedWorkDays * storeWorkers.length || 1)) * 100)}%` : null },
+                  { label: "지각", value: totalLate, color: "#EA580C", bg: "#fff7ed", icon: "🕐", sub: null },
+                  { label: "결근(미출근)", value: totalNoCheckin, color: "#DC2626", bg: "#fee2e2", icon: "✗", sub: null },
+                  { label: "미퇴근", value: totalNoCheckout, color: "#D97706", bg: "#FEF3C7", icon: "⚠",
+                    sub: (() => {
+                      const approved = allStats.reduce((s, a) => {
+                        const stats = getWorkerStats(a.w.id);
+                        return s + (stats.checkoutApproved || 0);
+                      }, 0);
+                      return approved > 0 ? `CREW승인 ${approved}건` : null;
+                    })() },
+                  { label: "휴무", value: allStats.reduce((s, a) => s + (getWorkerStats(a.w.id).dayoff || 0), 0), color: "#475569", bg: "#f1f5f9", icon: "🏖", sub: null },
+                  { label: "연차", value: allStats.reduce((s, a) => s + (getWorkerStats(a.w.id).vacation || 0), 0), color: "#7c3aed", bg: "#ede9fe", icon: "📅", sub: null },
                 ].map(card => (
                   <div key={card.label} style={{ background: card.bg, borderRadius: 12, padding: "12px 14px", border: `1px solid ${card.color}22`, textAlign: "center" }}>
                     <div style={{ fontSize: 22, fontWeight: 900, color: card.color, fontFamily: "Outfit, sans-serif", lineHeight: 1 }}>{card.value}</div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: card.color, opacity: 0.8, marginTop: 4 }}>{card.label}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: card.color, opacity: 0.85, marginTop: 4 }}>{card.label}</div>
+                    {card.sub && (
+                      <div style={{ fontSize: 10, fontWeight: 600, color: card.color, opacity: 0.65, marginTop: 2 }}>{card.sub}</div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -561,6 +609,10 @@ function ScheduleTab() {
               <span style={{ fontSize: 12, fontWeight: 600, color: v.color }}>{v.label}</span>
             </div>
           ))}
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ fontSize: 12 }}>🔔</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#1428A0" }}>CREW 퇴근 승인</span>
+          </div>
           <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 4 }}>💡 셀 클릭으로 상태 선택</span>
         </div>
 
@@ -614,7 +666,7 @@ function ScheduleTab() {
                                   <button onClick={() => setEditCell(null)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "var(--bg-card)", color: "var(--text-muted)", fontSize: 10, fontWeight: 600, cursor: "pointer" }}>취소</button>
                                 </div>
                               )}
-                              <div onClick={() => setEditCell(isEditing ? null : { workerId: w.id, date: d.date })} style={{ cursor: "pointer", padding: "3px 2px", borderRadius: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.1s" }}
+                              <div onClick={() => setEditCell(isEditing ? null : { workerId: w.id, date: d.date })} style={{ cursor: "pointer", padding: "3px 2px", borderRadius: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.1s", flexDirection: "column", gap: 1 }}
                                 onMouseEnter={e => e.currentTarget.style.background = "rgba(20,40,160,0.06)"}
                                 onMouseLeave={e => e.currentTarget.style.background = ""}>
                                 {isNoCheckout ? (
@@ -623,6 +675,9 @@ function ScheduleTab() {
                                   <span style={{ display: "inline-block", width: 28, height: 20, lineHeight: "20px", borderRadius: 4, fontSize: 9, fontWeight: 700, background: st.bg, color: st.color }}>{st.label}</span>
                                 ) : (
                                   <span style={{ fontSize: 10, color: "var(--border)" }}>·</span>
+                                )}
+                                {rec?.check_out_type === "manual_approved" && (
+                                  <span style={{ fontSize: 7, color: "#1428A0", lineHeight: 1, fontWeight: 700 }} title="CREW 퇴근 승인">🔔</span>
                                 )}
                               </div>
                             </td>
@@ -634,6 +689,14 @@ function ScheduleTab() {
                           {stats.absent > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--error)" }}>{stats.absent}<span style={{ color: "var(--text-muted)", fontWeight: 400 }}>결</span></div>}
                           {stats.holidayWork > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", marginTop: 2 }}>{stats.holidayWork}<span style={{ fontSize: 8, fontWeight: 400, color: "var(--text-muted)" }}>공휴</span></div>}
                           {stats.weekendWork > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--navy)", marginTop: 1 }}>{stats.weekendWork}<span style={{ fontSize: 8, fontWeight: 400, color: "var(--text-muted)" }}>주말</span></div>}
+                          {elapsedWorkDays > 0 && (() => {
+                            const rate = Math.round(((stats.present + stats.late) / elapsedWorkDays) * 100);
+                            const rateColor = rate >= 90 ? "#16A34A" : rate >= 70 ? "#EA580C" : "#DC2626";
+                            return <div style={{ fontSize: 10, fontWeight: 800, color: rateColor, marginTop: 3, borderTop: "1px solid var(--border-light)", paddingTop: 2 }}>{rate}%</div>;
+                          })()}
+                          {stats.checkoutApproved > 0 && (
+                            <div style={{ fontSize: 9, color: "#1428A0", marginTop: 2 }} title={`CREW 승인 퇴근 ${stats.checkoutApproved}건`}>🔔{stats.checkoutApproved}</div>
+                          )}
                         </td>
                       </tr>
                     );
@@ -709,6 +772,16 @@ function ScheduleTab() {
                           <div style={{ fontSize: 9, fontWeight: 700, color: item.color, opacity: 0.7, marginTop: 2 }}>{item.lbl}</div>
                         </div>
                       ))}
+                      {elapsedWorkDays > 0 && (() => {
+                        const rate = Math.round(((stats.present + stats.late) / elapsedWorkDays) * 100);
+                        const rateColor = rate >= 90 ? "#16A34A" : rate >= 70 ? "#EA580C" : "#DC2626";
+                        return (
+                          <div style={{ flex: 1, textAlign: "center", background: rate >= 90 ? "#dcfce7" : rate >= 70 ? "#fff7ed" : "#fee2e2", borderRadius: 8, padding: "5px 2px", border: `1px solid ${rateColor}33` }}>
+                            <div style={{ fontFamily: "Outfit, sans-serif", fontSize: 14, fontWeight: 900, color: rateColor, lineHeight: 1 }}>{rate}%</div>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: rateColor, opacity: 0.7, marginTop: 2 }}>출근율</div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 );
