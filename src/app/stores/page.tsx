@@ -371,7 +371,13 @@ export default function StoresPage() {
 
   // Form 상태
   const [storeForm, setStoreForm] = useState({
-    name: "", region_city: "", region_district: "", road_address: "", manager_name: ""
+    name: "", region_city: "", region_district: "", road_address: "", manager_name: "",
+    contact_phone: "",
+    is_free_parking: false,
+    has_kiosk: false,
+    has_toss_kiosk: false,
+    grace_period_minutes: 30,
+    gps_radius_meters: 150,
   });
   const [lotForm, setLotForm] = useState({
     name: "", lot_type: "internal", parking_type: ["self"],
@@ -695,7 +701,7 @@ export default function StoresPage() {
         <CardHeader>
           <CardTitle icon="🏢">매장 목록 ({stores.length}개)</CardTitle>
           <BtnPrimary onClick={() => {
-            setStoreForm({ name: "", region_city: "", region_district: "", road_address: "", manager_name: "" });
+            setStoreForm({ name: "", region_city: "", region_district: "", road_address: "", manager_name: "", contact_phone: "", is_free_parking: false, has_kiosk: false, has_toss_kiosk: false, grace_period_minutes: 30, gps_radius_meters: 150 });
             setEditingItem(null);
             setModalType("store");
           }}>
@@ -738,6 +744,15 @@ export default function StoresPage() {
                               ? <Badge variant="navy">🅿️ {lots.length}개</Badge>
                               : <Badge variant="error">⚠️ 주차장 미등록</Badge>}
                             {visits.length > 0 && <Badge variant="default">방문지 {visits.length}개</Badge>}
+                            {(store as any).is_free_parking && (
+                              <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "#ecfdf5", color: "#16A34A" }}>🆓 무료</span>
+                            )}
+                            {(store as any).has_kiosk && (
+                              <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "#eef1fb", color: C.navy }}>🖥️ 키오스크</span>
+                            )}
+                            {(store as any).has_toss_kiosk && (
+                              <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "#fff7ed", color: "#EA580C" }}>💳 토스</span>
+                            )}
                             {store.manager_name && (
                               <span style={{ fontSize: 12, color: C.textMuted }}>👤 {store.manager_name}</span>
                             )}
@@ -756,6 +771,12 @@ export default function StoresPage() {
                           name: store.name, region_city: store.region_city ?? "",
                           region_district: store.region_district ?? "",
                           road_address: store.road_address ?? "", manager_name: store.manager_name ?? "",
+                          contact_phone: (store as any).contact_phone ?? "",
+                          is_free_parking: (store as any).is_free_parking ?? false,
+                          has_kiosk: (store as any).has_kiosk ?? false,
+                          has_toss_kiosk: (store as any).has_toss_kiosk ?? false,
+                          grace_period_minutes: (store as any).grace_period_minutes ?? 30,
+                          gps_radius_meters: (store as any).gps_radius_meters ?? 150,
                         });
                         setEditingItem(store as unknown as Record<string, unknown>);
                         setModalType("store");
@@ -828,6 +849,12 @@ export default function StoresPage() {
                               name: store.name, region_city: store.region_city ?? "",
                               region_district: store.region_district ?? "",
                               road_address: store.road_address ?? "", manager_name: store.manager_name ?? "",
+                              contact_phone: (store as any).contact_phone ?? "",
+                              is_free_parking: (store as any).is_free_parking ?? false,
+                              has_kiosk: (store as any).has_kiosk ?? false,
+                              has_toss_kiosk: (store as any).has_toss_kiosk ?? false,
+                              grace_period_minutes: (store as any).grace_period_minutes ?? 30,
+                              gps_radius_meters: (store as any).gps_radius_meters ?? 150,
                             });
                             setEditingItem(store as unknown as Record<string, unknown>);
                             setModalType("store");
@@ -1343,6 +1370,122 @@ export default function StoresPage() {
             </div>
           </FormGroup>
         </div>
+
+        {/* ── 운영 설정 섹션 ── */}
+        <div style={{
+          borderTop: `2px solid ${C.borderLight}`, marginTop: 8, paddingTop: 16,
+        }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8, marginBottom: 14,
+          }}>
+            <div style={{
+              width: 4, height: 18, background: C.navy, borderRadius: 2,
+            }} />
+            <span style={{ fontSize: 14, fontWeight: 700, color: C.textPrimary }}>⚙️ 운영 설정</span>
+          </div>
+
+          {/* 토글 목록 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {[
+              {
+                key: "is_free_parking" as const,
+                label: "무료 운영",
+                desc: "결제 없이 바로 출차요청 처리",
+                icon: "🆓",
+              },
+              {
+                key: "has_kiosk" as const,
+                label: "미팍 1.0 키오스크 보유",
+                desc: "스탠드형 키오스크로 고객 직접 결제",
+                icon: "🖥️",
+              },
+              {
+                key: "has_toss_kiosk" as const,
+                label: "토스키오스크 보유",
+                desc: "토스키오스크 연동 결제",
+                icon: "💳",
+              },
+            ].map(({ key, label, desc, icon }, idx, arr) => (
+              <div
+                key={key}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "12px 14px",
+                  background: storeForm[key] ? "#eef1fb" : "#f8f9fc",
+                  borderRadius: idx === 0 ? "10px 10px 0 0" : idx === arr.length - 1 ? "0 0 10px 10px" : "0",
+                  borderBottom: idx < arr.length - 1 ? `1px solid ${C.borderLight}` : "none",
+                  transition: "background 0.15s",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 20 }}>{icon}</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: C.textPrimary }}>{label}</div>
+                    <div style={{ fontSize: 12, color: C.textMuted, marginTop: 1 }}>{desc}</div>
+                  </div>
+                </div>
+                {/* 토글 스위치 */}
+                <div
+                  onClick={() => setStoreForm(f => ({ ...f, [key]: !f[key] }))}
+                  style={{
+                    width: 48, height: 26, borderRadius: 13, cursor: "pointer",
+                    background: storeForm[key] ? C.navy : "#D0D2DA",
+                    position: "relative", transition: "background 0.2s", flexShrink: 0,
+                  }}
+                >
+                  <div style={{
+                    position: "absolute", top: 3, left: storeForm[key] ? 25 : 3,
+                    width: 20, height: 20, borderRadius: "50%",
+                    background: "#fff",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+                    transition: "left 0.2s",
+                  }} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 숫자 입력: 유예시간 + GPS 반경 */}
+          <div className="stores-grid-2col" style={{ display: "grid", gap: 12, marginTop: 12 }}>
+            <FormGroup label="사전결제 유예시간">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Input
+                  type="number"
+                  value={storeForm.grace_period_minutes}
+                  onChange={e => setStoreForm(f => ({ ...f, grace_period_minutes: Number(e.target.value) }))}
+                  style={{ textAlign: "right" }}
+                />
+                <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0 }}>분</span>
+              </div>
+              <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>결제 후 출차 가능 시간 (기본 30분)</div>
+            </FormGroup>
+            <FormGroup label="GPS 출퇴근 반경">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Input
+                  type="number"
+                  value={storeForm.gps_radius_meters}
+                  onChange={e => setStoreForm(f => ({ ...f, gps_radius_meters: Number(e.target.value) }))}
+                  style={{ textAlign: "right" }}
+                />
+                <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0 }}>m</span>
+              </div>
+              <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>CREW 앱 출퇴근 허용 반경 (기본 150m)</div>
+            </FormGroup>
+          </div>
+
+          {/* 관리자 연락처 */}
+          <div style={{ marginTop: 12 }}>
+            <FormGroup label="매장 관리자 연락처">
+              <Input
+                type="tel"
+                value={storeForm.contact_phone}
+                onChange={e => setStoreForm(f => ({ ...f, contact_phone: e.target.value }))}
+                placeholder="010-0000-0000"
+              />
+            </FormGroup>
+          </div>
+        </div>
+
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
           <BtnGhost onClick={() => setModalType(null)}>취소</BtnGhost>
           <BtnPrimary onClick={saveStore}>
