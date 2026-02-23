@@ -247,7 +247,7 @@ function ScheduleTab() {
     ? dates.filter(d => d.dayOfWeek !== 0 && d.dayOfWeek !== 6 && !d.holidayName && d.date <= todayStr0).length
     : scheduledWorkDays;
 
- = async (mode) => {
+  const handleExcelDownload = async (mode) => {
     setShowDownMenu(false);
     const wb = XLSX.utils.book_new();
     const holidayDates = dates.filter(d => d.holidayName);
