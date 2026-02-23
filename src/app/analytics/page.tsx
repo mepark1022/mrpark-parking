@@ -160,14 +160,6 @@ export default function AnalyticsPage() {
   const [dailyData, setDailyData] = useState<DailySummary[]>([]);
   const [storeData, setStoreData] = useState<StoreSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
 
   useEffect(() => {
     (async () => {
@@ -255,17 +247,19 @@ export default function AnalyticsPage() {
     : null;
 
   // ════════════════════════════════════════════════════════════
-  // MOBILE LAYOUT
+  // LAYOUT (CSS @media: mobile + desktop)
   // ════════════════════════════════════════════════════════════
-  if (isMobile) {
-    return (
+  return (
       <AppLayout>
         <style>{`
           @keyframes an-pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
           .an-sk { background:#f1f5f9; border-radius:8px; animation:an-pulse 1.5s infinite; display:inline-block; }
           .an-period-tabs::-webkit-scrollbar { display:none; }
           .an-store-chips::-webkit-scrollbar { display:none; }
+          @media(max-width:767px){.an-desktop{display:none!important}.an-mobile{display:block!important}}
+          @media(min-width:768px){.an-desktop{display:block!important}.an-mobile{display:none!important}}
         `}</style>
+        <div className="an-mobile" style={{display:'none'}}>
 
         <div style={{ background: "#f8f9fb", minHeight: "100vh", paddingBottom: 80 }}>
 
@@ -497,20 +491,13 @@ export default function AnalyticsPage() {
           )}
 
         </div>
-      </AppLayout>
-    );
-  }
+        </div> {/* .an-mobile */}
 
-  // ════════════════════════════════════════════════════════════
-  // PC LAYOUT
-  // ════════════════════════════════════════════════════════════
-  return (
-    <AppLayout>
+        <div className="an-desktop">
+        {/* ════════════════════════════════════════════════════════
+            PC LAYOUT
+            ════════════════════════════════════════════════════ */}
       <div style={{ padding: "24px 28px" }}>
-        <style>{`
-          @keyframes an-pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
-          .an-sk { background:#f1f5f9; border-radius:8px; animation:an-pulse 1.5s infinite; display:inline-block; }
-        `}</style>
 
         {/* Controls */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
@@ -735,6 +722,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+        </div> {/* .an-desktop */}
+      </AppLayout>
   );
 }
