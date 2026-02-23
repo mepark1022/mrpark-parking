@@ -825,3 +825,265 @@ parking → completed (CREW 직접)
 | 추가요금 결제 버튼 | 키오스크 추가요금 버튼 UI | P1 |
 | 퇴근 처리 요청 승인 | CREW 요청 수신 · 시간 입력 · 승인 | P1 |
 | 근태 미출퇴근 집계 | 개인별 월별 미출근·미퇴근 횟수 표시 | P1 |
+
+---
+
+## Part 13: 어드민 수정 기획 상세 (2026.02.23)
+
+> Part 12 기반 상세 기획서
+
+### 13.1 매장 설정 토글 (P0)
+
+**신규 컬럼 (stores 테이블)**
+
+| 컬럼명 | 타입 | 기본값 | 설명 |
+|--------|------|--------|------|
+| is_free_parking | boolean | false | 무료 운영 (결제 스킵) |
+| has_kiosk | boolean | false | 미팍 1.0 키오스크 보유 |
+| has_toss_kiosk | boolean | false | 토스키오스크 보유 |
+| grace_period_minutes | integer | 30 | 사전결제 후 유예시간 (분) |
+| gps_radius_meters | integer | 150 | GPS 출퇴근 반경 (미터) |
+| latitude | decimal(10,7) | null | 매장 위도 (GPS용) |
+| longitude | decimal(10,7) | null | 매장 경도 (GPS용) |
+| contact_phone | text | null | 매장 관리자 연락처 |
+| contact_name | text | null | 매장 담당자명 |
+
+**UI 위치**: `/stores` → 매장 편집 모달 내 "운영 설정" 섹션
+
+### 13.2 권한 관리 시스템 (P0)
+
+**역할 3단계**
+
+| 역할 | 코드 | CREW앱 | 어드민 | 권한관리 |
+|------|------|--------|--------|----------|
+| CREW | crew | ✅ | ❌ | ❌ |
+| Admin | admin | ✅ | ✅ (배정매장) | CREW만 |
+| Super Admin | super_admin | ✅ | ✅ (전체) | 전체 |
+
+**UI 위치**: `/team` 페이지 확장 (팀원 목록에 역할 컬럼 + 드롭다운)
+
+**권한 변경 규칙**
+- Super Admin: 본인 제외 모든 역할 변경 가능
+- Admin: CREW만 관리 (승격/강등 불가)
+- CREW: 어드민 접근 불가
+
+### 13.3 알림 설정 (P0)
+
+**알림 종류 3가지**
+- 입차 알림: 새 차량 입차 시
+- 결제 알림: 사전결제 완료 시
+- 출차요청 알림: 출차요청 접수 시
+
+**역할별 설정 권한**
+
+| 역할 | 알림 ON/OFF | 진동/알림음 | 전체 OFF |
+|------|-------------|-------------|----------|
+| CREW | ❌ (필수 수신) | ON/OFF | ❌ |
+| Admin | ON/OFF | ON/OFF | ✅ |
+| Super Admin | ON/OFF | ON/OFF | ✅ |
+
+**신규 테이블**: `user_notification_settings`
+
+```sql
+CREATE TABLE user_notification_settings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) UNIQUE,
+  org_id uuid NOT NULL,
+  notify_entry boolean DEFAULT true,
+  notify_payment boolean DEFAULT true,
+  notify_exit_request boolean DEFAULT true,
+  push_enabled boolean DEFAULT true,
+  sound_enabled boolean DEFAULT true,
+  vibration_enabled boolean DEFAULT true,
+  created_at timestamptz DEFAULT now()
+);
+```
+
+**UI 위치**: `/settings` 페이지 내 "알림 설정" 섹션
+
+### 13.4 매장 선택 화면 (P0)
+
+**대상**: Admin, Super Admin이 CREW 앱 사용 시
+
+**진입 플로우**
+```
+CREW 앱 로그인
+├── crew (배정 1개) → 바로 홈
+├── crew (배정 2개+) → 매장 선택 → 홈
+├── admin → 매장 선택 (배정매장) → 홈
+└── super_admin → 매장 선택 (전체) → 홈
+```
+
+**저장**: localStorage + Context State
+**변경**: 홈 탭 상단 [변경] 버튼 → 바텀시트
+
+### 13.5 월주차 만료 처리 (P1)
+
+**상태 3단계**
+
+| 상태 | 조건 | 동작 |
+|------|------|------|
+| active | 만료일 > D+7 | 정상 (결제 스킵) |
+| expiring_soon | D ≤ 만료일 ≤ D+7 | 경고 배너 + 정상 출차 |
+| expired | 만료일 < D | ❌ 결제 차단 ❌ 출차 차단 |
+
+**만료 시 고객 화면**: "월주차가 만료되었습니다. 주차장 관리자에게 문의해주세요."
+**CREW 앱**: 만료 차량은 일반 유료 입차만 가능
+**어드민**: `/monthly` 상단에 만료/임박 차량 섹션 + 갱신 모달
+
+### 13.6 추가요금 결제 - 유예시간 초과 (P1)
+
+**유예시간 흐름**
+```
+사전결제 완료 (pre_paid)
+    │
+    ├── 유예시간 내 출차 → 추가요금 없음
+    └── 유예시간 초과 → overdue 상태 → 추가결제 필요
+```
+
+**추가요금 계산**: (초과 시간 ÷ 10분) × extra_fee
+
+**신규 상태**: `overdue` (유예시간 초과, 추가결제 대기)
+
+**신규 컬럼 (mepark_tickets)**
+- additional_fee integer DEFAULT 0
+- additional_paid_at timestamptz
+
+**어드민**: `/parking-status`에 "⚠️ 초과" 필터 탭
+
+**키오스크 보유 시**: 결제 방법 선택 (키오스크/웹 결제)
+
+### 13.7 퇴근 처리 요청 승인 (P1)
+
+**시나리오**
+```
+CREW 퇴근 미처리 → 다음날 앱 실행 → 팝업
+→ [퇴근 처리 요청] → 어드민 승인 → 근태 반영
+```
+
+**신규 테이블**: `checkout_requests`
+
+```sql
+CREATE TABLE checkout_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id uuid NOT NULL,
+  worker_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  store_id uuid NOT NULL,
+  request_date date NOT NULL,
+  requested_checkout_time time,
+  request_reason text,
+  status text DEFAULT 'pending',  -- pending/approved/rejected
+  approved_checkout_time time,
+  approved_by uuid,
+  approved_at timestamptz,
+  reject_reason text,
+  created_at timestamptz DEFAULT now()
+);
+```
+
+**어드민 UI**: `/workers` 출퇴근 탭 상단 "퇴근 처리 요청" 섹션
+**승인 시**: worker_attendance 업데이트 + CREW 알림
+**반려 시**: 반려 사유 필수 + CREW 알림
+
+**근태 타입 구분 (worker_attendance)**
+- check_in_type: normal / manual_approved / admin_edit
+- check_out_type: normal / manual_approved / admin_edit
+
+### 13.8 근태 미출퇴근 집계 (P1)
+
+**집계 항목**
+- 미출근: 배정 근무일인데 출근 기록 없음
+- 미퇴근: 출근은 했는데 퇴근 기록 없음
+- 정상/지각/결근/연차
+
+**UI 위치**: `/workers` 근태 탭
+- 상단: 월간 요약 카드 (정상/미출근/미퇴근/지각)
+- 중단: 개인별 테이블 + [보기] 상세 모달
+- 하단: 기존 근태 매트릭스
+
+**매트릭스 셀 표시**
+
+| 상태 | 표시 | 배경색 |
+|------|------|--------|
+| 정상 | ✓ | #DCFCE7 |
+| 미출근 | ✗ | #FEE2E2 |
+| 미퇴근 | ⚠ | #FEF3C7 |
+| 지각 | 🕐 | #E0E7FF |
+| 휴무 | - | #F3F4F6 |
+
+**엑셀 다운로드**: 요약 + 미출근 상세 + 미퇴근 상세 (3시트)
+
+### 13.9 전체 SQL 스크립트
+
+```sql
+-- ============================================
+-- Part 13 DB 변경사항 전체 (Supabase SQL Editor)
+-- ============================================
+
+-- 1. stores 테이블 확장
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS is_free_parking boolean DEFAULT false;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS has_kiosk boolean DEFAULT false;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS has_toss_kiosk boolean DEFAULT false;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS grace_period_minutes integer DEFAULT 30;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS gps_radius_meters integer DEFAULT 150;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS latitude decimal(10, 7);
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS longitude decimal(10, 7);
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS contact_phone text;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS contact_name text;
+
+-- 2. profiles role 마이그레이션
+UPDATE profiles SET role = 'super_admin' WHERE email = 'mepark1022@gmail.com';
+UPDATE profiles SET role = 'crew' WHERE role IS NULL OR role = 'user';
+
+-- 3. user_notification_settings 테이블
+CREATE TABLE IF NOT EXISTS user_notification_settings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) UNIQUE,
+  org_id uuid NOT NULL,
+  notify_entry boolean DEFAULT true,
+  notify_payment boolean DEFAULT true,
+  notify_exit_request boolean DEFAULT true,
+  push_enabled boolean DEFAULT true,
+  sound_enabled boolean DEFAULT true,
+  vibration_enabled boolean DEFAULT true,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_notification_settings_user ON user_notification_settings(user_id);
+
+-- 4. checkout_requests 테이블
+CREATE TABLE IF NOT EXISTS checkout_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id uuid NOT NULL,
+  worker_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  store_id uuid NOT NULL,
+  request_date date NOT NULL,
+  requested_checkout_time time,
+  request_reason text,
+  status text NOT NULL DEFAULT 'pending',
+  approved_checkout_time time,
+  approved_by uuid,
+  approved_at timestamptz,
+  reject_reason text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_checkout_requests_org ON checkout_requests(org_id, status);
+
+-- 5. mepark_tickets 추가요금 컬럼
+ALTER TABLE mepark_tickets ADD COLUMN IF NOT EXISTS additional_fee integer DEFAULT 0;
+ALTER TABLE mepark_tickets ADD COLUMN IF NOT EXISTS additional_paid_at timestamptz;
+
+-- 6. worker_attendance 타입 컬럼
+ALTER TABLE worker_attendance ADD COLUMN IF NOT EXISTS check_in_type text DEFAULT 'normal';
+ALTER TABLE worker_attendance ADD COLUMN IF NOT EXISTS check_out_type text DEFAULT 'normal';
+
+-- 7. 기존 필수 작업 (Part 12에서 이관)
+UPDATE parking_lots pl SET org_id = s.org_id FROM stores s 
+WHERE pl.store_id = s.id AND pl.org_id IS NULL;
+
+ALTER TABLE daily_records ADD COLUMN IF NOT EXISTS day_type text DEFAULT 'weekday';
+ALTER TABLE daily_records ADD COLUMN IF NOT EXISTS is_holiday boolean DEFAULT false;
+```
