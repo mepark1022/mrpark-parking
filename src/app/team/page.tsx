@@ -2,18 +2,169 @@
 "use client";
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 
 type Profile = { id: string; email: string; name: string; role: string; status: string; created_at: string };
 
-const ROLE_CONFIG: Record<string, { bg: string; color: string; label: string; desc: string }> = {
-  super_admin: { bg: "#fef3c7", color: "#b45309", label: "최고관리자", desc: "모든 기능 접근 + 팀원 관리" },
-  admin:       { bg: "#EEF2FF",  color: "#1428A0", label: "관리자",    desc: "매장 관리 및 데이터 조회" },
-  crew:        { bg: "#dcfce7",  color: "#15803d", label: "CREW",      desc: "배정 매장 데이터 입력만" },
+const ROLE_CONFIG: Record<string, { bg: string; color: string; border: string; label: string; desc: string; icon: string }> = {
+  super_admin: { bg: "#fef3c7", color: "#b45309", border: "#fcd34d", label: "최고관리자", desc: "모든 기능 접근 + 팀원 관리", icon: "👑" },
+  admin:       { bg: "#EEF2FF", color: "#1428A0", border: "#c7d2fe", label: "관리자",    desc: "매장 관리 및 데이터 조회", icon: "🔑" },
+  crew:        { bg: "#dcfce7", color: "#15803d", border: "#bbf7d0", label: "CREW",      desc: "배정 매장 데이터 입력만",  icon: "👤" },
 };
+
+// 인라인 역할 드롭다운 컴포넌트
+function RoleDropdown({ profile, currentUserRole, currentUserId, onRoleChange }: {
+  profile: Profile;
+  currentUserRole: string;
+  currentUserId: string;
+  onRoleChange: (profileId: string, newRole: string) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setConfirming(null);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const canChange = () => {
+    if (profile.id === currentUserId) return false;
+    if (currentUserRole === "super_admin") return true;
+    if (currentUserRole === "admin" && profile.role === "crew") return true;
+    return false;
+  };
+
+  const availableRoles = () => {
+    if (currentUserRole === "super_admin") return ["crew", "admin", "super_admin"];
+    if (currentUserRole === "admin") return ["crew", "admin"];
+    return [];
+  };
+
+  const cfg = ROLE_CONFIG[profile.role] || { bg: "#f1f5f9", color: "#475569", border: "#e2e8f0", label: profile.role, desc: "", icon: "👤" };
+
+  if (!canChange()) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+        {cfg.icon} {cfg.label}
+      </span>
+    );
+  }
+
+  async function handleSelect(newRole: string) {
+    if (newRole === profile.role) { setOpen(false); return; }
+    setConfirming(newRole);
+  }
+
+  async function handleConfirm() {
+    if (!confirming) return;
+    setSaving(true);
+    await onRoleChange(profile.id, confirming);
+    setSaving(false);
+    setOpen(false);
+    setConfirming(null);
+  }
+
+  return (
+    <div ref={dropdownRef} style={{ position: "relative", display: "inline-block" }}>
+      <button
+        onClick={() => { setOpen(!open); setConfirming(null); }}
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px",
+          borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer",
+          background: cfg.bg, color: cfg.color, border: `1.5px solid ${cfg.border}`,
+          transition: "all 0.15s"
+        }}
+      >
+        {cfg.icon} {cfg.label}
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ marginLeft: 2, opacity: 0.6 }}>
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 100,
+          background: "#fff", borderRadius: 12, boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+          border: "1px solid #e2e8f0", minWidth: 200, padding: 6, overflow: "hidden"
+        }}>
+          {!confirming ? (
+            <>
+              <div style={{ padding: "6px 10px 4px", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>권한 변경</div>
+              {availableRoles().map((role) => {
+                const rc = ROLE_CONFIG[role];
+                const isCurrent = role === profile.role;
+                return (
+                  <button
+                    key={role}
+                    onClick={() => handleSelect(role)}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", gap: 10,
+                      padding: "9px 10px", borderRadius: 8, border: "none", cursor: "pointer", textAlign: "left",
+                      background: isCurrent ? rc.bg : "transparent",
+                      transition: "background 0.12s"
+                    }}
+                    onMouseEnter={e => { if (!isCurrent) (e.currentTarget as HTMLElement).style.background = "#f8fafc"; }}
+                    onMouseLeave={e => { if (!isCurrent) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                  >
+                    <span style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: rc.bg, fontSize: 14, flexShrink: 0 }}>{rc.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: isCurrent ? rc.color : "#374151" }}>{rc.label}</div>
+                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{rc.desc}</div>
+                    </div>
+                    {isCurrent && <span style={{ width: 18, height: 18, borderRadius: "50%", background: rc.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", fontWeight: 900, flexShrink: 0 }}>✓</span>}
+                  </button>
+                );
+              })}
+              {currentUserRole === "admin" && (
+                <div style={{ margin: "4px 6px 2px", padding: "8px 10px", borderRadius: 8, background: "#f1f5f9", fontSize: 11, color: "#64748b" }}>
+                  🔒 최고관리자 권한은 Super Admin만 변경 가능
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ padding: "10px 12px" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", marginBottom: 6 }}>권한 변경 확인</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: ROLE_CONFIG[profile.role]?.bg, color: ROLE_CONFIG[profile.role]?.color }}>
+                  {ROLE_CONFIG[profile.role]?.label}
+                </span>
+                <span style={{ color: "#94a3b8", fontSize: 14 }}>→</span>
+                <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: ROLE_CONFIG[confirming]?.bg, color: ROLE_CONFIG[confirming]?.color }}>
+                  {ROLE_CONFIG[confirming]?.label}
+                </span>
+              </div>
+              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 12, lineHeight: 1.5 }}>
+                <strong>{profile.name || profile.email}</strong>님의<br/>권한을 변경하시겠습니까?
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button
+                  onClick={() => setConfirming(null)}
+                  style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, fontWeight: 600, color: "#6b7280", cursor: "pointer" }}
+                >취소</button>
+                <button
+                  onClick={handleConfirm}
+                  disabled={saving}
+                  style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: "none", background: "#1428A0", fontSize: 12, fontWeight: 700, color: "#fff", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}
+                >{saving ? "저장..." : "확인"}</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 type Invitation = { id: string; email: string; role: string; status: string; created_at: string; updated_at: string; token: string; store_id: string; stores?: { name: string } };
 type Store = { id: string; name: string };
 type StoreMember = { id: string; user_id: string; store_id: string };
@@ -41,11 +192,6 @@ export default function TeamPage() {
   const [showAssign, setShowAssign] = useState(false);
   const [assignProfile, setAssignProfile] = useState<Profile | null>(null);
   const [assignStoreIds, setAssignStoreIds] = useState<string[]>([]);
-
-  // 역할 변경 모달
-  const [showRoleModal, setShowRoleModal] = useState(false);
-  const [roleTarget, setRoleTarget] = useState<Profile | null>(null);
-  const [pendingRole, setPendingRole] = useState("");
 
   // 초대 매핑
   const [inviteMap, setInviteMap] = useState<Record<string, { invited: string; accepted: string }>>({});
@@ -164,7 +310,6 @@ export default function TeamPage() {
     setSending(false);
   }
 
-  // --- 매장 배정 ---
   function openAssignModal(profile: Profile) {
     const currentStoreIds = storeMembers.filter(m => m.user_id === profile.id).map(m => m.store_id);
     setAssignProfile(profile);
@@ -181,19 +326,14 @@ export default function TeamPage() {
     setSending(true);
     const userId = assignProfile.id;
     const currentIds = storeMembers.filter(m => m.user_id === userId).map(m => m.store_id);
-
-    // 추가할 매장
     const toAdd = assignStoreIds.filter(id => !currentIds.includes(id));
-    // 제거할 매장
     const toRemove = currentIds.filter(id => !assignStoreIds.includes(id));
-
     for (const storeId of toAdd) {
       await supabase.from("store_members").insert({ user_id: userId, store_id: storeId, org_id: orgId });
     }
     for (const storeId of toRemove) {
       await supabase.from("store_members").delete().eq("user_id", userId).eq("store_id", storeId);
     }
-
     setMessage({ text: `${assignProfile.name}님의 매장 배정이 업데이트되었습니다.`, type: "success" });
     setShowAssign(false);
     setAssignProfile(null);
@@ -201,50 +341,22 @@ export default function TeamPage() {
     loadData();
   }
 
-  function openRoleModal(profile: Profile) {
-    setRoleTarget(profile);
-    setPendingRole(profile.role);
-    setShowRoleModal(true);
-  }
-
-  async function confirmRoleChange() {
-    if (!roleTarget || pendingRole === roleTarget.role) { setShowRoleModal(false); return; }
-    await supabase.from("profiles").update({ role: pendingRole }).eq("id", roleTarget.id);
-    setShowRoleModal(false);
-    setRoleTarget(null);
-    loadData();
-  }
-
-  // --- 역할/상태 ---
   async function changeRole(profileId: string, newRole: string) {
     await supabase.from("profiles").update({ role: newRole }).eq("id", profileId);
+    const roleName = ROLE_CONFIG[newRole]?.label || newRole;
+    setMessage({ text: `권한이 ${roleName}으로 변경되었습니다.`, type: "success" });
     loadData();
   }
 
-  async function toggleStatus(profile: Profile) {
-    const newStatus = profile.status === "active" ? "disabled" : "active";
-    await supabase.from("profiles").update({ status: newStatus }).eq("id", profile.id);
-    loadData();
-  }
-
-  // --- 권한 관리 규칙 ---
-  // 역할 변경 버튼 표시 여부: Super Admin만 전체, Admin은 CREW에 한해서만 표시
   function canManageRole(targetProfile: Profile): boolean {
-    if (targetProfile.id === currentUserId) return false; // 본인 불가
+    if (targetProfile.id === currentUserId) return false;
     if (currentUserRole === "super_admin") return true;
     if (currentUserRole === "admin" && targetProfile.role === "crew") return true;
     return false;
   }
 
-  // 변경 가능한 역할 목록
-  function getAvailableRoles(): string[] {
-    if (currentUserRole === "super_admin") return ["crew", "admin", "super_admin"];
-    if (currentUserRole === "admin") return ["crew", "admin"]; // admin→admin 유지, crew→admin 승격만
-    return [];
-  }
-
   // --- UI Helpers ---
-  const roleBadge = (role: string) => ROLE_CONFIG[role] || { bg: "#f1f5f9", color: "#475569", label: role, desc: "" };
+  const roleBadge = (role: string) => ROLE_CONFIG[role] || { bg: "#f1f5f9", color: "#475569", border: "#e2e8f0", label: role, desc: "", icon: "👤" };
   const statusBadge = (status: string) => {
     if (status === "active" || status === "accepted") return { bg: "#dcfce7", color: "#15803d", label: status === "active" ? "활성" : "수락" };
     if (status === "pending") return { bg: "#fff7ed", color: "#ea580c", label: "대기" };
@@ -252,6 +364,13 @@ export default function TeamPage() {
   };
   const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString("ko-KR", { year: "numeric", month: "numeric", day: "numeric" }) : "-";
   const pendingInvitations = invitations.filter(inv => inv.status !== "accepted");
+
+  async function toggleStatus(profile: Profile) {
+    const newStatus = profile.status === "active" ? "disabled" : "active";
+    await supabase.from("profiles").update({ status: newStatus }).eq("id", profile.id);
+    setMessage({ text: `${profile.name}님이 ${newStatus === "active" ? "활성화" : "비활성화"}되었습니다.`, type: newStatus === "active" ? "success" : "" });
+    loadData();
+  }
 
   return (
     <AppLayout>
@@ -286,7 +405,6 @@ export default function TeamPage() {
                   </thead>
                   <tbody>
                     {profiles.map((p) => {
-                      const rb = roleBadge(p.role);
                       const sb = statusBadge(p.status);
                       const inv = inviteMap[p.email];
                       const memberStores = getMemberStores(p.id);
@@ -308,26 +426,26 @@ export default function TeamPage() {
                           <td style={{ padding: "13px 16px", fontSize: 12, color: "var(--text-muted)" }}>{inv ? fmtDate(inv.invited) : "-"}</td>
                           <td style={{ padding: "13px 16px", fontSize: 12, color: "var(--text-muted)" }}>{inv ? fmtDate(inv.accepted) : "-"}</td>
                           <td className="px-5 py-3.5 text-sm">
-                            {!canManageRole(p) ? (
-                              <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: rb.bg, color: rb.color }}>{rb.label}</span>
-                            ) : (
-                              <button
-                                onClick={() => openRoleModal(p)}
-                                style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: rb.bg, color: rb.color, border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
-                              >
-                                {rb.label} <span style={{ fontSize: 9, opacity: 0.6 }}>▼</span>
-                              </button>
-                            )}
+                            <RoleDropdown
+                              profile={p}
+                              currentUserRole={currentUserRole}
+                              currentUserId={currentUserId}
+                              onRoleChange={changeRole}
+                            />
                           </td>
                           <td className="px-5 py-3.5 text-sm">
                             <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: sb.bg, color: sb.color }}>{sb.label}</span>
                           </td>
                           <td className="px-5 py-3.5 text-sm">
-                            <div className="flex gap-2">
-                              {p.id !== currentUserId && canManageRole(p) && (
+                            <div className="flex gap-2 items-center">
+                              {canManageRole(p) && (
                                 <>
-                                  <button onClick={() => openAssignModal(p)} className="text-xs font-bold text-blue-600 hover:text-blue-800">매장배정</button>
-                                  <button onClick={() => toggleStatus(p)} className="text-xs font-bold text-gray-500 hover:text-gray-700">
+                                  <button onClick={() => openAssignModal(p)} style={{ fontSize: 12, fontWeight: 600, color: "#1428A0", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>매장배정</button>
+                                  <span style={{ color: "#e2e8f0" }}>|</span>
+                                  <button
+                                    onClick={() => toggleStatus(p)}
+                                    style={{ fontSize: 12, fontWeight: 600, color: p.status === "active" ? "#94a3b8" : "#16a34a", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}
+                                  >
                                     {p.status === "active" ? "비활성" : "활성화"}
                                   </button>
                                 </>
@@ -343,31 +461,34 @@ export default function TeamPage() {
               {/* 모바일 */}
               <div className="md:hidden">
                 {profiles.map((p) => {
-                  const rb = roleBadge(p.role);
-                  const sb = statusBadge(p.status);
-                  const memberStores = getMemberStores(p.id);
                   return (
                     <div key={p.id} className="px-4 py-3 border-b border-gray-100 last:border-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-sm text-gray-900">{p.name || "-"}</span>
-                        <div className="flex gap-1.5">
-                          <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: rb.bg, color: rb.color }}>{rb.label}</span>
-                          <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: sb.bg, color: sb.color }}>{sb.label}</span>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div>
+                          <span className="font-bold text-sm text-gray-900">{p.name || "-"}</span>
+                          <span style={{ marginLeft: 6, padding: "2px 6px", borderRadius: 4, fontSize: 9, fontWeight: 700, background: statusBadge(p.status).bg, color: statusBadge(p.status).color }}>{statusBadge(p.status).label}</span>
                         </div>
+                        <RoleDropdown
+                          profile={p}
+                          currentUserRole={currentUserRole}
+                          currentUserId={currentUserId}
+                          onRoleChange={changeRole}
+                        />
                       </div>
-                      <p className="text-xs text-gray-500">{p.email}</p>
-                      {memberStores.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {memberStores.map((name, i) => (
+                      <p className="text-xs text-gray-500 mb-1">{p.email}</p>
+                      {getMemberStores(p.id).length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-1.5">
+                          {getMemberStores(p.id).map((name, i) => (
                             <span key={i} style={{ padding: "1px 6px", borderRadius: 4, fontSize: 9, fontWeight: 600, background: "#EEF2FF", color: "#4338ca" }}>{name}</span>
                           ))}
                         </div>
                       )}
-                      {p.id !== currentUserId && canManageRole(p) && (
-                        <div className="flex gap-3 mt-1.5">
-                          <button onClick={() => openRoleModal(p)} style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: rb.bg, color: rb.color, border: "none", cursor: "pointer" }}>{rb.label} ▼</button>
-                          <button onClick={() => openAssignModal(p)} className="text-xs font-bold text-blue-600">매장배정</button>
-                          <button onClick={() => toggleStatus(p)} className="text-xs font-bold text-gray-400">{p.status === "active" ? "비활성" : "활성화"}</button>
+                      {canManageRole(p) && (
+                        <div className="flex gap-3 mt-1">
+                          <button onClick={() => openAssignModal(p)} style={{ fontSize: 11, fontWeight: 700, color: "#1428A0", background: "none", border: "none", cursor: "pointer", padding: 0 }}>매장배정</button>
+                          <button onClick={() => toggleStatus(p)} style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                            {p.status === "active" ? "비활성" : "활성화"}
+                          </button>
                         </div>
                       )}
                     </div>
@@ -576,65 +697,6 @@ export default function TeamPage() {
               <div className="flex justify-end gap-3 mt-7">
                 <button onClick={() => { setShowAssign(false); setAssignProfile(null); }} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg">취소</button>
                 <button onClick={saveAssignment} disabled={sending} className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-dark disabled:opacity-50 shadow-sm">{sending ? "저장 중..." : "배정 저장"}</button>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* ===== 역할 변경 모달 ===== */}
-        {showRoleModal && roleTarget && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-7 w-full max-w-sm shadow-2xl">
-              <h3 className="text-lg font-bold text-gray-900 mb-1">권한 변경</h3>
-              <p className="text-sm text-gray-500 mb-5">
-                <strong>{roleTarget.name || roleTarget.email}</strong>님의 권한을 선택하세요
-              </p>
-              <div className="space-y-2 mb-6">
-                {Object.entries(ROLE_CONFIG)
-                  .filter(([key]) => getAvailableRoles().includes(key))
-                  .map(([key, cfg]) => (
-                  <button
-                    key={key}
-                    onClick={() => setPendingRole(key)}
-                    style={{
-                      width: "100%", padding: "12px 16px", borderRadius: 12, border: "none", cursor: "pointer", textAlign: "left",
-                      background: pendingRole === key ? cfg.bg : "#f8fafc",
-                      outline: pendingRole === key ? `2px solid ${cfg.color}` : "1px solid #e2e8f0",
-                      transition: "all 0.15s"
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: pendingRole === key ? cfg.color : "#374151" }}>{cfg.label}</span>
-                        <p style={{ fontSize: 12, color: "#6b7280", margin: "2px 0 0" }}>{cfg.desc}</p>
-                      </div>
-                      {pendingRole === key && (
-                        <span style={{ width: 20, height: 20, borderRadius: "50%", background: cfg.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, flexShrink: 0 }}>✓</span>
-                      )}
-                    </div>
-                  </button>
-                ))}
-                {currentUserRole === "admin" && (
-                  <div style={{ padding: "10px 14px", borderRadius: 10, background: "#f1f5f9", fontSize: 12, color: "#64748b" }}>
-                    🔒 최고관리자 권한은 Super Admin만 변경할 수 있습니다.
-                  </div>
-                )}
-              </div>
-              {pendingRole !== roleTarget.role && (
-                <div style={{ background: "#fef9c3", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-                  <p style={{ fontSize: 12, color: "#854d0e", margin: 0 }}>
-                    ⚠️ {ROLE_CONFIG[roleTarget.role]?.label || roleTarget.role} → <strong>{ROLE_CONFIG[pendingRole]?.label || pendingRole}</strong> 으로 변경됩니다.
-                  </p>
-                </div>
-              )}
-              <div className="flex justify-end gap-3">
-                <button onClick={() => setShowRoleModal(false)} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg">취소</button>
-                <button
-                  onClick={confirmRoleChange}
-                  disabled={pendingRole === roleTarget.role}
-                  style={{ padding: "10px 20px", borderRadius: 10, background: pendingRole !== roleTarget.role ? "#1428A0" : "#e2e8f0", color: pendingRole !== roleTarget.role ? "#fff" : "#94a3b8", fontSize: 14, fontWeight: 700, border: "none", cursor: pendingRole !== roleTarget.role ? "pointer" : "not-allowed" }}
-                >
-                  변경 저장
-                </button>
               </div>
             </div>
           </div>
