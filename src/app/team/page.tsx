@@ -27,6 +27,7 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState("");
+  const [currentUserRole, setCurrentUserRole] = useState("");
   const [message, setMessage] = useState({ text: "", type: "" });
   const [sending, setSending] = useState(false);
 
@@ -57,7 +58,11 @@ export default function TeamPage() {
     setOrgId(oid);
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) setCurrentUserId(user.id);
+    if (user) {
+      setCurrentUserId(user.id);
+      const { data: myProfile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+      if (myProfile) setCurrentUserRole(myProfile.role);
+    }
 
     const [profilesRes, invitationsRes, storesRes, membersRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("org_id", oid).order("created_at"),
@@ -222,6 +227,22 @@ export default function TeamPage() {
     loadData();
   }
 
+  // --- 권한 관리 규칙 ---
+  // 역할 변경 버튼 표시 여부: Super Admin만 전체, Admin은 CREW에 한해서만 표시
+  function canManageRole(targetProfile: Profile): boolean {
+    if (targetProfile.id === currentUserId) return false; // 본인 불가
+    if (currentUserRole === "super_admin") return true;
+    if (currentUserRole === "admin" && targetProfile.role === "crew") return true;
+    return false;
+  }
+
+  // 변경 가능한 역할 목록
+  function getAvailableRoles(): string[] {
+    if (currentUserRole === "super_admin") return ["crew", "admin", "super_admin"];
+    if (currentUserRole === "admin") return ["crew", "admin"]; // admin→admin 유지, crew→admin 승격만
+    return [];
+  }
+
   // --- UI Helpers ---
   const roleBadge = (role: string) => ROLE_CONFIG[role] || { bg: "#f1f5f9", color: "#475569", label: role, desc: "" };
   const statusBadge = (status: string) => {
@@ -287,7 +308,7 @@ export default function TeamPage() {
                           <td style={{ padding: "13px 16px", fontSize: 12, color: "var(--text-muted)" }}>{inv ? fmtDate(inv.invited) : "-"}</td>
                           <td style={{ padding: "13px 16px", fontSize: 12, color: "var(--text-muted)" }}>{inv ? fmtDate(inv.accepted) : "-"}</td>
                           <td className="px-5 py-3.5 text-sm">
-                            {p.id === currentUserId ? (
+                            {!canManageRole(p) ? (
                               <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: rb.bg, color: rb.color }}>{rb.label}</span>
                             ) : (
                               <button
@@ -303,7 +324,7 @@ export default function TeamPage() {
                           </td>
                           <td className="px-5 py-3.5 text-sm">
                             <div className="flex gap-2">
-                              {p.id !== currentUserId && (
+                              {p.id !== currentUserId && canManageRole(p) && (
                                 <>
                                   <button onClick={() => openAssignModal(p)} className="text-xs font-bold text-blue-600 hover:text-blue-800">매장배정</button>
                                   <button onClick={() => toggleStatus(p)} className="text-xs font-bold text-gray-500 hover:text-gray-700">
@@ -342,7 +363,7 @@ export default function TeamPage() {
                           ))}
                         </div>
                       )}
-                      {p.id !== currentUserId && (
+                      {p.id !== currentUserId && canManageRole(p) && (
                         <div className="flex gap-3 mt-1.5">
                           <button onClick={() => openRoleModal(p)} style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: rb.bg, color: rb.color, border: "none", cursor: "pointer" }}>{rb.label} ▼</button>
                           <button onClick={() => openAssignModal(p)} className="text-xs font-bold text-blue-600">매장배정</button>
@@ -452,7 +473,9 @@ export default function TeamPage() {
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">역할 *</label>
                   <div className="flex gap-2">
-                    <button onClick={() => setInviteRole("super_admin")} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: inviteRole === "super_admin" ? "#fef3c7" : "#f8fafc", color: inviteRole === "super_admin" ? "#b45309" : "#999", outline: inviteRole === "super_admin" ? "2px solid #b45309" : "1px solid #e2e8f0" }}>최고관리자</button>
+                    {currentUserRole === "super_admin" && (
+                      <button onClick={() => setInviteRole("super_admin")} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: inviteRole === "super_admin" ? "#fef3c7" : "#f8fafc", color: inviteRole === "super_admin" ? "#b45309" : "#999", outline: inviteRole === "super_admin" ? "2px solid #b45309" : "1px solid #e2e8f0" }}>최고관리자</button>
+                    )}
                     <button onClick={() => setInviteRole("admin")} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: inviteRole === "admin" ? "#EEF2FF" : "#f8fafc", color: inviteRole === "admin" ? "#1428A0" : "#999", outline: inviteRole === "admin" ? "2px solid #1428A0" : "1px solid #e2e8f0" }}>관리자</button>
                     <button onClick={() => setInviteRole("crew")} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: inviteRole === "crew" ? "#dcfce7" : "#f8fafc", color: inviteRole === "crew" ? "#15803d" : "#999", outline: inviteRole === "crew" ? "2px solid #16a34a" : "1px solid #e2e8f0" }}>CREW</button>
                   </div>
@@ -566,7 +589,9 @@ export default function TeamPage() {
                 <strong>{roleTarget.name || roleTarget.email}</strong>님의 권한을 선택하세요
               </p>
               <div className="space-y-2 mb-6">
-                {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
+                {Object.entries(ROLE_CONFIG)
+                  .filter(([key]) => getAvailableRoles().includes(key))
+                  .map(([key, cfg]) => (
                   <button
                     key={key}
                     onClick={() => setPendingRole(key)}
@@ -588,6 +613,11 @@ export default function TeamPage() {
                     </div>
                   </button>
                 ))}
+                {currentUserRole === "admin" && (
+                  <div style={{ padding: "10px 14px", borderRadius: 10, background: "#f1f5f9", fontSize: 12, color: "#64748b" }}>
+                    🔒 최고관리자 권한은 Super Admin만 변경할 수 있습니다.
+                  </div>
+                )}
               </div>
               {pendingRole !== roleTarget.role && (
                 <div style={{ background: "#fef9c3", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
