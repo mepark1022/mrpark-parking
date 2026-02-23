@@ -219,6 +219,13 @@ export default function MonthlyPage() {
   const expiringSoon = contracts.filter(c => c.contract_status === "active" && isExpiringSoon(c.end_date));
   const totalFee = contracts.filter(c => c.contract_status === "active").reduce((s, c) => s + c.monthly_fee, 0);
 
+  // 최근 30일 내 만료된 계약 (갱신 독려 대상)
+  const recentlyExpired = contracts.filter(c => {
+    if (c.contract_status !== "expired") return false;
+    const daysSince = Math.abs(getDaysLeft(c.end_date));
+    return daysSince <= 30;
+  });
+
   return (
     <AppLayout>
       <style>{`
@@ -362,6 +369,87 @@ export default function MonthlyPage() {
             </div>
           );
         })()}
+
+        {/* 만료 계약 배너 */}
+        {recentlyExpired.length > 0 && (
+          <div style={{
+            background: "linear-gradient(135deg,#f8f9fb,#f1f5f9)",
+            border: "1px solid #cbd5e1",
+            borderLeft: "4px solid #64748b",
+            borderRadius: 14, padding: "18px 20px", marginBottom: 20
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 18 }}>📋</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: "#334155" }}>
+                  최근 30일 내 만료 {recentlyExpired.length}건 · 갱신 연락이 필요합니다
+                </span>
+              </div>
+              <button
+                onClick={() => setFilterStatus("expired")}
+                style={{ padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, border: "1px solid #94a3b8", background: "#fff", color: "#475569", cursor: "pointer", fontFamily: "inherit" }}
+              >
+                만료 탭으로 보기 →
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {recentlyExpired
+                .sort((a, b) => new Date(b.end_date).getTime() - new Date(a.end_date).getTime())
+                .slice(0, 5)
+                .map((c) => {
+                  const daysSince = Math.abs(getDaysLeft(c.end_date));
+                  return (
+                    <div key={c.id} style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      background: "#fff", border: "1px solid #e2e8f0",
+                      borderRadius: 10, padding: "10px 14px", flexWrap: "wrap", gap: 8
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                        <span style={{
+                          fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 6,
+                          background: "#f1f5f9", color: "#64748b"
+                        }}>만료 {daysSince}일</span>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: "#1428A0", fontFamily: "monospace" }}>{c.vehicle_number}</span>
+                        <span style={{ fontSize: 13, color: "#374151", fontWeight: 600 }}>{c.customer_name}</span>
+                        <span style={{ fontSize: 12, color: "#6b7280" }}>{c.stores?.name}</span>
+                        <span style={{ fontSize: 12, color: "#6b7280" }}>{c.end_date} 만료</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          onClick={() => openAlimModal(c)}
+                          style={{
+                            padding: "7px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+                            border: "1px solid #c7d2fe", cursor: "pointer", fontFamily: "inherit",
+                            background: "#eef2ff", color: "#4f46e5",
+                            display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap"
+                          }}>
+                          📨 알림톡
+                        </button>
+                        <button
+                          onClick={() => openRenewModal(c)}
+                          style={{
+                            padding: "7px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+                            border: "none", cursor: "pointer", fontFamily: "inherit",
+                            background: "#10b981", color: "#fff",
+                            display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap"
+                          }}>
+                          🔄 갱신
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              {recentlyExpired.length > 5 && (
+                <button
+                  onClick={() => setFilterStatus("expired")}
+                  style={{ padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: 700, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  +{recentlyExpired.length - 5}건 더보기
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="v3-info-card" style={{ marginBottom: 20 }}>
           <div className="m-filter-row">

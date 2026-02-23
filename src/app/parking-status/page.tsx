@@ -80,6 +80,29 @@ export default function ParkingStatusPage() {
   const [workerFilter,setWorkerFilter]=useState("");
   const [showAll,setShowAll]=useState(false);
   const [activeTab,setActiveTab]=useState("entries"); // entries | overdue
+  const [processingId,setProcessingId]=useState<string|null>(null);
+
+  const handleCompleteOverdue = useCallback(async (ticketId: string, waive: boolean) => {
+    const label = waive ? "추가요금을 면제하고 출차 처리하시겠습니까?" : "현장 결제 완료로 출차 처리하시겠습니까?";
+    if (!confirm(label)) return;
+    setProcessingId(ticketId);
+    try {
+      const res = await fetch("/api/ticket/complete-overdue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticketId, waive }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOverdueTickets(prev => prev.filter(t => t.id !== ticketId));
+      } else {
+        alert("처리 실패: " + (data.error || "알 수 없는 오류"));
+      }
+    } catch {
+      alert("네트워크 오류");
+    }
+    setProcessingId(null);
+  }, []);
 
   useEffect(()=>{loadInitial();},[]);
   useEffect(()=>{loadEntries();},[selectedStore,selectedDate]);
@@ -227,7 +250,7 @@ export default function ParkingStatusPage() {
               <table style={{width:"100%",borderCollapse:"collapse"}}>
                 <thead>
                   <tr>
-                    {["차량번호","매장","유형","입차시간","사전정산 마감","초과 시간","추가요금","티켓 링크"].map(h=>(
+                    {["차량번호","매장","유형","입차시간","사전정산 마감","초과 시간","추가요금","티켓 링크","출차 처리"].map(h=>(
                       <th key={h} style={{padding:"12px 16px",textAlign:"left",fontSize:12,fontWeight:600,color:C.textMuted,background:"#fef2f2",borderBottom:"1px solid #fecaca"}}>{h}</th>
                     ))}
                   </tr>
@@ -257,6 +280,24 @@ export default function ParkingStatusPage() {
                             style={{padding:"5px 12px",borderRadius:6,border:"1px solid #1428A0",background:"#eef2ff",color:"#1428A0",fontSize:12,fontWeight:700,textDecoration:"none",display:"inline-block"}}>
                             🔗 티켓
                           </a>
+                        </td>
+                        <td style={{padding:"12px 16px",borderBottom:"1px solid #fef2f2"}}>
+                          <div style={{display:"flex",gap:6,flexWrap:"nowrap"}}>
+                            <button
+                              onClick={()=>handleCompleteOverdue(t.id,false)}
+                              disabled={processingId===t.id}
+                              style={{padding:"5px 10px",borderRadius:6,border:"none",background:"#1428A0",color:"#fff",fontSize:11,fontWeight:700,cursor:processingId===t.id?"not-allowed":"pointer",whiteSpace:"nowrap",opacity:processingId===t.id?0.6:1}}
+                            >
+                              {processingId===t.id?"처리중...":"💳 결제완료"}
+                            </button>
+                            <button
+                              onClick={()=>handleCompleteOverdue(t.id,true)}
+                              disabled={processingId===t.id}
+                              style={{padding:"5px 10px",borderRadius:6,border:"1px solid #e2e8f0",background:"#fff",color:"#64748b",fontSize:11,fontWeight:700,cursor:processingId===t.id?"not-allowed":"pointer",whiteSpace:"nowrap",opacity:processingId===t.id?0.6:1}}
+                            >
+                              면제출차
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -522,12 +563,28 @@ export default function ParkingStatusPage() {
                             <span style={{color:"#e2e8f0",fontSize:10}}>|</span>
                             <span style={{fontSize:11,color:"#94a3b8"}}>{t.parking_type==="valet"?"발렛":"일반"}</span>
                           </div>
-                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
                             <span style={{fontSize:13,fontWeight:800,color:"#DC2626"}}>추가요금: {(t.additional_fee||0).toLocaleString()}원</span>
                             <a href={`/ticket/${t.id}`} target="_blank" rel="noopener noreferrer"
                               style={{padding:"5px 12px",borderRadius:6,border:"1px solid #1428A0",background:"#eef2ff",color:"#1428A0",fontSize:11,fontWeight:700,textDecoration:"none"}}>
                               🔗 티켓 링크
                             </a>
+                          </div>
+                          <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                            <button
+                              onClick={()=>handleCompleteOverdue(t.id,false)}
+                              disabled={processingId===t.id}
+                              style={{padding:"7px 14px",borderRadius:8,border:"none",background:"#1428A0",color:"#fff",fontSize:12,fontWeight:700,cursor:processingId===t.id?"not-allowed":"pointer",opacity:processingId===t.id?0.6:1}}
+                            >
+                              {processingId===t.id?"처리중...":"💳 결제완료 출차"}
+                            </button>
+                            <button
+                              onClick={()=>handleCompleteOverdue(t.id,true)}
+                              disabled={processingId===t.id}
+                              style={{padding:"7px 12px",borderRadius:8,border:"1px solid #e2e8f0",background:"#fff",color:"#64748b",fontSize:12,fontWeight:700,cursor:processingId===t.id?"not-allowed":"pointer",opacity:processingId===t.id?0.6:1}}
+                            >
+                              면제출차
+                            </button>
                           </div>
                         </div>
                       </div>
