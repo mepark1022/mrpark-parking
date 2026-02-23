@@ -2,7 +2,7 @@
 "use client";
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserContext } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
@@ -70,6 +70,7 @@ export default function ParkingStatusPage() {
   const [stores,setStores]=useState([]);
   const [workers,setWorkers]=useState([]);
   const [entries,setEntries]=useState([]);
+  const [overdueTickets,setOverdueTickets]=useState([]);
   const [loading,setLoading]=useState(true);
   const [selectedStore,setSelectedStore]=useState("");
   const [selectedDate,setSelectedDate]=useState(new Date().toISOString().split("T")[0]);
@@ -78,6 +79,7 @@ export default function ParkingStatusPage() {
   const [statusFilter,setStatusFilter]=useState("all");
   const [workerFilter,setWorkerFilter]=useState("");
   const [showAll,setShowAll]=useState(false);
+  const [activeTab,setActiveTab]=useState("entries"); // entries | overdue
 
   useEffect(()=>{loadInitial();},[]);
   useEffect(()=>{loadEntries();},[selectedStore,selectedDate]);
@@ -90,7 +92,24 @@ export default function ParkingStatusPage() {
     if(!ctx.allStores&&ctx.storeIds.length>0) q=q.in("id",ctx.storeIds);
     else if(!ctx.allStores){setStores([]);return;}
     const [{data:sd},{data:wd}]=await Promise.all([q,supabase.from("workers").select("id,name").eq("org_id",ctx.orgId).order("name")]);
-    setStores(sd||[]);setWorkers(wd||[]);loadEntries();
+    setStores(sd||[]);setWorkers(wd||[]);
+    loadEntries();
+    loadOverdueTickets(ctx.orgId);
+  };
+
+  const loadOverdueTickets=async(orgId?: string)=>{
+    try{
+      // overdue 상태 자동 갱신 먼저 실행
+      await fetch("/api/ticket/check-overdue",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orgId})});
+      const supabase=createClient();
+      const ctx=await getUserContext();
+      const oid=orgId||ctx.orgId;
+      if(!oid) return;
+      const{data}=await supabase.from("mepark_tickets")
+        .select("id,plate_number,status,additional_fee,pre_paid_deadline,entry_at,parking_type,stores:store_id(name)")
+        .eq("org_id",oid).eq("status","overdue").order("pre_paid_deadline",{ascending:true});
+      setOverdueTickets(data||[]);
+    }catch(e){console.error("loadOverdueTickets",e);}
   };
 
   const loadEntries=async()=>{
@@ -143,9 +162,12 @@ export default function ParkingStatusPage() {
     { id:"exited",  label:"출차",    count: entries.filter(e=>e.status==="exited").length,  isStatus:true },
     { id:"valet",   label:"발렛",    count: entries.filter(e=>e.parking_type==="valet").length, isType:true },
     { id:"monthly", label:"월주차",  count: entries.filter(e=>e.parking_type==="monthly").length, isType:true },
+    { id:"overdue", label:"⚠️ 초과", count: overdueTickets.length, isOverdue:true },
   ];
-  const activeMobileFilter = statusFilter!=="all" ? statusFilter : typeFilter!=="all" ? typeFilter : "all";
+  const activeMobileFilter = activeTab==="overdue" ? "overdue" : statusFilter!=="all" ? statusFilter : typeFilter!=="all" ? typeFilter : "all";
   const handleMobileChip = (id) => {
+    if(id==="overdue"){setActiveTab("overdue");loadOverdueTickets();return;}
+    setActiveTab("entries");
     const chip = mobileChips.find(c=>c.id===id);
     if(!chip||id==="all"){setStatusFilter("all");setTypeFilter("all");return;}
     if(chip.isStatus){setStatusFilter(id);setTypeFilter("all");}
@@ -161,7 +183,93 @@ export default function ParkingStatusPage() {
 
       {/* ─── PC ─── */}
       <div className="ps-desktop" style={{maxWidth:1300}}>
-        <div style={{background:"#fff",borderRadius:16,border:`1px solid ${C.borderLight}`,boxShadow:"0 1px 2px rgba(0,0,0,0.04)",marginBottom:20}}>
+
+        {/* ─ 탭: 입차현황 / ⚠️ 초과 ─ */}
+        <div style={{display:"flex",gap:8,marginBottom:16}}>
+          <button onClick={()=>setActiveTab("entries")} style={{
+            padding:"10px 22px",borderRadius:10,border:"none",fontSize:14,fontWeight:700,cursor:"pointer",
+            background:activeTab==="entries"?C.navy:"#fff",color:activeTab==="entries"?"#fff":C.textMuted,
+            border:`1px solid ${activeTab==="entries"?C.navy:C.borderLight}`,
+          }}>🚗 입차 현황</button>
+          <button onClick={()=>{setActiveTab("overdue");loadOverdueTickets();}} style={{
+            padding:"10px 22px",borderRadius:10,border:"none",fontSize:14,fontWeight:700,cursor:"pointer",
+            background:activeTab==="overdue"?"#DC2626":"#fff",
+            color:activeTab==="overdue"?"#fff":"#DC2626",
+            border:`1px solid ${activeTab==="overdue"?"#DC2626":"#fecaca"}`,
+            display:"flex",alignItems:"center",gap:8,
+          }}>
+            ⚠️ 유예시간 초과
+            {overdueTickets.length>0&&<span style={{
+              background:"#DC2626",color:"#fff",borderRadius:"50%",
+              width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",
+              fontSize:11,fontWeight:900,
+              ...(activeTab==="overdue"?{background:"rgba(255,255,255,0.3)"}:{})
+            }}>{overdueTickets.length}</span>}
+          </button>
+        </div>
+
+        {/* ─ 초과 탭 내용 ─ */}
+        {activeTab==="overdue"&&(
+          <div style={{background:"#fff",borderRadius:16,border:"1px solid #fecaca",overflow:"hidden",marginBottom:20,boxShadow:"0 1px 2px rgba(220,38,38,0.06)"}}>
+            <div style={{background:"#fff3f3",padding:"16px 24px",borderBottom:"1px solid #fecaca",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:15,fontWeight:800,color:"#DC2626"}}>⚠️ 유예시간 초과 차량</div>
+                <div style={{fontSize:12,color:"#999",marginTop:2}}>사전정산 후 유예시간이 초과된 차량입니다. 추가요금 결제가 필요합니다.</div>
+              </div>
+              <button onClick={()=>loadOverdueTickets()} style={{padding:"8px 16px",borderRadius:8,border:"1px solid #fecaca",background:"#fff",fontSize:13,fontWeight:600,color:"#DC2626",cursor:"pointer"}}>🔄 새로고침</button>
+            </div>
+            {overdueTickets.length===0?(
+              <div style={{textAlign:"center",padding:"48px 0",color:C.textMuted}}>
+                <div style={{fontSize:32,marginBottom:8}}>✅</div>
+                <div style={{fontSize:14,fontWeight:600}}>유예시간 초과 차량이 없습니다</div>
+              </div>
+            ):(
+              <table style={{width:"100%",borderCollapse:"collapse"}}>
+                <thead>
+                  <tr>
+                    {["차량번호","매장","유형","입차시간","사전정산 마감","초과 시간","추가요금","티켓 링크"].map(h=>(
+                      <th key={h} style={{padding:"12px 16px",textAlign:"left",fontSize:12,fontWeight:600,color:C.textMuted,background:"#fef2f2",borderBottom:"1px solid #fecaca"}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {overdueTickets.map((t,i)=>{
+                    const overdueMs=t.pre_paid_deadline?Date.now()-new Date(t.pre_paid_deadline).getTime():0;
+                    const overdueMin=Math.ceil(overdueMs/60000);
+                    return(
+                      <tr key={t.id} style={{background:i%2===0?"#fff":"#fff8f8"}}>
+                        <td style={{padding:"12px 16px",fontSize:15,fontWeight:900,color:"#1A1D2B",letterSpacing:0.3,borderBottom:"1px solid #fef2f2"}}>{t.plate_number}</td>
+                        <td style={{padding:"12px 16px",fontSize:13,fontWeight:600,color:C.textSecondary,borderBottom:"1px solid #fef2f2"}}>{t.stores?.name||"-"}</td>
+                        <td style={{padding:"12px 16px",borderBottom:"1px solid #fef2f2"}}>
+                          <span style={{padding:"3px 10px",borderRadius:5,fontSize:12,fontWeight:700,
+                            background:t.parking_type==="valet"?"#fff7ed":"#eef2ff",
+                            color:t.parking_type==="valet"?"#EA580C":"#1428A0"
+                          }}>{t.parking_type==="valet"?"발렛":"일반"}</span>
+                        </td>
+                        <td style={{padding:"12px 16px",fontSize:13,color:C.textSecondary,borderBottom:"1px solid #fef2f2"}}>{t.entry_at?new Date(t.entry_at).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"}):"-"}</td>
+                        <td style={{padding:"12px 16px",fontSize:13,color:"#DC2626",fontWeight:600,borderBottom:"1px solid #fef2f2"}}>{t.pre_paid_deadline?new Date(t.pre_paid_deadline).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"}):"-"}</td>
+                        <td style={{padding:"12px 16px",borderBottom:"1px solid #fef2f2"}}>
+                          <span style={{background:"#fee2e2",color:"#DC2626",padding:"3px 10px",borderRadius:5,fontSize:13,fontWeight:800}}>{overdueMin}분 초과</span>
+                        </td>
+                        <td style={{padding:"12px 16px",fontSize:14,fontWeight:800,color:"#DC2626",borderBottom:"1px solid #fef2f2"}}>{(t.additional_fee||0).toLocaleString()}원</td>
+                        <td style={{padding:"12px 16px",borderBottom:"1px solid #fef2f2"}}>
+                          <a href={`/ticket/${t.id}`} target="_blank" rel="noopener noreferrer"
+                            style={{padding:"5px 12px",borderRadius:6,border:"1px solid #1428A0",background:"#eef2ff",color:"#1428A0",fontSize:12,fontWeight:700,textDecoration:"none",display:"inline-block"}}>
+                            🔗 티켓
+                          </a>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {/* ─ 기존 입차현황 (activeTab === "entries" 일 때만) ─ */}
+        {activeTab==="entries"&&(<>
+          <div style={{background:"#fff",borderRadius:16,border:`1px solid ${C.borderLight}`,boxShadow:"0 1px 2px rgba(0,0,0,0.04)",marginBottom:20}}>
           <div style={{padding:"16px 24px",display:"flex",flexDirection:"column",gap:12}}>
             <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center"}}>
               <select value={selectedStore} onChange={e=>setSelectedStore(e.target.value)}
@@ -191,7 +299,7 @@ export default function ParkingStatusPage() {
               </div>
             </div>
           </div>
-        </div>
+          </div>
 
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:24}}>
           {kpiCards.map(k=>(
@@ -304,6 +412,7 @@ export default function ParkingStatusPage() {
             </div>
           )}
         </div>
+        </>) } {/* end activeTab==="entries" */}
       </div>
 
       {/* ─── 모바일 ─── */}
@@ -342,19 +451,21 @@ export default function ParkingStatusPage() {
         <div style={{background:"white",padding:"9px 14px",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",borderBottom:"1px solid #eef0f5"}}>
           {mobileChips.map(chip=>{
             const isActive = activeMobileFilter === chip.id;
+            const isOverdueChip = chip.id === "overdue";
             return (
               <button key={chip.id} onClick={()=>handleMobileChip(chip.id)} style={{
                 flexShrink:0,padding:"5px 11px",borderRadius:20,border:"none",cursor:"pointer",
                 display:"flex",alignItems:"center",gap:4,
-                background: isActive ? C.navy : "#f4f5f8",
-                color: isActive ? "white" : "#666",
+                background: isActive ? (isOverdueChip?"#DC2626":C.navy) : isOverdueChip?"#fff3f3":"#f4f5f8",
+                color: isActive ? "white" : isOverdueChip?"#DC2626":"#666",
                 fontSize:11,fontWeight:700,
+                border: isOverdueChip&&!isActive ? "1px solid #fecaca" : "none",
               }}>
                 {chip.label}
                 {chip.count > 0 && (
                   <span style={{
                     fontSize:9,fontWeight:800,padding:"1px 5px",borderRadius:8,lineHeight:"14px",
-                    background: isActive ? "rgba(255,255,255,0.22)" : C.navy,
+                    background: isActive ? "rgba(255,255,255,0.22)" : isOverdueChip?"#DC2626":C.navy,
                     color: "white",
                   }}>{chip.count}</span>
                 )}
@@ -380,7 +491,55 @@ export default function ParkingStatusPage() {
 
         {/* 카드 리스트 */}
         <div style={{padding:"10px 12px"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+
+          {/* 초과 탭 모바일 뷰 */}
+          {activeTab==="overdue"&&(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <span style={{fontSize:13,fontWeight:800,color:"#DC2626"}}>⚠️ 유예시간 초과</span>
+                <button onClick={()=>loadOverdueTickets()} style={{fontSize:11,color:"#DC2626",background:"#fff3f3",border:"1px solid #fecaca",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontWeight:700}}>새로고침</button>
+              </div>
+              {overdueTickets.length===0?(
+                <div style={{textAlign:"center",padding:"50px 0"}}>
+                  <div style={{fontSize:36,marginBottom:8}}>✅</div>
+                  <div style={{fontSize:14,fontWeight:700,color:"#555"}}>초과 차량 없음</div>
+                </div>
+              ):(
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  {overdueTickets.map(t=>{
+                    const overdueMs=t.pre_paid_deadline?Date.now()-new Date(t.pre_paid_deadline).getTime():0;
+                    const overdueMin=Math.ceil(overdueMs/60000);
+                    return(
+                      <div key={t.id} style={{background:"white",borderRadius:16,overflow:"hidden",boxShadow:"0 2px 12px rgba(220,38,38,0.1)",display:"flex",alignItems:"stretch"}}>
+                        <div style={{width:5,background:"#DC2626",flexShrink:0,borderRadius:"16px 0 0 16px"}} />
+                        <div style={{flex:1,padding:"12px 14px"}}>
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+                            <span style={{fontFamily:"'Outfit',sans-serif",fontSize:17,fontWeight:900,color:"#1A1D2B",letterSpacing:"-0.3px"}}>{t.plate_number}</span>
+                            <span style={{background:"#fee2e2",color:"#DC2626",fontSize:11,fontWeight:800,padding:"3px 9px",borderRadius:6}}>{overdueMin}분 초과</span>
+                          </div>
+                          <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
+                            {t.stores?.name&&<span style={{fontSize:11,color:"#94a3b8"}}>🏢 {t.stores.name}</span>}
+                            <span style={{color:"#e2e8f0",fontSize:10}}>|</span>
+                            <span style={{fontSize:11,color:"#94a3b8"}}>{t.parking_type==="valet"?"발렛":"일반"}</span>
+                          </div>
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                            <span style={{fontSize:13,fontWeight:800,color:"#DC2626"}}>추가요금: {(t.additional_fee||0).toLocaleString()}원</span>
+                            <a href={`/ticket/${t.id}`} target="_blank" rel="noopener noreferrer"
+                              style={{padding:"5px 12px",borderRadius:6,border:"1px solid #1428A0",background:"#eef2ff",color:"#1428A0",fontSize:11,fontWeight:700,textDecoration:"none"}}>
+                              🔗 티켓 링크
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab!=="overdue"&&(<>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
             <span style={{fontSize:12,fontWeight:800,color:"#333"}}>입차 목록</span>
             <span style={{fontSize:10,color:C.navy,fontWeight:700}}>
               총 <strong>{filtered.length}</strong>건 · 최신순
@@ -469,6 +628,7 @@ export default function ParkingStatusPage() {
               )}
             </div>
           )}
+          </>) } {/* end activeTab !== overdue */}
         </div>
       </div>
     </AppLayout>
