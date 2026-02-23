@@ -24,7 +24,10 @@ interface Store {
   has_toss_kiosk?: boolean;
   grace_period_minutes?: number;
   gps_radius_meters?: number;
+  contact_name?: string;
   contact_phone?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 interface ParkingLot {
   id: string;
@@ -378,12 +381,15 @@ export default function StoresPage() {
   // Form 상태
   const [storeForm, setStoreForm] = useState({
     name: "", region_city: "", region_district: "", road_address: "", manager_name: "",
+    contact_name: "",
     contact_phone: "",
     is_free_parking: false,
     has_kiosk: false,
     has_toss_kiosk: false,
     grace_period_minutes: 30,
     gps_radius_meters: 150,
+    latitude: "" as string | number,
+    longitude: "" as string | number,
   });
   const [lotForm, setLotForm] = useState({
     name: "", lot_type: "internal", parking_type: ["self"],
@@ -724,7 +730,7 @@ export default function StoresPage() {
         <CardHeader>
           <CardTitle icon="🏢">매장 목록 ({stores.length}개)</CardTitle>
           <BtnPrimary onClick={() => {
-            setStoreForm({ name: "", region_city: "", region_district: "", road_address: "", manager_name: "", contact_phone: "", is_free_parking: false, has_kiosk: false, has_toss_kiosk: false, grace_period_minutes: 30, gps_radius_meters: 150 });
+            setStoreForm({ name: "", region_city: "", region_district: "", road_address: "", manager_name: "", contact_name: "", contact_phone: "", is_free_parking: false, has_kiosk: false, has_toss_kiosk: false, grace_period_minutes: 30, gps_radius_meters: 150, latitude: "", longitude: "" });
             setEditingItem(null);
             setModalType("store");
           }}>
@@ -794,12 +800,15 @@ export default function StoresPage() {
                           name: store.name, region_city: store.region_city ?? "",
                           region_district: store.region_district ?? "",
                           road_address: store.road_address ?? "", manager_name: store.manager_name ?? "",
+                          contact_name: (store as any).contact_name ?? "",
                           contact_phone: (store as any).contact_phone ?? "",
                           is_free_parking: (store as any).is_free_parking ?? false,
                           has_kiosk: (store as any).has_kiosk ?? false,
                           has_toss_kiosk: (store as any).has_toss_kiosk ?? false,
                           grace_period_minutes: (store as any).grace_period_minutes ?? 30,
                           gps_radius_meters: (store as any).gps_radius_meters ?? 150,
+                          latitude: (store as any).latitude ?? "",
+                          longitude: (store as any).longitude ?? "",
                         });
                         setEditingItem(store as unknown as Record<string, unknown>);
                         setModalType("store");
@@ -872,12 +881,15 @@ export default function StoresPage() {
                               name: store.name, region_city: store.region_city ?? "",
                               region_district: store.region_district ?? "",
                               road_address: store.road_address ?? "", manager_name: store.manager_name ?? "",
+                              contact_name: (store as any).contact_name ?? "",
                               contact_phone: (store as any).contact_phone ?? "",
                               is_free_parking: (store as any).is_free_parking ?? false,
                               has_kiosk: (store as any).has_kiosk ?? false,
                               has_toss_kiosk: (store as any).has_toss_kiosk ?? false,
                               grace_period_minutes: (store as any).grace_period_minutes ?? 30,
                               gps_radius_meters: (store as any).gps_radius_meters ?? 150,
+                              latitude: (store as any).latitude ?? "",
+                              longitude: (store as any).longitude ?? "",
                             });
                             setEditingItem(store as unknown as Record<string, unknown>);
                             setModalType("store");
@@ -1595,16 +1607,57 @@ export default function StoresPage() {
             </FormGroup>
           </div>
 
-          {/* 관리자 연락처 */}
+          {/* 담당자 연락처 */}
           <div style={{ marginTop: 12 }}>
-            <FormGroup label="매장 관리자 연락처">
-              <Input
-                type="tel"
-                value={storeForm.contact_phone}
-                onChange={e => setStoreForm(f => ({ ...f, contact_phone: e.target.value }))}
-                placeholder="010-0000-0000"
-              />
-            </FormGroup>
+            <div className="stores-grid-2col" style={{ display: "grid", gap: 12 }}>
+              <FormGroup label="담당자명">
+                <Input
+                  type="text"
+                  value={storeForm.contact_name}
+                  onChange={e => setStoreForm(f => ({ ...f, contact_name: e.target.value }))}
+                  placeholder="예: 김미팍"
+                />
+              </FormGroup>
+              <FormGroup label="담당자 연락처">
+                <Input
+                  type="tel"
+                  value={storeForm.contact_phone}
+                  onChange={e => setStoreForm(f => ({ ...f, contact_phone: e.target.value }))}
+                  placeholder="010-0000-0000"
+                />
+              </FormGroup>
+            </div>
+          </div>
+
+          {/* GPS 좌표 (출퇴근 연동) */}
+          <div style={{ marginTop: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: C.textSecondary }}>📍 GPS 출퇴근 좌표</span>
+              <span style={{ fontSize: 11, color: C.textMuted }}>CREW 앱 출퇴근 인증 기준점</span>
+            </div>
+            <div className="stores-grid-2col" style={{ display: "grid", gap: 12 }}>
+              <FormGroup label="위도 (Latitude)">
+                <Input
+                  type="number"
+                  step="0.000001"
+                  value={storeForm.latitude}
+                  onChange={e => setStoreForm(f => ({ ...f, latitude: e.target.value }))}
+                  placeholder="예: 37.456789"
+                />
+              </FormGroup>
+              <FormGroup label="경도 (Longitude)">
+                <Input
+                  type="number"
+                  step="0.000001"
+                  value={storeForm.longitude}
+                  onChange={e => setStoreForm(f => ({ ...f, longitude: e.target.value }))}
+                  placeholder="예: 126.705678"
+                />
+              </FormGroup>
+            </div>
+            <div style={{ fontSize: 11, color: C.textMuted, marginTop: -8 }}>
+              💡 구글 지도에서 매장 위치 우클릭 → 좌표 복사
+            </div>
           </div>
         </div>
 
