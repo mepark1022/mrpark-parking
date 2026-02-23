@@ -66,6 +66,15 @@ const DASH_STYLES = `
   .dash-period-tab{flex:1;padding:8px 0;border:none;background:transparent;color:#5c6370;font-size:12px;font-weight:600;border-radius:7px;cursor:pointer;font-family:inherit;white-space:nowrap}
   .dash-period-tab.active{background:#fff;color:#1428A0;font-weight:800;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
   .dash-store-sel{width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #e2e8f0;font-size:13px;font-weight:600;color:#1a1d2b;background:#fff;margin-bottom:16px}
+  /* 현재 활성 매장 바 */
+  .dash-active-store{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:10px 14px;margin-bottom:14px;gap:10px}
+  .dash-active-store-left{display:flex;align-items:center;gap:8px;min-width:0}
+  .dash-active-store-icon{width:28px;height:28px;background:#ecf0ff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+  .dash-active-store-info{min-width:0}
+  .dash-active-store-label{font-size:10px;color:#8b90a0;font-weight:600;letter-spacing:0.3px}
+  .dash-active-store-name{font-size:14px;font-weight:800;color:#1a1d2b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dash-change-btn{flex-shrink:0;padding:5px 10px;background:#ecf0ff;color:#1428A0;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .dash-change-btn:active{background:#dde6ff}
   .dash-card{background:#fff;border-radius:20px;padding:18px;box-shadow:0 2px 12px rgba(20,40,160,0.07)}
   .dash-sec-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
   .dash-sec-title{font-size:13px;font-weight:700;color:#444}
@@ -317,12 +326,21 @@ export default function DashboardPage() {
   const [orgId, setOrgId] = useState(null);
   const [parkingStatus, setParkingStatus] = useState([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [activeStore, setActiveStore] = useState<{id:string;name:string}|null>(null);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // 활성 매장 로드 (localStorage)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("mepark_active_store");
+      if (saved) setActiveStore(JSON.parse(saved));
+    } catch {}
   }, []);
 
   useEffect(() => { loadStores(); }, []);
@@ -449,6 +467,25 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <style>{DASH_STYLES}</style>
+
+      {/* 현재 활성 매장 바 */}
+      {activeStore && (
+        <div className="dash-active-store">
+          <div className="dash-active-store-left">
+            <div className="dash-active-store-icon">🏢</div>
+            <div className="dash-active-store-info">
+              <div className="dash-active-store-label">현재 매장</div>
+              <div className="dash-active-store-name">{activeStore.name}</div>
+            </div>
+          </div>
+          <button
+            className="dash-change-btn"
+            onClick={() => window.location.href = "/store-select?change=1&return=/dashboard"}
+          >
+            변경
+          </button>
+        </div>
+      )}
 
       {/* 기간 탭 */}
       <div className="dash-period-tabs">

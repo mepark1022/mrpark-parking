@@ -67,6 +67,7 @@ export default function SettingsPage() {
   const [userRole, setUserRole] = useState<string>("viewer");
   const [userId, setUserId] = useState<string | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
+  const [activeStore, setActiveStore] = useState<{id:string;name:string}|null>(null);
 
   const isAdmin = userRole === "admin" || userRole === "owner" || userRole === "super_admin";
   const isCrew = userRole === "crew";
@@ -74,6 +75,11 @@ export default function SettingsPage() {
   useEffect(() => {
     setS(loadSettings());
     loadNotifSettings();
+    // 활성 매장 로드
+    try {
+      const saved = localStorage.getItem("mepark_active_store");
+      if (saved) setActiveStore(JSON.parse(saved));
+    } catch {}
   }, []);
 
   async function loadNotifSettings() {
@@ -313,6 +319,18 @@ export default function SettingsPage() {
           display: flex; align-items: center; justify-content: center; gap: 8px;
         }
         .sp-save-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(20,40,160,0.35); }
+        /* 현재 매장 카드 */
+        .sp-store-card { background:#fff; border-radius:16px; border:1.5px solid #e2e8f0; padding:16px; box-shadow:0 2px 8px rgba(20,40,160,0.05); }
+        .sp-store-row { display:flex; align-items:center; gap:12px; }
+        .sp-store-icon { width:44px; height:44px; background:#ecf0ff; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+        .sp-store-info { flex:1; min-width:0; }
+        .sp-store-label { font-size:10px; color:#8b90a0; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:3px; }
+        .sp-store-name { font-size:16px; font-weight:800; color:#1a1d2b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .sp-store-change { flex-shrink:0; padding:8px 14px; background:#1428A0; color:#fff; border:none; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; }
+        .sp-store-change:active { opacity:0.8; }
+        .sp-store-empty { padding:20px; text-align:center; color:#8b90a0; font-size:14px; }
+        .sp-store-empty-icon { font-size:32px; margin-bottom:8px; }
+        .sp-store-select-btn { width:100%; padding:12px; background:#ecf0ff; color:#1428A0; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:8px; }
         .sp-info-card { background:#fff; border-radius:20px; border:none; box-shadow:0 2px 12px rgba(20,40,160,0.07); overflow:hidden; }
         .sp-info-row { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid #f1f5f9; font-size:14px; }
         .sp-info-row:last-child { border-bottom:none; }
@@ -352,6 +370,37 @@ export default function SettingsPage() {
             <div style={{ fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 3 }}>설정</div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>알림 채널 및 앱 정보를 관리합니다</div>
           </div>
+        </div>
+
+        {/* ── 현재 활성 매장 ── */}
+        <div className="sp-section-label">🏢 현재 활성 매장</div>
+        <div className="sp-store-card">
+          {activeStore ? (
+            <div className="sp-store-row">
+              <div className="sp-store-icon">🏢</div>
+              <div className="sp-store-info">
+                <div className="sp-store-label">근무 중인 매장</div>
+                <div className="sp-store-name">{activeStore.name}</div>
+              </div>
+              <button
+                className="sp-store-change"
+                onClick={() => window.location.href = "/store-select?change=1&return=/settings"}
+              >
+                변경
+              </button>
+            </div>
+          ) : (
+            <div className="sp-store-empty">
+              <div className="sp-store-empty-icon">🏢</div>
+              <div>선택된 매장이 없습니다</div>
+              <button
+                className="sp-store-select-btn"
+                onClick={() => window.location.href = "/store-select?return=/settings"}
+              >
+                매장 선택하기
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ── 미팍티켓 알림 설정 (DB) ── */}

@@ -125,7 +125,7 @@ export async function GET(request: Request) {
           }
 
           const response = NextResponse.redirect(
-            `${origin}${invitation.role === "crew" ? "/crew/home" : "/dashboard"}`
+            `${origin}${invitation.role === "crew" ? "/store-select?return=/dashboard" : "/store-select?return=/dashboard"}`
           );
           response.cookies.set("invite_token", "", { maxAge: 0, path: "/" });
           return response;
@@ -160,7 +160,7 @@ export async function GET(request: Request) {
         }
       }
 
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(`${origin}/store-select?return=${next}`);
     }
     // code exchange 실패 - 잘못된 state/PKCE 불일치 → 깨끗하게 재시도
     const response = NextResponse.redirect(`${origin}/login?message=error`);
