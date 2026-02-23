@@ -2,7 +2,7 @@
 "use client";
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getUserContext } from "@/lib/utils/org";
@@ -253,7 +253,7 @@ function getRoleBadge(role: string) {
   return { emoji: "👷", label: "크루", bg: "#F0FDF4", color: "#16A34A" };
 }
 
-export default function StoreSelectPage() {
+function StoreSelectInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("return") || "/dashboard";
@@ -462,5 +462,20 @@ export default function StoreSelectPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function StoreSelectPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", background: "#f5f7ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center", color: "#8b90a0" }}>
+          <div style={{ width: 32, height: 32, border: "3px solid #e2e8f0", borderTopColor: "#1428A0", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+          <div style={{ fontSize: 14 }}>로딩 중...</div>
+        </div>
+      </div>
+    }>
+      <StoreSelectInner />
+    </Suspense>
   );
 }
