@@ -128,6 +128,7 @@ function ScheduleTab() {
   const [orgId, setOrgId] = useState("");
   const [editCell, setEditCell] = useState(null);
   const [showDownMenu, setShowDownMenu] = useState(false);
+  const [detailModal, setDetailModal] = useState<{ show: boolean; worker: any } | null>(null);
 
   useEffect(() => { loadBase(); }, []);
   useEffect(() => { if (selectedStore && selectedMonth) loadAllRecords(); }, [selectedStore, selectedMonth, storeWorkers]);
@@ -211,6 +212,20 @@ function ScheduleTab() {
     };
   };
 
+  const getWorkerMissingStats = (workerId) => {
+    const wr = records.filter(r => r.worker_id === workerId);
+    const todayStr = new Date().toISOString().split("T")[0];
+    // 미퇴근: check_in 있고 check_out 없는 과거 날짜 (present/late)
+    const noCheckout = wr.filter(r =>
+      (r.status === "present" || r.status === "late") &&
+      r.check_in && !r.check_out &&
+      r.date < todayStr
+    );
+    // 미출근: 결근 status
+    const noCheckin = wr.filter(r => r.status === "absent");
+    return { noCheckin, noCheckout };
+  };
+
   const dates = Array.from({ length: daysInMonth }, (_, i) => {
     const date = `${y}-${m}-${String(i + 1).padStart(2, "0")}`;
     const dayOfWeek = new Date(date + "T00:00:00").getDay();
@@ -240,6 +255,29 @@ function ScheduleTab() {
       const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
       ws["!cols"] = colWidths;
       XLSX.utils.book_append_sheet(wb, ws, storeName.slice(0, 31));
+
+      // 미출근 상세 시트
+      const absentRows = storeWorkers.flatMap(w => {
+        const { noCheckin } = getWorkerMissingStats(w.id);
+        return noCheckin.map(r => [w.name, r.date, "결근(미출근)"]);
+      });
+      if (absentRows.length > 0) {
+        const absentWs = XLSX.utils.aoa_to_sheet([["근무자", "날짜", "구분"], ...absentRows]);
+        absentWs["!cols"] = [{ wch: 12 }, { wch: 14 }, { wch: 14 }];
+        XLSX.utils.book_append_sheet(wb, absentWs, "미출근 상세");
+      }
+
+      // 미퇴근 상세 시트
+      const nocheckoutRows = storeWorkers.flatMap(w => {
+        const { noCheckout } = getWorkerMissingStats(w.id);
+        return noCheckout.map(r => [w.name, r.date, r.check_in || "-", "미퇴근"]);
+      });
+      if (nocheckoutRows.length > 0) {
+        const nocheckoutWs = XLSX.utils.aoa_to_sheet([["근무자", "날짜", "출근시간", "구분"], ...nocheckoutRows]);
+        nocheckoutWs["!cols"] = [{ wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 10 }];
+        XLSX.utils.book_append_sheet(wb, nocheckoutWs, "미퇴근 상세");
+      }
+
       XLSX.writeFile(wb, `근태현황_${storeName}_${selectedMonth}.xlsx`);
     } else {
       const supabase = createClient();
@@ -332,6 +370,139 @@ function ScheduleTab() {
               style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, fontWeight: 600, outline: "none" }} />
           </div>
         </div>
+
+        {/* 미출퇴근 집계 요약 */}
+        {storeWorkers.length > 0 && (() => {
+          const todayStr = new Date().toISOString().split("T")[0];
+          const allStats = storeWorkers.map(w => {
+            const { noCheckin, noCheckout } = getWorkerMissingStats(w.id);
+            const stats = getWorkerStats(w.id);
+            return { w, present: stats.present, late: stats.late, noCheckin: noCheckin.length, noCheckout: noCheckout.length };
+          });
+          const totalPresent = allStats.reduce((s, a) => s + a.present, 0);
+          const totalLate = allStats.reduce((s, a) => s + a.late, 0);
+          const totalNoCheckin = allStats.reduce((s, a) => s + a.noCheckin, 0);
+          const totalNoCheckout = allStats.reduce((s, a) => s + a.noCheckout, 0);
+          const hasIssues = totalNoCheckin > 0 || totalNoCheckout > 0;
+          return (
+            <div style={{ marginBottom: 16 }}>
+              {/* 월간 요약 카드 4종 */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 14 }}>
+                {[
+                  { label: "정상 출근", value: totalPresent, color: "#16A34A", bg: "#dcfce7", icon: "✓" },
+                  { label: "지각", value: totalLate, color: "#EA580C", bg: "#fff7ed", icon: "🕐" },
+                  { label: "미출근(결근)", value: totalNoCheckin, color: "#DC2626", bg: "#fee2e2", icon: "✗" },
+                  { label: "미퇴근", value: totalNoCheckout, color: "#D97706", bg: "#FEF3C7", icon: "⚠" },
+                ].map(card => (
+                  <div key={card.label} style={{ background: card.bg, borderRadius: 12, padding: "12px 14px", border: `1px solid ${card.color}22`, textAlign: "center" }}>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: card.color, fontFamily: "Outfit, sans-serif", lineHeight: 1 }}>{card.value}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: card.color, opacity: 0.8, marginTop: 4 }}>{card.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 개인별 미출퇴근 테이블 */}
+              {hasIssues && (
+                <div style={{ background: "#fffbf0", border: "1px solid rgba(217,119,6,0.3)", borderRadius: 14, overflow: "hidden", marginBottom: 4 }}>
+                  <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(217,119,6,0.15)", display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 15 }}>⚠️</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#92400e" }}>미출퇴근 현황</span>
+                    <span style={{ marginLeft: "auto", fontSize: 11, color: "#92400e", background: "rgba(217,119,6,0.15)", padding: "2px 8px", borderRadius: 5, fontWeight: 600 }}>
+                      미출근 {totalNoCheckin}건 · 미퇴근 {totalNoCheckout}건
+                    </span>
+                  </div>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ background: "rgba(217,119,6,0.08)" }}>
+                        {["근무자", "미출근", "미퇴근", "상세"].map(h => (
+                          <th key={h} style={{ padding: "8px 12px", fontSize: 12, fontWeight: 700, color: "#92400e", textAlign: h === "근무자" ? "left" : "center", borderBottom: "1px solid rgba(217,119,6,0.15)" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allStats.filter(a => a.noCheckin > 0 || a.noCheckout > 0).map((a, i) => (
+                        <tr key={a.w.id} style={{ borderTop: i > 0 ? "1px solid rgba(217,119,6,0.1)" : "none", background: i % 2 === 0 ? "transparent" : "rgba(217,119,6,0.03)" }}>
+                          <td style={{ padding: "9px 12px", fontSize: 13, fontWeight: 700, color: "#1a1d2b" }}>{a.w.name}</td>
+                          <td style={{ padding: "9px 12px", textAlign: "center" }}>
+                            {a.noCheckin > 0
+                              ? <span style={{ display: "inline-block", padding: "2px 10px", borderRadius: 6, background: "#fee2e2", color: "#DC2626", fontSize: 12, fontWeight: 700 }}>{a.noCheckin}일</span>
+                              : <span style={{ color: "#94a3b8", fontSize: 12 }}>-</span>}
+                          </td>
+                          <td style={{ padding: "9px 12px", textAlign: "center" }}>
+                            {a.noCheckout > 0
+                              ? <span style={{ display: "inline-block", padding: "2px 10px", borderRadius: 6, background: "#FEF3C7", color: "#D97706", fontSize: 12, fontWeight: 700 }}>{a.noCheckout}일</span>
+                              : <span style={{ color: "#94a3b8", fontSize: 12 }}>-</span>}
+                          </td>
+                          <td style={{ padding: "9px 12px", textAlign: "center" }}>
+                            <button onClick={() => setDetailModal({ show: true, worker: a.w })}
+                              style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid rgba(217,119,6,0.4)", background: "rgba(217,119,6,0.08)", color: "#92400e", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                              보기
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* 상세 모달 */}
+              {detailModal?.show && (() => {
+                const { noCheckin, noCheckout } = getWorkerMissingStats(detailModal.worker.id);
+                return (
+                  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+                    <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 480, maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                      <div style={{ padding: "18px 20px", borderBottom: "1px solid #f0f2f7", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: 16, fontWeight: 800, color: "#1a1d2b" }}>{detailModal.worker.name} 상세</span>
+                        <button onClick={() => setDetailModal(null)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#64748b", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>닫기</button>
+                      </div>
+                      <div style={{ overflowY: "auto", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
+                        {noCheckin.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#DC2626", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                              <span style={{ background: "#fee2e2", padding: "2px 8px", borderRadius: 5 }}>✗ 미출근 {noCheckin.length}일</span>
+                            </div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                              {noCheckin.map(r => {
+                                const d = dates.find(dd => dd.date === r.date);
+                                return (
+                                  <span key={r.date} style={{ padding: "4px 10px", borderRadius: 7, background: "#fee2e2", color: "#DC2626", fontSize: 12, fontWeight: 700 }}>
+                                    {d ? `${d.day}일(${d.dayName})` : r.date}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {noCheckout.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#D97706", marginBottom: 8 }}>
+                              <span style={{ background: "#FEF3C7", padding: "2px 8px", borderRadius: 5 }}>⚠ 미퇴근 {noCheckout.length}일</span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                              {noCheckout.map(r => {
+                                const d = dates.find(dd => dd.date === r.date);
+                                return (
+                                  <div key={r.date} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 8, background: "#fffbf0", border: "1px solid rgba(217,119,6,0.2)" }}>
+                                    <span style={{ fontSize: 12, fontWeight: 700, color: "#D97706" }}>{d ? `${d.day}일(${d.dayName})` : r.date}</span>
+                                    <span style={{ marginLeft: "auto", fontSize: 11, color: "#92400e" }}>출근 {r.check_in || "-"} · 퇴근 미기록</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {noCheckin.length === 0 && noCheckout.length === 0 && (
+                          <div style={{ textAlign: "center", padding: "20px 0", color: "#94a3b8", fontSize: 14 }}>미출퇴근 기록이 없습니다 ✓</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          );
+        })()}
 
         {/* 공휴일 보너스 요약 카드 */}
         {(() => {
@@ -429,9 +600,11 @@ function ScheduleTab() {
                         {dates.map(d => {
                           const rec = records.find(r => r.worker_id === w.id && r.date === d.date);
                           const st = rec ? statusMap[rec.status] : null;
+                          const todayStr2 = new Date().toISOString().split("T")[0];
+                          const isNoCheckout = rec && (rec.status === "present" || rec.status === "late") && rec.check_in && !rec.check_out && d.date < todayStr2;
                           const isEditing = editCell?.workerId === w.id && editCell?.date === d.date;
                           return (
-                            <td key={d.date} style={{ padding: "3px 1px", textAlign: "center", borderLeft: "1px solid var(--border-light)", background: d.isToday ? "rgba(20,40,160,0.04)" : d.isSpecial ? "rgba(254,249,231,0.3)" : "", position: "relative" }}>
+                            <td key={d.date} style={{ padding: "3px 1px", textAlign: "center", borderLeft: "1px solid var(--border-light)", background: isNoCheckout ? "rgba(254,243,199,0.5)" : d.isToday ? "rgba(20,40,160,0.04)" : d.isSpecial ? "rgba(254,249,231,0.3)" : "", position: "relative" }}>
                               {isEditing && (
                                 <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", zIndex: 10, background: "var(--white)", borderRadius: 10, padding: 6, boxShadow: "0 4px 20px rgba(0,0,0,0.15)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 2, minWidth: 70 }}>
                                   {Object.entries(statusMap).map(([k, v]) => (
@@ -444,7 +617,9 @@ function ScheduleTab() {
                               <div onClick={() => setEditCell(isEditing ? null : { workerId: w.id, date: d.date })} style={{ cursor: "pointer", padding: "3px 2px", borderRadius: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.1s" }}
                                 onMouseEnter={e => e.currentTarget.style.background = "rgba(20,40,160,0.06)"}
                                 onMouseLeave={e => e.currentTarget.style.background = ""}>
-                                {st ? (
+                                {isNoCheckout ? (
+                                  <span style={{ display: "inline-block", width: 28, height: 20, lineHeight: "20px", borderRadius: 4, fontSize: 10, fontWeight: 700, background: "#FEF3C7", color: "#D97706" }}>⚠</span>
+                                ) : st ? (
                                   <span style={{ display: "inline-block", width: 28, height: 20, lineHeight: "20px", borderRadius: 4, fontSize: 9, fontWeight: 700, background: st.bg, color: st.color }}>{st.label}</span>
                                 ) : (
                                   <span style={{ fontSize: 10, color: "var(--border)" }}>·</span>
