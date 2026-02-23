@@ -19,6 +19,12 @@ interface Store {
   road_address?: string;
   manager_name?: string;
   status?: string;
+  is_free_parking?: boolean;
+  has_kiosk?: boolean;
+  has_toss_kiosk?: boolean;
+  grace_period_minutes?: number;
+  gps_radius_meters?: number;
+  contact_phone?: string;
 }
 interface ParkingLot {
   id: string;
@@ -541,6 +547,23 @@ export default function StoresPage() {
     }
   }
   // ── CRUD 핸들러 ──
+  // 인라인 운영 설정 토글 저장
+  async function saveStoreSetting(storeId: string, patch: Partial<Store>) {
+    const { error } = await supabase.from("stores").update(patch).eq("id", storeId);
+    if (error) { showToast("❌ 저장 실패: " + error.message); return; }
+    showToast("✅ 설정이 저장되었습니다");
+    setStores(prev => prev.map(s => s.id === storeId ? { ...s, ...patch } : s));
+  }
+
+  // 숫자 설정 임시 상태 (GPS반경, 유예시간)
+  const [storeNumSettings, setStoreNumSettings] = useState<Record<string, { grace: number; gps: number }>>({});
+  function getNumSetting(store: Store) {
+    return storeNumSettings[store.id] ?? {
+      grace: store.grace_period_minutes ?? 30,
+      gps: store.gps_radius_meters ?? 150,
+    };
+  }
+
   async function saveStore() {
     if (!storeForm.name.trim()) { alert("매장명을 입력해주세요."); return; }
     const oid = await getOrgId();
@@ -1069,6 +1092,105 @@ export default function StoresPage() {
                   </tbody>
                 </Table></div>
                 </>)}
+            </div>
+          </div>
+
+          {/* ⚙️ 운영 설정 섹션 */}
+          <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${C.borderLight}`, overflow: "hidden", marginTop: 0 }}>
+            <SectionHeader icon="⚙️" title={`운영 설정 — ${store.name}`} color={C.navy} />
+            <div className="stores-section-pad">
+              {/* 토글 영역 */}
+              <div style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${C.borderLight}`, marginBottom: 14 }}>
+                {([
+                  { key: "is_free_parking" as const, label: "무료 운영", desc: "결제 없이 바로 출차요청 처리", icon: "🆓", activeColor: "#16A34A", activeBg: "#ecfdf5" },
+                  { key: "has_kiosk" as const, label: "미팍 1.0 키오스크 보유", desc: "스탠드형 키오스크로 고객 직접 결제", icon: "🖥️", activeColor: C.navy, activeBg: "#eef1fb" },
+                  { key: "has_toss_kiosk" as const, label: "토스키오스크 보유", desc: "토스키오스크 연동 결제", icon: "💳", activeColor: "#EA580C", activeBg: "#fff7ed" },
+                ] as const).map(({ key, label, desc, icon, activeColor, activeBg }, idx, arr) => {
+                  const isOn = store[key] ?? false;
+                  return (
+                    <div
+                      key={key}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        padding: "13px 16px",
+                        background: isOn ? activeBg : "#f8f9fc",
+                        borderBottom: idx < arr.length - 1 ? `1px solid ${C.borderLight}` : "none",
+                        transition: "background 0.15s",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 20 }}>{icon}</span>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: C.textPrimary }}>{label}</div>
+                          <div style={{ fontSize: 12, color: C.textMuted, marginTop: 1 }}>{desc}</div>
+                        </div>
+                      </div>
+                      <div
+                        onClick={() => saveStoreSetting(store.id, { [key]: !isOn })}
+                        title={isOn ? "클릭하여 끄기" : "클릭하여 켜기"}
+                        style={{
+                          width: 48, height: 26, borderRadius: 13, cursor: "pointer",
+                          background: isOn ? activeColor : "#D0D2DA",
+                          position: "relative", transition: "background 0.2s", flexShrink: 0,
+                        }}
+                      >
+                        <div style={{
+                          position: "absolute", top: 3, left: isOn ? 25 : 3,
+                          width: 20, height: 20, borderRadius: "50%",
+                          background: "#fff",
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+                          transition: "left 0.2s",
+                        }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 숫자 설정 */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {([
+                  { field: "grace" as const, label: "사전결제 유예시간", unit: "분", dbKey: "grace_period_minutes" as const, min: 10, max: 120, step: 5, desc: "결제 후 출차 가능 시간" },
+                  { field: "gps" as const, label: "GPS 출퇴근 반경", unit: "m", dbKey: "gps_radius_meters" as const, min: 50, max: 500, step: 10, desc: "출퇴근 인증 허용 반경" },
+                ] as const).map(({ field, label, unit, dbKey, min, max, step, desc }) => {
+                  const numSetting = getNumSetting(store);
+                  return (
+                    <div key={field} style={{ background: C.bgCard, borderRadius: 10, padding: "12px 14px", border: `1px solid ${C.borderLight}` }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 4 }}>{label}</div>
+                      <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 8 }}>{desc}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <input
+                          type="number"
+                          min={min} max={max} step={step}
+                          value={numSetting[field]}
+                          onChange={e => setStoreNumSettings(prev => ({
+                            ...prev,
+                            [store.id]: { ...getNumSetting(store), [field]: Number(e.target.value) }
+                          }))}
+                          style={{
+                            flex: 1, padding: "7px 10px", borderRadius: 8,
+                            border: `1px solid ${C.border}`, fontSize: 16, fontWeight: 700,
+                            color: C.textPrimary, textAlign: "center",
+                            outline: "none", background: "#fff",
+                          }}
+                        />
+                        <span style={{ fontSize: 12, color: C.textMuted, flexShrink: 0 }}>{unit}</span>
+                      </div>
+                      <button
+                        onClick={() => saveStoreSetting(store.id, { [dbKey]: numSetting[field] })}
+                        style={{
+                          marginTop: 8, width: "100%", padding: "6px 0",
+                          background: C.navy, color: "#fff",
+                          border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        💾 저장
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
