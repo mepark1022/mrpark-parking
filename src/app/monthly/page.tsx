@@ -34,6 +34,15 @@ type AlimtalkModal = {
   error: string;
 };
 
+type RenewModal = {
+  open: boolean;
+  contract: MonthlyRow | null;
+  months: number;
+  customEnd: string;
+  newFee: number;
+  saving: boolean;
+};
+
 export default function MonthlyPage() {
   const supabase = createClient();
   const router = useRouter();
@@ -44,6 +53,7 @@ export default function MonthlyPage() {
   const [filterStatus, setFilterStatus] = useState("active");
   const [searchText, setSearchText] = useState("");
   const [alimModal, setAlimModal] = useState<AlimtalkModal>({ open: false, contract: null, sending: false, sent: false, error: "" });
+  const [renewModal, setRenewModal] = useState<RenewModal>({ open: false, contract: null, months: 1, customEnd: "", newFee: 0, saving: false });
 
   useEffect(() => { loadStores(); }, []);
   useEffect(() => { loadContracts(); }, [filterStore, filterStatus]);
@@ -60,9 +70,22 @@ export default function MonthlyPage() {
 
   async function loadContracts() {
     setLoading(true);
+    const ctx = await getUserContext();
+    if (!ctx.orgId) { setLoading(false); return; }
+
+    // 만료일이 지난 active 계약 자동 expired 처리
+    const today = new Date().toISOString().slice(0, 10);
+    await supabase
+      .from("monthly_parking")
+      .update({ contract_status: "expired" })
+      .eq("contract_status", "active")
+      .eq("org_id", ctx.orgId)
+      .lt("end_date", today);
+
     let query = supabase
       .from("monthly_parking")
       .select("*, stores(name)")
+      .eq("org_id", ctx.orgId)
       .order("end_date", { ascending: true });
     if (filterStore) query = query.eq("store_id", filterStore);
     if (filterStatus) query = query.eq("contract_status", filterStatus);
@@ -123,6 +146,43 @@ export default function MonthlyPage() {
 
   function closeAlimModal() {
     setAlimModal(m => ({ ...m, open: false }));
+  }
+
+  function openRenewModal(c: MonthlyRow) {
+    const newEnd = calcRenewEnd(c.end_date, 1);
+    setRenewModal({ open: true, contract: c, months: 1, customEnd: newEnd, newFee: c.monthly_fee, saving: false });
+  }
+
+  function calcRenewEnd(baseEnd: string, months: number): string {
+    const base = new Date(baseEnd < new Date().toISOString().slice(0,10) ? new Date().toISOString().slice(0,10) : baseEnd);
+    base.setMonth(base.getMonth() + months);
+    base.setDate(base.getDate() - 1);
+    return base.toISOString().slice(0, 10);
+  }
+
+  function handleRenewMonths(months: number) {
+    if (!renewModal.contract) return;
+    const newEnd = calcRenewEnd(renewModal.contract.end_date, months);
+    setRenewModal(m => ({ ...m, months, customEnd: newEnd }));
+  }
+
+  async function saveRenew() {
+    const c = renewModal.contract;
+    if (!c || !renewModal.customEnd) return;
+    setRenewModal(m => ({ ...m, saving: true }));
+    const today = new Date().toISOString().slice(0, 10);
+    const newStart = c.end_date < today ? today : c.end_date;
+    const { error } = await supabase.from("monthly_parking").update({
+      start_date: newStart,
+      end_date: renewModal.customEnd,
+      monthly_fee: renewModal.newFee,
+      contract_status: "active",
+      payment_status: "unpaid",
+    }).eq("id", c.id);
+    if (error) { alert("갱신 실패: " + error.message); setRenewModal(m => ({ ...m, saving: false })); return; }
+    showToast("✅ 계약이 갱신되었습니다");
+    setRenewModal(m => ({ ...m, open: false, saving: false }));
+    loadContracts();
   }
 
   async function sendAlimtalk() {
@@ -381,6 +441,9 @@ export default function MonthlyPage() {
                               {c.contract_status === "active" && (
                                 <button className="btn-sm" style={{ borderColor: "#7c3aed", color: "#7c3aed" }} onClick={() => openAlimModal(c)}>📨 알림톡</button>
                               )}
+                              {c.contract_status === "expired" && (
+                                <button className="btn-sm" style={{ borderColor: "#10b981", color: "#10b981", background: "#ecfdf5" }} onClick={() => openRenewModal(c)}>🔄 갱신</button>
+                              )}
                               {c.contract_status === "active" && <button className="btn-sm red" onClick={() => cancelContract(c.id)}>해지</button>}
                             </div>
                           </td>
@@ -426,6 +489,9 @@ export default function MonthlyPage() {
                         <button className="btn-sm navy" onClick={() => router.push(`/monthly/register?id=${c.id}`)}>수정</button>
                         {c.contract_status === "active" && (
                           <button className="btn-sm" style={{ borderColor: "#7c3aed", color: "#7c3aed" }} onClick={() => openAlimModal(c)}>📨</button>
+                        )}
+                        {c.contract_status === "expired" && (
+                          <button className="btn-sm" style={{ borderColor: "#10b981", color: "#10b981", background: "#ecfdf5" }} onClick={() => openRenewModal(c)}>🔄 갱신</button>
                         )}
                         {c.contract_status === "active" && <button className="btn-sm red" onClick={() => cancelContract(c.id)}>해지</button>}
                       </div>
@@ -519,6 +585,92 @@ ${alimModal.contract.stores?.name ?? ""} 월주차 계약 만료가 임박했습
         )}
 
       </div>
+
+      {/* ─── 갱신 모달 ─── */}
+      {renewModal.open && renewModal.contract && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={() => setRenewModal(m => ({ ...m, open: false }))}>
+          <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 440, boxShadow: "0 20px 60px rgba(0,0,0,0.15)", overflow: "hidden" }} onClick={e => e.stopPropagation()}>
+            {/* 헤더 */}
+            <div style={{ background: "linear-gradient(135deg, #064e3b, #047857)", padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ color: "#6ee7b7", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>계약 갱신</div>
+                <div style={{ color: "#fff", fontSize: 17, fontWeight: 800 }}>월주차 계약 연장</div>
+              </div>
+              <button onClick={() => setRenewModal(m => ({ ...m, open: false }))} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "#fff", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+            </div>
+
+            <div style={{ padding: "20px 24px" }}>
+              {/* 현재 계약 정보 */}
+              <div style={{ background: "#f8f9fb", borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: "#8b919d", fontWeight: 600, marginBottom: 8 }}>현재 계약</div>
+                <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+                  <div><div style={{ fontSize: 11, color: "#8b919d" }}>차량번호</div><div style={{ fontSize: 14, fontWeight: 800, color: "#1428A0" }}>{renewModal.contract.vehicle_number}</div></div>
+                  <div><div style={{ fontSize: 11, color: "#8b919d" }}>고객명</div><div style={{ fontSize: 14, fontWeight: 700 }}>{renewModal.contract.customer_name}</div></div>
+                  <div><div style={{ fontSize: 11, color: "#8b919d" }}>만료일</div><div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626" }}>{renewModal.contract.end_date}</div></div>
+                </div>
+              </div>
+
+              {/* 갱신 기간 선택 */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 8 }}>갱신 기간</div>
+                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                  {[1, 3, 6].map(m => (
+                    <button key={m} onClick={() => handleRenewMonths(m)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `2px solid ${renewModal.months === m ? "#10b981" : "#e5e7eb"}`, background: renewModal.months === m ? "#ecfdf5" : "#fff", color: renewModal.months === m ? "#065f46" : "#374151", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>
+                      {m}개월
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ fontSize: 13, color: "#6b7280", flexShrink: 0 }}>갱신 만료일</div>
+                  <input
+                    type="date"
+                    value={renewModal.customEnd}
+                    onChange={e => setRenewModal(m => ({ ...m, customEnd: e.target.value, months: 0 }))}
+                    style={{ flex: 1, padding: "9px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none" }}
+                  />
+                </div>
+              </div>
+
+              {/* 요금 */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 8 }}>월 요금</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input
+                    type="number"
+                    value={renewModal.newFee}
+                    onChange={e => setRenewModal(m => ({ ...m, newFee: Number(e.target.value) }))}
+                    style={{ flex: 1, padding: "9px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none" }}
+                  />
+                  <span style={{ fontSize: 13, color: "#6b7280" }}>원</span>
+                </div>
+              </div>
+
+              {/* 갱신 결과 미리보기 */}
+              <div style={{ background: "#ecfdf5", border: "1px solid #bbf7d0", borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: "#065f46", fontWeight: 700, marginBottom: 6 }}>갱신 후 계약 내용</div>
+                <div style={{ fontSize: 13, color: "#047857" }}>
+                  📅 {new Date().toISOString().slice(0,10) > renewModal.contract.end_date ? new Date().toISOString().slice(0,10) : renewModal.contract.end_date}
+                  {" → "}
+                  <strong>{renewModal.customEnd || "-"}</strong>
+                </div>
+                <div style={{ fontSize: 13, color: "#047857", marginTop: 4 }}>
+                  💰 월 요금: <strong>₩{renewModal.newFee.toLocaleString()}</strong>
+                </div>
+              </div>
+
+              {/* 버튼 */}
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => setRenewModal(m => ({ ...m, open: false }))} style={{ flex: 1, padding: "13px", borderRadius: 10, border: "1px solid #e2e4e9", background: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", color: "#5c6370" }}>
+                  취소
+                </button>
+                <button onClick={saveRenew} disabled={renewModal.saving || !renewModal.customEnd} style={{ flex: 2, padding: "13px", borderRadius: 10, border: "none", background: renewModal.saving ? "#a7f3d0" : "#10b981", color: "#fff", fontSize: 14, fontWeight: 700, cursor: renewModal.saving ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.2s" }}>
+                  {renewModal.saving ? "⏳ 저장 중..." : "🔄 갱신 확정"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }
