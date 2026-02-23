@@ -4,6 +4,27 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
+import { createClient } from "@/lib/supabase/client";
+import { getUserContext } from "@/lib/utils/org";
+
+/* ── 미팍티켓 알림 설정 기본값 ── */
+const DEFAULT_NOTIF: NotifSettings = {
+  notify_entry: true,
+  notify_payment: true,
+  notify_exit_request: true,
+  push_enabled: true,
+  sound_enabled: true,
+  vibration_enabled: true,
+};
+
+type NotifSettings = {
+  notify_entry: boolean;
+  notify_payment: boolean;
+  notify_exit_request: boolean;
+  push_enabled: boolean;
+  sound_enabled: boolean;
+  vibration_enabled: boolean;
+};
 
 const SETTINGS_KEY = "mepark_notif_settings";
 
@@ -39,9 +60,94 @@ export default function SettingsPage() {
 
   const [s, setS] = useState(DEFAULT_SETTINGS);
 
+  /* ── 미팍티켓 알림 설정 (DB 연동) ── */
+  const [notif, setNotif] = useState<NotifSettings>(DEFAULT_NOTIF);
+  const [notifLoading, setNotifLoading] = useState(true);
+  const [notifSaving, setNotifSaving] = useState(false);
+  const [userRole, setUserRole] = useState<string>("viewer");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [orgId, setOrgId] = useState<string | null>(null);
+
+  const isAdmin = userRole === "admin" || userRole === "owner" || userRole === "super_admin";
+  const isCrew = userRole === "crew";
+
   useEffect(() => {
     setS(loadSettings());
+    loadNotifSettings();
   }, []);
+
+  async function loadNotifSettings() {
+    try {
+      const ctx = await getUserContext();
+      setUserRole(ctx.role);
+      setUserId(ctx.userId);
+      setOrgId(ctx.orgId);
+
+      if (!ctx.userId || !ctx.orgId) return;
+
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("user_notification_settings")
+        .select("*")
+        .eq("user_id", ctx.userId)
+        .single();
+
+      if (data) {
+        setNotif({
+          notify_entry: data.notify_entry ?? true,
+          notify_payment: data.notify_payment ?? true,
+          notify_exit_request: data.notify_exit_request ?? true,
+          push_enabled: data.push_enabled ?? true,
+          sound_enabled: data.sound_enabled ?? true,
+          vibration_enabled: data.vibration_enabled ?? true,
+        });
+      }
+    } catch (e) {
+      // 테이블 미존재 시 기본값 사용
+    } finally {
+      setNotifLoading(false);
+    }
+  }
+
+  async function saveNotifSettings() {
+    if (!userId || !orgId) return;
+    setNotifSaving(true);
+    try {
+      const supabase = createClient();
+      await supabase
+        .from("user_notification_settings")
+        .upsert({
+          user_id: userId,
+          org_id: orgId,
+          ...notif,
+        }, { onConflict: "user_id" });
+
+      showToast("✅ 알림 설정이 저장되었습니다");
+    } catch (e) {
+      showToast("❌ 저장 실패. 다시 시도해주세요.");
+    } finally {
+      setNotifSaving(false);
+    }
+  }
+
+  const toggleNotif = (key: keyof NotifSettings) => {
+    setNotif(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const setAllNotif = (enabled: boolean) => {
+    setNotif(prev => ({
+      ...prev,
+      notify_entry: enabled,
+      notify_payment: enabled,
+      notify_exit_request: enabled,
+      push_enabled: enabled,
+    }));
+  };
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2500);
+  };
 
   const toggle = (key: string) => setS(p => ({ ...p, [key]: !p[key] }));
   const toggleDay = (d: number) => setS(p => ({
@@ -55,20 +161,18 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
-      await new Promise(r => setTimeout(r, 400)); // 저장 UX
-      setToast("✅ 알림 설정이 저장되었습니다");
+      await new Promise(r => setTimeout(r, 400));
+      showToast("✅ 알림 설정이 저장되었습니다");
     } catch {
-      setToast("❌ 저장 실패. 다시 시도해주세요.");
+      showToast("❌ 저장 실패. 다시 시도해주세요.");
     } finally {
       setSaving(false);
-      setTimeout(() => setToast(""), 2500);
     }
   };
 
   const copyEmail = () => {
     navigator.clipboard?.writeText("mepark1022@gmail.com").catch(() => {});
-    setToast("📋 이메일이 복사되었습니다");
-    setTimeout(() => setToast(""), 2000);
+    showToast("📋 이메일이 복사되었습니다");
   };
 
   const Toggle = ({ on, onToggle }: { on: boolean; onToggle: () => void }) => (
@@ -249,6 +353,200 @@ export default function SettingsPage() {
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>알림 채널 및 앱 정보를 관리합니다</div>
           </div>
         </div>
+
+        {/* ── 미팍티켓 알림 설정 (DB) ── */}
+        <div className="sp-section-label">📲 미팍티켓 알림 설정</div>
+
+        {notifLoading ? (
+          <div style={{ textAlign: "center", padding: "24px", color: "#94a3b8", fontSize: 14 }}>
+            ⏳ 알림 설정 불러오는 중...
+          </div>
+        ) : (
+          <>
+            {/* 역할 뱃지 */}
+            <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "5px 14px", borderRadius: 20, fontSize: 12, fontWeight: 800,
+                background: userRole === "super_admin" ? "#fffbeb" : userRole === "admin" || userRole === "owner" ? "#eef2ff" : "#f0fdf4",
+                color: userRole === "super_admin" ? "#92400e" : userRole === "admin" || userRole === "owner" ? "#1428A0" : "#16A34A",
+                border: `1.5px solid ${userRole === "super_admin" ? "#fde68a" : userRole === "admin" || userRole === "owner" ? "#c7d2fe" : "#bbf7d0"}`,
+              }}>
+                {userRole === "super_admin" ? "⭐ 최고관리자" : userRole === "admin" || userRole === "owner" ? "🛡️ 관리자" : "👷 CREW"}
+              </div>
+              {isCrew && (
+                <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>
+                  CREW는 필수 알림을 수신합니다
+                </span>
+              )}
+            </div>
+
+            {/* 전체 OFF (admin/super_admin만) */}
+            {isAdmin && (
+              <div style={{
+                background: notif.push_enabled ? "#eef2ff" : "#fef2f2",
+                border: `1.5px solid ${notif.push_enabled ? "#c7d2fe" : "#fecaca"}`,
+                borderRadius: 14, padding: "14px 18px", marginBottom: 14,
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+              }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: notif.push_enabled ? "#1428A0" : "#DC2626" }}>
+                    {notif.push_enabled ? "🔔 알림 활성화" : "🔕 전체 알림 OFF"}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+                    {notif.push_enabled ? "모든 알림을 수신 중입니다" : "모든 알림이 비활성화되어 있습니다"}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setAllNotif(!notif.push_enabled)}
+                  style={{
+                    width: 50, height: 28, borderRadius: 14, border: "none", cursor: "pointer",
+                    background: notif.push_enabled ? "#1428A0" : "#d1d5db", position: "relative",
+                    transition: "background 0.2s", flexShrink: 0,
+                  }}
+                >
+                  <div style={{
+                    position: "absolute", top: 4, left: notif.push_enabled ? 26 : 4,
+                    width: 20, height: 20, borderRadius: "50%", background: "#fff",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s",
+                  }} />
+                </button>
+              </div>
+            )}
+
+            {/* 알림 종류 3가지 */}
+            {[
+              { key: "notify_entry", icon: "🚗", iconBg: "#eef2ff", title: "입차 알림", desc: "새 차량 입차 시 실시간 알림", required: isCrew },
+              { key: "notify_payment", icon: "💳", iconBg: "#fffbeb", title: "결제 알림", desc: "사전결제 완료 시 알림", required: isCrew },
+              { key: "notify_exit_request", icon: "🏁", iconBg: "#f0fdf4", title: "출차요청 알림", desc: "출차요청 접수 시 알림", required: isCrew },
+            ].map(item => {
+              const isOn = item.required ? true : notif[item.key as keyof NotifSettings] as boolean;
+              const locked = item.required || (!notif.push_enabled && isAdmin);
+              return (
+                <div key={item.key} style={{
+                  background: "#fff", borderRadius: 16,
+                  border: "1px solid #e2e8f0",
+                  boxShadow: "0 1px 6px rgba(20,40,160,0.05)",
+                  marginBottom: 10, overflow: "hidden",
+                  opacity: locked && !item.required ? 0.5 : 1,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", padding: "14px 18px", gap: 14 }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 12, background: item.iconBg,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 20, flexShrink: 0,
+                    }}>{item.icon}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: "#0f172a" }}>{item.title}</span>
+                        {item.required && (
+                          <span style={{
+                            fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 20,
+                            background: "#dcfce7", color: "#16A34A",
+                          }}>필수</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#94a3b8" }}>{item.desc}</div>
+                    </div>
+                    {item.required ? (
+                      <div style={{
+                        width: 50, height: 28, borderRadius: 14,
+                        background: "#16A34A", position: "relative", flexShrink: 0,
+                        opacity: 0.8,
+                      }}>
+                        <div style={{
+                          position: "absolute", top: 4, left: 26,
+                          width: 20, height: 20, borderRadius: "50%", background: "#fff",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                        }} />
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => !locked && toggleNotif(item.key as keyof NotifSettings)}
+                        disabled={locked}
+                        style={{
+                          width: 50, height: 28, borderRadius: 14, border: "none",
+                          cursor: locked ? "not-allowed" : "pointer",
+                          background: isOn ? "#1428A0" : "#d1d5db",
+                          position: "relative", transition: "background 0.2s", flexShrink: 0,
+                        }}
+                      >
+                        <div style={{
+                          position: "absolute", top: 4, left: isOn ? 26 : 4,
+                          width: 20, height: 20, borderRadius: "50%", background: "#fff",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s",
+                        }} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* 알림음 / 진동 */}
+            <div style={{
+              background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0",
+              boxShadow: "0 1px 6px rgba(20,40,160,0.05)", marginBottom: 10, overflow: "hidden",
+            }}>
+              <div style={{ padding: "12px 18px", borderBottom: "1px solid #f1f5f9" }}>
+                <span style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>🎵 수신 방식</span>
+              </div>
+              {[
+                { key: "sound_enabled", icon: "🔊", label: "알림음", desc: "소리로 알림" },
+                { key: "vibration_enabled", icon: "📳", label: "진동", desc: "진동으로 알림" },
+              ].map(item => {
+                const isOn = notif[item.key as keyof NotifSettings] as boolean;
+                return (
+                  <div key={item.key} style={{
+                    display: "flex", alignItems: "center", padding: "13px 18px", gap: 14,
+                    borderBottom: item.key === "sound_enabled" ? "1px solid #f1f5f9" : "none",
+                  }}>
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>{item.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{item.label}</div>
+                      <div style={{ fontSize: 11, color: "#94a3b8" }}>{item.desc}</div>
+                    </div>
+                    <button
+                      onClick={() => toggleNotif(item.key as keyof NotifSettings)}
+                      style={{
+                        width: 46, height: 26, borderRadius: 13, border: "none", cursor: "pointer",
+                        background: isOn ? "#1428A0" : "#d1d5db",
+                        position: "relative", transition: "background 0.2s", flexShrink: 0,
+                      }}
+                    >
+                      <div style={{
+                        position: "absolute", top: 3, left: isOn ? 23 : 3,
+                        width: 20, height: 20, borderRadius: "50%", background: "#fff",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s",
+                      }} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 저장 버튼 */}
+            <button
+              onClick={saveNotifSettings}
+              disabled={notifSaving || !userId}
+              style={{
+                width: "100%", padding: "13px", borderRadius: 12, border: "none",
+                background: notifSaving ? "#94a3b8" : "linear-gradient(135deg,#0d1670,#1428A0)",
+                color: "#fff", fontSize: 14, fontWeight: 800, cursor: notifSaving ? "not-allowed" : "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                boxShadow: "0 4px 12px rgba(20,40,160,0.2)", marginBottom: 8,
+                fontFamily: "inherit",
+              }}
+            >
+              {notifSaving ? "⏳ 저장 중..." : "💾 미팍티켓 알림 설정 저장"}
+            </button>
+            {!userId && (
+              <div style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", marginBottom: 8 }}>
+                로그인 후 저장할 수 있습니다
+              </div>
+            )}
+          </>
+        )}
 
         {/* ── 알림 설정 ── */}
         <div className="sp-section-label">🔔 알림 설정</div>
