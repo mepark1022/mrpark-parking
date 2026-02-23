@@ -321,25 +321,28 @@ const Modal = ({
 }: { title: string; onClose: () => void; children: React.ReactNode; width?: number }) => (
   <div style={{
     position: "fixed", inset: 0, zIndex: 1000,
-    background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center",
-  }}>
-    <div style={{
-      background: "#fff", borderRadius: 20, width, maxWidth: "95vw",
-      maxHeight: "90vh", overflow: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+    background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-end", justifyContent: "center",
+  }}
+    className="stores-modal-overlay"
+  >
+    <div className="stores-modal-box" style={{
+      background: "#fff",
+      overflow: "auto", boxShadow: "0 -4px 40px rgba(0,0,0,0.15)",
     }}>
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "20px 24px", borderBottom: `1px solid ${C.borderLight}`,
-      }}>
+        borderBottom: `1px solid ${C.borderLight}`,
+        position: "sticky", top: 0, background: "#fff", zIndex: 1,
+      }} className="stores-modal-header">
         <span style={{ fontSize: 17, fontWeight: 700 }}>{title}</span>
         <button
           onClick={onClose}
-          style={{ border: "none", background: "none", fontSize: 20, cursor: "pointer", color: C.textMuted }}
+          style={{ border: "none", background: "none", fontSize: 20, cursor: "pointer", color: C.textMuted, padding: "4px 8px" }}
         >
           ✕
         </button>
       </div>
-      <div style={{ padding: 24 }}>{children}</div>
+      <div className="stores-modal-body">{children}</div>
     </div>
   </div>
 );
@@ -790,7 +793,98 @@ export default function StoresPage() {
                         <span style={{ fontSize: 18, color: C.textMuted, marginLeft: 8 }}>{isExpanded ? "▲" : "▼"}</span>
                       </div>
                     </div>
-                    {/* 모바일 확장 액션 영역 */}
+                    {/* 모바일 상세 인라인 (isExpanded 시 표시) */}
+                    {isExpanded && (
+                      <div style={{ borderTop: `1px solid ${C.borderLight}`, background: "#f8f9fc" }}>
+                        {/* 주차장 미니 섹션 */}
+                        <div style={{ padding: "12px 16px" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: C.navy }}>🅿️ 주차장</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setLotForm({ name: "", lot_type: "internal", parking_type: ["self"], road_address: store.road_address ?? "", self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0 }); setEditingItem(null); setStoreForAction(store.id); setModalType("lot"); }}
+                              style={{ fontSize: 12, fontWeight: 700, color: C.navy, background: "none", border: `1px solid ${C.navy}`, borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}
+                            >+ 추가</button>
+                          </div>
+                          {lots.length === 0 ? (
+                            <div style={{ fontSize: 12, color: C.error, background: C.errorBg, borderRadius: 8, padding: "8px 12px" }}>⚠️ 주차장을 등록해주세요</div>
+                          ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                              {lots.map(lot => (
+                                <div key={lot.id} style={{ background: "#fff", borderRadius: 8, padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                  <div>
+                                    <div style={{ fontSize: 13, fontWeight: 600 }}>{lot.name}</div>
+                                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
+                                      {LOT_TYPE_LABEL[lot.lot_type]} · 총 {totalSpaces(lot)}면
+                                    </div>
+                                  </div>
+                                  <div style={{ display: "flex", gap: 4 }}>
+                                    <button onClick={(e) => { e.stopPropagation(); setLotForm({ name: lot.name, lot_type: lot.lot_type, parking_type: lot.parking_type ?? ["self"], road_address: lot.road_address ?? "", self_spaces: lot.self_spaces, mechanical_normal: lot.mechanical_normal, mechanical_suv: lot.mechanical_suv }); setEditingItem(lot as unknown as Record<string, unknown>); setStoreForAction(store.id); setModalType("lot"); }}
+                                      style={{ fontSize: 11, color: C.navy, background: "none", border: `1px solid ${C.borderLight}`, borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "inherit" }}>수정</button>
+                                    <button onClick={(e) => { e.stopPropagation(); deleteLot(lot.id, store.id); }}
+                                      style={{ fontSize: 11, color: C.error, background: "none", border: `1px solid ${C.error}33`, borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "inherit" }}>삭제</button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {/* 방문지 미니 섹션 */}
+                        <div style={{ padding: "12px 16px", borderTop: `1px solid ${C.borderLight}` }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: C.navy }}>🏥 방문지</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setVisitForm({ name: "", floor: "", free_minutes: 30, base_fee: 1000, base_minutes: 30, extra_fee: 500, daily_max: 0, valet_fee: 3000, monthly_fee: 150000 }); setEditingItem(null); setStoreForAction(store.id); setModalType("visit"); }}
+                              style={{ fontSize: 12, fontWeight: 700, color: C.navy, background: "none", border: `1px solid ${C.navy}`, borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}
+                            >+ 추가</button>
+                          </div>
+                          {visits.length === 0 ? (
+                            <div style={{ fontSize: 12, color: C.textMuted, textAlign: "center", padding: "8px 0" }}>등록된 방문지 없음</div>
+                          ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                              {visits.map(vp => (
+                                <div key={vp.id} style={{ background: "#fff", borderRadius: 8, padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                  <div>
+                                    <div style={{ fontSize: 13, fontWeight: 600 }}>{vp.name}</div>
+                                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>무료 {vp.free_minutes}분 · 기본 ₩{vp.base_fee.toLocaleString()}</div>
+                                  </div>
+                                  <div style={{ display: "flex", gap: 4 }}>
+                                    <button onClick={(e) => { e.stopPropagation(); setVisitForm({ name: vp.name, floor: vp.floor ?? "", free_minutes: vp.free_minutes, base_fee: vp.base_fee, base_minutes: vp.base_minutes, extra_fee: vp.extra_fee, daily_max: vp.daily_max, valet_fee: vp.valet_fee, monthly_fee: vp.monthly_fee }); setEditingItem(vp as unknown as Record<string, unknown>); setStoreForAction(store.id); setModalType("visit"); }}
+                                      style={{ fontSize: 11, color: C.navy, background: "none", border: `1px solid ${C.borderLight}`, borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "inherit" }}>수정</button>
+                                    <button onClick={async (e) => { e.stopPropagation(); if (!confirm("삭제?")) return; await supabase.from("visit_places").delete().eq("id", vp.id); loadData(); }}
+                                      style={{ fontSize: 11, color: C.error, background: "none", border: `1px solid ${C.error}33`, borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "inherit" }}>삭제</button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {/* 운영 설정 토글 미니 섹션 */}
+                        <div style={{ padding: "12px 16px", borderTop: `1px solid ${C.borderLight}` }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 8 }}>⚙️ 운영 설정</div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                            {[
+                              { key: "is_free_parking", label: "무료 운영", icon: "🆓", color: "#16A34A", bg: "#ecfdf5" },
+                              { key: "has_kiosk", label: "미팍 키오스크", icon: "🖥️", color: C.navy, bg: "#eef1fb" },
+                              { key: "has_toss_kiosk", label: "토스키오스크", icon: "💳", color: "#EA580C", bg: "#fff7ed" },
+                            ].map(({ key, label, icon, color, bg }) => {
+                              const isOn = (store as any)[key] ?? false;
+                              return (
+                                <div
+                                  key={key}
+                                  onClick={(e) => { e.stopPropagation(); saveStoreSetting(store.id, { [key]: !isOn }); }}
+                                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, background: isOn ? bg : "#fff", border: `1px solid ${isOn ? color : C.borderLight}`, cursor: "pointer", fontSize: 12, fontWeight: 600, color: isOn ? color : C.textMuted }}
+                                >
+                                  <span>{icon}</span>
+                                  <span>{label}</span>
+                                  <span style={{ fontSize: 10, background: isOn ? color : "#D0D2DA", color: "#fff", borderRadius: 10, padding: "1px 6px" }}>{isOn ? "ON" : "OFF"}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {/* 모바일 액션 버튼 */}
                     <div style={{
                       display: "flex", gap: 8, padding: "10px 16px 14px",
                       borderTop: `1px solid ${C.borderLight}`, background: "#fff",
@@ -1868,16 +1962,26 @@ export default function StoresPage() {
       .stores-grid-auto { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
       .stores-grid-2col { grid-template-columns: 1fr 1fr; }
       .stores-grid-3col { grid-template-columns: repeat(3, 1fr); }
+      /* 모달 - PC */
+      .stores-modal-overlay { align-items: center; }
+      .stores-modal-box { border-radius: 20px; width: 560px; max-width: 95vw; max-height: 90vh; }
+      .stores-modal-header { padding: 20px 24px; }
+      .stores-modal-body { padding: 24px; }
       @media (max-width: 767px) {
         .stores-tab-bar { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .stores-card-body > div { padding: 16px; }
         .stores-mobile-view { display: flex !important; }
         .stores-desktop-view { display: none !important; }
-        .stores-detail-wrap { margin-top: 8px; }
+        .stores-detail-wrap { display: none; }
         .stores-section-pad { padding: 16px; }
         .stores-grid-auto { grid-template-columns: 1fr; }
         .stores-grid-2col { grid-template-columns: 1fr; }
         .stores-grid-3col { grid-template-columns: 1fr; }
+        /* 모달 - 모바일 바텀시트 */
+        .stores-modal-overlay { align-items: flex-end !important; }
+        .stores-modal-box { border-radius: 20px 20px 0 0 !important; width: 100% !important; max-width: 100% !important; max-height: 88vh !important; }
+        .stores-modal-header { padding: 16px !important; }
+        .stores-modal-body { padding: 16px !important; }
       }
     `}</style>
     <div style={{ background: C.bgPage, minHeight: "100vh" }}>
