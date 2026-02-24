@@ -6,66 +6,31 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 /* ────────────────────────────────────────────
-   CREW 로고 (Split Badge 스타일)
+   미팍Ticket 로고 (P아이콘 + 미팍Ticket 텍스트)
 ──────────────────────────────────────────── */
-function CrewLogo({ size = "large" }: { size?: "large" | "small" }) {
-  const isLarge = size === "large";
-  const fontSize = isLarge ? 20 : 16;
-  const crewSize = isLarge ? 13 : 11;
-  const padding = isLarge ? "12px 16px" : "10px 14px";
-  const badgeSize = isLarge ? 18 : 14;
+function MeparkLogo({ dark = true }: { dark?: boolean }) {
+  const textColor = dark ? "#fff" : "#1A1D2B";
+  const circleBg = dark ? "rgba(255,255,255,0.15)" : "#fff";
+  const iconBg = dark ? "rgba(255,255,255,0.18)" : "#1428A0";
+  const pColor = "#fff";
 
   return (
-    <div style={{ display: "flex", alignItems: "center" }}>
-      {/* ME.PARK 부분 */}
+    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      {/* P 아이콘 */}
       <div style={{
-        padding,
-        border: "2.5px solid #fff",
-        borderRadius: "10px 0 0 10px",
-        borderRight: "none",
+        width: 60, height: 60, background: iconBg, borderRadius: 16,
+        position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
+        border: dark ? "2px solid rgba(255,255,255,0.2)" : "none",
       }}>
-        <span style={{
-          fontFamily: "'Outfit', sans-serif",
-          fontSize,
-          fontWeight: 800,
-          color: "#fff",
-          letterSpacing: "-0.3px",
-        }}>ME.PARK</span>
+        <div style={{ position: "absolute", left: -6, top: "50%", transform: "translateY(-50%)", width: 12, height: 12, background: circleBg, borderRadius: "50%" }} />
+        <div style={{ position: "absolute", right: -6, top: "50%", transform: "translateY(-50%)", width: 12, height: 12, background: circleBg, borderRadius: "50%" }} />
+        <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 32, fontWeight: 900, color: pColor, marginTop: -4 }}>P</span>
+        <span style={{ position: "absolute", bottom: 9, left: "50%", transform: "translateX(-50%)", width: 24, height: 5, background: "#F5B731", borderRadius: 2.5 }} />
       </div>
-      {/* CREW 부분 */}
-      <div style={{
-        padding,
-        background: "#F5B731",
-        borderRadius: "0 10px 10px 0",
-        position: "relative",
-      }}>
-        <span style={{
-          fontFamily: "'Outfit', sans-serif",
-          fontSize: crewSize,
-          fontWeight: 800,
-          color: "#1A1D2B",
-          letterSpacing: "3px",
-        }}>CREW</span>
-        {/* 버전 뱃지 */}
-        <div style={{
-          position: "absolute",
-          top: -6,
-          right: -6,
-          width: badgeSize,
-          height: badgeSize,
-          background: "#1428A0",
-          borderRadius: 5,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}>
-          <span style={{
-            fontFamily: "'Outfit', sans-serif",
-            fontSize: isLarge ? 9 : 7,
-            fontWeight: 800,
-            color: "#fff",
-          }}>2</span>
-        </div>
+      {/* 미팍Ticket */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
+        <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 28, fontWeight: 800, color: textColor }}>미팍</span>
+        <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 700, color: "#F5B731" }}>Ticket</span>
       </div>
     </div>
   );
@@ -280,8 +245,8 @@ export default function CrewLoginPage() {
       <div className="crew-login">
         {/* 상단: 로고 */}
         <div className="crew-login-top">
-          <CrewLogo size="large" />
-          <div className="crew-login-subtitle">주차 크루 전용 앱</div>
+          <MeparkLogo dark={true} />
+          <div className="crew-login-subtitle">주차 크루 전용</div>
         </div>
 
         {/* 하단: 로그인 카드 */}
