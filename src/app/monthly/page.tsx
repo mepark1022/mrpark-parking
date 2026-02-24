@@ -12,6 +12,7 @@ import type { Store } from "@/lib/types/database";
 
 type MonthlyRow = {
   id: string;
+  org_id: string;
   store_id: string;
   vehicle_number: string;
   vehicle_type: string | null;
@@ -23,6 +24,8 @@ type MonthlyRow = {
   payment_status: string;
   contract_status: string;
   note: string | null;
+  d7_alimtalk_sent?: boolean;
+  d7_alimtalk_sent_at?: string | null;
   stores: { name: string } | null;
 };
 
@@ -201,11 +204,14 @@ export default function MonthlyPage() {
           endDate: c.end_date,
           fee: c.monthly_fee,
           templateType: "renewal_remind",
+          contractId: c.id,
+          orgId: c.org_id,
         }),
       });
       const data = await res.json();
       if (data.success) {
         setAlimModal(m => ({ ...m, sending: false, sent: true }));
+        loadContracts(); // 발송 후 목록 새로고침
       } else {
         setAlimModal(m => ({ ...m, sending: false, error: data.error || "발송 실패" }));
       }
@@ -362,6 +368,14 @@ export default function MonthlyPage() {
                           }}>
                           📨 알림톡 발송
                         </button>
+                        {c.d7_alimtalk_sent && (
+                          <span style={{
+                            padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                            background: "#ecfdf5", color: "#059669", whiteSpace: "nowrap"
+                          }}>
+                            ✓ D-7 발송됨
+                          </span>
+                        )}
                       </div>
                     );
                   })}
