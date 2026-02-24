@@ -558,10 +558,18 @@ export default function StoresPage() {
   // ── CRUD 핸들러 ──
   // 인라인 운영 설정 토글 저장
   async function saveStoreSetting(storeId: string, patch: Partial<Store>) {
-    const { error } = await supabase.from("stores").update(patch).eq("id", storeId);
+    // numeric 필드 NaN/빈값 처리
+    const cleanedPatch = Object.fromEntries(
+      Object.entries(patch).map(([k, v]) => {
+        if (typeof v === "number" && isNaN(v)) return [k, null];
+        if (v === "") return [k, null];
+        return [k, v];
+      })
+    );
+    const { error } = await supabase.from("stores").update(cleanedPatch).eq("id", storeId);
     if (error) { showToast("❌ 저장 실패: " + error.message); return; }
     showToast("✅ 설정이 저장되었습니다");
-    setStores(prev => prev.map(s => s.id === storeId ? { ...s, ...patch } : s));
+    setStores(prev => prev.map(s => s.id === storeId ? { ...s, ...cleanedPatch } : s));
   }
 
   // 숫자 설정 임시 상태 (GPS반경, 유예시간)
@@ -577,11 +585,17 @@ export default function StoresPage() {
     if (!storeForm.name.trim()) { alert("매장명을 입력해주세요."); return; }
     const oid = await getOrgId();
     if (!oid) { alert("로그인 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요."); return; }
+    // numeric 필드 빈 문자열 → null 변환
+    const cleanedForm = {
+      ...storeForm,
+      latitude: storeForm.latitude === "" ? null : Number(storeForm.latitude) || null,
+      longitude: storeForm.longitude === "" ? null : Number(storeForm.longitude) || null,
+    };
     if (editingItem?.id) {
-      const { error } = await supabase.from("stores").update({ ...storeForm }).eq("id", editingItem.id);
+      const { error } = await supabase.from("stores").update(cleanedForm).eq("id", editingItem.id);
       if (error) { alert("수정 실패: " + error.message); return; }
     } else {
-      const payload = { ...storeForm, org_id: oid };
+      const payload = { ...cleanedForm, org_id: oid };
       const { data, error } = await supabase.from("stores").insert(payload).select();
       if (error) { alert("저장 실패: " + error.message); return; }
       if (!data || data.length === 0) {
