@@ -74,11 +74,29 @@ export default function CrewHomePage() {
 
       setUser({ id: profile.id, name: profile.name || "크루", role: profile.role });
 
-      // 선택된 매장 확인
-      const storeId = localStorage.getItem("crew_store_id");
-      if (!storeId) {
-        router.replace("/crew/select-store");
+      // 매장 배정 확인
+      const { data: storeMembers } = await supabase
+        .from("store_members")
+        .select("store_id")
+        .eq("user_id", authUser.id);
+
+      if (!storeMembers || storeMembers.length === 0) {
+        router.replace("/crew/login");
         return;
+      }
+
+      // 선택된 매장 확인
+      let storeId = localStorage.getItem("crew_store_id");
+      
+      // localStorage에 없거나 유효하지 않으면 첫 번째 매장 사용
+      if (!storeId || !storeMembers.find(m => m.store_id === storeId)) {
+        if (storeMembers.length === 1) {
+          storeId = storeMembers[0].store_id;
+          localStorage.setItem("crew_store_id", storeId);
+        } else {
+          router.replace("/crew/select-store");
+          return;
+        }
       }
 
       // 매장 정보 조회

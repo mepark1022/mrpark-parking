@@ -95,8 +95,22 @@ export default function CrewLoginPage() {
           .single();
         
         if (profile && (profile.role === "crew" || profile.role === "admin")) {
-          router.replace("/crew");
-          return;
+          // 매장 배정 확인
+          const { data: storeMembers } = await supabase
+            .from("store_members")
+            .select("store_id")
+            .eq("user_id", user.id);
+          
+          if (storeMembers && storeMembers.length > 0) {
+            // 매장이 1개면 바로 저장
+            if (storeMembers.length === 1) {
+              localStorage.setItem("crew_store_id", storeMembers[0].store_id);
+            }
+            router.replace("/crew");
+            return;
+          }
+          // 매장 배정 없으면 로그인 화면 유지 (에러 표시)
+          setError("배정된 매장이 없습니다. 관리자에게 문의하세요.");
         }
       }
       setCheckingAuth(false);
