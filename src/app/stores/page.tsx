@@ -1788,6 +1788,96 @@ export default function StoresPage() {
             ))}
           </div>
 
+          {/* 크루앱 운영 설정 */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8, marginTop: 16, marginBottom: 12,
+          }}>
+            <div style={{
+              width: 4, height: 18, background: C.gold, borderRadius: 2,
+            }} />
+            <span style={{ fontSize: 14, fontWeight: 700, color: C.textPrimary }}>📱 크루앱 운영 설정</span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {[
+              {
+                key: "require_entry_photo" as const,
+                label: "입차 사진 필수",
+                desc: "크루앱에서 입차 등록 시 사진 촬영 필수",
+                icon: "📷",
+                defaultVal: false,
+              },
+              {
+                key: "enable_plate_search" as const,
+                label: "번호판 검색",
+                desc: "크루앱에서 번호판 검색 기능 사용",
+                icon: "🔍",
+                defaultVal: true,
+              },
+              {
+                key: "enable_valet" as const,
+                label: "발렛 서비스",
+                desc: "크루앱에서 발렛 입차/출차 기능 사용",
+                icon: "🚗",
+                defaultVal: true,
+              },
+              {
+                key: "enable_monthly" as const,
+                label: "월주차 관리",
+                desc: "크루앱에서 월주차 차량 조회/관리",
+                icon: "📅",
+                defaultVal: true,
+              },
+              {
+                key: "require_visit_place" as const,
+                label: "방문지 선택 필수",
+                desc: "입차 등록 시 방문지 반드시 선택",
+                icon: "🏥",
+                defaultVal: false,
+              },
+            ].map(({ key, label, desc, icon, defaultVal }, idx, arr) => {
+              const isOn = storeForm[key] ?? defaultVal;
+              return (
+                <div
+                  key={key}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "12px 14px",
+                    background: isOn ? "#fef9e7" : "#f8f9fc",
+                    borderRadius: idx === 0 ? "10px 10px 0 0" : idx === arr.length - 1 ? "0 0 10px 10px" : "0",
+                    borderBottom: idx < arr.length - 1 ? `1px solid ${C.borderLight}` : "none",
+                    transition: "background 0.15s",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 20 }}>{icon}</span>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: C.textPrimary }}>{label}</div>
+                      <div style={{ fontSize: 12, color: C.textMuted, marginTop: 1 }}>{desc}</div>
+                    </div>
+                  </div>
+                  {/* 토글 스위치 */}
+                  <div
+                    onClick={() => setStoreForm(f => ({ ...f, [key]: !isOn }))}
+                    style={{
+                      width: 48, height: 26, borderRadius: 13, cursor: "pointer",
+                      background: isOn ? C.gold : "#D0D2DA",
+                      position: "relative", transition: "background 0.2s", flexShrink: 0,
+                    }}
+                  >
+                    <div style={{
+                      position: "absolute", top: 3, left: isOn ? 25 : 3,
+                      width: 20, height: 20, borderRadius: "50%",
+                      background: "#fff",
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+                      transition: "left 0.2s",
+                    }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {/* 숫자 입력: 유예시간 + GPS 반경 */}
           <div className="stores-grid-2col" style={{ display: "grid", gap: 12, marginTop: 12 }}>
             <FormGroup label="사전결제 유예시간">
