@@ -24,6 +24,12 @@ interface Store {
   has_toss_kiosk?: boolean;
   grace_period_minutes?: number;
   gps_radius_meters?: number;
+  // Part 13.1 크루앱 운영 설정
+  require_entry_photo?: boolean;
+  enable_plate_search?: boolean;
+  enable_valet?: boolean;
+  enable_monthly?: boolean;
+  require_visit_place?: boolean;
   contact_name?: string;
   contact_phone?: string;
   latitude?: number | null;
@@ -393,6 +399,12 @@ export default function StoresPage() {
     gps_radius_meters: 150,
     latitude: "" as string | number,
     longitude: "" as string | number,
+    // Part 13.1 크루앱 운영 설정
+    require_entry_photo: false,
+    enable_plate_search: true,
+    enable_valet: true,
+    enable_monthly: true,
+    require_visit_place: false,
   });
   const [lotForm, setLotForm] = useState({
     name: "", lot_type: "internal", parking_type: ["self"],
@@ -747,7 +759,7 @@ export default function StoresPage() {
         <CardHeader>
           <CardTitle icon="🏢">매장 목록 ({stores.length}개)</CardTitle>
           <BtnPrimary onClick={() => {
-            setStoreForm({ name: "", region_city: "", region_district: "", road_address: "", manager_name: "", contact_name: "", contact_phone: "", is_free_parking: false, has_kiosk: false, has_toss_kiosk: false, grace_period_minutes: 30, gps_radius_meters: 150, latitude: "", longitude: "" });
+            setStoreForm({ name: "", region_city: "", region_district: "", road_address: "", manager_name: "", contact_name: "", contact_phone: "", is_free_parking: false, has_kiosk: false, has_toss_kiosk: false, grace_period_minutes: 30, gps_radius_meters: 150, latitude: "", longitude: "", require_entry_photo: false, enable_plate_search: true, enable_valet: true, enable_monthly: true, require_visit_place: false });
             setEditingItem(null);
             setModalType("store");
           }}>
@@ -895,6 +907,30 @@ export default function StoresPage() {
                               );
                             })}
                           </div>
+                          {/* 📱 크루앱 설정 미니 */}
+                          <div style={{ fontSize: 12, fontWeight: 600, color: C.textSecondary, marginTop: 12, marginBottom: 6 }}>📱 크루앱 설정</div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            {[
+                              { key: "require_entry_photo", label: "입차사진", icon: "📷", color: "#8B5CF6", bg: "#f5f3ff" },
+                              { key: "enable_plate_search", label: "번호검색", icon: "🔍", color: C.navy, bg: "#eef1fb" },
+                              { key: "enable_valet", label: "발렛", icon: "🚗", color: "#EA580C", bg: "#fff7ed" },
+                              { key: "enable_monthly", label: "월주차", icon: "📅", color: "#16A34A", bg: "#ecfdf5" },
+                              { key: "require_visit_place", label: "방문지필수", icon: "🏥", color: "#0F9ED5", bg: "#e0f7ff" },
+                            ].map(({ key, label, icon, color, bg }) => {
+                              const isOn = (store as any)[key] ?? (key === "enable_plate_search" || key === "enable_valet" || key === "enable_monthly");
+                              return (
+                                <div
+                                  key={key}
+                                  onClick={(e) => { e.stopPropagation(); saveStoreSetting(store.id, { [key]: !isOn }); }}
+                                  style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 16, background: isOn ? bg : "#fff", border: `1px solid ${isOn ? color : C.borderLight}`, cursor: "pointer", fontSize: 11, fontWeight: 600, color: isOn ? color : C.textMuted }}
+                                >
+                                  <span style={{ fontSize: 12 }}>{icon}</span>
+                                  <span>{label}</span>
+                                  <span style={{ fontSize: 9, background: isOn ? color : "#D0D2DA", color: "#fff", borderRadius: 8, padding: "1px 5px" }}>{isOn ? "ON" : "OFF"}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -917,6 +953,12 @@ export default function StoresPage() {
                           gps_radius_meters: (store as any).gps_radius_meters ?? 150,
                           latitude: (store as any).latitude ?? "",
                           longitude: (store as any).longitude ?? "",
+                          // Part 13.1 크루앱 운영 설정
+                          require_entry_photo: (store as any).require_entry_photo ?? false,
+                          enable_plate_search: (store as any).enable_plate_search ?? true,
+                          enable_valet: (store as any).enable_valet ?? true,
+                          enable_monthly: (store as any).enable_monthly ?? true,
+                          require_visit_place: (store as any).require_visit_place ?? false,
                         });
                         setEditingItem(store as unknown as Record<string, unknown>);
                         setModalType("store");
@@ -998,6 +1040,12 @@ export default function StoresPage() {
                               gps_radius_meters: (store as any).gps_radius_meters ?? 150,
                               latitude: (store as any).latitude ?? "",
                               longitude: (store as any).longitude ?? "",
+                              // Part 13.1 크루앱 운영 설정
+                              require_entry_photo: (store as any).require_entry_photo ?? false,
+                              enable_plate_search: (store as any).enable_plate_search ?? true,
+                              enable_valet: (store as any).enable_valet ?? true,
+                              enable_monthly: (store as any).enable_monthly ?? true,
+                              require_visit_place: (store as any).require_visit_place ?? false,
                             });
                             setEditingItem(store as unknown as Record<string, unknown>);
                             setModalType("store");
@@ -1227,6 +1275,59 @@ export default function StoresPage() {
                   { key: "has_toss_kiosk" as const, label: "토스키오스크 보유", desc: "토스키오스크 연동 결제", icon: "💳", activeColor: "#EA580C", activeBg: "#fff7ed" },
                 ] as const).map(({ key, label, desc, icon, activeColor, activeBg }, idx, arr) => {
                   const isOn = store[key] ?? false;
+                  return (
+                    <div
+                      key={key}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        padding: "13px 16px",
+                        background: isOn ? activeBg : "#f8f9fc",
+                        borderBottom: idx < arr.length - 1 ? `1px solid ${C.borderLight}` : "none",
+                        transition: "background 0.15s",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 20 }}>{icon}</span>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: C.textPrimary }}>{label}</div>
+                          <div style={{ fontSize: 12, color: C.textMuted, marginTop: 1 }}>{desc}</div>
+                        </div>
+                      </div>
+                      <div
+                        onClick={() => saveStoreSetting(store.id, { [key]: !isOn })}
+                        title={isOn ? "클릭하여 끄기" : "클릭하여 켜기"}
+                        style={{
+                          width: 48, height: 26, borderRadius: 13, cursor: "pointer",
+                          background: isOn ? activeColor : "#D0D2DA",
+                          position: "relative", transition: "background 0.2s", flexShrink: 0,
+                        }}
+                      >
+                        <div style={{
+                          position: "absolute", top: 3, left: isOn ? 25 : 3,
+                          width: 20, height: 20, borderRadius: "50%",
+                          background: "#fff",
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+                          transition: "left 0.2s",
+                        }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 📱 크루앱 운영 설정 */}
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 8, marginTop: 16, display: "flex", alignItems: "center", gap: 6 }}>
+                <span>📱</span> 크루앱 운영 설정
+              </div>
+              <div style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${C.borderLight}`, marginBottom: 14 }}>
+                {([
+                  { key: "require_entry_photo" as const, label: "입차 사진 필수", desc: "크루가 입차 시 차량 사진 촬영 필수", icon: "📷", activeColor: "#8B5CF6", activeBg: "#f5f3ff" },
+                  { key: "enable_plate_search" as const, label: "차량번호 검색", desc: "크루앱에서 차량번호 검색 기능 활성화", icon: "🔍", activeColor: C.navy, activeBg: "#eef1fb" },
+                  { key: "enable_valet" as const, label: "발렛 주차 가능", desc: "발렛 주차 서비스 제공 여부", icon: "🚗", activeColor: "#EA580C", activeBg: "#fff7ed" },
+                  { key: "enable_monthly" as const, label: "월주차 가능", desc: "월주차 계약 기능 활성화", icon: "📅", activeColor: "#16A34A", activeBg: "#ecfdf5" },
+                  { key: "require_visit_place" as const, label: "방문지 선택 필수", desc: "입차 시 방문지(층/호실) 선택 필수", icon: "🏥", activeColor: "#0F9ED5", activeBg: "#e0f7ff" },
+                ] as const).map(({ key, label, desc, icon, activeColor, activeBg }, idx, arr) => {
+                  const isOn = store[key] ?? (key === "enable_plate_search" || key === "enable_valet" || key === "enable_monthly");
                   return (
                     <div
                       key={key}
