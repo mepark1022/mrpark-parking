@@ -60,7 +60,7 @@ export default function CrewHomePage() {
         return;
       }
 
-      if (ctx.role !== "crew" && ctx.role !== "admin" && ctx.role !== "owner") {
+      if (ctx.role !== "crew" && ctx.role !== "admin" && ctx.role !== "owner" && ctx.role !== "super_admin") {
         router.replace("/crew/login");
         return;
       }
@@ -97,7 +97,7 @@ export default function CrewHomePage() {
       const { data: worker } = await supabase
         .from("workers")
         .select("id")
-        .eq("user_id", authUser.id)
+        .eq("user_id", ctx.userId)
         .single();
 
       if (worker) {
