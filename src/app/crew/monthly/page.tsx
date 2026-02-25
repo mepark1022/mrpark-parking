@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import CrewHeader from "@/components/crew/CrewHeader";
+import { useCrewToast } from "@/components/crew/CrewToast";
 import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 
 /* ─────────────────────────────────────────────
@@ -166,6 +167,7 @@ const CSS = `
 ───────────────────────────────────────────── */
 export default function CrewMonthlyPage() {
   const supabase = createClient();
+  const { showToast } = useCrewToast();
 
   const [orgId, setOrgId] = useState("");
   const [storeId, setStoreId] = useState("");
@@ -211,7 +213,7 @@ export default function CrewMonthlyPage() {
       if (error) throw error;
       setResults(data || []);
     } catch (e: any) {
-      alert("조회 실패: " + e.message);
+      showToast("조회 실패: " + e.message, "error");
       setResults([]);
     } finally {
       setLoading(false);

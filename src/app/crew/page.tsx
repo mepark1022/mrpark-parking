@@ -196,7 +196,7 @@ export default function CrewHomePage() {
             id: req.id,
             type: "rejected",
             message: "퇴근요청이 반려되었습니다",
-            reason: req.rejected_reason || "사유 확인 필요",
+            reason: req.reject_reason || "사유 확인 필요",
             time: new Date(req.updated_at).toLocaleString("ko-KR"),
           })));
         }

@@ -313,7 +313,7 @@ export default function CrewSettingsPage() {
           </button>
 
           <div className="settings-version">
-            ME.PARK CREW © 2026 미스터팍
+            미팍Ticket © 2026 미스터팍
           </div>
         </div>
 

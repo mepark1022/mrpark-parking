@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import CrewHeader from "@/components/crew/CrewHeader";
+import { useCrewToast } from "@/components/crew/CrewToast";
 import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 
 const ACCIDENT_TYPES = [
@@ -142,6 +143,7 @@ const CSS = `
 
 export default function CrewAccidentPage() {
   const router = useRouter();
+  const { showToast } = useCrewToast();
   const supabase = createClient();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -213,7 +215,7 @@ export default function CrewAccidentPage() {
       }
       setStep(99);
     } catch (e: any) {
-      alert("제출 실패: " + e.message);
+      showToast("제출 실패: " + e.message, "error");
     } finally {
       setSubmitting(false);
     }

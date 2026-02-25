@@ -1,14 +1,15 @@
 // @ts-nocheck
 import { Metadata, Viewport } from "next";
+import { CrewToastProvider } from "@/components/crew/CrewToast";
 
 export const metadata: Metadata = {
-  title: "ME.PARK CREW",
+  title: "미팍Ticket CREW",
   description: "주차 크루 전용 앱",
   manifest: "/crew/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "CREW",
+    title: "미팍Ticket",
   },
 };
 
@@ -59,7 +60,9 @@ export default function CrewLayout({
           padding-bottom: env(safe-area-inset-bottom, 0);
         }
       `}</style>
-      {children}
+      <CrewToastProvider>
+        {children}
+      </CrewToastProvider>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
+import { useCrewToast } from "@/components/crew/CrewToast";
 
 const CSS = `
   .qr-page {
@@ -121,6 +122,7 @@ const CSS = `
 function QRContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { showToast } = useCrewToast();
 
   const ticketId = searchParams.get("ticketId") || "";
   const plate = searchParams.get("plate") || "";
@@ -145,14 +147,14 @@ function QRContent() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "ME.PARK 주차권",
+          title: "미팍Ticket 주차권",
           text: `차량번호: ${plate}`,
           url: ticketUrl,
         });
       } catch {}
     } else {
       await navigator.clipboard.writeText(ticketUrl);
-      alert("링크가 복사되었습니다!");
+      showToast("링크가 복사되었습니다!", "success");
     }
   };
 

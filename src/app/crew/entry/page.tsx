@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import CrewHeader from "@/components/crew/CrewHeader";
+import { useCrewToast } from "@/components/crew/CrewToast";
 
 const CSS = `
   .entry-page {
@@ -149,6 +150,7 @@ const CSS = `
 
 export default function CrewEntryPage() {
   const router = useRouter();
+  const { showToast } = useCrewToast();
   const supabase = createClient();
 
   const [step, setStep] = useState(1);
@@ -264,7 +266,7 @@ export default function CrewEntryPage() {
       router.push(`/crew/entry/qr?ticketId=${ticket.id}&plate=${encodeURIComponent(plateNumber)}&type=${parkingType}`);
     } catch (err) {
       console.error(err);
-      alert("입차 등록 중 오류가 발생했습니다.");
+      showToast("입차 등록 중 오류가 발생했습니다.", "error");
     } finally {
       setLoading(false);
     }
