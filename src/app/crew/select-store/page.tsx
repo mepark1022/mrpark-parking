@@ -35,16 +35,18 @@ export default function CrewSelectStorePage() {
         }
 
         const supabase = createClient();
+        console.log("[select-store] ctx:", JSON.stringify(ctx));
 
-        // admin/owner: org 전체 매장 / crew: 배정 매장만
+        // admin/owner/super_admin: org 전체 매장 / crew: 배정 매장만
         let storesData: Store[] = [];
 
         if (ctx.allStores) {
-          const { data } = await supabase
+          const { data, error: storeErr } = await supabase
             .from("stores")
             .select("id, name, address, region")
             .eq("org_id", ctx.orgId)
             .order("name");
+          console.log("[select-store] allStores query:", { data: data?.length, error: storeErr });
           storesData = data || [];
         } else if (ctx.storeIds.length > 0) {
           const { data } = await supabase
