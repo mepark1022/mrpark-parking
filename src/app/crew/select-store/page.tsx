@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getUserContext } from "@/lib/utils/org";
 import { useRouter } from "next/navigation";
 
 interface Store {
@@ -15,58 +16,59 @@ interface Store {
 export default function CrewSelectStorePage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [selecting, setSelecting] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const fetchStores = async () => {
-      const supabase = createClient();
-      
-      // 현재 사용자 확인
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.replace("/crew/login");
-        return;
-      }
-
-      // 프로필 조회
-      const { data: profile } = await supabase
-        .from("profiles").select("role, org_id").eq("id", user.id).single();
-      if (!profile) { router.replace("/crew/login"); return; }
-
-      // 매장 목록 (admin: org 전체 / crew: store_members)
-      let storesData: Store[] = [];
-
-      if (profile.role === "admin") {
-        const { data } = await supabase
-          .from("stores")
-          .select("id, name, address, region")
-          .eq("org_id", profile.org_id)
-          .order("name");
-        storesData = data || [];
-      } else {
-        const { data: storeMembers } = await supabase
-          .from("store_members").select("store_id").eq("user_id", user.id);
-        if (!storeMembers || storeMembers.length === 0) {
+      try {
+        const ctx = await getUserContext();
+        if (!ctx.userId) {
           router.replace("/crew/login");
           return;
         }
-        const storeIds = storeMembers.map(m => m.store_id);
-        const { data } = await supabase
-          .from("stores")
-          .select("id, name, address, region")
-          .in("id", storeIds)
-          .order("name");
-        storesData = data || [];
-      }
+        if (!ctx.orgId) {
+          setError("조직 정보가 없습니다. 관리자에게 문의하세요.");
+          setLoading(false);
+          return;
+        }
 
-      if (storesData.length === 0) {
-        router.replace("/crew/login");
-        return;
-      }
+        const supabase = createClient();
 
-      setStores(storesData);
-      setLoading(false);
+        // admin/owner: org 전체 매장 / crew: 배정 매장만
+        let storesData: Store[] = [];
+
+        if (ctx.allStores) {
+          const { data } = await supabase
+            .from("stores")
+            .select("id, name, address, region")
+            .eq("org_id", ctx.orgId)
+            .order("name");
+          storesData = data || [];
+        } else if (ctx.storeIds.length > 0) {
+          const { data } = await supabase
+            .from("stores")
+            .select("id, name, address, region")
+            .in("id", ctx.storeIds)
+            .order("name");
+          storesData = data || [];
+        }
+
+        if (storesData.length === 0) {
+          // ❌ 루프 방지: /crew/login으로 리다이렉트하지 않음
+          setError("접근 가능한 매장이 없습니다. 관리자에게 문의하세요.");
+          setLoading(false);
+          return;
+        }
+
+        setStores(storesData);
+        setLoading(false);
+      } catch (e) {
+        console.error("store load error", e);
+        setError("매장 정보를 불러오는데 실패했습니다.");
+        setLoading(false);
+      }
     };
 
     fetchStores();
@@ -93,7 +95,34 @@ export default function CrewSelectStorePage() {
         alignItems: "center",
         justifyContent: "center",
       }}>
-        <div style={{ color: "#64748B", fontSize: 14 }}>로딩 중...</div>
+        <div style={{ color: "#64748B", fontSize: 14 }}>매장 불러오는 중...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{
+        minHeight: "100dvh",
+        background: "#F8FAFC",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+        gap: 16,
+      }}>
+        <div style={{ fontSize: 48 }}>🏢</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#1A1D2B" }}>{error}</div>
+        <button
+          onClick={() => { setLoading(true); setError(""); window.location.reload(); }}
+          style={{
+            padding: "12px 24px", borderRadius: 10, background: "#1428A0",
+            color: "#fff", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer",
+          }}
+        >
+          새로고침
+        </button>
       </div>
     );
   }

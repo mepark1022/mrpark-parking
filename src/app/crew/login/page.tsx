@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getUserContext } from "@/lib/utils/org";
 import { useRouter } from "next/navigation";
 
 /* ────────────────────────────────────────────
@@ -48,42 +49,18 @@ export default function CrewLoginPage() {
   // 이미 로그인 되어있는지 확인
   useEffect(() => {
     const checkAuth = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const ctx = await getUserContext();
       
-      if (user) {
-        // 크루 권한 확인
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role, org_id")
-          .eq("id", user.id)
-          .single();
-        
-        if (profile && (profile.role === "crew" || profile.role === "admin")) {
-          // 매장 목록 조회 (admin: org 전체 / crew: store_members)
-          let storeIds: string[] = [];
-          if (profile.role === "admin") {
-            const { data: orgStores } = await supabase
-              .from("stores").select("id").eq("org_id", profile.org_id);
-            storeIds = orgStores?.map(s => s.id) || [];
-          } else {
-            const { data: storeMembers } = await supabase
-              .from("store_members").select("store_id").eq("user_id", user.id);
-            storeIds = storeMembers?.map(s => s.store_id) || [];
-          }
-          
-          if (storeIds.length > 0) {
-            if (storeIds.length === 1) {
-              localStorage.setItem("crew_store_id", storeIds[0]);
-              const { data: stInfo } = await supabase
-                .from("stores").select("name").eq("id", storeIds[0]).single();
-              if (stInfo) localStorage.setItem("crew_store_name", stInfo.name);
-            }
-            router.replace("/crew");
-            return;
-          }
-          setError("배정된 매장이 없습니다. 관리자에게 문의하세요.");
+      if (ctx.userId && (ctx.role === "crew" || ctx.role === "admin" || ctx.role === "owner")) {
+        // 이미 선택된 매장이 있으면 바로 홈
+        const savedStore = localStorage.getItem("crew_store_id");
+        if (savedStore) {
+          router.replace("/crew");
+          return;
         }
+        // 없으면 매장 선택으로
+        router.replace("/crew/select-store");
+        return;
       }
       setCheckingAuth(false);
     };

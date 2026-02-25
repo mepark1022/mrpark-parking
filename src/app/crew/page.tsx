@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getUserContext } from "@/lib/utils/org";
 import { useRouter } from "next/navigation";
 import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 import CrewHeader from "@/components/crew/CrewHeader";
@@ -52,57 +53,29 @@ export default function CrewHomePage() {
   useEffect(() => {
     const init = async () => {
       const supabase = createClient();
+      const ctx = await getUserContext();
       
-      // 사용자 확인
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
+      if (!ctx.userId) {
         router.replace("/crew/login");
         return;
       }
 
-      // 프로필 조회
+      if (ctx.role !== "crew" && ctx.role !== "admin" && ctx.role !== "owner") {
+        router.replace("/crew/login");
+        return;
+      }
+
+      // 프로필에서 이름 가져오기
       const { data: profile } = await supabase
-        .from("profiles")
-        .select("id, name, role, org_id")
-        .eq("id", authUser.id)
-        .single();
-
-      if (!profile || (profile.role !== "crew" && profile.role !== "admin")) {
-        router.replace("/crew/login");
-        return;
-      }
-
-      setUser({ id: profile.id, name: profile.name || "크루", role: profile.role });
-
-      // 매장 목록 조회 (admin: org 전체 / crew: store_members)
-      let storeIds: string[] = [];
-      if (profile.role === "admin") {
-        const { data: orgStores } = await supabase
-          .from("stores").select("id").eq("org_id", profile.org_id);
-        storeIds = orgStores?.map(s => s.id) || [];
-      } else {
-        const { data: storeMembers } = await supabase
-          .from("store_members").select("store_id").eq("user_id", authUser.id);
-        storeIds = storeMembers?.map(s => s.store_id) || [];
-      }
-
-      if (storeIds.length === 0) {
-        router.replace("/crew/login");
-        return;
-      }
+        .from("profiles").select("name").eq("id", ctx.userId).single();
+      setUser({ id: ctx.userId, name: profile?.name || "크루", role: ctx.role });
 
       // 선택된 매장 확인
       let storeId = localStorage.getItem("crew_store_id");
       
-      // localStorage에 없거나 유효하지 않으면 첫 번째 매장 사용
-      if (!storeId || !storeIds.includes(storeId)) {
-        if (storeIds.length === 1) {
-          storeId = storeIds[0];
-          localStorage.setItem("crew_store_id", storeId);
-        } else {
-          router.replace("/crew/select-store");
-          return;
-        }
+      if (!storeId) {
+        router.replace("/crew/select-store");
+        return;
       }
 
       // 매장 정보 조회
