@@ -46,8 +46,22 @@ export default function CrewSelectStorePage() {
             .select("id, name, address, region")
             .eq("org_id", ctx.orgId)
             .order("name");
-          console.log("[select-store] allStores query:", { data: data?.length, error: storeErr });
           storesData = data || [];
+          if (storeErr) {
+            setError(`쿼리에러: ${storeErr.message} | code:${storeErr.code}`);
+            setLoading(false);
+            return;
+          }
+          // 필터 없이도 테스트
+          if (storesData.length === 0) {
+            const { data: allData, error: allErr } = await supabase
+              .from("stores")
+              .select("id, name")
+              .limit(5);
+            setError(`org필터:0건 | 필터없이:${allData?.length ?? 'err'}건 | orgId:${ctx.orgId} | allErr:${allErr?.message || 'none'}`);
+            setLoading(false);
+            return;
+          }
         } else if (ctx.storeIds.length > 0) {
           const { data } = await supabase
             .from("stores")
