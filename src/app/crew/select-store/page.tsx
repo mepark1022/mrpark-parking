@@ -58,8 +58,7 @@ export default function CrewSelectStorePage() {
         }
 
         if (storesData.length === 0) {
-          // ❌ 루프 방지: /crew/login으로 리다이렉트하지 않음
-          setError("접근 가능한 매장이 없습니다. 관리자에게 문의하세요.");
+          setError(`매장 0건 | role:${ctx.role} | allStores:${ctx.allStores} | orgId:${ctx.orgId} | storeIds:${ctx.storeIds.length}`);
           setLoading(false);
           return;
         }
