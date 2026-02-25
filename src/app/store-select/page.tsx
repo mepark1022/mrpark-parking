@@ -300,7 +300,6 @@ function StoreSelectInner() {
         .from("stores")
         .select("id, name, region, address, is_active")
         .eq("org_id", ctx.orgId)
-        .eq("is_active", true)
         .order("name");
 
       // crew는 배정 매장만, admin/super_admin은 전체
