@@ -9,8 +9,8 @@ import { useRouter } from "next/navigation";
 interface Store {
   id: string;
   name: string;
-  address: string;
-  region: string;
+  road_address: string;
+  region_city: string;
 }
 
 export default function CrewSelectStorePage() {
@@ -35,7 +35,6 @@ export default function CrewSelectStorePage() {
         }
 
         const supabase = createClient();
-        console.log("[select-store] ctx:", JSON.stringify(ctx));
 
         // admin/owner/super_admin: org 전체 매장 / crew: 배정 매장만
         let storesData: Store[] = [];
@@ -43,36 +42,26 @@ export default function CrewSelectStorePage() {
         if (ctx.allStores) {
           const { data, error: storeErr } = await supabase
             .from("stores")
-            .select("id, name, address, region")
+            .select("id, name, road_address, region_city")
             .eq("org_id", ctx.orgId)
             .order("name");
           storesData = data || [];
           if (storeErr) {
-            setError(`쿼리에러: ${storeErr.message} | code:${storeErr.code}`);
-            setLoading(false);
-            return;
-          }
-          // 필터 없이도 테스트
-          if (storesData.length === 0) {
-            const { data: allData, error: allErr } = await supabase
-              .from("stores")
-              .select("id, name")
-              .limit(5);
-            setError(`org필터:0건 | 필터없이:${allData?.length ?? 'err'}건 | orgId:${ctx.orgId} | allErr:${allErr?.message || 'none'}`);
+            setError(`매장 조회 실패: ${storeErr.message}`);
             setLoading(false);
             return;
           }
         } else if (ctx.storeIds.length > 0) {
           const { data } = await supabase
             .from("stores")
-            .select("id, name, address, region")
+            .select("id, name, road_address, region_city")
             .in("id", ctx.storeIds)
             .order("name");
           storesData = data || [];
         }
 
         if (storesData.length === 0) {
-          setError(`매장 0건 | role:${ctx.role} | allStores:${ctx.allStores} | orgId:${ctx.orgId} | storeIds:${ctx.storeIds.length}`);
+          setError("접근 가능한 매장이 없습니다. 관리자에게 문의하세요.");
           setLoading(false);
           return;
         }
@@ -258,7 +247,7 @@ export default function CrewSelectStorePage() {
                 <div>
                   <div className="store-name">{store.name}</div>
                   <div className="store-address">
-                    {store.address || store.region || "주소 미등록"}
+                    {store.road_address || store.region_city || "주소 미등록"}
                   </div>
                 </div>
               </div>
