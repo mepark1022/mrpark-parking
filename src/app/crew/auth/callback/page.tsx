@@ -61,7 +61,12 @@ export default function CrewAuthCallback() {
         router.replace("/crew/select-store");
       } else {
         // 단일 매장 - localStorage에 저장 후 홈으로
-        localStorage.setItem("crew_store_id", storeMembers[0].store_id);
+        const stId = storeMembers[0].store_id;
+        localStorage.setItem("crew_store_id", stId);
+        // 매장명도 저장
+        const { data: storeInfo } = await supabase
+          .from("stores").select("name").eq("id", stId).single();
+        if (storeInfo) localStorage.setItem("crew_store_name", storeInfo.name);
         router.replace("/crew");
       }
     };

@@ -26,10 +26,10 @@ interface ShiftInfo {
 interface CheckoutRequest {
   id: string;
   status: "pending" | "approved" | "rejected";
-  requested_at: string;
+  created_at: string;
   reject_reason: string | null;
   approved_at: string | null;
-  memo: string | null;
+  request_reason: string | null;
 }
 
 export default function CrewAttendancePage() {
@@ -54,10 +54,10 @@ export default function CrewAttendancePage() {
     const today = new Date().toISOString().split("T")[0];
     const { data } = await supabase
       .from("checkout_requests")
-      .select("id, status, requested_at, reject_reason, approved_at, memo")
+      .select("id, status, created_at, request_reason, reject_reason, approved_at")
       .eq("worker_id", wid)
-      .gte("requested_at", `${today}T00:00:00`)
-      .order("requested_at", { ascending: false })
+      .eq("request_date", today)
+      .order("created_at", { ascending: false })
       .limit(1)
       .single();
     setLatestRequest(data || null);
@@ -83,7 +83,7 @@ export default function CrewAttendancePage() {
       const today = new Date().toISOString().split("T")[0];
       const { data: ad } = await supabase
         .from("worker_attendance").select("*")
-        .eq("worker_id", worker.id).eq("work_date", today).single();
+        .eq("worker_id", worker.id).eq("date", today).single();
 
       if (ad && ad.check_in) {
         const cin = new Date(ad.check_in);
@@ -119,14 +119,14 @@ export default function CrewAttendancePage() {
           filter: `worker_id=eq.${worker.id}`,
         }, (payload) => {
           const u = payload.new as any;
-          const reqDate = new Date(u.requested_at).toISOString().split("T")[0];
+          const reqDate = u.request_date;
           const todayStr = new Date().toISOString().split("T")[0];
           if (reqDate !== todayStr) return;
 
           setLatestRequest({
-            id: u.id, status: u.status, requested_at: u.requested_at,
+            id: u.id, status: u.status, created_at: u.created_at,
             reject_reason: u.reject_reason || null,
-            approved_at: u.approved_at || null, memo: u.memo || null,
+            approved_at: u.approved_at || null, request_reason: u.request_reason || null,
           });
 
           if (u.status === "approved") {
@@ -170,10 +170,15 @@ export default function CrewAttendancePage() {
     const today = new Date().toISOString().split("T")[0];
     const now = new Date();
     try {
+      // org_id 가져오기
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
+      const oid = prof?.org_id;
+
       const { error } = await supabase.from("worker_attendance").upsert({
-        worker_id: attendance.workerId, store_id: storeId,
-        work_date: today, check_in: now.toISOString(), status: "present",
-      }, { onConflict: "worker_id,work_date" });
+        org_id: oid, worker_id: attendance.workerId, store_id: storeId,
+        date: today, check_in: now.toISOString(), status: "present",
+      }, { onConflict: "worker_id,date" });
       if (error) throw error;
       setAttendance({ ...attendance, isCheckedIn: true, isCheckedOut: false, checkInTime: now, checkOutTime: null, workingMinutes: 0 });
       showToast("출근이 기록되었습니다 ☀️", "success");
@@ -186,10 +191,16 @@ export default function CrewAttendancePage() {
     setActionLoading(true);
     const supabase = createClient();
     try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
+      const now = new Date();
       const { error } = await supabase.from("checkout_requests").insert({
+        org_id: prof?.org_id,
         worker_id: attendance.workerId, store_id: storeId,
-        requested_at: new Date().toISOString(), status: "pending",
-        memo: checkoutMemo || null,
+        request_date: now.toISOString().split("T")[0],
+        requested_checkout_time: now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }),
+        request_reason: checkoutMemo || null,
+        status: "pending",
       });
       if (error) throw error;
       await loadLatestRequest(attendance.workerId);
@@ -205,10 +216,16 @@ export default function CrewAttendancePage() {
     setActionLoading(true);
     const supabase = createClient();
     try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
+      const now = new Date();
       const { error } = await supabase.from("checkout_requests").insert({
+        org_id: prof?.org_id,
         worker_id: attendance.workerId, store_id: storeId,
-        requested_at: new Date().toISOString(), status: "pending",
-        memo: "재요청", previous_request_id: latestRequest?.id || null,
+        request_date: now.toISOString().split("T")[0],
+        requested_checkout_time: now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }),
+        request_reason: "재요청",
+        status: "pending",
       });
       if (error) throw error;
       await loadLatestRequest(attendance.workerId);

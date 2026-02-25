@@ -58,6 +58,8 @@ export default function CrewSelectStorePage() {
   const handleSelectStore = (storeId: string) => {
     setSelecting(storeId);
     localStorage.setItem("crew_store_id", storeId);
+    const selectedStore = stores.find(s => s.id === storeId);
+    if (selectedStore) localStorage.setItem("crew_store_name", selectedStore.name);
     
     // 약간의 딜레이 후 이동 (선택 피드백)
     setTimeout(() => {

@@ -70,6 +70,9 @@ export default function CrewLoginPage() {
             // 매장이 1개면 바로 저장
             if (storeMembers.length === 1) {
               localStorage.setItem("crew_store_id", storeMembers[0].store_id);
+              const { data: stInfo } = await supabase
+                .from("stores").select("name").eq("id", storeMembers[0].store_id).single();
+              if (stInfo) localStorage.setItem("crew_store_name", stInfo.name);
             }
             router.replace("/crew");
             return;

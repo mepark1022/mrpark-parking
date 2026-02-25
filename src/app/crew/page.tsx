@@ -108,6 +108,7 @@ export default function CrewHomePage() {
 
       if (storeData) {
         setStore(storeData);
+        localStorage.setItem("crew_store_name", storeData.name);
       }
 
       // 오늘 출근 정보 조회
@@ -125,7 +126,7 @@ export default function CrewHomePage() {
           .from("worker_attendance")
           .select("*")
           .eq("worker_id", worker.id)
-          .eq("work_date", today)
+          .eq("date", today)
           .single();
 
         if (attendanceData && attendanceData.check_in) {

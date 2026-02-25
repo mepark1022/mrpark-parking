@@ -9,9 +9,11 @@ import { useCrewToast } from "@/components/crew/CrewToast";
 
 interface CheckoutRequest {
   id: string;
-  requested_at: string;
+  created_at: string;
+  request_date: string;
+  requested_checkout_time: string | null;
   status: "pending" | "approved" | "rejected";
-  memo: string | null;
+  request_reason: string | null;
   reject_reason: string | null;
   approved_at: string | null;
 }
@@ -45,10 +47,10 @@ export default function CrewAttendanceHistoryPage() {
 
       const { data } = await supabase
         .from("checkout_requests")
-        .select("id, requested_at, status, memo, reject_reason, approved_at")
+        .select("id, created_at, request_date, requested_checkout_time, status, request_reason, reject_reason, approved_at")
         .eq("worker_id", worker.id)
-        .gte("requested_at", thirtyDaysAgo.toISOString())
-        .order("requested_at", { ascending: false });
+        .gte("created_at", thirtyDaysAgo.toISOString())
+        .order("created_at", { ascending: false });
 
       setRequests(data || []);
       setLoading(false);
@@ -62,18 +64,24 @@ export default function CrewAttendanceHistoryPage() {
     const supabase = createClient();
 
     try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
+      const now = new Date();
       const { error } = await supabase.from("checkout_requests").insert({
+        org_id: prof?.org_id,
         worker_id: workerId, store_id: storeId,
-        requested_at: new Date().toISOString(), status: "pending",
-        memo: "재요청", previous_request_id: originalRequest.id,
+        request_date: now.toISOString().split("T")[0],
+        requested_checkout_time: now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }),
+        request_reason: "재요청",
+        status: "pending",
       });
       if (error) throw error;
 
       const { data: updated } = await supabase
         .from("checkout_requests")
-        .select("id, requested_at, status, memo, reject_reason, approved_at")
+        .select("id, created_at, request_date, requested_checkout_time, status, request_reason, reject_reason, approved_at")
         .eq("worker_id", workerId)
-        .order("requested_at", { ascending: false });
+        .order("created_at", { ascending: false });
       setRequests(updated || []);
       showToast("퇴근 재요청이 전송되었습니다", "info");
     } catch {
@@ -143,12 +151,12 @@ export default function CrewAttendanceHistoryPage() {
               return (
                 <div key={req.id} className={`hk ${req.status === "rejected" ? "rej" : ""}`}>
                   <div className="hk-hd">
-                    <span className="hk-dt">{formatDate(req.requested_at)}</span>
+                    <span className="hk-dt">{req.request_date || formatDate(req.created_at)}</span>
                     <span className="hk-st" style={{ background: b.bg, color: b.color }}>
                       {b.emoji} {b.text}
                     </span>
                   </div>
-                  <div className="hk-tm">퇴근 요청: {formatTime(req.requested_at)}</div>
+                  <div className="hk-tm">퇴근 요청: {req.requested_checkout_time || formatTime(req.created_at)}</div>
 
                   {req.status === "approved" && req.approved_at && (
                     <div className="hk-ap">✓ 승인됨: {formatTime(req.approved_at)}</div>
