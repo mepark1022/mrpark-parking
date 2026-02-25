@@ -1,60 +1,400 @@
 // @ts-nocheck
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 import CrewHeader from "@/components/crew/CrewHeader";
 
+const CSS = `
+  .plist-page {
+    min-height: 100dvh;
+    background: #F8FAFC;
+  }
+
+  /* ── 검색/필터 바 ── */
+  .plist-toolbar {
+    background: #fff;
+    border-bottom: 1px solid #E2E8F0;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: sticky;
+    top: 56px;
+    z-index: 30;
+  }
+  .plist-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #F1F5F9;
+    border-radius: 10px;
+    padding: 0 12px;
+    height: 40px;
+  }
+  .plist-search input {
+    flex: 1; border: none; background: transparent;
+    font-size: 15px; color: #1A1D2B; outline: none;
+  }
+  .plist-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .plist-tabs::-webkit-scrollbar { display: none; }
+  .plist-tab {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1.5px solid #E2E8F0;
+    background: #fff; color: #64748B;
+    white-space: nowrap;
+  }
+  .plist-tab.active {
+    background: #1428A0; color: #fff; border-color: #1428A0;
+  }
+
+  /* ── 통계 바 ── */
+  .plist-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    background: #fff;
+    border-bottom: 1px solid #E2E8F0;
+    padding: 10px 0;
+  }
+  .plist-stat-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    border-right: 1px solid #E2E8F0;
+  }
+  .plist-stat-item:last-child { border-right: none; }
+  .plist-stat-num { font-size: 20px; font-weight: 800; color: #1A1D2B; }
+  .plist-stat-label { font-size: 10px; color: #94A3B8; }
+
+  /* ── 차량 카드 ── */
+  .plist-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+  .vehicle-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1.5px solid #E2E8F0;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    active { transform: scale(0.98); }
+  }
+  .vehicle-card:active { transform: scale(0.98); }
+
+  .vehicle-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid #F1F5F9;
+  }
+  .vehicle-plate {
+    font-size: 20px; font-weight: 800;
+    letter-spacing: 2px; color: #1A1D2B;
+  }
+  .status-badge {
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 700;
+  }
+
+  .vehicle-card-body {
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .vehicle-type-badge {
+    padding: 3px 9px; border-radius: 6px;
+    font-size: 11px; font-weight: 600;
+  }
+  .vehicle-type-badge.valet { background: #FFF7ED; color: #EA580C; }
+  .vehicle-type-badge.self  { background: #EEF2FF; color: #1428A0; }
+  .vehicle-type-badge.monthly { background: #F0FDF4; color: #16A34A; }
+
+  .vehicle-info-row {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 12px; color: #64748B;
+  }
+  .vehicle-elapsed {
+    font-size: 14px; font-weight: 700;
+    margin-left: auto;
+  }
+  .vehicle-elapsed.warn { color: #DC2626; }
+  .vehicle-elapsed.caution { color: #EA580C; }
+  .vehicle-elapsed.ok { color: #16A34A; }
+
+  .vehicle-card-footer {
+    padding: 8px 14px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .vehicle-location { font-size: 12px; color: #94A3B8; }
+  .vehicle-fee { font-size: 14px; font-weight: 700; color: #1A1D2B; }
+
+  /* ── 상태별 카드 강조 ── */
+  .vehicle-card.exit_requested { border-color: #F5B731; }
+  .vehicle-card.car_ready      { border-color: #16A34A; }
+
+  /* ── 새로고침 버튼 ── */
+  .fab-refresh {
+    position: fixed;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0));
+    right: 20px;
+    width: 52px; height: 52px;
+    background: #1428A0; color: #fff;
+    border-radius: 50%; border: none;
+    font-size: 22px; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(20,40,160,0.35);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 40;
+  }
+
+  /* ── 빈 화면 ── */
+  .empty-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 60px 20px; text-align: center;
+  }
+  .empty-icon { font-size: 56px; margin-bottom: 16px; }
+  .empty-title { font-size: 17px; font-weight: 700; color: #1A1D2B; margin-bottom: 6px; }
+  .empty-desc  { font-size: 14px; color: #64748B; }
+
+  /* ── 로딩 ── */
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .loading-card {
+    height: 96px; background: #E2E8F0; border-radius: 14px;
+    animation: pulse 1.2s ease infinite;
+  }
+`;
+
+const STATUS_CONFIG = {
+  parking:        { label: "주차 중",   bg: "#EEF2FF", color: "#1428A0" },
+  pre_paid:       { label: "사전정산",  bg: "#F0FDF4", color: "#16A34A" },
+  exit_requested: { label: "출차요청",  bg: "#FFF7ED", color: "#EA580C" },
+  car_ready:      { label: "차량준비",  bg: "#DCFCE7", color: "#16A34A" },
+  completed:      { label: "출차완료",  bg: "#F1F5F9", color: "#94A3B8" },
+};
+
+const TABS = [
+  { key: "all",     label: "전체" },
+  { key: "valet",   label: "🔑 발렛" },
+  { key: "self",    label: "🏢 자주식" },
+  { key: "monthly", label: "📅 월주차" },
+];
+
+function elapsedString(entryAt) {
+  const mins = Math.floor((Date.now() - new Date(entryAt).getTime()) / 60000);
+  if (mins < 60) return `${mins}분`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
+}
+
+function feeFromMinutes(mins, feeStructure) {
+  if (!feeStructure) return null;
+  const { free_minutes = 30, base_fee = 0, base_minutes = 30, extra_fee = 0, daily_max = 0 } = feeStructure;
+  if (mins <= free_minutes) return 0;
+  const chargeable = mins - free_minutes;
+  if (chargeable <= base_minutes) return Math.min(base_fee, daily_max || Infinity);
+  const extraUnits = Math.ceil((chargeable - base_minutes) / 10);
+  const total = base_fee + extraUnits * extra_fee;
+  return daily_max ? Math.min(total, daily_max) : total;
+}
+
 export default function CrewParkingListPage() {
+  const router = useRouter();
+  const supabase = createClient();
+
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+  const [storeId, setStoreId] = useState(null);
+
+  useEffect(() => {
+    const savedStoreId = localStorage.getItem("crew_store_id");
+    setStoreId(savedStoreId);
+    fetchTickets(savedStoreId);
+
+    // 30초마다 자동 새로고침
+    const interval = setInterval(() => fetchTickets(savedStoreId), 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchTickets = useCallback(async (sid) => {
+    if (!sid) return;
+    setLoading(true);
+    const { data } = await supabase
+      .from("mepark_tickets")
+      .select(`
+        id, plate_number, plate_last4, parking_type, status,
+        entry_at, pre_paid_at, parking_location, is_monthly, paid_amount,
+        visit_place_id, visit_places(name, free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee)
+      `)
+      .eq("store_id", sid)
+      .neq("status", "completed")
+      .order("entry_at", { ascending: false });
+
+    setTickets(data || []);
+    setLoading(false);
+  }, [supabase]);
+
+  const refresh = () => {
+    const sid = localStorage.getItem("crew_store_id");
+    fetchTickets(sid);
+  };
+
+  const filtered = tickets.filter(t => {
+    const searchMatch = !search || t.plate_number.includes(search.toUpperCase()) ||
+      t.plate_last4.includes(search);
+    const tabMatch =
+      activeTab === "all" ? true :
+      activeTab === "monthly" ? t.is_monthly :
+      activeTab === t.parking_type;
+    return searchMatch && tabMatch;
+  });
+
+  // 통계
+  const stats = {
+    total: tickets.length,
+    valet: tickets.filter(t => t.parking_type === "valet").length,
+    exitReq: tickets.filter(t => t.status === "exit_requested" || t.status === "car_ready").length,
+    monthly: tickets.filter(t => t.is_monthly).length,
+  };
+
   return (
     <>
-      <style>{`
-        .placeholder-page {
-          min-height: 100dvh;
-          background: #F8FAFC;
-        }
-        .placeholder-content {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 60px 20px;
-          text-align: center;
-        }
-        .placeholder-icon {
-          font-size: 64px;
-          margin-bottom: 20px;
-        }
-        .placeholder-title {
-          font-size: 18px;
-          font-weight: 700;
-          color: #1A1D2B;
-          margin-bottom: 8px;
-        }
-        .placeholder-desc {
-          font-size: 14px;
-          color: #64748B;
-        }
-        .placeholder-badge {
-          margin-top: 16px;
-          padding: 6px 14px;
-          background: #E0E7FF;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 600;
-          color: #4338CA;
-        }
-      `}</style>
-
-      <div className="placeholder-page">
+      <style>{CSS}</style>
+      <div className="plist-page">
         <CrewHeader title="입차 현황" />
-        <div className="placeholder-content">
-          <div className="placeholder-icon">🚗</div>
-          <div className="placeholder-title">입차 현황</div>
-          <div className="placeholder-desc">Phase 2에서 구현 예정</div>
-          <div className="placeholder-badge">Coming Soon</div>
+
+        {/* 검색/탭 */}
+        <div className="plist-toolbar">
+          <div className="plist-search">
+            <span style={{ fontSize: 16, color: "#94A3B8" }}>🔍</span>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="번호판 검색"
+              inputMode="text"
+            />
+            {search && (
+              <span onClick={() => setSearch("")}
+                style={{ fontSize: 16, color: "#94A3B8", cursor: "pointer" }}>✕</span>
+            )}
+          </div>
+          <div className="plist-tabs">
+            {TABS.map(tab => (
+              <div
+                key={tab.key}
+                className={`plist-tab${activeTab === tab.key ? " active" : ""}`}
+                onClick={() => setActiveTab(tab.key)}
+              >
+                {tab.label}
+              </div>
+            ))}
+          </div>
         </div>
+
+        {/* 통계 */}
+        <div className="plist-stats">
+          {[
+            { num: stats.total,   label: "주차 중" },
+            { num: stats.valet,   label: "발렛" },
+            { num: stats.monthly, label: "월주차" },
+            { num: stats.exitReq, label: "출차요청", color: stats.exitReq > 0 ? "#EA580C" : undefined },
+          ].map((s, i) => (
+            <div key={i} className="plist-stat-item">
+              <div className="plist-stat-num" style={s.color ? { color: s.color } : {}}>
+                {s.num}
+              </div>
+              <div className="plist-stat-label">{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* 목록 */}
+        <div className="plist-list">
+          {loading ? (
+            [1,2,3,4].map(i => <div key={i} className="loading-card" />)
+          ) : filtered.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">🅿️</div>
+              <div className="empty-title">주차 차량 없음</div>
+              <div className="empty-desc">
+                {search ? `"${search}" 검색 결과가 없습니다` : "현재 주차 중인 차량이 없습니다"}
+              </div>
+            </div>
+          ) : (
+            filtered.map(ticket => {
+              const mins = Math.floor((Date.now() - new Date(ticket.entry_at).getTime()) / 60000);
+              const elapsed = elapsedString(ticket.entry_at);
+              const elapsedClass = mins > 120 ? "warn" : mins > 60 ? "caution" : "ok";
+              const statusCfg = STATUS_CONFIG[ticket.status] || STATUS_CONFIG.parking;
+
+              // 추정 요금
+              const vp = ticket.visit_places;
+              let estFee = ticket.paid_amount || null;
+              if (!estFee && !ticket.is_monthly && vp) {
+                const valetFee = ticket.parking_type === "valet" ? (vp.valet_fee || 0) : 0;
+                estFee = (feeFromMinutes(mins, vp) || 0) + valetFee;
+              }
+
+              return (
+                <div
+                  key={ticket.id}
+                  className={`vehicle-card ${ticket.status}`}
+                  onClick={() => router.push(`/crew/parking-list/${ticket.id}`)}
+                >
+                  <div className="vehicle-card-top">
+                    <div className="vehicle-plate">{ticket.plate_number}</div>
+                    <div className="status-badge" style={{ background: statusCfg.bg, color: statusCfg.color }}>
+                      {statusCfg.label}
+                    </div>
+                  </div>
+                  <div className="vehicle-card-body">
+                    <div className={`vehicle-type-badge ${ticket.is_monthly ? "monthly" : ticket.parking_type}`}>
+                      {ticket.is_monthly ? "📅 월주차" : ticket.parking_type === "valet" ? "🔑 발렛" : "🏢 자주식"}
+                    </div>
+                    {ticket.visit_places?.name && (
+                      <div className="vehicle-info-row">
+                        <span>🏥</span><span>{ticket.visit_places.name}</span>
+                      </div>
+                    )}
+                    <div className={`vehicle-elapsed ${elapsedClass}`}>{elapsed}</div>
+                  </div>
+                  <div className="vehicle-card-footer">
+                    <div className="vehicle-location">
+                      {ticket.parking_location || new Date(ticket.entry_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) + " 입차"}
+                    </div>
+                    {ticket.is_monthly ? (
+                      <div className="vehicle-fee" style={{ color: "#16A34A" }}>무료</div>
+                    ) : estFee !== null ? (
+                      <div className="vehicle-fee">{estFee.toLocaleString()}원</div>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
         <CrewNavSpacer />
         <CrewBottomNav />
+
+        {/* FAB 새로고침 */}
+        <button className="fab-refresh" onClick={refresh}>↺</button>
       </div>
     </>
   );
