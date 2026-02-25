@@ -56,7 +56,7 @@ export async function getUserContext(): Promise<{
   const role = profile?.role || "viewer";
   _cachedOrgId = orgId;
 
-  if (role === "admin" || role === "owner") {
+  if (role === "admin" || role === "owner" || role === "super_admin") {
     _cachedContext = { userId: user.id, orgId, role, allStores: true, storeIds: [] };
     return _cachedContext;
   }
