@@ -120,7 +120,7 @@ export default function MobileTabBar() {
           borderTop: "2.5px solid #e8edf8",
           justifyContent: "space-around",
           alignItems: "center",
-          padding: "8px 2px 28px",
+          padding: "6px 2px calc(12px + env(safe-area-inset-bottom, 16px))",
           boxShadow: "0 -10px 28px rgba(20, 40, 160, 0.09)",
         }}
       >
@@ -135,18 +135,18 @@ export default function MobileTabBar() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 5,
-                padding: "6px 0px",
+                gap: 3,
+                padding: "4px 0px",
                 cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
               }}
             >
-              {/* 아이콘 박스 56px */}
+              {/* 아이콘 박스 48px */}
               <div
                 style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 16,
+                  width: 48,
+                  height: 48,
+                  borderRadius: 14,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",

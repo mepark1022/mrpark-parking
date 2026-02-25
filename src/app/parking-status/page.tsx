@@ -333,7 +333,7 @@ export default function ParkingStatusPage() {
                 <span style={{fontSize:15,color:C.textMuted}}>🔍</span>
                 <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="차량번호 검색"
                   style={{flex:1,border:"none",outline:"none",background:"none",fontSize:14,fontWeight:600,padding:"10px 0",color:C.textPrimary}} />
-                {search&&<button onClick={()=>setSearch("")} style={{border:"none",background:C.errorBg,borderRadius:6,width:22,height:22,cursor:"pointer",fontSize:10,color:C.error,fontWeight:700}}>✕</button>}
+                {search&&<button onClick={()=>setSearch("")} style={{border:"none",background:C.errorBg,borderRadius:8,width:36,height:36,cursor:"pointer",fontSize:12,color:C.error,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>}
               </div>
               <div style={{marginLeft:"auto",fontSize:13,color:C.textMuted,background:C.bgCard,padding:"8px 14px",borderRadius:8,whiteSpace:"nowrap"}}>
                 검색 결과 <strong style={{color:C.navy,marginLeft:4}}>{filtered.length}건</strong>

@@ -615,7 +615,7 @@ export default function MonthlyPage() {
                   <div style={{ color: "#F5B731", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>카카오 알림톡</div>
                   <div style={{ color: "#fff", fontSize: 17, fontWeight: 800 }}>월주차 연장 안내 발송</div>
                 </div>
-                <button onClick={closeAlimModal} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "#fff", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                <button onClick={closeAlimModal} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
               </div>
 
               <div style={{ padding: "20px 24px" }}>
@@ -698,7 +698,7 @@ ${alimModal.contract.stores?.name ?? ""} 월주차 계약 만료가 임박했습
                 <div style={{ color: "#6ee7b7", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>계약 갱신</div>
                 <div style={{ color: "#fff", fontSize: 17, fontWeight: 800 }}>월주차 계약 연장</div>
               </div>
-              <button onClick={() => setRenewModal(m => ({ ...m, open: false }))} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "#fff", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              <button onClick={() => setRenewModal(m => ({ ...m, open: false }))} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
             </div>
 
             <div style={{ padding: "20px 24px" }}>

@@ -364,7 +364,17 @@
 /* ============================================================
    Dashboard Mobile Responsive (≤ 768px)
    ============================================================ */
+/* ── Desktop padding ── */
+.mobile-main {
+  padding: 28px 32px;
+}
+
 @media (max-width: 768px) {
+
+  /* ── 모바일 main 패딩 (인라인 대체) ── */
+  .mobile-main {
+    padding: 16px !important;
+  }
 
   /* 필터바 모바일 */
   .v3-filter-bar { flex-wrap: wrap; gap: 10px; }
@@ -426,9 +436,17 @@
     gap: 16px;
   }
 
-  /* 전체 콘텐츠 패딩 */
-  main {
-    padding: 14px !important;
+  /* 전체 콘텐츠 패딩 — .mobile-main 클래스로 이동됨 */
+
+  /* ── iOS 스크롤 모멘텀 ── */
+  [style*="overflow"] {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── 모바일 텍스트 크기 조정 방지 ── */
+  body {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   /* ── 하이라이트 카드 내부 수치 크기 강제 축소 ── */
