@@ -44,24 +44,35 @@ export default function CrewAuthCallback() {
         return;
       }
 
-      // 매장 배정 확인
-      const { data: storeMembers } = await supabase
-        .from("store_members")
-        .select("store_id")
-        .eq("user_id", user.id);
+      // 매장 목록 조회 (admin: org 전체 / crew: store_members 배정분)
+      let storeIds: string[] = [];
 
-      if (!storeMembers || storeMembers.length === 0) {
+      if (profile.role === "admin") {
+        const { data: orgStores } = await supabase
+          .from("stores")
+          .select("id")
+          .eq("org_id", profile.org_id);
+        storeIds = orgStores?.map(s => s.id) || [];
+      } else {
+        const { data: storeMembers } = await supabase
+          .from("store_members")
+          .select("store_id")
+          .eq("user_id", user.id);
+        storeIds = storeMembers?.map(s => s.store_id) || [];
+      }
+
+      if (storeIds.length === 0) {
         setErrorMsg("배정된 매장이 없습니다. 관리자에게 문의하세요.");
         setStatus("no-access");
         return;
       }
 
       // 성공 - 매장 수에 따라 분기
-      if (storeMembers.length > 1) {
+      if (storeIds.length > 1) {
         router.replace("/crew/select-store");
       } else {
         // 단일 매장 - localStorage에 저장 후 홈으로
-        const stId = storeMembers[0].store_id;
+        const stId = storeIds[0];
         localStorage.setItem("crew_store_id", stId);
         // 매장명도 저장
         const { data: storeInfo } = await supabase

@@ -74,13 +74,19 @@ export default function CrewHomePage() {
 
       setUser({ id: profile.id, name: profile.name || "크루", role: profile.role });
 
-      // 매장 배정 확인
-      const { data: storeMembers } = await supabase
-        .from("store_members")
-        .select("store_id")
-        .eq("user_id", authUser.id);
+      // 매장 목록 조회 (admin: org 전체 / crew: store_members)
+      let storeIds: string[] = [];
+      if (profile.role === "admin") {
+        const { data: orgStores } = await supabase
+          .from("stores").select("id").eq("org_id", profile.org_id);
+        storeIds = orgStores?.map(s => s.id) || [];
+      } else {
+        const { data: storeMembers } = await supabase
+          .from("store_members").select("store_id").eq("user_id", authUser.id);
+        storeIds = storeMembers?.map(s => s.store_id) || [];
+      }
 
-      if (!storeMembers || storeMembers.length === 0) {
+      if (storeIds.length === 0) {
         router.replace("/crew/login");
         return;
       }
@@ -89,9 +95,9 @@ export default function CrewHomePage() {
       let storeId = localStorage.getItem("crew_store_id");
       
       // localStorage에 없거나 유효하지 않으면 첫 번째 매장 사용
-      if (!storeId || !storeMembers.find(m => m.store_id === storeId)) {
-        if (storeMembers.length === 1) {
-          storeId = storeMembers[0].store_id;
+      if (!storeId || !storeIds.includes(storeId)) {
+        if (storeIds.length === 1) {
+          storeId = storeIds[0];
           localStorage.setItem("crew_store_id", storeId);
         } else {
           router.replace("/crew/select-store");

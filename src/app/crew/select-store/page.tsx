@@ -29,26 +29,43 @@ export default function CrewSelectStorePage() {
         return;
       }
 
-      // 배정된 매장 조회
-      const { data: storeMembers } = await supabase
-        .from("store_members")
-        .select("store_id")
-        .eq("user_id", user.id);
+      // 프로필 조회
+      const { data: profile } = await supabase
+        .from("profiles").select("role, org_id").eq("id", user.id).single();
+      if (!profile) { router.replace("/crew/login"); return; }
 
-      if (!storeMembers || storeMembers.length === 0) {
+      // 매장 목록 (admin: org 전체 / crew: store_members)
+      let storesData: Store[] = [];
+
+      if (profile.role === "admin") {
+        const { data } = await supabase
+          .from("stores")
+          .select("id, name, address, region")
+          .eq("org_id", profile.org_id)
+          .order("name");
+        storesData = data || [];
+      } else {
+        const { data: storeMembers } = await supabase
+          .from("store_members").select("store_id").eq("user_id", user.id);
+        if (!storeMembers || storeMembers.length === 0) {
+          router.replace("/crew/login");
+          return;
+        }
+        const storeIds = storeMembers.map(m => m.store_id);
+        const { data } = await supabase
+          .from("stores")
+          .select("id, name, address, region")
+          .in("id", storeIds)
+          .order("name");
+        storesData = data || [];
+      }
+
+      if (storesData.length === 0) {
         router.replace("/crew/login");
         return;
       }
 
-      // 매장 정보 조회
-      const storeIds = storeMembers.map(m => m.store_id);
-      const { data: storesData } = await supabase
-        .from("stores")
-        .select("id, name, address, region")
-        .in("id", storeIds)
-        .order("name");
-
-      setStores(storesData || []);
+      setStores(storesData);
       setLoading(false);
     };
 
