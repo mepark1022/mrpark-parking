@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "미팍Ticket CREW",
   description: "주차 크루 전용 앱",
   manifest: "/crew/manifest.json",
+  icons: {
+    apple: "/icons/apple-touch-icon-crew.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

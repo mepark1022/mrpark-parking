@@ -1,6 +1,6 @@
 {
-  "name": "ME.PARK CREW",
-  "short_name": "CREW",
+  "name": "미팍Ticket CREW",
+  "short_name": "미팍Ticket",
   "description": "주차 크루 전용 앱",
   "start_url": "/crew",
   "display": "standalone",
