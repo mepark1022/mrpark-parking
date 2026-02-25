@@ -37,8 +37,9 @@ export default function CrewAuthCallback() {
         return;
       }
 
-      // 권한 확인 (crew 또는 admin만 접근 가능)
-      if (profile.role !== "crew" && profile.role !== "admin") {
+      // 권한 확인 (crew, admin, owner, super_admin 접근 가능)
+      const allowedRoles = ["crew", "admin", "owner", "super_admin"];
+      if (!allowedRoles.includes(profile.role)) {
         setErrorMsg("크루 권한이 없습니다. 관리자에게 문의하세요.");
         setStatus("no-access");
         return;
@@ -47,7 +48,7 @@ export default function CrewAuthCallback() {
       // 매장 목록 조회 (admin: org 전체 / crew: store_members 배정분)
       let storeIds: string[] = [];
 
-      if (profile.role === "admin") {
+      if (profile.role === "admin" || profile.role === "owner" || profile.role === "super_admin") {
         const { data: orgStores } = await supabase
           .from("stores")
           .select("id")
