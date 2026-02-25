@@ -43,6 +43,8 @@ export default function CrewAttendancePage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [locationStatus, setLocationStatus] = useState<"checking" | "ok" | "far" | "error">("checking");
+  const [currentAddress, setCurrentAddress] = useState<string>("");
+  const [currentCoords, setCurrentCoords] = useState<{lat: number; lng: number} | null>(null);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [checkoutMemo, setCheckoutMemo] = useState("");
   const [storeId, setStoreId] = useState<string | null>(null);
@@ -155,9 +157,36 @@ export default function CrewAttendancePage() {
 
   const checkLocation = () => {
     setLocationStatus("checking");
+    setCurrentAddress("");
     if (!navigator.geolocation) { setLocationStatus("error"); return; }
     navigator.geolocation.getCurrentPosition(
-      () => setLocationStatus("ok"),
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setCurrentCoords({ lat: latitude, lng: longitude });
+        setLocationStatus("ok");
+        
+        // 역지오코딩 — 좌표 → 주소 변환
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=ko&zoom=18`
+          );
+          const data = await res.json();
+          if (data?.address) {
+            const a = data.address;
+            // 한국 주소 조합: 시/도 + 구/군 + 동/읍/면 + 도로명
+            const parts = [
+              a.city || a.state || "",
+              a.borough || a.county || a.suburb || "",
+              a.quarter || a.neighbourhood || a.town || a.village || "",
+              a.road || ""
+            ].filter(Boolean);
+            setCurrentAddress(parts.join(" ") || data.display_name?.split(",").slice(0, 3).join(" ") || "주소 확인됨");
+          }
+        } catch {
+          // 역지오코딩 실패해도 GPS 자체는 성공
+          setCurrentAddress(`${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`);
+        }
+      },
       () => setLocationStatus("error"),
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -257,9 +286,17 @@ export default function CrewAttendancePage() {
       <style>{`
         .att-page { min-height: 100dvh; background: #F8FAFC; }
         .att-content { padding: 20px 16px; }
-        .loc-status { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; background: #fff; border-radius: 12px; border: 1px solid #E2E8F0; margin-bottom: 20px; font-size: 14px; }
-        .loc-status.ok { background: #DCFCE7; border-color: #86EFAC; color: #166534; }
-        .loc-status.error { background: #FEE2E2; border-color: #FECACA; color: #991B1B; }
+        .loc-box { background: #fff; border-radius: 14px; border: 1.5px solid #E2E8F0; padding: 14px 16px; margin-bottom: 20px; }
+        .loc-box.ok { background: #F0FDF4; border-color: #86EFAC; }
+        .loc-box.error { background: #FEE2E2; border-color: #FECACA; }
+        .loc-box.checking { background: #F8FAFC; }
+        .loc-row { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #1A1D2B; }
+        .loc-label { flex: 1; color: #166534; }
+        .loc-addr { margin-top: 8px; font-size: 15px; font-weight: 700; color: #1428A0; line-height: 1.4; padding-left: 26px; }
+        .loc-refresh { background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px; }
+        .loc-retry-btn { margin-left: auto; padding: 6px 12px; font-size: 12px; font-weight: 600; background: #fff; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; color: #991B1B; }
+        .loc-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #94A3B8; border-top-color: #1428A0; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         .att-card { background: #fff; border-radius: 16px; border: 1px solid #E2E8F0; padding: 24px 20px; text-align: center; margin-bottom: 20px; }
         .att-card.done { background: #F0FDF4; border-color: #86EFAC; }
         .att-icon { font-size: 40px; margin-bottom: 10px; }
@@ -305,15 +342,33 @@ export default function CrewAttendancePage() {
       <div className="att-page">
         <CrewHeader title="출퇴근" showBack />
         <div className="att-content">
-          {/* GPS - 미출근 시만 */}
+          {/* GPS 위치 - 미출근 시만 */}
           {!attendance.isCheckedIn && (
-            <div className={`loc-status ${locationStatus}`}>
-              {locationStatus === "checking" && <>📍 위치 확인 중...</>}
-              {locationStatus === "ok" && <>✅ 매장 근처 확인됨 - 출근 가능</>}
-              {locationStatus === "error" && (
-                <>❌ 위치 확인 불가
-                  <button onClick={checkLocation} style={{ marginLeft: 8, padding: "4px 10px", fontSize: 12, background: "#fff", border: "1px solid #ccc", borderRadius: 6, cursor: "pointer" }}>재시도</button>
+            <div className={`loc-box ${locationStatus}`}>
+              {locationStatus === "checking" && (
+                <div className="loc-row">
+                  <span className="loc-spinner"></span>
+                  <span>위치 확인 중...</span>
+                </div>
+              )}
+              {locationStatus === "ok" && (
+                <>
+                  <div className="loc-row">
+                    <span>📍</span>
+                    <span className="loc-label">현재 내 위치</span>
+                    <button onClick={checkLocation} className="loc-refresh">🔄</button>
+                  </div>
+                  <div className="loc-addr">
+                    {currentAddress || "주소 불러오는 중..."}
+                  </div>
                 </>
+              )}
+              {locationStatus === "error" && (
+                <div className="loc-row">
+                  <span>❌</span>
+                  <span>위치 확인 불가</span>
+                  <button onClick={checkLocation} className="loc-retry-btn">재시도</button>
+                </div>
               )}
             </div>
           )}
