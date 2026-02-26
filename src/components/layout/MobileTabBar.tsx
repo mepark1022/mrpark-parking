@@ -8,27 +8,29 @@ const tabs = [
     id: "dashboard",
     path: "/dashboard",
     label: "홈",
+    // 홈: P 글자 아이콘 (시안과 동일)
     icon: (active: boolean) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-        stroke={active ? "#1428A0" : "rgba(255,255,255,0.45)"}
-        strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="4" />
-        <path d="M9 17V7h5a3.5 3.5 0 0 1 0 7H9" />
-      </svg>
+      <span style={{
+        fontFamily: "'Outfit', sans-serif",
+        fontSize: 18,
+        fontWeight: 900,
+        color: active ? "#1428A0" : "rgba(255,255,255,0.45)",
+        lineHeight: 1,
+        marginTop: -1,
+      }}>P</span>
     ),
   },
   {
     id: "entry",
     path: "/entry",
     label: "일일입력",
+    // 연필 아이콘 (얇은 라인)
     icon: (active: boolean) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
         stroke={active ? "#1428A0" : "rgba(255,255,255,0.45)"}
-        strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-        <rect x="9" y="3" width="6" height="4" rx="1" />
-        <line x1="9" y1="12" x2="15" y2="12" />
-        <line x1="9" y1="16" x2="13" y2="16" />
+        strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
       </svg>
     ),
   },
@@ -37,13 +39,13 @@ const tabs = [
     path: "/workers",
     label: "근무자",
     icon: (active: boolean) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
         stroke={active ? "#1428A0" : "rgba(255,255,255,0.45)"}
-        strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="9" cy="7" r="3.2" />
-        <path d="M2.5 21c0-3.59 2.91-6.5 6.5-6.5s6.5 2.91 6.5 6.5" />
-        <circle cx="18" cy="8.5" r="2.3" strokeWidth={2} />
-        <path d="M21.5 21c0-2.9-1.57-5.4-3.5-5.4" strokeWidth={2} />
+        strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="9" cy="7" r="3" />
+        <path d="M3 21v-1a6 6 0 0 1 6-6 6 6 0 0 1 6 6v1" />
+        <circle cx="18" cy="8.5" r="2.2" />
+        <path d="M21 21v-.5a4 4 0 0 0-3-3.85" />
       </svg>
     ),
   },
@@ -52,12 +54,12 @@ const tabs = [
     path: "/accident",
     label: "사고",
     icon: (active: boolean) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
         stroke={active ? "#1428A0" : "rgba(255,255,255,0.45)"}
-        strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 3.5 2.5 20.5h19L12 3.5z" />
-        <line x1="12" y1="10.5" x2="12" y2="15.5" strokeWidth={2.4} />
-        <circle cx="12" cy="18" r="1.3" fill={active ? "#1428A0" : "rgba(255,255,255,0.45)"} stroke="none" />
+        strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 4 2.5 20h19L12 4z" />
+        <line x1="12" y1="10" x2="12" y2="14" strokeWidth={2.2} />
+        <circle cx="12" cy="17" r="0.8" fill={active ? "#1428A0" : "rgba(255,255,255,0.45)"} stroke="none" />
       </svg>
     ),
   },
@@ -66,10 +68,10 @@ const tabs = [
     path: "/more",
     label: "더보기",
     icon: (active: boolean) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill={active ? "#1428A0" : "rgba(255,255,255,0.45)"}>
-        <circle cx="5.5" cy="12" r="2.2" />
-        <circle cx="12" cy="12" r="2.2" />
-        <circle cx="18.5" cy="12" r="2.2" />
+      <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? "#1428A0" : "rgba(255,255,255,0.45)"}>
+        <circle cx="5" cy="12" r="2" />
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="19" cy="12" r="2" />
       </svg>
     ),
   },
@@ -109,7 +111,7 @@ export default function MobileTabBar() {
           background: "#1428A0",
           justifyContent: "space-around",
           alignItems: "center",
-          padding: "8px 4px calc(14px + env(safe-area-inset-bottom, 16px))",
+          padding: "10px 8px calc(12px + env(safe-area-inset-bottom, 14px))",
         }}
       >
         {tabs.map((tab) => {
@@ -123,23 +125,23 @@ export default function MobileTabBar() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 3,
+                gap: 4,
                 cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
               }}
             >
-              {/* 아이콘 박스 */}
+              {/* 아이콘: 활성=골드 원형, 비활성=투명 */}
               <div
                 style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 12,
+                  width: 44,
+                  height: 44,
+                  borderRadius: active ? 22 : 14,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   background: active ? "#F5B731" : "transparent",
-                  boxShadow: active ? "0 4px 14px rgba(245,183,49,0.4)" : "none",
-                  transition: "all 0.2s",
+                  boxShadow: active ? "0 4px 16px rgba(245,183,49,0.45)" : "none",
+                  transition: "all 0.25s cubic-bezier(.4,0,.2,1)",
                 }}
               >
                 {tab.icon(active)}
@@ -149,8 +151,8 @@ export default function MobileTabBar() {
               <span
                 style={{
                   fontSize: 10,
-                  fontWeight: active ? 800 : 600,
-                  color: active ? "#F5B731" : "rgba(255,255,255,0.4)",
+                  fontWeight: active ? 800 : 500,
+                  color: active ? "#F5B731" : "rgba(255,255,255,0.35)",
                   letterSpacing: "-0.3px",
                   fontFamily: "'Noto Sans KR', sans-serif",
                 }}

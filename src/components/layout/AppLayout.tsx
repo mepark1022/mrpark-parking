@@ -25,10 +25,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Header />
 
         {/* 컨텐츠 영역 */}
-        {/* pb-[120px]: 모바일 탭바 높이(~109px) + 여유 */}
+        {/* pb-[160px]: 모바일 네이비탭바 높이 + 여유 */}
         {/* md:pb-0: PC에서는 여백 제거 */}
         <main
-          className="pb-[120px] md:pb-0 mobile-main"
+          className="pb-[160px] md:pb-0 mobile-main"
           style={{
             flex: 1,
             overflow: "auto",

@@ -523,7 +523,7 @@ export default function EntryPage() {
         <div
           style={{
             position: "fixed",
-            bottom: isMobile ? 100 : 32,
+            bottom: isMobile ? 140 : 32,
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 9999,
@@ -672,7 +672,7 @@ export default function EntryPage() {
             {/* 모바일 하단 고정 저장 버튼 */}
             <div style={{
               position: "fixed",
-              bottom: `calc(68px + env(safe-area-inset-bottom, 16px))`,
+              bottom: `calc(80px + env(safe-area-inset-bottom, 14px))`,
               left: 0, right: 0, zIndex: 150,
               padding: "8px 16px",
               background: "rgba(255,255,255,0.96)",

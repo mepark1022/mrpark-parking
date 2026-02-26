@@ -358,7 +358,7 @@ export default function SettingsPage() {
         @media (max-width:767px) {
           .sp-header { padding: 18px 16px; border-radius: 14px; }
           .sp-channel-tab { font-size: 11px; padding: 10px 4px; }
-          .sp-toast { bottom: 120px; }
+          .sp-toast { bottom: 140px; }
           .sp-card { padding: 18px 16px; border-radius: 14px; }
         }
       `}</style>
