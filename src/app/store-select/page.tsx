@@ -310,6 +310,13 @@ function StoreSelectInner() {
       const ctx = await getUserContext();
       setRole(ctx.role || "crew");
 
+      // 어드민은 매장 선택 불필요 → 바로 대시보드
+      const isAdminRole = ctx.role === "admin" || ctx.role === "owner" || ctx.role === "super_admin";
+      if (isAdminRole && !isChange) {
+        router.replace(returnTo);
+        return;
+      }
+
       // 현재 선택된 매장 불러오기
       const saved = localStorage.getItem(ACTIVE_STORE_KEY);
       if (saved) {
