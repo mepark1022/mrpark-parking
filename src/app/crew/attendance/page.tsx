@@ -165,26 +165,22 @@ export default function CrewAttendancePage() {
         setCurrentCoords({ lat: latitude, lng: longitude });
         setLocationStatus("ok");
         
-        // 역지오코딩 — 좌표 → 주소 변환
+        // 역지오코딩 — 카카오 API (좌표 → 주소)
         try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=ko&zoom=18`
-          );
+          const res = await fetch(`/api/geocode/reverse?lat=${latitude}&lng=${longitude}`);
           const data = await res.json();
-          if (data?.address) {
-            const a = data.address;
-            // 한국 주소 조합: 시/도 + 구/군 + 동/읍/면 + 도로명
-            const parts = [
-              a.city || a.state || "",
-              a.borough || a.county || a.suburb || "",
-              a.quarter || a.neighbourhood || a.town || a.village || "",
-              a.road || ""
-            ].filter(Boolean);
-            setCurrentAddress(parts.join(" ") || data.display_name?.split(",").slice(0, 3).join(" ") || "주소 확인됨");
+          if (data.address) {
+            const display = data.building_name 
+              ? `${data.address}\n${data.road_address} (${data.building_name})`
+              : data.road_address 
+                ? `${data.address}\n${data.road_address}`
+                : data.address;
+            setCurrentAddress(display);
+          } else {
+            setCurrentAddress(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
           }
         } catch {
-          // 역지오코딩 실패해도 GPS 자체는 성공
-          setCurrentAddress(`${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`);
+          setCurrentAddress(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
         }
       },
       () => setLocationStatus("error"),
@@ -292,7 +288,7 @@ export default function CrewAttendancePage() {
         .loc-box.checking { background: #F8FAFC; }
         .loc-row { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #1A1D2B; }
         .loc-label { flex: 1; color: #166534; }
-        .loc-addr { margin-top: 8px; font-size: 15px; font-weight: 700; color: #1428A0; line-height: 1.4; padding-left: 26px; }
+        .loc-addr { margin-top: 8px; font-size: 15px; font-weight: 700; color: #1428A0; line-height: 1.5; padding-left: 26px; white-space: pre-line; }
         .loc-refresh { background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px; }
         .loc-retry-btn { margin-left: auto; padding: 6px 12px; font-size: 12px; font-weight: 600; background: #fff; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; color: #991B1B; }
         .loc-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #94A3B8; border-top-color: #1428A0; border-radius: 50%; animation: spin 0.8s linear infinite; }
