@@ -45,8 +45,10 @@ export default function CrewAttendancePage() {
   const [locationStatus, setLocationStatus] = useState<"checking" | "ok" | "far" | "error">("checking");
   const [currentAddress, setCurrentAddress] = useState<string>("");
   const [currentCoords, setCurrentCoords] = useState<{lat: number; lng: number} | null>(null);
-  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const [checkoutMemo, setCheckoutMemo] = useState("");
+  const [correctionDate, setCorrectionDate] = useState("");
+  const [correctionTime, setCorrectionTime] = useState("");
   const [storeId, setStoreId] = useState<string | null>(null);
   const router = useRouter();
   const { showToast } = useCrewToast();
@@ -161,10 +163,9 @@ export default function CrewAttendancePage() {
           });
 
           if (u.status === "approved") {
-            showToast("퇴근이 승인되었습니다! 🎉", "success");
-            setAttendance(prev => ({ ...prev, isCheckedOut: true }));
+            showToast("퇴근수정이 승인되었습니다! 🎉", "success");
           } else if (u.status === "rejected") {
-            showToast("퇴근요청이 반려되었습니다", "error", 3500);
+            showToast("퇴근수정 요청이 반려되었습니다", "error", 3500);
           }
         })
         .subscribe();
@@ -252,7 +253,42 @@ export default function CrewAttendancePage() {
     finally { setActionLoading(false); }
   };
 
-  const handleCheckoutRequest = async () => {
+  // ── 직접 퇴근 (GPS 범위 내) ──
+  const handleCheckOut = async () => {
+    if (!attendance.workerId || !storeId) return;
+    setActionLoading(true);
+    const supabase = createClient();
+    const today = new Date().toISOString().split("T")[0];
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
+    try {
+      const { data: existing } = await supabase
+        .from("worker_attendance").select("id")
+        .eq("worker_id", attendance.workerId).eq("date", today).maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase.from("worker_attendance").update({
+          check_out: timeStr,
+        }).eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        // 출근 기록 없이 퇴근만 하는 예외 상황
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
+        const { error } = await supabase.from("worker_attendance").insert({
+          org_id: prof?.org_id, worker_id: attendance.workerId, store_id: storeId,
+          date: today, check_out: timeStr, status: "present",
+        });
+        if (error) throw error;
+      }
+      setAttendance({ ...attendance, isCheckedOut: true, checkOutTime: now });
+      showToast("퇴근이 기록되었습니다 🌙", "success");
+    } catch (e: any) { showToast(`퇴근 기록 실패: ${e?.message || ""}`, "error"); }
+    finally { setActionLoading(false); }
+  };
+
+  // ── 퇴근수정 요청 (깜빡했을 때 관리자에게 요청) ──
+  const handleCorrectionRequest = async () => {
     if (!attendance.workerId || !storeId) return;
     setActionLoading(true);
     const supabase = createClient();
@@ -263,17 +299,19 @@ export default function CrewAttendancePage() {
       const { error } = await supabase.from("checkout_requests").insert({
         org_id: prof?.org_id,
         worker_id: attendance.workerId, store_id: storeId,
-        request_date: now.toISOString().split("T")[0],
-        requested_checkout_time: now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }),
-        request_reason: checkoutMemo || null,
+        request_date: correctionDate || now.toISOString().split("T")[0],
+        requested_checkout_time: correctionTime || now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }),
+        request_reason: checkoutMemo || "퇴근 미처리 수정 요청",
         status: "pending",
       });
       if (error) throw error;
       await loadLatestRequest(attendance.workerId);
-      setShowCheckoutModal(false);
+      setShowCorrectionModal(false);
       setCheckoutMemo("");
-      showToast("퇴근 요청이 전송되었습니다 🌙", "info");
-    } catch { showToast("퇴근 요청에 실패했습니다", "error"); }
+      setCorrectionDate("");
+      setCorrectionTime("");
+      showToast("퇴근수정 요청이 전송되었습니다 📋", "info");
+    } catch { showToast("요청에 실패했습니다", "error"); }
     finally { setActionLoading(false); }
   };
 
@@ -290,27 +328,18 @@ export default function CrewAttendancePage() {
         worker_id: attendance.workerId, store_id: storeId,
         request_date: now.toISOString().split("T")[0],
         requested_checkout_time: now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }),
-        request_reason: "재요청",
+        request_reason: "수정 재요청",
         status: "pending",
       });
       if (error) throw error;
       await loadLatestRequest(attendance.workerId);
-      showToast("퇴근 재요청이 전송되었습니다", "info");
+      showToast("수정 재요청이 전송되었습니다", "info");
     } catch { showToast("재요청에 실패했습니다", "error"); }
     finally { setActionLoading(false); }
   };
 
   const fmt = (d: Date) => d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
   const fmtWork = (m: number) => `${Math.floor(m / 60)}시간 ${m % 60}분`;
-
-  const getStatus = () => {
-    if (attendance.isCheckedOut) return "checkedOut";
-    if (latestRequest?.status === "pending") return "pending";
-    if (latestRequest?.status === "rejected") return "rejected";
-    if (attendance.isCheckedIn) return "working";
-    return "notCheckedIn";
-  };
-  const status = getStatus();
 
   if (loading) return (
     <div style={{ minHeight: "100dvh", background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -379,8 +408,8 @@ export default function CrewAttendancePage() {
       <div className="att-page">
         <CrewHeader title="출퇴근" showBack />
         <div className="att-content">
-          {/* GPS 위치 - 미출근 시만 */}
-          {!attendance.isCheckedIn && (
+          {/* GPS 위치 - 미출근 또는 출근 중(퇴근 전) */}
+          {!attendance.isCheckedOut && (
             <div className={`loc-box ${locationStatus}`}>
               {locationStatus === "checking" && (
                 <div className="loc-row">
@@ -411,8 +440,8 @@ export default function CrewAttendancePage() {
           )}
 
           {/* 출근 상태 카드 */}
-          <div className={`att-card ${status === "checkedOut" ? "done" : ""}`}>
-            {status === "checkedOut" ? (
+          <div className={`att-card ${attendance.isCheckedOut ? "done" : ""}`}>
+            {attendance.isCheckedOut ? (
               <><div className="att-icon">✅</div><div className="att-title">퇴근 완료</div>
                 <div className="att-time">{attendance.checkInTime && fmt(attendance.checkInTime)} ~ {attendance.checkOutTime && fmt(attendance.checkOutTime)}</div>
                 <div className="att-sub">총 근무: {fmtWork(attendance.workingMinutes)}</div></>
@@ -426,23 +455,23 @@ export default function CrewAttendancePage() {
             )}
           </div>
 
-          {/* 상태 배너 */}
-          {status === "pending" && (
+          {/* 퇴근수정 요청 상태 배너 */}
+          {latestRequest?.status === "pending" && (
             <div className="s-banner pending">
-              <div className="s-banner-hd">🟡 퇴근 요청 대기 중</div>
+              <div className="s-banner-hd">🟡 퇴근수정 요청 대기 중</div>
               <div className="s-banner-body">관리자가 확인 중입니다. 승인되면 자동으로 알려드려요.</div>
             </div>
           )}
-          {status === "rejected" && latestRequest && (
+          {latestRequest?.status === "rejected" && (
             <div className="s-banner rejected">
-              <div className="s-banner-hd">🔴 퇴근 요청이 반려되었습니다</div>
+              <div className="s-banner-hd">🔴 퇴근수정 요청이 반려되었습니다</div>
               <div className="s-banner-reason">{latestRequest.reject_reason || "사유가 기록되지 않았습니다."}</div>
               <button className="s-banner-btn" onClick={handleReRequest} disabled={actionLoading}>
-                {actionLoading ? "처리 중..." : "🔄 퇴근 재요청하기"}
+                {actionLoading ? "처리 중..." : "🔄 수정 재요청하기"}
               </button>
             </div>
           )}
-          {status === "checkedOut" && (
+          {attendance.isCheckedOut && (
             <div className="s-banner approved">
               <div className="s-banner-hd">✅ 오늘 근무가 완료되었습니다</div>
               <div className="s-banner-body">수고하셨습니다! 내일 또 뵙겠습니다 👋</div>
@@ -450,14 +479,14 @@ export default function CrewAttendancePage() {
           )}
 
           {/* 출퇴근 버튼 */}
-          {status === "notCheckedIn" && (
+          {!attendance.isCheckedIn && !attendance.isCheckedOut && (
             <button className="att-btn in" onClick={handleCheckIn} disabled={actionLoading || locationStatus !== "ok"}>
               {actionLoading ? "처리 중..." : "☀️ 출근하기"}
             </button>
           )}
-          {status === "working" && (
-            <button className="att-btn out" onClick={() => setShowCheckoutModal(true)} disabled={actionLoading}>
-              🌙 퇴근 요청
+          {attendance.isCheckedIn && !attendance.isCheckedOut && (
+            <button className="att-btn out" onClick={handleCheckOut} disabled={actionLoading || locationStatus !== "ok"}>
+              {actionLoading ? "처리 중..." : "🌙 퇴근하기"}
             </button>
           )}
 
@@ -469,30 +498,46 @@ export default function CrewAttendancePage() {
             </div>
           )}
 
-          {/* 이력 링크 */}
-          <div className="hist-link" onClick={() => router.push("/crew/attendance/history")}>
-            <span style={{ fontSize: 15, fontWeight: 600, color: "#1A1D2B" }}>📋 내 요청 이력 보기</span>
-            <span style={{ color: "#94A3B8", fontSize: 18 }}>→</span>
+          {/* 퇴근수정 요청 + 이력 링크 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div className="hist-link" onClick={() => setShowCorrectionModal(true)}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: "#1A1D2B" }}>📋 퇴근수정 요청</span>
+              <span style={{ color: "#94A3B8", fontSize: 12 }}>퇴근 미처리 시</span>
+            </div>
+            <div className="hist-link" onClick={() => router.push("/crew/attendance/history")}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: "#1A1D2B" }}>📜 내 요청 이력 보기</span>
+              <span style={{ color: "#94A3B8", fontSize: 18 }}>→</span>
+            </div>
           </div>
         </div>
 
         <CrewNavSpacer />
         <CrewBottomNav />
 
-        {/* 퇴근 요청 모달 */}
-        {showCheckoutModal && (
-          <div className="modal-ov" onClick={() => setShowCheckoutModal(false)}>
+        {/* 퇴근수정 요청 모달 */}
+        {showCorrectionModal && (
+          <div className="modal-ov" onClick={() => setShowCorrectionModal(false)}>
             <div className="modal-c" onClick={e => e.stopPropagation()}>
-              <div className="modal-t">퇴근 요청</div>
+              <div className="modal-t">퇴근수정 요청</div>
               <div className="modal-i">
-                <div>퇴근 시간: {fmt(new Date())}</div>
-                <div>총 근무: {fmtWork(attendance.workingMinutes)}</div>
+                퇴근 처리를 깜빡한 경우, 관리자에게 수정을 요청합니다.
               </div>
-              <textarea className="modal-ta" placeholder="메모 (선택)" rows={3}
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>수정할 날짜</label>
+                <input type="date" className="modal-ta" style={{ resize: "none", padding: "12px 14px" }}
+                  value={correctionDate} onChange={e => setCorrectionDate(e.target.value)}
+                  max={new Date().toISOString().split("T")[0]} />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>퇴근 시간</label>
+                <input type="time" className="modal-ta" style={{ resize: "none", padding: "12px 14px" }}
+                  value={correctionTime} onChange={e => setCorrectionTime(e.target.value)} />
+              </div>
+              <textarea className="modal-ta" placeholder="사유 (예: 퇴근 미처리)" rows={2}
                 value={checkoutMemo} onChange={e => setCheckoutMemo(e.target.value)} />
               <div className="modal-btns">
-                <button className="modal-b cc" onClick={() => setShowCheckoutModal(false)}>취소</button>
-                <button className="modal-b sb" onClick={handleCheckoutRequest} disabled={actionLoading}>
+                <button className="modal-b cc" onClick={() => setShowCorrectionModal(false)}>취소</button>
+                <button className="modal-b sb" onClick={handleCorrectionRequest} disabled={actionLoading || !correctionDate || !correctionTime}>
                   {actionLoading ? "처리 중..." : "요청하기"}
                 </button>
               </div>
