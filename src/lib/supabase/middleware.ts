@@ -7,8 +7,7 @@ const PUBLIC_PATHS = [
   "/login",
   "/invite",
   "/auth/callback",
-  "/crew/login",          // CREW앱 로그인
-  "/crew/auth/callback",  // CREW앱 OAuth 콜백
+  "/crew",              // CREW앱 전체 (클라이언트 사이드 인증 사용)
   "/ticket",   // 미팍티켓 고객 페이지
   "/scan",     // 고정 QR 스캔
   "/api/payment", // 토스페이먼츠 웹훅
@@ -58,16 +57,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   // 로그인 상태 + /login → /dashboard 리다이렉트
-  if (user && pathname.startsWith("/login")) {
+  if (user && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
-  }
-
-  // 로그인 상태 + /crew/login → /crew 리다이렉트
-  if (user && pathname.startsWith("/crew/login")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/crew";
     return NextResponse.redirect(url);
   }
 

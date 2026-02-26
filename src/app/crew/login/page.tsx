@@ -80,7 +80,7 @@ function CrewLoginContent() {
     const checkAuth = async () => {
       const ctx = await getUserContext();
       
-      if (ctx.userId && (ctx.role === "crew" || ctx.role === "admin" || ctx.role === "owner")) {
+      if (ctx.userId && (ctx.role === "crew" || ctx.role === "admin" || ctx.role === "owner" || ctx.role === "super_admin")) {
         // 이미 선택된 매장이 있으면 바로 홈
         const savedStore = localStorage.getItem("crew_store_id");
         if (savedStore) {
