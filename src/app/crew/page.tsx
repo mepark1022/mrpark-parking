@@ -121,7 +121,8 @@ export default function CrewHomePage() {
         .from("workers")
         .select("id")
         .eq("user_id", ctx.userId)
-        .single();
+        .limit(1)
+        .maybeSingle();
       
       // worker 레코드가 없는 admin/super_admin → 자동 생성
       if (!worker && (ctx.role === "super_admin" || ctx.role === "admin" || ctx.role === "owner")) {

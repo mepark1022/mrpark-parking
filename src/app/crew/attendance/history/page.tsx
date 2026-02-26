@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import CrewHeader from "@/components/crew/CrewHeader";
+import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 import { useCrewToast } from "@/components/crew/CrewToast";
 
 interface CheckoutRequest {
@@ -37,7 +38,7 @@ export default function CrewAttendanceHistoryPage() {
       setStoreId(savedStoreId);
 
       const { data: worker } = await supabase
-        .from("workers").select("id").eq("user_id", user.id).single();
+        .from("workers").select("id").eq("user_id", user.id).limit(1).maybeSingle();
       if (!worker) { setLoading(false); return; }
       setWorkerId(worker.id);
 
@@ -71,7 +72,7 @@ export default function CrewAttendanceHistoryPage() {
         org_id: prof?.org_id,
         worker_id: workerId, store_id: storeId,
         request_date: now.toISOString().split("T")[0],
-        requested_checkout_time: now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }),
+        requested_checkout_time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
         request_reason: "재요청",
         status: "pending",
       });
@@ -186,6 +187,8 @@ export default function CrewAttendanceHistoryPage() {
             })
           )}
         </div>
+        <CrewNavSpacer />
+        <CrewBottomNav />
       </div>
     </>
   );

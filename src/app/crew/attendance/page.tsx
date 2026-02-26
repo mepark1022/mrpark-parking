@@ -80,7 +80,7 @@ export default function CrewAttendancePage() {
       setStoreId(savedStoreId);
 
       let { data: worker } = await supabase
-        .from("workers").select("id").eq("user_id", user.id).single();
+        .from("workers").select("id").eq("user_id", user.id).limit(1).maybeSingle();
       
       // worker 레코드가 없는 admin/super_admin → 자동 생성
       if (!worker) {
@@ -224,7 +224,7 @@ export default function CrewAttendancePage() {
     const supabase = createClient();
     const today = new Date().toISOString().split("T")[0];
     const now = new Date();
-    const timeStr = now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
@@ -260,7 +260,7 @@ export default function CrewAttendancePage() {
     const supabase = createClient();
     const today = new Date().toISOString().split("T")[0];
     const now = new Date();
-    const timeStr = now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     try {
       const { data: existing } = await supabase
         .from("worker_attendance").select("id")
@@ -300,7 +300,7 @@ export default function CrewAttendancePage() {
         org_id: prof?.org_id,
         worker_id: attendance.workerId, store_id: storeId,
         request_date: correctionDate || now.toISOString().split("T")[0],
-        requested_checkout_time: correctionTime || now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }),
+        requested_checkout_time: correctionTime || `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
         request_reason: checkoutMemo || "퇴근 미처리 수정 요청",
         status: "pending",
       });
@@ -327,7 +327,7 @@ export default function CrewAttendancePage() {
         org_id: prof?.org_id,
         worker_id: attendance.workerId, store_id: storeId,
         request_date: now.toISOString().split("T")[0],
-        requested_checkout_time: now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }),
+        requested_checkout_time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
         request_reason: "수정 재요청",
         status: "pending",
       });
