@@ -79,7 +79,7 @@ export default function CrewAttendancePage() {
 
       const { data: worker } = await supabase
         .from("workers").select("id").eq("user_id", user.id).single();
-      if (!worker) { setLoading(false); return; }
+      if (!worker) { setLoading(false); checkLocation(); return; }
 
       // 오늘 출근 정보
       const today = new Date().toISOString().split("T")[0];
