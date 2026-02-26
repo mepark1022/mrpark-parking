@@ -15,24 +15,15 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const url = `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lng}&y=${lat}&input_coord=WGS84`;
-    const res = await fetch(url, {
-      headers: { Authorization: `KakaoAK ${KAKAO_KEY}` },
-    });
+    const res = await fetch(
+      `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lng}&y=${lat}&input_coord=WGS84`,
+      { headers: { Authorization: `KakaoAK ${KAKAO_KEY}` } }
+    );
 
     const data = await res.json();
 
-    // 디버깅: 카카오 응답이 비어있으면 전체 응답 반환
     if (!data.documents || data.documents.length === 0) {
-      return NextResponse.json({
-        debug: true,
-        kakao_status: res.status,
-        kakao_response: data,
-        address: "",
-        road_address: "",
-        building_name: "",
-        full: "",
-      });
+      return NextResponse.json({ address: "", road_address: "", building_name: "", full: "" });
     }
 
     const doc = data.documents[0];
