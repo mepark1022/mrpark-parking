@@ -12,8 +12,8 @@ export const ACTIVE_STORE_KEY = "mepark_active_store"; // localStorage key
 type Store = {
   id: string;
   name: string;
-  region: string | null;
-  address: string | null;
+  region_city: string | null;
+  road_address: string | null;
   is_active: boolean;
 };
 
@@ -298,7 +298,7 @@ function StoreSelectInner() {
 
       let query = supabase
         .from("stores")
-        .select("id, name, region, address, is_active")
+        .select("id, name, region_city, road_address, is_active")
         .eq("org_id", ctx.orgId)
         .order("name");
 
@@ -343,7 +343,7 @@ function StoreSelectInner() {
 
   const filtered = stores.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
-    (s.region || "").toLowerCase().includes(search.toLowerCase())
+    (s.region_city || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const badge = getRoleBadge(role);
@@ -423,11 +423,11 @@ function StoreSelectInner() {
                     <div className="ss-store-info">
                       <div className="ss-store-name">{store.name}</div>
                       <div className="ss-store-addr">
-                        {store.address || store.region || "주소 미등록"}
+                        {store.road_address || store.region_city || "주소 미등록"}
                       </div>
                     </div>
-                    {store.region && (
-                      <div className="ss-store-region">{store.region}</div>
+                    {store.region_city && (
+                      <div className="ss-store-region">{store.region_city}</div>
                     )}
                   </div>
                 );
