@@ -8,12 +8,13 @@ const tabs = [
     id: "dashboard",
     path: "/dashboard",
     label: "홈",
+    isHome: true,
     icon: (active: boolean) => (
       <span style={{
         fontFamily: "'Outfit', sans-serif",
-        fontSize: 17,
+        fontSize: 20,
         fontWeight: 900,
-        color: active ? "#1428A0" : "rgba(255,255,255,0.4)",
+        color: "#1428A0",
         lineHeight: 1,
       }}>P</span>
     ),
@@ -23,8 +24,8 @@ const tabs = [
     path: "/entry",
     label: "일일입력",
     icon: (active: boolean) => (
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"
-        stroke={active ? "#1428A0" : "rgba(255,255,255,0.4)"}
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#F5B731" : "rgba(255,255,255,0.4)"}
         strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 20h9" />
         <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
@@ -36,8 +37,8 @@ const tabs = [
     path: "/workers",
     label: "근무자",
     icon: (active: boolean) => (
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"
-        stroke={active ? "#1428A0" : "rgba(255,255,255,0.4)"}
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#F5B731" : "rgba(255,255,255,0.4)"}
         strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="9" cy="7" r="3" />
         <path d="M3 21v-1a6 6 0 0 1 12 0v1" />
@@ -51,12 +52,12 @@ const tabs = [
     path: "/accident",
     label: "사고",
     icon: (active: boolean) => (
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"
-        stroke={active ? "#1428A0" : "rgba(255,255,255,0.4)"}
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#F5B731" : "rgba(255,255,255,0.4)"}
         strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 4 2.5 20h19L12 4z" />
         <line x1="12" y1="10" x2="12" y2="14" strokeWidth={2} />
-        <circle cx="12" cy="17" r="0.8" fill={active ? "#1428A0" : "rgba(255,255,255,0.4)"} stroke="none" />
+        <circle cx="12" cy="17" r="0.8" fill={active ? "#F5B731" : "rgba(255,255,255,0.4)"} stroke="none" />
       </svg>
     ),
   },
@@ -65,7 +66,7 @@ const tabs = [
     path: "/more",
     label: "더보기",
     icon: (active: boolean) => (
-      <svg width="19" height="19" viewBox="0 0 24 24" fill={active ? "#1428A0" : "rgba(255,255,255,0.4)"}>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "#F5B731" : "rgba(255,255,255,0.4)"}>
         <circle cx="5" cy="12" r="1.8" />
         <circle cx="12" cy="12" r="1.8" />
         <circle cx="19" cy="12" r="1.8" />
@@ -107,12 +108,62 @@ export default function MobileTabBar() {
           zIndex: 200,
           background: "#1428A0",
           justifyContent: "space-around",
-          alignItems: "center",
-          padding: "8px 4px calc(10px + env(safe-area-inset-bottom, 12px))",
+          alignItems: "flex-end",
+          padding: "0 4px calc(8px + env(safe-area-inset-bottom, 10px))",
+          height: "auto",
         }}
       >
         {tabs.map((tab) => {
           const active = isActive(tab);
+          const isHome = (tab as any).isHome;
+
+          if (isHome) {
+            // ★ P(홈) 버튼: 큰 골드 원형, 위로 floating
+            return (
+              <div
+                key={tab.id}
+                onClick={() => handleClick(tab)}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 4,
+                  cursor: "pointer",
+                  WebkitTapHighlightColor: "transparent",
+                  marginTop: -16,
+                }}
+              >
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 26,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#F5B731",
+                    boxShadow: "0 4px 16px rgba(245,183,49,0.5)",
+                  }}
+                >
+                  {tab.icon(active)}
+                </div>
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: "#F5B731",
+                    letterSpacing: "-0.3px",
+                    fontFamily: "'Noto Sans KR', sans-serif",
+                  }}
+                >
+                  {tab.label}
+                </span>
+              </div>
+            );
+          }
+
+          // ★ 나머지 탭: 아이콘+라벨만, 골드원형 없음
           return (
             <div
               key={tab.id}
@@ -122,31 +173,18 @@ export default function MobileTabBar() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 3,
+                gap: 4,
                 cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
+                paddingTop: 12,
               }}
             >
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: active ? "#F5B731" : "transparent",
-                  boxShadow: active ? "0 3px 12px rgba(245,183,49,0.4)" : "none",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                {tab.icon(active)}
-              </div>
+              {tab.icon(active)}
               <span
                 style={{
                   fontSize: 9,
                   fontWeight: active ? 700 : 500,
-                  color: active ? "#F5B731" : "rgba(255,255,255,0.3)",
+                  color: active ? "#F5B731" : "rgba(255,255,255,0.35)",
                   letterSpacing: "-0.3px",
                   fontFamily: "'Noto Sans KR', sans-serif",
                 }}
