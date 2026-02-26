@@ -61,7 +61,7 @@ export default function CrewAttendancePage() {
       .eq("request_date", today)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
     setLatestRequest(data || null);
   }, []);
 
@@ -108,11 +108,17 @@ export default function CrewAttendancePage() {
       const today = new Date().toISOString().split("T")[0];
       const { data: ad } = await supabase
         .from("worker_attendance").select("*")
-        .eq("worker_id", worker.id).eq("date", today).single();
+        .eq("worker_id", worker.id).eq("date", today).maybeSingle();
 
       if (ad && ad.check_in) {
-        const cin = new Date(ad.check_in);
-        const cout = ad.check_out ? new Date(ad.check_out) : null;
+        // check_in/check_out은 "HH:MM" 형식 → 오늘 날짜와 결합
+        const [ch, cm] = ad.check_in.split(":");
+        const cin = new Date(); cin.setHours(parseInt(ch), parseInt(cm), 0, 0);
+        let cout: Date | null = null;
+        if (ad.check_out) {
+          const [oh, om] = ad.check_out.split(":");
+          cout = new Date(); cout.setHours(parseInt(oh), parseInt(om), 0, 0);
+        }
         const now = new Date();
         const mins = cout
           ? Math.floor((cout.getTime() - cin.getTime()) / 60000)
@@ -130,7 +136,7 @@ export default function CrewAttendancePage() {
 
       // 근무조
       const { data: sd } = await supabase
-        .from("store_shifts").select("*").eq("store_id", savedStoreId).limit(1).single();
+        .from("store_shifts").select("*").eq("store_id", savedStoreId).limit(1).maybeSingle();
       if (sd) setShift({ startTime: sd.start_time || "09:00", endTime: sd.end_time || "18:00", shiftName: sd.name || "주간" });
 
       setLoading(false);
@@ -217,20 +223,32 @@ export default function CrewAttendancePage() {
     const supabase = createClient();
     const today = new Date().toISOString().split("T")[0];
     const now = new Date();
+    const timeStr = now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
     try {
-      // org_id 가져오기
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
       const oid = prof?.org_id;
 
-      const { error } = await supabase.from("worker_attendance").upsert({
-        org_id: oid, worker_id: attendance.workerId, store_id: storeId,
-        date: today, check_in: now.toISOString(), status: "present",
-      }, { onConflict: "worker_id,date" });
-      if (error) throw error;
+      // 기존 레코드 확인
+      const { data: existing } = await supabase
+        .from("worker_attendance").select("id")
+        .eq("worker_id", attendance.workerId).eq("date", today).maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase.from("worker_attendance").update({
+          check_in: timeStr, status: "present", store_id: storeId,
+        }).eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("worker_attendance").insert({
+          org_id: oid, worker_id: attendance.workerId, store_id: storeId,
+          date: today, check_in: timeStr, status: "present",
+        });
+        if (error) throw error;
+      }
       setAttendance({ ...attendance, isCheckedIn: true, isCheckedOut: false, checkInTime: now, checkOutTime: null, workingMinutes: 0 });
       showToast("출근이 기록되었습니다 ☀️", "success");
-    } catch { showToast("출근 기록에 실패했습니다", "error"); }
+    } catch (e: any) { showToast(`출근 기록 실패: ${e?.message || ""}`, "error"); }
     finally { setActionLoading(false); }
   };
 

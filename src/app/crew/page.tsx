@@ -121,10 +121,13 @@ export default function CrewHomePage() {
           .select("*")
           .eq("worker_id", worker.id)
           .eq("date", today)
-          .single();
+          .maybeSingle();
 
         if (attendanceData && attendanceData.check_in) {
-          const checkInTime = new Date(attendanceData.check_in);
+          // check_in은 "HH:MM" 형식 → 오늘 날짜와 결합
+          const [h, m] = attendanceData.check_in.split(":");
+          const checkInTime = new Date();
+          checkInTime.setHours(parseInt(h), parseInt(m), 0, 0);
           const now = new Date();
           const workingMinutes = Math.floor((now.getTime() - checkInTime.getTime()) / 60000);
           
