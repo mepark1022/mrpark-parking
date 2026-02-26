@@ -8,6 +8,8 @@ import { useState, useEffect, useRef } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
+import nextDynamic from "next/dynamic";
+const AdminGpsMap = nextDynamic(() => import("@/components/admin/AdminGpsMap"), { ssr: false });
 import { showToast as _showToast } from "@/lib/utils/toast";
 import { getDayType, getHolidayName, getDayTypeLabel } from "@/utils/holidays";
 import * as XLSX from "xlsx";
@@ -825,6 +827,7 @@ export default function WorkersPage() {
   const [checkoutApproveTime, setCheckoutApproveTime] = useState("");
   const [checkoutRejectReason, setCheckoutRejectReason] = useState("");
   const [checkoutProcessing, setCheckoutProcessing] = useState(false);
+  const [gpsPopup, setGpsPopup] = useState<{ show: boolean; workerName: string; rec: any; store: any } | null>(null);
 
   const districtMap: Record<string, string[]> = {
     "서울": ["강남구","강동구","강북구","강서구","관악구","광진구","구로구","금천구","노원구","도봉구","동대문구","동작구","마포구","서대문구","서초구","성동구","성북구","송파구","양천구","영등포구","용산구","은평구","종로구","중구","중랑구"],
@@ -863,7 +866,7 @@ export default function WorkersPage() {
 
     const [{ data: wData }, { data: sData }, { data: aData }, { data: rData }, { data: crData }] = await Promise.all([
       supabase.from("workers").select("*, regions(name)").eq("org_id", oid).order("name"),
-      supabase.from("stores").select("id, name").eq("org_id", oid).order("name"),
+      supabase.from("stores").select("id, name, latitude, longitude, road_address").eq("org_id", oid).order("name"),
       supabase.from("worker_attendance").select("*").eq("org_id", oid).eq("date", new Date().toISOString().slice(0, 10)),
       supabase.from("regions").select("*").order("name"),
       supabase.from("checkout_requests").select("*, workers(name, phone)").eq("org_id", oid).eq("status", "pending").order("created_at", { ascending: false }),
@@ -1298,7 +1301,7 @@ export default function WorkersPage() {
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                       <tr>
-                        {["이름", "연락처", "출근시간", "퇴근시간", "근무시간", "상태", "액션"].map(h => (
+                        {["이름", "연락처", "출근시간", "퇴근시간", "근무시간", "상태", "위치", "액션"].map(h => (
                           <th key={h} style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textAlign: "left", background: "var(--bg-card)", borderBottom: "1px solid var(--border-light)" }}>{h}</th>
                         ))}
                       </tr>
@@ -1322,6 +1325,23 @@ export default function WorkersPage() {
                               )}
                             </td>
                             <td style={{ padding: "13px 14px" }}>
+                              {rec && (rec.check_in_lat || rec.check_out_lat) ? (() => {
+                                const store = stores.find((s: any) => s.id === rec.store_id);
+                                const inDist = rec.check_in_distance_m;
+                                const outDist = rec.check_out_distance_m;
+                                const maxDist = Math.max(inDist || 0, outDist || 0);
+                                const isOver = maxDist > 200;
+                                return (
+                                  <button onClick={() => setGpsPopup({ show: true, workerName: w.name, rec, store })}
+                                    style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 8, border: `1px solid ${isOver ? "#FECACA" : "#E2E8F0"}`, background: isOver ? "#FEF2F2" : "#F8FAFC", cursor: "pointer", fontSize: 11, fontWeight: 600, color: isOver ? "#DC2626" : "#1428A0" }}>
+                                    {isOver ? "⚠️" : "📍"} {maxDist > 0 ? `${maxDist}m` : "보기"}
+                                  </button>
+                                );
+                              })() : (
+                                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>-</span>
+                              )}
+                            </td>
+                            <td style={{ padding: "13px 14px" }}>
                               <div style={{ display: "flex", gap: 6 }}>
                                 <button onClick={() => { setManualForm({ workerId: w.id, status: rec?.status || "present", checkIn: rec?.check_in || "", checkOut: rec?.check_out || "" }); setManualMsg(""); setManualModal({ show: true, record: rec }); }}
                                   style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid var(--border)", background: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "var(--navy)" }}>수정</button>
@@ -1335,7 +1355,7 @@ export default function WorkersPage() {
                         );
                       })}
                       {displayWorkers.length === 0 && (
-                        <tr><td colSpan={7} style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", fontSize: 14 }}>등록된 근무자가 없습니다</td></tr>
+                        <tr><td colSpan={8} style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", fontSize: 14 }}>등록된 근무자가 없습니다</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -1366,6 +1386,18 @@ export default function WorkersPage() {
                           {rec && <span>근무 <strong style={{ color: "#1a1d2b" }}>{calcWorkHours(rec.check_in, rec.check_out)}</strong></span>}
                         </div>
                         {w.phone && <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 10 }}>📱 {w.phone}</div>}
+                        {/* GPS 위치 거리 */}
+                        {rec && (rec.check_in_distance_m || rec.check_out_distance_m) && (() => {
+                          const store = stores.find((s: any) => s.id === rec.store_id);
+                          const maxDist = Math.max(rec.check_in_distance_m || 0, rec.check_out_distance_m || 0);
+                          const isOver = maxDist > 200;
+                          return (
+                            <button onClick={() => setGpsPopup({ show: true, workerName: w.name, rec, store })}
+                              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 12px", borderRadius: 8, border: `1px solid ${isOver ? "#FECACA" : "#E2E8F0"}`, background: isOver ? "#FEF2F2" : "#F0F9FF", cursor: "pointer", marginBottom: 10, fontSize: 12, fontWeight: 600, color: isOver ? "#DC2626" : "#1428A0" }}>
+                              {isOver ? "⚠️" : "📍"} GPS 위치 · {rec.check_in_distance_m ? `출근 ${rec.check_in_distance_m}m` : ""}{rec.check_in_distance_m && rec.check_out_distance_m ? " / " : ""}{rec.check_out_distance_m ? `퇴근 ${rec.check_out_distance_m}m` : ""}
+                            </button>
+                          );
+                        })()}
                         {/* 수정만 — 삭제 없음 */}
                         <button onClick={() => { setManualForm({ workerId: w.id, status: rec?.status || "present", checkIn: rec?.check_in || "", checkOut: rec?.check_out || "" }); setManualMsg(""); setManualModal({ show: true, record: rec }); }}
                           style={{ width: "100%", padding: 10, borderRadius: 11, border: "none", background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
@@ -1377,6 +1409,76 @@ export default function WorkersPage() {
                 </div>
               </div>
             </div>
+
+            {/* ── GPS 위치 팝업 ── */}
+            {gpsPopup?.show && gpsPopup.rec && (() => {
+              const { rec, workerName, store } = gpsPopup;
+              const storeLat = store?.latitude ? parseFloat(store.latitude) : null;
+              const storeLng = store?.longitude ? parseFloat(store.longitude) : null;
+              return (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+                  onClick={() => setGpsPopup(null)}>
+                  <div style={{ background: "#fff", borderRadius: 20, padding: 24, width: "100%", maxWidth: 480, maxHeight: "80vh", overflow: "auto", boxShadow: "0 8px 40px rgba(0,0,0,0.22)" }}
+                    onClick={e => e.stopPropagation()}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                      <div>
+                        <div style={{ fontSize: 17, fontWeight: 800, color: "#1a1d2b" }}>📍 {workerName} 출퇴근 위치</div>
+                        <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{store?.name || ""} {store?.road_address ? `· ${store.road_address}` : ""}</div>
+                      </div>
+                      <button onClick={() => setGpsPopup(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#94a3b8" }}>✕</button>
+                    </div>
+
+                    {/* 카카오맵 */}
+                    <AdminGpsMap
+                      storeLat={storeLat} storeLng={storeLng}
+                      checkInLat={rec.check_in_lat ? parseFloat(rec.check_in_lat) : null}
+                      checkInLng={rec.check_in_lng ? parseFloat(rec.check_in_lng) : null}
+                      checkOutLat={rec.check_out_lat ? parseFloat(rec.check_out_lat) : null}
+                      checkOutLng={rec.check_out_lng ? parseFloat(rec.check_out_lng) : null}
+                    />
+
+                    {/* 거리 정보 카드 */}
+                    <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                      {rec.check_in_lat && (
+                        <div style={{ flex: 1, borderRadius: 12, padding: "12px 14px", background: "#F0FDF4", border: "1px solid #BBF7D0" }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "#166534", marginBottom: 4 }}>☀️ 출근</div>
+                          <div style={{ fontSize: 11, color: "#166534" }}>
+                            시간: <strong>{rec.check_in || "-"}</strong>
+                          </div>
+                          {rec.check_in_distance_m != null && (
+                            <div style={{ fontSize: 11, color: rec.check_in_distance_m > 200 ? "#DC2626" : "#166534", marginTop: 2 }}>
+                              매장 거리: <strong>{rec.check_in_distance_m}m</strong>
+                              {rec.check_in_distance_m > 200 && " ⚠️ 반경 초과"}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {rec.check_out_lat && (
+                        <div style={{ flex: 1, borderRadius: 12, padding: "12px 14px", background: "#FEF2F2", border: "1px solid #FECACA" }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "#991B1B", marginBottom: 4 }}>🌙 퇴근</div>
+                          <div style={{ fontSize: 11, color: "#991B1B" }}>
+                            시간: <strong>{rec.check_out || "-"}</strong>
+                          </div>
+                          {rec.check_out_distance_m != null && (
+                            <div style={{ fontSize: 11, color: rec.check_out_distance_m > 200 ? "#DC2626" : "#991B1B", marginTop: 2 }}>
+                              매장 거리: <strong>{rec.check_out_distance_m}m</strong>
+                              {rec.check_out_distance_m > 200 && " ⚠️ 반경 초과"}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 매장 좌표 미등록 안내 */}
+                    {!storeLat && !storeLng && (
+                      <div style={{ marginTop: 14, background: "#FEF3C7", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "#92400E", border: "1px solid #FDE68A" }}>
+                        ⚠️ 매장 좌표가 등록되지 않아 지도를 표시할 수 없습니다. <strong>매장관리 → 매장 수정</strong>에서 주소를 입력하면 자동으로 좌표가 설정됩니다.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
           );
         })()}
