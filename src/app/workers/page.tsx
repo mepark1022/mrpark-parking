@@ -611,7 +611,7 @@ function ScheduleTab() {
           ))}
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <span style={{ fontSize: 12 }}>🔔</span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#1428A0" }}>CREW 퇴근 승인</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#1428A0" }}>CREW 퇴근수정 승인</span>
           </div>
           <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 4 }}>💡 셀 클릭으로 상태 선택</span>
         </div>
@@ -851,6 +851,11 @@ export default function WorkersPage() {
 
   useEffect(() => { loadAll(); }, []);
 
+  // 출퇴근 탭 진입 시 최신 데이터 새로고침
+  useEffect(() => {
+    if (tab === "attendance") loadAll();
+  }, [tab]);
+
   const loadAll = async () => {
     const supabase = createClient();
     const oid = await getOrgId();
@@ -993,7 +998,7 @@ export default function WorkersPage() {
     setCheckoutProcessing(false);
     setCheckoutModal({ show: false, req: null, mode: "approve" });
     setCheckoutApproveTime("");
-    showToast("✅ 퇴근 처리가 승인되었습니다");
+    showToast("✅ 퇴근수정이 승인되었습니다");
     loadAll();
   };
 
@@ -1089,7 +1094,7 @@ export default function WorkersPage() {
                     <span style={{ fontSize: 22 }}>{checkoutModal.mode === "approve" ? "✅" : "❌"}</span>
                     <div>
                       <div style={{ fontSize: 17, fontWeight: 800, color: "#1a1d2b" }}>
-                        {checkoutModal.mode === "approve" ? "퇴근 처리 승인" : "퇴근 처리 반려"}
+                        {checkoutModal.mode === "approve" ? "퇴근수정 승인" : "퇴근수정 반려"}
                       </div>
                       <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
                         {checkoutModal.req.workers?.name} · {checkoutModal.req.request_date}
@@ -1101,7 +1106,7 @@ export default function WorkersPage() {
 
                   {/* 요청 정보 */}
                   <div style={{ background: "#f8fafc", borderRadius: 12, padding: "14px 16px", marginBottom: 20, borderLeft: "3px solid #F5B731" }}>
-                    <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8, fontWeight: 600 }}>CREW 요청 내용</div>
+                    <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8, fontWeight: 600 }}>CREW 수정 요청 내용</div>
                     <div style={{ display: "flex", gap: 16, fontSize: 14 }}>
                       <div><span style={{ color: "#94a3b8" }}>요청 퇴근: </span><strong style={{ color: "#1428A0" }}>{checkoutModal.req.requested_checkout_time || "미기재"}</strong></div>
                     </div>
@@ -1158,8 +1163,8 @@ export default function WorkersPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 18 }}>🔔</span>
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: "#92400E" }}>퇴근 처리 요청</div>
-                      <div style={{ fontSize: 12, color: "#B45309", marginTop: 2 }}>CREW 앱에서 퇴근 처리를 요청했습니다. 확인 후 승인하세요.</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#92400E" }}>퇴근수정 요청</div>
+                      <div style={{ fontSize: 12, color: "#B45309", marginTop: 2 }}>CREW 앱에서 퇴근 미처리 수정을 요청했습니다. 확인 후 승인하세요.</div>
                     </div>
                   </div>
                   <span style={{ padding: "5px 12px", borderRadius: 20, background: "#F5B731", color: "#1a1d2b", fontSize: 13, fontWeight: 800 }}>{checkoutRequests.length}건</span>
@@ -1276,6 +1281,10 @@ export default function WorkersPage() {
                   <span style={{ padding: "5px 12px", borderRadius: 8, background: "var(--success-bg)", color: "var(--success)", fontSize: 13, fontWeight: 700 }}>출근 {checkedIn.length}명</span>
                   <span style={{ padding: "5px 12px", borderRadius: 8, background: "#fff7ed", color: "#ea580c", fontSize: 13, fontWeight: 700 }}>지각 {late.length}명</span>
                   <span style={{ padding: "5px 12px", borderRadius: 8, background: "var(--error-bg)", color: "var(--error)", fontSize: 13, fontWeight: 700 }}>미출근 {notYet.length}명</span>
+                  <button onClick={() => loadAll()}
+                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--text-secondary)" }}>
+                    🔄 새로고침
+                  </button>
                   <button onClick={() => { setManualForm({ workerId: "", status: "present", checkIn: "", checkOut: "" }); setManualMsg(""); setManualModal({ show: true, record: null }); }}
                     style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                     + 수동 등록
