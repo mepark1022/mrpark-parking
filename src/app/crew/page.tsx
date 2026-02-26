@@ -21,7 +21,9 @@ interface StoreInfo {
 
 interface AttendanceInfo {
   isCheckedIn: boolean;
+  isCheckedOut: boolean;
   checkInTime: string | null;
+  checkOutTime: string | null;
   workingMinutes: number;
 }
 
@@ -37,7 +39,9 @@ export default function CrewHomePage() {
   const [store, setStore] = useState<StoreInfo | null>(null);
   const [attendance, setAttendance] = useState<AttendanceInfo>({
     isCheckedIn: false,
+    isCheckedOut: false,
     checkInTime: null,
+    checkOutTime: null,
     workingMinutes: 0,
   });
   const [stats, setStats] = useState<ParkingStats>({
@@ -148,12 +152,28 @@ export default function CrewHomePage() {
           const checkInTime = new Date();
           checkInTime.setHours(parseInt(h), parseInt(m), 0, 0);
           const now = new Date();
-          const workingMinutes = Math.floor((now.getTime() - checkInTime.getTime()) / 60000);
+          
+          let workingMinutes = 0;
+          let checkOutTimeStr: string | null = null;
+          
+          if (attendanceData.check_out) {
+            // 퇴근함 → 총 근무시간 계산
+            const [oh, om] = attendanceData.check_out.split(":");
+            const checkOutTime = new Date();
+            checkOutTime.setHours(parseInt(oh), parseInt(om), 0, 0);
+            workingMinutes = Math.floor((checkOutTime.getTime() - checkInTime.getTime()) / 60000);
+            checkOutTimeStr = checkOutTime.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+          } else {
+            // 출근 중 → 현재까지 근무시간
+            workingMinutes = Math.floor((now.getTime() - checkInTime.getTime()) / 60000);
+          }
           
           setAttendance({
             isCheckedIn: !attendanceData.check_out,
+            isCheckedOut: !!attendanceData.check_out,
             checkInTime: checkInTime.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
-            workingMinutes: attendanceData.check_out ? 0 : workingMinutes,
+            checkOutTime: checkOutTimeStr,
+            workingMinutes,
           });
         }
       }
@@ -319,6 +339,10 @@ export default function CrewHomePage() {
           background: rgba(234, 88, 12, 0.3);
         }
         
+        .crew-status-badge.checked-out {
+          background: rgba(100, 116, 139, 0.3);
+        }
+        
         .crew-status-time {
           margin-top: 14px;
           display: flex;
@@ -467,15 +491,18 @@ export default function CrewHomePage() {
               <div className="crew-status-avatar">👤</div>
               <div>
                 <div className="crew-status-name">{user?.name} 크루</div>
-                <div className={`crew-status-badge ${attendance.isCheckedIn ? "checked-in" : "not-checked"}`}>
-                  {attendance.isCheckedIn ? "🟢 출근 중" : "⚪ 미출근"}
-                  {attendance.checkInTime && ` (${attendance.checkInTime}~)`}
+                <div className={`crew-status-badge ${attendance.isCheckedOut ? "checked-out" : attendance.isCheckedIn ? "checked-in" : "not-checked"}`}>
+                  {attendance.isCheckedOut
+                    ? `✅ 퇴근 (${attendance.checkInTime}~${attendance.checkOutTime})`
+                    : attendance.isCheckedIn
+                      ? `🟢 출근 중 (${attendance.checkInTime}~)`
+                      : "⚪ 미출근"}
                 </div>
               </div>
             </div>
-            {attendance.isCheckedIn && (
+            {(attendance.isCheckedIn || attendance.isCheckedOut) && (
               <div className="crew-status-time">
-                ⏱️ 근무시간: {formatWorkingTime(attendance.workingMinutes)}
+                ⏱️ {attendance.isCheckedOut ? "총 근무시간" : "근무시간"}: {formatWorkingTime(attendance.workingMinutes)}
               </div>
             )}
           </div>
