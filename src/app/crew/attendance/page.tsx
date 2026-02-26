@@ -77,9 +77,32 @@ export default function CrewAttendancePage() {
       if (!savedStoreId) { router.replace("/crew/select-store"); return; }
       setStoreId(savedStoreId);
 
-      const { data: worker } = await supabase
+      let { data: worker } = await supabase
         .from("workers").select("id").eq("user_id", user.id).single();
-      if (!worker) { setLoading(false); checkLocation(); return; }
+      
+      // worker 레코드가 없는 admin/super_admin → 자동 생성
+      if (!worker) {
+        const { data: prof } = await supabase.from("profiles").select("name, role, org_id").eq("id", user.id).single();
+        if (prof && (prof.role === "super_admin" || prof.role === "admin" || prof.role === "owner")) {
+          const { data: newWorker, error: insertErr } = await supabase.from("workers").insert({
+            org_id: prof.org_id,
+            user_id: user.id,
+            name: prof.name || "관리자",
+            phone: "",
+            status: "active",
+          }).select("id").single();
+          if (!insertErr && newWorker) {
+            worker = newWorker;
+            // 현재 매장에 store_members도 추가
+            if (savedStoreId && prof.org_id) {
+              await supabase.from("store_members").upsert({
+                user_id: user.id, store_id: savedStoreId, org_id: prof.org_id,
+              }, { onConflict: "user_id,store_id" }).catch(() => {});
+            }
+          }
+        }
+        if (!worker) { setLoading(false); checkLocation(); return; }
+      }
 
       // 오늘 출근 정보
       const today = new Date().toISOString().split("T")[0];

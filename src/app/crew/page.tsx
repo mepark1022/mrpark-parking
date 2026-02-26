@@ -94,11 +94,26 @@ export default function CrewHomePage() {
       const today = new Date().toISOString().split("T")[0];
       
       // workers 테이블에서 현재 사용자의 worker 정보 찾기
-      const { data: worker } = await supabase
+      let { data: worker } = await supabase
         .from("workers")
         .select("id")
         .eq("user_id", ctx.userId)
         .single();
+      
+      // worker 레코드가 없는 admin/super_admin → 자동 생성
+      if (!worker && (ctx.role === "super_admin" || ctx.role === "admin" || ctx.role === "owner")) {
+        const { data: prof } = await supabase.from("profiles").select("name, org_id").eq("id", ctx.userId).single();
+        if (prof) {
+          const { data: newWorker } = await supabase.from("workers").insert({
+            org_id: prof.org_id,
+            user_id: ctx.userId,
+            name: prof.name || "관리자",
+            phone: "",
+            status: "active",
+          }).select("id").single();
+          if (newWorker) worker = newWorker;
+        }
+      }
 
       if (worker) {
         const { data: attendanceData } = await supabase
