@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 import CrewHeader from "@/components/crew/CrewHeader";
 import { useCrewToast } from "@/components/crew/CrewToast";
+import AttendanceMapView from "@/components/crew/AttendanceMapView";
 
 interface AttendanceInfo {
   isCheckedIn: boolean;
@@ -32,6 +33,15 @@ interface CheckoutRequest {
   request_reason: string | null;
 }
 
+// 두 좌표 간 거리 계산 (Haversine, 미터)
+function getDistanceM(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
 export default function CrewAttendancePage() {
   const [attendance, setAttendance] = useState<AttendanceInfo>({
     isCheckedIn: false, isCheckedOut: false,
@@ -50,6 +60,9 @@ export default function CrewAttendancePage() {
   const [correctionDate, setCorrectionDate] = useState("");
   const [correctionTime, setCorrectionTime] = useState("");
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [storeInfo, setStoreInfo] = useState<{name: string; address: string; lat: number | null; lng: number | null} | null>(null);
+  const [checkInCoords, setCheckInCoords] = useState<{lat: number; lng: number} | null>(null);
+  const [checkOutCoords, setCheckOutCoords] = useState<{lat: number; lng: number} | null>(null);
   const router = useRouter();
   const { showToast } = useCrewToast();
 
@@ -78,6 +91,19 @@ export default function CrewAttendancePage() {
       const savedStoreId = localStorage.getItem("crew_store_id");
       if (!savedStoreId) { router.replace("/crew/select-store"); return; }
       setStoreId(savedStoreId);
+
+      // 매장 정보 로드 (이름, 주소, 좌표)
+      const { data: storeData } = await supabase
+        .from("stores").select("name, road_address, latitude, longitude")
+        .eq("id", savedStoreId).single();
+      if (storeData) {
+        setStoreInfo({
+          name: storeData.name || "",
+          address: storeData.road_address || "",
+          lat: storeData.latitude ? parseFloat(storeData.latitude) : null,
+          lng: storeData.longitude ? parseFloat(storeData.longitude) : null,
+        });
+      }
 
       let { data: worker } = await supabase
         .from("workers").select("id").eq("user_id", user.id).limit(1).maybeSingle();
@@ -130,6 +156,13 @@ export default function CrewAttendancePage() {
           checkInTime: cin, checkOutTime: cout,
           workingMinutes: mins, workerId: worker.id,
         });
+        // GPS 좌표 복원
+        if (ad.check_in_lat && ad.check_in_lng) {
+          setCheckInCoords({ lat: parseFloat(ad.check_in_lat), lng: parseFloat(ad.check_in_lng) });
+        }
+        if (ad.check_out_lat && ad.check_out_lng) {
+          setCheckOutCoords({ lat: parseFloat(ad.check_out_lat), lng: parseFloat(ad.check_out_lng) });
+        }
       } else {
         setAttendance(prev => ({ ...prev, workerId: worker.id }));
       }
@@ -230,6 +263,16 @@ export default function CrewAttendancePage() {
       const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
       const oid = prof?.org_id;
 
+      // GPS 좌표 + 매장 거리 계산
+      const gpsData: any = {};
+      if (currentCoords) {
+        gpsData.check_in_lat = currentCoords.lat;
+        gpsData.check_in_lng = currentCoords.lng;
+        if (storeInfo?.lat && storeInfo?.lng) {
+          gpsData.check_in_distance_m = getDistanceM(currentCoords.lat, currentCoords.lng, storeInfo.lat, storeInfo.lng);
+        }
+      }
+
       // 기존 레코드 확인
       const { data: existing } = await supabase
         .from("worker_attendance").select("id")
@@ -237,16 +280,17 @@ export default function CrewAttendancePage() {
 
       if (existing) {
         const { error } = await supabase.from("worker_attendance").update({
-          check_in: timeStr, status: "present", store_id: storeId,
+          check_in: timeStr, status: "present", store_id: storeId, ...gpsData,
         }).eq("id", existing.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("worker_attendance").insert({
           org_id: oid, worker_id: attendance.workerId, store_id: storeId,
-          date: today, check_in: timeStr, status: "present",
+          date: today, check_in: timeStr, status: "present", ...gpsData,
         });
         if (error) throw error;
       }
+      if (currentCoords) setCheckInCoords({ lat: currentCoords.lat, lng: currentCoords.lng });
       setAttendance({ ...attendance, isCheckedIn: true, isCheckedOut: false, checkInTime: now, checkOutTime: null, workingMinutes: 0 });
       showToast("출근이 기록되었습니다 ☀️", "success");
     } catch (e: any) { showToast(`출근 기록 실패: ${e?.message || ""}`, "error"); }
@@ -261,6 +305,17 @@ export default function CrewAttendancePage() {
     const today = new Date().toISOString().split("T")[0];
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+    // GPS 좌표 + 매장 거리 계산
+    const gpsData: any = {};
+    if (currentCoords) {
+      gpsData.check_out_lat = currentCoords.lat;
+      gpsData.check_out_lng = currentCoords.lng;
+      if (storeInfo?.lat && storeInfo?.lng) {
+        gpsData.check_out_distance_m = getDistanceM(currentCoords.lat, currentCoords.lng, storeInfo.lat, storeInfo.lng);
+      }
+    }
+
     try {
       const { data: existing } = await supabase
         .from("worker_attendance").select("id")
@@ -268,7 +323,7 @@ export default function CrewAttendancePage() {
 
       if (existing) {
         const { error } = await supabase.from("worker_attendance").update({
-          check_out: timeStr,
+          check_out: timeStr, ...gpsData,
         }).eq("id", existing.id);
         if (error) throw error;
       } else {
@@ -277,10 +332,11 @@ export default function CrewAttendancePage() {
         const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
         const { error } = await supabase.from("worker_attendance").insert({
           org_id: prof?.org_id, worker_id: attendance.workerId, store_id: storeId,
-          date: today, check_out: timeStr, status: "present",
+          date: today, check_out: timeStr, status: "present", ...gpsData,
         });
         if (error) throw error;
       }
+      if (currentCoords) setCheckOutCoords({ lat: currentCoords.lat, lng: currentCoords.lng });
       setAttendance({ ...attendance, isCheckedOut: true, checkOutTime: now });
       showToast("퇴근이 기록되었습니다 🌙", "success");
     } catch (e: any) { showToast(`퇴근 기록 실패: ${e?.message || ""}`, "error"); }
@@ -439,6 +495,50 @@ export default function CrewAttendancePage() {
             </div>
           )}
 
+          {/* 퇴근 완료 시 매장 정보 + 카카오맵 */}
+          {attendance.isCheckedOut && storeInfo && (
+            <div style={{ marginBottom: 20 }}>
+              {/* 매장 정보 */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 16 }}>📍</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "#1A1D2B" }}>{storeInfo.name}</span>
+                </div>
+                {storeInfo.address && (
+                  <div style={{ fontSize: 13, color: "#64748B", paddingLeft: 26 }}>{storeInfo.address}</div>
+                )}
+              </div>
+
+              {/* 카카오맵 */}
+              <AttendanceMapView
+                storeLat={storeInfo.lat}
+                storeLng={storeInfo.lng}
+                checkInCoords={checkInCoords}
+                checkOutCoords={checkOutCoords}
+              />
+
+              {/* 거리 정보 */}
+              <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                {checkInCoords && storeInfo.lat && storeInfo.lng && (
+                  <div style={{ flex: 1, minWidth: 120, background: "#F0FDF4", borderRadius: 10, padding: "8px 12px", textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#166534", fontWeight: 600 }}>🟢 출근 거리</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#166534", marginTop: 2 }}>
+                      {getDistanceM(checkInCoords.lat, checkInCoords.lng, storeInfo.lat, storeInfo.lng)}m
+                    </div>
+                  </div>
+                )}
+                {checkOutCoords && storeInfo.lat && storeInfo.lng && (
+                  <div style={{ flex: 1, minWidth: 120, background: "#FEF2F2", borderRadius: 10, padding: "8px 12px", textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#991B1B", fontWeight: 600 }}>🔴 퇴근 거리</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#991B1B", marginTop: 2 }}>
+                      {getDistanceM(checkOutCoords.lat, checkOutCoords.lng, storeInfo.lat, storeInfo.lng)}m
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* 출근 상태 카드 */}
           <div className={`att-card ${attendance.isCheckedOut ? "done" : ""}`}>
             {attendance.isCheckedOut ? (
@@ -508,6 +608,18 @@ export default function CrewAttendancePage() {
               <span style={{ fontSize: 15, fontWeight: 600, color: "#1A1D2B" }}>📜 내 요청 이력 보기</span>
               <span style={{ color: "#94A3B8", fontSize: 18 }}>→</span>
             </div>
+            {attendance.isCheckedOut && (
+              <button
+                onClick={() => router.push("/crew")}
+                style={{
+                  width: "100%", padding: 16, borderRadius: 12, border: "1.5px solid #1428A0",
+                  background: "#fff", color: "#1428A0", fontSize: 15, fontWeight: 700,
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                }}
+              >
+                🏠 홈으로 돌아가기
+              </button>
+            )}
           </div>
         </div>
 
