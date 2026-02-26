@@ -7,6 +7,8 @@ const PUBLIC_PATHS = [
   "/login",
   "/invite",
   "/auth/callback",
+  "/crew/login",          // CREW앱 로그인
+  "/crew/auth/callback",  // CREW앱 OAuth 콜백
   "/ticket",   // 미팍티켓 고객 페이지
   "/scan",     // 고정 QR 스캔
   "/api/payment", // 토스페이먼츠 웹훅
@@ -47,10 +49,11 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // 비로그인 + 비공개 경로 → /login 리다이렉트
+  // 비로그인 + 비공개 경로 → 로그인 리다이렉트
   if (!user && !isPublicPath(pathname)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    // /crew/* 경로는 CREW 로그인으로
+    url.pathname = pathname.startsWith("/crew") ? "/crew/login" : "/login";
     return NextResponse.redirect(url);
   }
 
@@ -58,6 +61,13 @@ export async function updateSession(request: NextRequest) {
   if (user && pathname.startsWith("/login")) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
+  // 로그인 상태 + /crew/login → /crew 리다이렉트
+  if (user && pathname.startsWith("/crew/login")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/crew";
     return NextResponse.redirect(url);
   }
 

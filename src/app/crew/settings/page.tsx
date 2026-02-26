@@ -65,8 +65,15 @@ export default function CrewSettingsPage() {
     setLoggingOut(true);
     const supabase = createClient();
     
+    // 캐시 + 로컬스토리지 + 쿠키 정리
+    const { clearOrgCache } = await import("@/lib/utils/org");
+    clearOrgCache();
     await supabase.auth.signOut();
     localStorage.removeItem("crew_store_id");
+    localStorage.removeItem("crew_store_name");
+    // 쿠키도 제거
+    document.cookie = "crew_store_id=; path=/; max-age=0";
+    document.cookie = "crew_store_name=; path=/; max-age=0";
     router.replace("/crew/login");
   };
 
