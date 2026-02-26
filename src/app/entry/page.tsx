@@ -51,24 +51,24 @@ const Card = ({ children, style }: { children: React.ReactNode; style?: React.CS
   </div>
 );
 
-const CardHeader = ({ children }: { children: React.ReactNode }) => (
+const CardHeader = ({ children, compact }: { children: React.ReactNode; compact?: boolean }) => (
   <div style={{
     display: "flex", alignItems: "center", justifyContent: "space-between",
-    padding: "14px 20px", borderBottom: `1px solid ${C.borderLight}`,
-    gap: 10,
+    padding: compact ? "12px 14px" : "14px 20px", borderBottom: `1px solid ${C.borderLight}`,
+    gap: compact ? 8 : 10,
   }}>
     {children}
   </div>
 );
 
-const CardTitle = ({ icon, children }: { icon: string; children: React.ReactNode }) => (
-  <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 700 }}>
+const CardTitle = ({ icon, children, compact }: { icon: string; children: React.ReactNode; compact?: boolean }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: compact ? 7 : 10, fontSize: compact ? 14 : 16, fontWeight: 700 }}>
     <span>{icon}</span>{children}
   </div>
 );
 
-const CardBody = ({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) => (
-  <div style={{ padding: "20px 24px", ...style }}>{children}</div>
+const CardBody = ({ children, style, compact }: { children: React.ReactNode; style?: React.CSSProperties; compact?: boolean }) => (
+  <div style={{ padding: compact ? "14px 14px" : "20px 24px", ...style }}>{children}</div>
 );
 
 const Input = (props: React.InputHTMLAttributes<HTMLInputElement> & { style?: React.CSSProperties }) => (
@@ -78,6 +78,7 @@ const Input = (props: React.InputHTMLAttributes<HTMLInputElement> & { style?: Re
       padding: "11px 16px", border: `1px solid ${C.border}`,
       borderRadius: 10, fontSize: 14, background: "#fff",
       outline: "none", transition: "border-color 0.2s",
+      boxSizing: "border-box",
       ...props.style,
     }}
     onFocus={e => (e.target.style.borderColor = C.navy)}
@@ -384,15 +385,15 @@ export default function EntryPage() {
 
   const valetCard = currentStore?.has_valet ? (
     <Card>
-      <CardHeader>
-        <CardTitle icon="🚙">발렛 정보</CardTitle>
+      <CardHeader compact={isMobile}>
+        <CardTitle icon="🚙" compact={isMobile}>발렛 정보</CardTitle>
         <span
           onClick={showValetToast}
-          style={{ fontSize: 12, color: C.navy, background: "#eef1fb", padding: "4px 10px", borderRadius: 6, cursor: "pointer", fontWeight: 600, border: "1px solid #d0d8f5" }}>
+          style={{ fontSize: isMobile ? 11 : 12, color: C.navy, background: "#eef1fb", padding: isMobile ? "4px 8px" : "4px 10px", borderRadius: 6, cursor: "pointer", fontWeight: 600, border: "1px solid #d0d8f5", whiteSpace: "nowrap", flexShrink: 0 }}>
           단가 ₩{(currentStore?.valet_fee || 5000).toLocaleString()} ✏️
         </span>
       </CardHeader>
-      <CardBody>
+      <CardBody compact={isMobile}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {[
             { label: "발렛 건수", value: valetCount, unit: "건", setter: (v: number) => { setValetCount(v); setValetRevenue(v * (currentStore?.valet_fee || 5000)); } },
@@ -418,26 +419,26 @@ export default function EntryPage() {
 
   const workerCard = (
     <Card>
-      <CardHeader>
-        <CardTitle icon="👥">근무자 ({dayTypeKo} 기본)</CardTitle>
-        <div style={{ display: "flex", gap: isMobile ? 6 : 8 }}>
+      <CardHeader compact={isMobile}>
+        <CardTitle icon="👥" compact={isMobile}>근무자 ({dayTypeKo} 기본)</CardTitle>
+        <div style={{ display: "flex", gap: isMobile ? 6 : 8, flexShrink: 0 }}>
           <button
             onClick={() => addWorker("substitute")}
             style={{
-              padding: isMobile ? "5px 10px" : "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
-              background: C.warningBg, color: C.warning, border: "none", cursor: "pointer",
+              padding: isMobile ? "5px 8px" : "6px 12px", borderRadius: 8, fontSize: isMobile ? 11 : 12, fontWeight: 700,
+              background: C.warningBg, color: C.warning, border: "none", cursor: "pointer", whiteSpace: "nowrap",
             }}
           >+ 대체</button>
           <button
             onClick={() => addWorker("hq")}
             style={{
-              padding: isMobile ? "5px 10px" : "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
-              background: C.purpleBg, color: C.purple, border: "none", cursor: "pointer",
+              padding: isMobile ? "5px 8px" : "6px 12px", borderRadius: 8, fontSize: isMobile ? 11 : 12, fontWeight: 700,
+              background: C.purpleBg, color: C.purple, border: "none", cursor: "pointer", whiteSpace: "nowrap",
             }}
           >+ 본사</button>
         </div>
       </CardHeader>
-      <CardBody>
+      <CardBody compact={isMobile}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {assignedWorkers.length === 0 ? (
             <p style={{ textAlign: "center", color: C.textMuted, padding: "20px 0", fontSize: 14 }}>
@@ -478,20 +479,21 @@ export default function EntryPage() {
 
   const memoCard = (
     <Card>
-      <CardHeader>
-        <CardTitle icon="📝">메모</CardTitle>
+      <CardHeader compact={isMobile}>
+        <CardTitle icon="📝" compact={isMobile}>메모</CardTitle>
       </CardHeader>
-      <CardBody>
+      <CardBody compact={isMobile}>
         <textarea
           value={memo}
           onChange={e => setMemo(e.target.value)}
-          rows={3}
+          rows={isMobile ? 2 : 3}
           placeholder="특이사항 입력..."
           style={{
             width: "100%", padding: "12px 14px",
             border: `1px solid ${C.border}`, borderRadius: 10,
             fontSize: 14, resize: "none", outline: "none",
             fontFamily: "inherit", color: C.textPrimary,
+            boxSizing: "border-box",
           }}
           onFocus={e => (e.target.style.borderColor = C.navy)}
           onBlur={e => (e.target.style.borderColor = C.border)}
@@ -572,7 +574,7 @@ export default function EntryPage() {
         </div>
       )}
 
-      <div style={{ maxWidth: isMobile ? "100%" : 1100 }}>
+      <div style={{ maxWidth: isMobile ? "100%" : 1100, overflow: isMobile ? "hidden" : undefined }}>
 
         {/* ══ 모바일 레이아웃 ══ */}
         {isMobile ? (
@@ -634,24 +636,24 @@ export default function EntryPage() {
             {/* 모바일 카드들: 1열 풀폭 */}
             {/* 입차량 */}
             <Card style={{ marginBottom: 10 }}>
-              <CardHeader>
-                <CardTitle icon="🚗">입차량 입력</CardTitle>
+              <CardHeader compact>
+                <CardTitle icon="🚗" compact>입차량 입력</CardTitle>
                 <ToggleGroup
                   value={inputMode}
                   options={[{ id: "total", label: "총 대수" }, { id: "hourly", label: "시간대별" }]}
                   onChange={v => setInputMode(v as "total" | "hourly")}
                 />
               </CardHeader>
-              <CardBody>
+              <CardBody compact>
                 {inputMode === "total" ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, padding: "20px 0 8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, padding: "16px 0 6px" }}>
                     <Input
                       type="number" min={0} value={totalCarsOnly || ""}
                       onChange={e => setTotalCarsOnly(Number(e.target.value))}
                       placeholder="0"
-                      style={{ width: 110, textAlign: "center", fontSize: 36, fontWeight: 800, color: C.navy, padding: "10px 12px", borderRadius: 14 }}
+                      style={{ width: 100, textAlign: "center", fontSize: 32, fontWeight: 800, color: C.navy, padding: "8px 10px", borderRadius: 12 }}
                     />
-                    <span style={{ fontSize: 18, fontWeight: 700, color: C.textSecondary }}>대</span>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: C.textSecondary }}>대</span>
                   </div>
                 ) : hourlyGrid}
                 {totalSummary}
@@ -665,19 +667,22 @@ export default function EntryPage() {
             <div style={{ marginBottom: 10 }}>{workerCard}</div>
 
             {/* 메모 */}
-            <div style={{ marginBottom: 160 }}>{memoCard}</div>
+            <div style={{ marginBottom: 80 }}>{memoCard}</div>
 
             {/* 모바일 하단 고정 저장 버튼 */}
             <div style={{
-              position: "fixed", bottom: 120, left: 0, right: 0, zIndex: 150,
-              padding: "10px 16px", background: "#fff",
+              position: "fixed",
+              bottom: `calc(68px + env(safe-area-inset-bottom, 16px))`,
+              left: 0, right: 0, zIndex: 150,
+              padding: "8px 16px",
+              background: "rgba(255,255,255,0.96)",
               borderTop: `1px solid ${C.borderLight}`,
-              boxShadow: "0 -2px 10px rgba(0,0,0,0.06)",
+              backdropFilter: "blur(8px)",
             }}>
               <button
                 onClick={handleSave} disabled={saving}
                 style={{
-                  width: "100%", padding: "14px 0", borderRadius: 12,
+                  width: "100%", padding: "13px 0", borderRadius: 12,
                   background: saving ? C.textMuted : C.navy,
                   color: "#fff", fontSize: 15, fontWeight: 700,
                   border: "none", cursor: saving ? "not-allowed" : "pointer",
