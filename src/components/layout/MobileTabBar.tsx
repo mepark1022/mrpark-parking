@@ -8,11 +8,9 @@ const tabs = [
     id: "dashboard",
     path: "/dashboard",
     label: "홈",
-    accentColor: "#1428A0",
-    shadowColor: "rgba(20, 40, 160, 0.50)",
     icon: (active: boolean) => (
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
-        stroke={active ? "#ffffff" : "#9ba3be"}
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#1428A0" : "rgba(255,255,255,0.45)"}
         strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="4" />
         <path d="M9 17V7h5a3.5 3.5 0 0 1 0 7H9" />
@@ -23,11 +21,9 @@ const tabs = [
     id: "entry",
     path: "/entry",
     label: "일일입력",
-    accentColor: "#1428A0",
-    shadowColor: "rgba(20, 40, 160, 0.50)",
     icon: (active: boolean) => (
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
-        stroke={active ? "#ffffff" : "#9ba3be"}
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#1428A0" : "rgba(255,255,255,0.45)"}
         strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
         <rect x="9" y="3" width="6" height="4" rx="1" />
@@ -40,11 +36,9 @@ const tabs = [
     id: "workers",
     path: "/workers",
     label: "근무자",
-    accentColor: "#1428A0",
-    shadowColor: "rgba(20, 40, 160, 0.50)",
     icon: (active: boolean) => (
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
-        stroke={active ? "#ffffff" : "#9ba3be"}
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#1428A0" : "rgba(255,255,255,0.45)"}
         strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="9" cy="7" r="3.2" />
         <path d="M2.5 21c0-3.59 2.91-6.5 6.5-6.5s6.5 2.91 6.5 6.5" />
@@ -57,15 +51,13 @@ const tabs = [
     id: "accident",
     path: "/accident",
     label: "사고",
-    accentColor: "#EA580C",
-    shadowColor: "rgba(234, 88, 12, 0.50)",
     icon: (active: boolean) => (
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
-        stroke={active ? "#ffffff" : "#9ba3be"}
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#1428A0" : "rgba(255,255,255,0.45)"}
         strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 3.5 2.5 20.5h19L12 3.5z" />
         <line x1="12" y1="10.5" x2="12" y2="15.5" strokeWidth={2.4} />
-        <circle cx="12" cy="18" r="1.3" fill={active ? "#ffffff" : "#9ba3be"} stroke="none" />
+        <circle cx="12" cy="18" r="1.3" fill={active ? "#1428A0" : "rgba(255,255,255,0.45)"} stroke="none" />
       </svg>
     ),
   },
@@ -73,10 +65,8 @@ const tabs = [
     id: "more",
     path: "/more",
     label: "더보기",
-    accentColor: "#1428A0",
-    shadowColor: "rgba(20, 40, 160, 0.50)",
     icon: (active: boolean) => (
-      <svg width="30" height="30" viewBox="0 0 24 24" fill={active ? "#ffffff" : "#9ba3be"}>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill={active ? "#1428A0" : "rgba(255,255,255,0.45)"}>
         <circle cx="5.5" cy="12" r="2.2" />
         <circle cx="12" cy="12" r="2.2" />
         <circle cx="18.5" cy="12" r="2.2" />
@@ -116,12 +106,10 @@ export default function MobileTabBar() {
           left: 0,
           right: 0,
           zIndex: 200,
-          background: "#ffffff",
-          borderTop: "2.5px solid #e8edf8",
+          background: "#1428A0",
           justifyContent: "space-around",
           alignItems: "center",
-          padding: "6px 2px calc(12px + env(safe-area-inset-bottom, 16px))",
-          boxShadow: "0 -10px 28px rgba(20, 40, 160, 0.09)",
+          padding: "8px 4px calc(14px + env(safe-area-inset-bottom, 16px))",
         }}
       >
         {tabs.map((tab) => {
@@ -136,35 +124,34 @@ export default function MobileTabBar() {
                 flexDirection: "column",
                 alignItems: "center",
                 gap: 3,
-                padding: "4px 0px",
                 cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
               }}
             >
-              {/* 아이콘 박스 48px */}
+              {/* 아이콘 박스 */}
               <div
                 style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 14,
+                  width: 42,
+                  height: 42,
+                  borderRadius: 12,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: active ? tab.accentColor : "transparent",
-                  boxShadow: active ? `0 6px 20px ${tab.shadowColor}` : "none",
+                  background: active ? "#F5B731" : "transparent",
+                  boxShadow: active ? "0 4px 14px rgba(245,183,49,0.4)" : "none",
                   transition: "all 0.2s",
                 }}
               >
                 {tab.icon(active)}
               </div>
 
-              {/* 라벨 12px */}
+              {/* 라벨 */}
               <span
                 style={{
-                  fontSize: 12,
-                  fontWeight: active ? 800 : 700,
-                  color: active ? tab.accentColor : "#9ba3be",
-                  letterSpacing: "-0.5px",
+                  fontSize: 10,
+                  fontWeight: active ? 800 : 600,
+                  color: active ? "#F5B731" : "rgba(255,255,255,0.4)",
+                  letterSpacing: "-0.3px",
                   fontFamily: "'Noto Sans KR', sans-serif",
                 }}
               >
