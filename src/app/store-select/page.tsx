@@ -245,6 +245,38 @@ const SS_STYLES = `
     .ss-list { padding: 14px 28px 100px; }
     .ss-bottom { padding: 16px 28px; }
   }
+
+  /* PC 레이아웃 - 중앙 카드 */
+  @media (min-width: 768px) {
+    .ss-wrap {
+      align-items: center;
+      justify-content: flex-start;
+      padding: 40px 20px;
+      background: linear-gradient(165deg, #0f1f8a 0%, #1428A0 40%, #1e36c0 100%);
+    }
+    .ss-inner {
+      width: 100%;
+      max-width: 520px;
+      background: #fff;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+    }
+    .ss-header {
+      border-radius: 0;
+    }
+    .ss-list {
+      max-height: 400px;
+      overflow-y: auto;
+      padding-bottom: 20px;
+    }
+    .ss-bottom {
+      position: static;
+      background: #fff;
+      border-top: 1px solid #e2e8f0;
+      padding: 16px 28px 20px;
+    }
+  }
 `;
 
 function getRoleBadge(role: string) {
@@ -351,6 +383,7 @@ function StoreSelectInner() {
   return (
     <div className="ss-wrap">
       <style>{SS_STYLES}</style>
+      <div className="ss-inner">
 
       {/* 헤더 */}
       <div className="ss-header">
@@ -460,6 +493,7 @@ function StoreSelectInner() {
           </button>
         </div>
       )}
+      </div>{/* ss-inner */}
     </div>
   );
 }
