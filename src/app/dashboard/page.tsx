@@ -111,7 +111,7 @@ const DASH_STYLES = `
     .dash-kpi-grid{grid-template-columns:repeat(4,1fr)}
     .dash-chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
     .dash-bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-  @media(max-width:768px){.dash-bottom-row{grid-template-columns:1fr;gap:12px;padding-bottom:20px}}
+  @media(max-width:768px){.dash-bottom-row{grid-template-columns:1fr;gap:12px;padding-bottom:100px}}
   }
 `;
 

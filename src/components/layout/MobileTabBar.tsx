@@ -8,15 +8,13 @@ const tabs = [
     id: "dashboard",
     path: "/dashboard",
     label: "홈",
-    // 홈: P 글자 아이콘 (시안과 동일)
     icon: (active: boolean) => (
       <span style={{
         fontFamily: "'Outfit', sans-serif",
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: 900,
-        color: active ? "#1428A0" : "rgba(255,255,255,0.45)",
+        color: active ? "#1428A0" : "rgba(255,255,255,0.4)",
         lineHeight: 1,
-        marginTop: -1,
       }}>P</span>
     ),
   },
@@ -24,11 +22,10 @@ const tabs = [
     id: "entry",
     path: "/entry",
     label: "일일입력",
-    // 연필 아이콘 (얇은 라인)
     icon: (active: boolean) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-        stroke={active ? "#1428A0" : "rgba(255,255,255,0.45)"}
-        strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#1428A0" : "rgba(255,255,255,0.4)"}
+        strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 20h9" />
         <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
       </svg>
@@ -39,11 +36,11 @@ const tabs = [
     path: "/workers",
     label: "근무자",
     icon: (active: boolean) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-        stroke={active ? "#1428A0" : "rgba(255,255,255,0.45)"}
-        strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#1428A0" : "rgba(255,255,255,0.4)"}
+        strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="9" cy="7" r="3" />
-        <path d="M3 21v-1a6 6 0 0 1 6-6 6 6 0 0 1 6 6v1" />
+        <path d="M3 21v-1a6 6 0 0 1 12 0v1" />
         <circle cx="18" cy="8.5" r="2.2" />
         <path d="M21 21v-.5a4 4 0 0 0-3-3.85" />
       </svg>
@@ -54,12 +51,12 @@ const tabs = [
     path: "/accident",
     label: "사고",
     icon: (active: boolean) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-        stroke={active ? "#1428A0" : "rgba(255,255,255,0.45)"}
-        strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"
+        stroke={active ? "#1428A0" : "rgba(255,255,255,0.4)"}
+        strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 4 2.5 20h19L12 4z" />
-        <line x1="12" y1="10" x2="12" y2="14" strokeWidth={2.2} />
-        <circle cx="12" cy="17" r="0.8" fill={active ? "#1428A0" : "rgba(255,255,255,0.45)"} stroke="none" />
+        <line x1="12" y1="10" x2="12" y2="14" strokeWidth={2} />
+        <circle cx="12" cy="17" r="0.8" fill={active ? "#1428A0" : "rgba(255,255,255,0.4)"} stroke="none" />
       </svg>
     ),
   },
@@ -68,10 +65,10 @@ const tabs = [
     path: "/more",
     label: "더보기",
     icon: (active: boolean) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? "#1428A0" : "rgba(255,255,255,0.45)"}>
-        <circle cx="5" cy="12" r="2" />
-        <circle cx="12" cy="12" r="2" />
-        <circle cx="19" cy="12" r="2" />
+      <svg width="19" height="19" viewBox="0 0 24 24" fill={active ? "#1428A0" : "rgba(255,255,255,0.4)"}>
+        <circle cx="5" cy="12" r="1.8" />
+        <circle cx="12" cy="12" r="1.8" />
+        <circle cx="19" cy="12" r="1.8" />
       </svg>
     ),
   },
@@ -111,7 +108,7 @@ export default function MobileTabBar() {
           background: "#1428A0",
           justifyContent: "space-around",
           alignItems: "center",
-          padding: "10px 8px calc(12px + env(safe-area-inset-bottom, 14px))",
+          padding: "8px 4px calc(10px + env(safe-area-inset-bottom, 12px))",
         }}
       >
         {tabs.map((tab) => {
@@ -125,34 +122,31 @@ export default function MobileTabBar() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 4,
+                gap: 3,
                 cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
               }}
             >
-              {/* 아이콘: 활성=골드 원형, 비활성=투명 */}
               <div
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: active ? 22 : 14,
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   background: active ? "#F5B731" : "transparent",
-                  boxShadow: active ? "0 4px 16px rgba(245,183,49,0.45)" : "none",
-                  transition: "all 0.25s cubic-bezier(.4,0,.2,1)",
+                  boxShadow: active ? "0 3px 12px rgba(245,183,49,0.4)" : "none",
+                  transition: "all 0.2s ease",
                 }}
               >
                 {tab.icon(active)}
               </div>
-
-              {/* 라벨 */}
               <span
                 style={{
-                  fontSize: 10,
-                  fontWeight: active ? 800 : 500,
-                  color: active ? "#F5B731" : "rgba(255,255,255,0.35)",
+                  fontSize: 9,
+                  fontWeight: active ? 700 : 500,
+                  color: active ? "#F5B731" : "rgba(255,255,255,0.3)",
                   letterSpacing: "-0.3px",
                   fontFamily: "'Noto Sans KR', sans-serif",
                 }}
