@@ -22,7 +22,7 @@ const tabs = [
   {
     id: "entry",
     path: "/entry",
-    label: "입력",
+    label: "수기입력",
     accentColor: "#1428A0",
     shadowColor: "rgba(20, 40, 160, 0.50)",
     icon: (active: boolean) => (
