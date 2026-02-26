@@ -70,6 +70,25 @@ export default function CrewHomePage() {
         .from("profiles").select("name").eq("id", ctx.userId).single();
       setUser({ id: ctx.userId, name: profile?.name || "크루", role: ctx.role });
 
+      // 콜백에서 온 경우: 쿠키 → localStorage 이전
+      const crewStoreCookie = document.cookie
+        .split("; ")
+        .find((c) => c.startsWith("crew_store_id="));
+      if (crewStoreCookie) {
+        const cookieStoreId = crewStoreCookie.split("=")[1];
+        if (cookieStoreId) {
+          localStorage.setItem("crew_store_id", cookieStoreId);
+          // 매장명도 이전
+          const nameCookie = document.cookie
+            .split("; ")
+            .find((c) => c.startsWith("crew_store_name="));
+          if (nameCookie) {
+            const cookieName = decodeURIComponent(nameCookie.split("=")[1] || "");
+            if (cookieName) localStorage.setItem("crew_store_name", cookieName);
+          }
+        }
+      }
+
       // 선택된 매장 확인
       let storeId = localStorage.getItem("crew_store_id");
       

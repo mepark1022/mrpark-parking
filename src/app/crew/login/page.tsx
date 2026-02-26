@@ -1,10 +1,10 @@
 // @ts-nocheck
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserContext } from "@/lib/utils/org";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 /* ────────────────────────────────────────────
    미팍Ticket 로고 (P아이콘 + 미팍Ticket 텍스트)
@@ -41,10 +41,39 @@ function MeparkLogo({ dark = true }: { dark?: boolean }) {
    메인 컴포넌트
 ──────────────────────────────────────────── */
 export default function CrewLoginPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100dvh", background: "#1428A0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>로딩 중...</div>
+      </div>
+    }>
+      <CrewLoginContent />
+    </Suspense>
+  );
+}
+
+function CrewLoginContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [checkingAuth, setCheckingAuth] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // 콜백에서 전달된 에러 메시지 처리
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    if (errorParam) {
+      const errorMessages: Record<string, string> = {
+        no_code: "인증 코드가 없습니다. 다시 시도해주세요.",
+        auth_failed: "인증에 실패했습니다. 다시 시도해주세요.",
+        user_not_found: "사용자 정보를 가져올 수 없습니다.",
+        no_profile: "등록되지 않은 계정입니다. 관리자에게 문의하세요.",
+        no_access: "크루 권한이 없습니다. 관리자에게 문의하세요.",
+        no_stores: "배정된 매장이 없습니다. 관리자에게 문의하세요.",
+      };
+      setError(errorMessages[errorParam] || "로그인 중 오류가 발생했습니다.");
+    }
+  }, [searchParams]);
 
   // 이미 로그인 되어있는지 확인
   useEffect(() => {
