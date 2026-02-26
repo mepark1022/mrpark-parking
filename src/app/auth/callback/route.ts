@@ -124,8 +124,9 @@ export async function GET(request: Request) {
             } catch (e) {}
           }
 
+          const isAdminRole = invitation.role !== "crew";
           const response = NextResponse.redirect(
-            `${origin}${invitation.role === "crew" ? "/store-select?return=/dashboard" : "/store-select?return=/dashboard"}`
+            `${origin}${isAdminRole ? "/dashboard" : "/store-select?return=/dashboard"}`
           );
           response.cookies.set("invite_token", "", { maxAge: 0, path: "/" });
           return response;
@@ -158,8 +159,14 @@ export async function GET(request: Request) {
           await supabase.auth.signOut();
           return NextResponse.redirect(`${origin}/login?message=disabled`);
         }
+        // 역할에 따라 리다이렉트 분기
+        const adminRoles = ["admin", "owner", "super_admin"];
+        if (profile && adminRoles.includes(profile.role)) {
+          return NextResponse.redirect(`${origin}${next}`);
+        }
       }
 
+      // crew / viewer → 매장 선택 후 진입
       return NextResponse.redirect(`${origin}/store-select?return=${next}`);
     }
     // code exchange 실패 - 잘못된 state/PKCE 불일치 → 깨끗하게 재시도
