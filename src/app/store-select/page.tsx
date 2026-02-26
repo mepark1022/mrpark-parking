@@ -378,6 +378,7 @@ function StoreSelectInner() {
     (s.region_city || "").toLowerCase().includes(search.toLowerCase())
   );
 
+  const isAdmin = role === "admin" || role === "owner" || role === "super_admin";
   const badge = getRoleBadge(role);
 
   return (
@@ -397,7 +398,9 @@ function StoreSelectInner() {
         <div className="ss-header-sub">
           {isChange
             ? "다른 매장으로 전환합니다"
-            : "근무할 매장을 선택해주세요"}
+            : isAdmin
+              ? "관리할 매장을 선택해주세요"
+              : "근무할 매장을 선택해주세요"}
         </div>
         <div className="ss-role-badge" style={{ background: badge.bg, color: badge.color }}>
           <span>{badge.emoji}</span>
