@@ -447,6 +447,7 @@
   body {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    overflow-x: hidden;
   }
 
   /* ── 하이라이트 카드 내부 수치 크기 강제 축소 ── */

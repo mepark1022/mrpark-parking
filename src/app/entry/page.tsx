@@ -45,6 +45,7 @@ const Card = ({ children, style }: { children: React.ReactNode; style?: React.CS
     border: `1px solid ${C.borderLight}`,
     boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
     overflow: "hidden",
+    boxSizing: "border-box",
     ...style,
   }}>
     {children}
@@ -55,15 +56,15 @@ const CardHeader = ({ children, compact }: { children: React.ReactNode; compact?
   <div style={{
     display: "flex", alignItems: "center", justifyContent: "space-between",
     padding: compact ? "12px 14px" : "14px 20px", borderBottom: `1px solid ${C.borderLight}`,
-    gap: compact ? 8 : 10,
+    gap: compact ? 6 : 10, boxSizing: "border-box",
   }}>
     {children}
   </div>
 );
 
 const CardTitle = ({ icon, children, compact }: { icon: string; children: React.ReactNode; compact?: boolean }) => (
-  <div style={{ display: "flex", alignItems: "center", gap: compact ? 7 : 10, fontSize: compact ? 14 : 16, fontWeight: 700 }}>
-    <span>{icon}</span>{children}
+  <div style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 10, fontSize: compact ? 13 : 16, fontWeight: 700, flexShrink: 1, minWidth: 0 }}>
+    <span style={{ flexShrink: 0 }}>{icon}</span><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{children}</span>
   </div>
 );
 
@@ -106,7 +107,7 @@ const ToggleGroup = ({
   value, options, onChange,
 }: { value: string; options: { id: string; label: string }[]; onChange: (v: string) => void }) => (
   <div style={{
-    display: "flex", gap: 3, background: C.bgCard,
+    display: "flex", gap: 2, background: C.bgCard,
     padding: 3, borderRadius: 10, flexShrink: 0, flexWrap: "nowrap",
   }}>
     {options.map(opt => {
@@ -117,7 +118,7 @@ const ToggleGroup = ({
           key={opt.id}
           onClick={() => onChange(opt.id)}
           style={{
-            padding: "7px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+            padding: "6px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
             border: "none", cursor: "pointer", transition: "all 0.2s",
             whiteSpace: "nowrap", lineHeight: 1,
             background: isActive ? tc.activeBg : "transparent",
@@ -576,7 +577,7 @@ export default function EntryPage() {
         </div>
       )}
 
-      <div style={{ maxWidth: isMobile ? "100%" : 1100, overflow: isMobile ? "hidden" : undefined }}>
+      <div style={{ maxWidth: isMobile ? "100%" : 1100, boxSizing: "border-box", width: "100%" }}>
 
         {/* ══ 모바일 레이아웃 ══ */}
         {isMobile ? (
@@ -611,21 +612,22 @@ export default function EntryPage() {
                 </select>
               </div>
               {/* 날짜 + 요일 + 수정중 뱃지 */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, flexShrink: 0, width: 40 }}>날짜</span>
                 <input
                   type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
                   style={{
-                    flex: 1, minWidth: 0,
+                    flex: "1 1 auto", minWidth: 0, maxWidth: 180,
                     border: `1px solid ${C.border}`, borderRadius: 10,
-                    padding: "10px 14px", fontSize: 14, fontWeight: 600,
+                    padding: "10px 12px", fontSize: 14, fontWeight: 600,
                     color: C.textPrimary, background: "#fff",
                     outline: "none", fontFamily: "inherit", cursor: "pointer",
+                    boxSizing: "border-box",
                   }}
                 />
                 <span style={{
                   flexShrink: 0,
-                  padding: "6px 14px", borderRadius: 20,
+                  padding: "6px 12px", borderRadius: 20,
                   fontSize: 12, fontWeight: 700,
                   background: dayLabel.bg, color: dayLabel.color, whiteSpace: "nowrap",
                 }}>
