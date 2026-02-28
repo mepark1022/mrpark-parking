@@ -51,6 +51,7 @@ export default function MonthlyPage() {
   const router = useRouter();
   const [stores, setStores] = useState<Store[]>([]);
   const [contracts, setContracts] = useState<MonthlyRow[]>([]);
+  const [allActiveContracts, setAllActiveContracts] = useState<{store_id:string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStore, setFilterStore] = useState("");
   const [filterStatus, setFilterStatus] = useState("active");
@@ -68,8 +69,17 @@ export default function MonthlyPage() {
     let query = supabase.from("stores").select("*").eq("org_id", ctx.orgId).order("name");
     if (!ctx.allStores && ctx.storeIds.length > 0) query = query.in("id", ctx.storeIds);
     else if (!ctx.allStores) { setStores([]); return; }
-    const { data } = await query;
+    const { data, error } = await query;
+    console.log("[월주차] stores loaded:", data?.length, "error:", error);
     if (data) setStores(data);
+
+    // 전체 활성 계약 건수 (필터 무관)
+    const { data: ac } = await supabase
+      .from("monthly_parking")
+      .select("store_id")
+      .eq("org_id", ctx.orgId)
+      .eq("contract_status", "active");
+    if (ac) setAllActiveContracts(ac);
   }
 
   async function loadContracts() {
@@ -226,9 +236,9 @@ export default function MonthlyPage() {
   const expiringSoon = contracts.filter(c => c.contract_status === "active" && isExpiringSoon(c.end_date));
   const totalFee = contracts.filter(c => c.contract_status === "active").reduce((s, c) => s + c.monthly_fee, 0);
 
-  // 매장별 활성 계약 건수
+  // 매장별 활성 계약 건수 (필터 무관 전체 기준)
   const storeActiveMap: Record<string, number> = {};
-  contracts.filter(c => c.contract_status === "active").forEach(c => {
+  allActiveContracts.forEach(c => {
     storeActiveMap[c.store_id] = (storeActiveMap[c.store_id] || 0) + 1;
   });
 
@@ -485,7 +495,7 @@ export default function MonthlyPage() {
           </div>
         )}
 
-        <div className="v3-info-card" style={{ marginBottom: 20 }}>
+        <div className="v3-info-card" style={{ marginBottom: 20, overflow: "visible" }}>
           <div className="m-filter-row">
             <div className="m-filter-status">
               {[{v:"active",label:"계약중"},{v:"expired",label:"만료"},{v:"cancelled",label:"해지"},{v:"",label:"전체"}].map(opt => (
