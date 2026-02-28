@@ -106,17 +106,21 @@ const DASH_STYLES = `
   .dash-rank-bar{flex:1;height:6px;background:#f0f2f7;border-radius:3px;overflow:hidden}
   .dash-rank-bar-fill{height:100%;border-radius:3px}
   .dash-rank-val{font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;color:#1428A0;width:34px;text-align:right;flex-shrink:0}
-  @media(min-width:768px){
+  @media(min-width:769px){
     .dash-pc-2col{display:grid;grid-template-columns:340px 1fr;gap:20px}
     .dash-kpi-grid{grid-template-columns:repeat(4,1fr)}
     .dash-chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-  @media(max-width:768px){.dash-chart-row{grid-template-columns:1fr;gap:10px}}
     .dash-bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-  @media(max-width:768px){.dash-bottom-row{grid-template-columns:1fr;gap:10px}}
-  .dash-mobile-spacer{display:none}
-  @media(max-width:768px){.dash-mobile-spacer{display:block;height:140px}}
-  @media(max-width:768px){.dash-compact-card{padding:12px 14px !important;border-radius:14px !important}}
   }
+  @media(max-width:768px){
+    .dash-chart-row{display:flex;flex-direction:column;gap:10px}
+    .dash-bottom-row{display:flex;flex-direction:column;gap:10px}
+    .dash-compact-card{padding:12px 14px !important;border-radius:14px !important}
+    .dash-card{border-radius:14px;padding:14px}
+    .dash-sec-label{margin-bottom:6px}
+    .dash-mobile-spacer{display:block;height:140px}
+  }
+  .dash-mobile-spacer{display:none}
 `;
 
 
