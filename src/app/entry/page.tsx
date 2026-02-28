@@ -44,8 +44,8 @@ const Card = ({ children, style }: { children: React.ReactNode; style?: React.CS
     background: "#fff", borderRadius: 16,
     border: `1px solid ${C.borderLight}`,
     boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-    overflow: "hidden",
     boxSizing: "border-box",
+    width: "100%",
     ...style,
   }}>
     {children}
@@ -56,7 +56,7 @@ const CardHeader = ({ children, compact }: { children: React.ReactNode; compact?
   <div style={{
     display: "flex", alignItems: "center", justifyContent: "space-between",
     padding: compact ? "12px 14px" : "14px 20px", borderBottom: `1px solid ${C.borderLight}`,
-    gap: compact ? 6 : 10, boxSizing: "border-box",
+    gap: compact ? 6 : 10, boxSizing: "border-box", width: "100%",
   }}>
     {children}
   </div>
@@ -69,7 +69,7 @@ const CardTitle = ({ icon, children, compact }: { icon: string; children: React.
 );
 
 const CardBody = ({ children, style, compact }: { children: React.ReactNode; style?: React.CSSProperties; compact?: boolean }) => (
-  <div style={{ padding: compact ? "14px 14px" : "20px 24px", ...style }}>{children}</div>
+  <div style={{ padding: compact ? "14px 14px" : "20px 24px", boxSizing: "border-box", width: "100%", ...style }}>{children}</div>
 );
 
 const Input = (props: React.InputHTMLAttributes<HTMLInputElement> & { style?: React.CSSProperties }) => (
@@ -79,7 +79,7 @@ const Input = (props: React.InputHTMLAttributes<HTMLInputElement> & { style?: Re
       padding: "11px 16px", border: `1px solid ${C.border}`,
       borderRadius: 10, fontSize: 14, background: "#fff",
       outline: "none", transition: "border-color 0.2s",
-      boxSizing: "border-box",
+      boxSizing: "border-box", maxWidth: "100%",
       ...props.style,
     }}
     onFocus={e => (e.target.style.borderColor = C.navy)}
@@ -94,6 +94,7 @@ const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
       padding: "11px 16px", border: `1px solid ${C.border}`,
       borderRadius: 10, fontSize: 14, background: "#fff",
       outline: "none", cursor: "pointer",
+      boxSizing: "border-box", maxWidth: "100%",
     }}
   />
 );
@@ -392,8 +393,8 @@ export default function EntryPage() {
         <CardTitle icon="🚙" compact={isMobile}>발렛 정보</CardTitle>
         <span
           onClick={showValetToast}
-          style={{ fontSize: isMobile ? 11 : 12, color: C.navy, background: "#eef1fb", padding: isMobile ? "4px 8px" : "4px 10px", borderRadius: 6, cursor: "pointer", fontWeight: 600, border: "1px solid #d0d8f5", whiteSpace: "nowrap", flexShrink: 0 }}>
-          단가 ₩{(currentStore?.valet_fee || 5000).toLocaleString()} ✏️
+          style={{ fontSize: isMobile ? 11 : 12, color: C.navy, background: "#eef1fb", padding: isMobile ? "4px 8px" : "4px 10px", borderRadius: 6, cursor: "pointer", fontWeight: 600, border: "1px solid #d0d8f5", whiteSpace: "nowrap", flexShrink: 0, maxWidth: isMobile ? 120 : undefined, overflow: "hidden", textOverflow: "ellipsis" }}>
+          {isMobile ? `₩${(currentStore?.valet_fee || 5000).toLocaleString()}` : `단가 ₩${(currentStore?.valet_fee || 5000).toLocaleString()} ✏️`}
         </span>
       </CardHeader>
       <CardBody compact={isMobile}>

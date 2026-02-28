@@ -31,7 +31,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           className="pb-[160px] md:pb-0 mobile-main"
           style={{
             flex: 1,
-            overflow: "auto",
+            overflowX: "hidden",
+            overflowY: "auto",
           }}
         >
           <div style={{ maxWidth: 1600, margin: "0 auto" }}>
