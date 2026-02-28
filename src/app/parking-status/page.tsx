@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserContext } from "@/lib/utils/org";
-import { fmtPlate } from "@/lib/utils/format";
+import { fmtPlate, splitPlate } from "@/lib/utils/format";
 import AppLayout from "@/components/layout/AppLayout";
 
 const C = {
@@ -36,27 +36,45 @@ const elapsedStr = (ts) => {
   return { val: `${h}:${String(rm).padStart(2,"0")}`, unit: "시간" };
 };
 
-// 차량번호 검색 하이라이트 (fmtPlate는 @/lib/utils/format에서 import)
-const hlPlate = (plate, query) => {
-  const formatted = fmtPlate(plate);
-  if (!query) return formatted;
-  const q = query.replace(/\s/g,"").toLowerCase();
-  const p = (plate||"").replace(/\s/g,"").toLowerCase();
-  const idx = p.indexOf(q);
-  if (idx===-1) return formatted;
-  // 포맷된 문자열에서 하이라이트 위치 계산
-  const fmtStr = formatted;
-  let s=-1,end=-1,cnt=0;
-  for(let i=0;i<fmtStr.length;i++){
-    if(fmtStr[i]!==" "){
-      if(cnt===idx) s=i;
-      if(cnt===idx+q.length-1){end=i+1;break;}
-      cnt++;
+// 차량번호 JSX 렌더 (한글 뒤 간격)
+const PlateText = ({plate, search}: {plate: string, search?: string}) => {
+  const [prefix, nums] = splitPlate(plate);
+  if (!prefix && !nums) return <>{plate}</>;
+  if (search) {
+    const q = search.replace(/\s/g,"").toLowerCase();
+    const p = (plate||"").replace(/\s/g,"").toLowerCase();
+    if (p.includes(q)) {
+      const full = prefix + nums;
+      const idx = full.toLowerCase().indexOf(q);
+      if (idx !== -1) {
+        const before = full.slice(0, idx);
+        const match = full.slice(idx, idx + q.length);
+        const after = full.slice(idx + q.length);
+        // 하이라이트된 전체를 prefix/nums 간격 유지하며 표시
+        const splitIdx = prefix.length;
+        return (
+          <span style={{display:"inline-flex",alignItems:"baseline"}}>
+            {[before, match, after].map((part, pi) => {
+              // 각 파트에서 prefix/nums 경계를 체크해 gap 삽입
+              const startPos = pi === 0 ? 0 : pi === 1 ? before.length : before.length + match.length;
+              const chars = part.split("").map((ch, ci) => {
+                const globalPos = startPos + ci;
+                const needGap = globalPos === splitIdx && globalPos > 0;
+                return <span key={ci} style={needGap ? {marginLeft:4} : undefined}>{ch}</span>;
+              });
+              if (pi === 1) return <span key={pi} style={{background:"#FEF08A",borderRadius:3,padding:"0 1px"}}>{chars}</span>;
+              return <span key={pi}>{chars}</span>;
+            })}
+          </span>
+        );
+      }
     }
   }
-  if(s===-1) return formatted;
-  return <span>{fmtStr.slice(0,s)}<span style={{background:"#FEF08A",borderRadius:3,padding:"0 2px"}}>{fmtStr.slice(s,end)}</span>{fmtStr.slice(end)}</span>;
+  return <span style={{display:"inline-flex",alignItems:"baseline"}}>{prefix}<span style={{marginLeft:4}}>{nums}</span></span>;
 };
+
+// 하위 호환용
+const hlPlate = (plate, query) => <PlateText plate={plate} search={query} />;
 
 const FilterGroup = ({value,options,onChange}) => (
   <div style={{display:"flex",background:"#fff",borderRadius:10,padding:3,border:`1px solid ${C.borderLight}`}}>
@@ -364,7 +382,7 @@ export default function ParkingStatusPage() {
                       <tr key={t.id} style={{background:i%2===0?"#fff":"#fff8f8"}}>
                         <td style={{padding:"12px 16px",fontSize:15,fontWeight:900,color:"#1A1D2B",letterSpacing:0.3,borderBottom:"1px solid #fef2f2"}}>
                           <span style={{display:"inline-flex",alignItems:"center",gap:6}}>
-                            {fmtPlate(t.plate_number)}
+                            <PlateText plate={t.plate_number} />
                             <button onClick={()=>openPlateEdit(t.id,t.plate_number,"mepark_tickets")}
                               style={{width:22,height:22,borderRadius:"50%",border:"1px solid #fecaca",background:"#fff5f5",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0}}
                               title="차량번호 수정">
@@ -692,7 +710,7 @@ export default function ParkingStatusPage() {
                         <div style={{flex:1,padding:"12px 14px"}}>
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
                             <span style={{display:"flex",alignItems:"center",gap:6}}>
-                              <span style={{fontFamily:"'Outfit',sans-serif",fontSize:17,fontWeight:900,color:"#1A1D2B",letterSpacing:"-0.3px"}}>{fmtPlate(t.plate_number)}</span>
+                              <span style={{fontFamily:"'Outfit',sans-serif",fontSize:17,fontWeight:900,color:"#1A1D2B",letterSpacing:"-0.3px"}}><PlateText plate={t.plate_number} /></span>
                               <button onClick={(ev)=>{ev.stopPropagation();openPlateEdit(t.id,t.plate_number,"mepark_tickets");}}
                                 style={{width:22,height:22,borderRadius:"50%",border:"1.5px solid #fecaca",background:"#fff5f5",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

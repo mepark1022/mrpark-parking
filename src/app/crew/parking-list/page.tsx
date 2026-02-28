@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 import CrewHeader from "@/components/crew/CrewHeader";
-import { fmtPlate } from "@/lib/utils/format";
+import { fmtPlate, splitPlate } from "@/lib/utils/format";
 
 const CSS = `
   .plist-page {
@@ -393,7 +393,7 @@ export default function CrewParkingListPage() {
                 >
                   <div className="vehicle-card-top">
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <div className="vehicle-plate">{fmtPlate(ticket.plate_number)}</div>
+                      <div className="vehicle-plate">{(()=>{const [p,n]=splitPlate(ticket.plate_number);return p?<>{p}<span style={{marginLeft:4}}>{n}</span></>:ticket.plate_number;})()}</div>
                       {ticket.status !== "completed" && (
                         <button className="btn-plate-edit-sm" onClick={(e) => openPlateEdit(e, ticket.id, ticket.plate_number)}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

@@ -40,3 +40,12 @@ export function fmtPlate(plate: string | null | undefined): string {
   if (!plate) return "";
   return plate.replace(/\s/g, "").replace(/([가-힣])(\d)/, "$1 $2");
 }
+
+/** 차량번호를 앞부분/뒷부분으로 분리: "12가2456" → ["12가", "2456"] */
+export function splitPlate(plate: string | null | undefined): [string, string] {
+  if (!plate) return ["", ""];
+  const clean = plate.replace(/\s/g, "");
+  const match = clean.match(/^(.*[가-힣])(\d+)$/);
+  if (match) return [match[1], match[2]];
+  return [clean, ""];
+}
