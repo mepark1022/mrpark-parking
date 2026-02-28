@@ -7,7 +7,7 @@ import MobileTabBar from "./MobileTabBar";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f1f5f9" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f1f5f9", maxWidth: "100vw", overflowX: "hidden" }}>
       {/* PC 사이드바 (768px 이상에서만 표시 - Sidebar.tsx 내부 className으로 처리) */}
 <div className="hidden md:block">
         <Sidebar />
@@ -19,6 +19,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           display: "flex",
           flexDirection: "column",
           minHeight: "100vh",
+          width: "100%",
+          maxWidth: "100vw",
+          overflowX: "hidden",
         }}
       >
         {/* 헤더 (PC: 흰색 헤더 / 모바일: 네이비 그라디언트 헤더) */}
@@ -35,7 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             overflowY: "auto",
           }}
         >
-          <div style={{ maxWidth: 1600, margin: "0 auto" }}>
+          <div style={{ maxWidth: 1600, margin: "0 auto", width: "100%" }}>
             {children}
           </div>
         </main>

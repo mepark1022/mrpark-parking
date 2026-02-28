@@ -31,6 +31,22 @@
 /* ============================================
    ME.PARK 2.0 v3 Design System
    ============================================ */
+
+/* Global box-sizing for all elements */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Hide number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 :root {
   --navy: #1428A0;
   --navy-light: #2d3a8c;
