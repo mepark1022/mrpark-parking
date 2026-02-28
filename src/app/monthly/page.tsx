@@ -497,7 +497,7 @@ export default function MonthlyPage() {
         <div className="v3-info-card" style={{ marginBottom: 20, overflow: "visible" }}>
           <div className="m-filter-row">
             <div className="m-filter-status">
-              {[{v:"active",label:"계약중"},{v:"expired",label:"만료"},{v:"cancelled",label:"해지"},{v:"",label:"전체"}].map(opt => (
+              {[{v:"active",label:"계약중"},{v:"expired",label:"만료"},{v:"cancelled",label:"해지"}].map(opt => (
                 <button key={opt.v} onClick={() => setFilterStatus(opt.v)} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "inherit", background: filterStatus === opt.v ? "#fff" : "transparent", color: filterStatus === opt.v ? "var(--text-primary)" : "var(--text-secondary)", boxShadow: filterStatus === opt.v ? "0 1px 3px rgba(0,0,0,0.08)" : "none", transition: "all 0.15s", whiteSpace: "nowrap" }}>
                   {opt.label}
                 </button>
