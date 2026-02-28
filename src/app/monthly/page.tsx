@@ -225,6 +225,12 @@ export default function MonthlyPage() {
   const expiringSoon = contracts.filter(c => c.contract_status === "active" && isExpiringSoon(c.end_date));
   const totalFee = contracts.filter(c => c.contract_status === "active").reduce((s, c) => s + c.monthly_fee, 0);
 
+  // 매장별 활성 계약 건수
+  const storeActiveMap: Record<string, number> = {};
+  contracts.filter(c => c.contract_status === "active").forEach(c => {
+    storeActiveMap[c.store_id] = (storeActiveMap[c.store_id] || 0) + 1;
+  });
+
   // 최근 30일 내 만료된 계약 (갱신 독려 대상)
   const recentlyExpired = contracts.filter(c => {
     if (c.contract_status !== "expired") return false;
@@ -311,7 +317,7 @@ export default function MonthlyPage() {
             { icon: "📋", label: "전체 계약", value: contracts.length, color: "var(--navy)", bg: "rgba(20,40,160,0.08)", border: "var(--navy)" },
             { icon: "✅", label: "계약 중", value: activeCount, color: "#10b981", bg: "#ecfdf5", border: "#10b981" },
             { icon: "⏰", label: "만료 예정 (7일)", value: expiringSoon.length, color: "#ea580c", bg: "#fff7ed", border: "#ea580c" },
-            { icon: "💰", label: "월 계약 매출", value: `₩${(totalFee / 10000).toFixed(0)}만`, color: "var(--gold)", bg: "rgba(245,183,49,0.12)", border: "var(--gold)" },
+            { icon: "💰", label: "월 계약 매출", value: `₩${totalFee.toLocaleString()}`, color: "var(--gold)", bg: "rgba(245,183,49,0.12)", border: "var(--gold)" },
           ].map((kpi, i) => (
             <div key={i} className="v3-info-card" style={{ borderLeft: `4px solid ${kpi.border}` }}>
               <div style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: 14 }}>
@@ -489,7 +495,7 @@ export default function MonthlyPage() {
             <div className="m-filter-store">
               <select value={filterStore} onChange={(e) => setFilterStore(e.target.value)} style={{ padding: "9px 12px", border: "1px solid var(--border)", borderRadius: 10, fontSize: 13, fontWeight: 500, background: "#fff", outline: "none", cursor: "pointer", fontFamily: "inherit", width: "auto" }}>
                 <option value="">전체 매장</option>
-                {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {stores.map((s) => <option key={s.id} value={s.id}>{s.name}{storeActiveMap[s.id] ? ` (${storeActiveMap[s.id]}건)` : ""}</option>)}
               </select>
             </div>
             <div className="m-search">
