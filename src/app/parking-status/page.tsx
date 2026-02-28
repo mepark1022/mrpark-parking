@@ -143,6 +143,21 @@ export default function ParkingStatusPage() {
   useEffect(()=>{loadInitial();},[]);
   useEffect(()=>{loadEntries();},[selectedStore,selectedDate]);
 
+  // Realtime: CREW 입차/출차 시 자동 갱신
+  useEffect(()=>{
+    const supabase=createClient();
+    const channel=supabase.channel("admin-parking-status")
+      .on("postgres_changes",{event:"*",schema:"public",table:"mepark_tickets"},()=>{
+        loadEntries();
+        getUserContext().then(ctx=>{if(ctx.orgId) loadOverdueTickets(ctx.orgId);});
+      })
+      .on("postgres_changes",{event:"*",schema:"public",table:"parking_entries"},()=>{
+        loadEntries();
+      })
+      .subscribe();
+    return ()=>{supabase.removeChannel(channel);};
+  },[selectedStore,selectedDate]);
+
   const loadInitial=async()=>{
     const supabase=createClient();
     const ctx=await getUserContext();
