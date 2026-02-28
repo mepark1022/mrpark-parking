@@ -4,6 +4,7 @@
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import MobileTabBar from "./MobileTabBar";
+import MoreSubNav from "./MoreSubNav";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -27,6 +28,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       >
         {/* 헤더 (PC: 흰색 헤더 / 모바일: 네이비 그라디언트 헤더) */}
         <Header />
+
+        {/* 모바일 더보기 하위 페이지 서브 네비게이션 */}
+        <MoreSubNav />
 
         {/* 컨텐츠 영역 */}
         {/* pb-[160px]: 모바일 네이비탭바 높이 + 여유 */}
