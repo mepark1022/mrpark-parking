@@ -146,6 +146,39 @@ const CSS = `
   .modal-btn.monthly { background: #1428A0; color: #fff; }
   .modal-btn.cancel  { background: #F1F5F9; color: #475569; }
 
+  /* ── 번호판 수정 ── */
+  .plate-edit-wrap {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .btn-plate-edit {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #F1F5F9; border: 1.5px solid #E2E8F0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+  }
+  .btn-plate-edit:active { background: #E2E8F0; transform: scale(0.92); }
+  .plate-edit-input {
+    width: 100%; height: 56px; border: 2px solid #1428A0;
+    border-radius: 14px; background: #EEF2FF;
+    font-size: 24px; font-weight: 800; letter-spacing: 3px;
+    text-align: center; color: #1A1D2B; outline: none;
+    text-transform: uppercase;
+  }
+  .plate-edit-input:focus { border-color: #F5B731; box-shadow: 0 0 0 3px rgba(245,183,49,0.2); }
+  .plate-edit-hint {
+    font-size: 12px; color: #94A3B8; text-align: center;
+    margin-top: 6px; margin-bottom: 16px;
+  }
+  .plate-edit-old {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px; background: #FEF2F2; border-radius: 10px;
+    font-size: 13px; color: #DC2626; font-weight: 600; margin-bottom: 16px;
+  }
+  .plate-edit-arrow {
+    display: flex; align-items: center; justify-content: center;
+    padding: 12px; margin-bottom: 16px;
+  }
+
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner {
     width: 22px; height: 22px;
@@ -199,6 +232,9 @@ export default function CrewTicketDetailPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showPlateEditModal, setShowPlateEditModal] = useState(false);
+  const [editPlate, setEditPlate] = useState("");
+  const [plateEditLoading, setPlateEditLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [userId, setUserId] = useState(null);
 
@@ -266,6 +302,36 @@ export default function CrewTicketDetailPage() {
     router.replace("/crew/parking-list");
   };
 
+  /* ── 차량번호 수정 ── */
+  const openPlateEdit = () => {
+    setEditPlate(ticket.plate_number);
+    setShowPlateEditModal(true);
+  };
+
+  const handlePlateEdit = async () => {
+    const cleaned = editPlate.trim().toUpperCase().replace(/\s/g, "");
+    if (!cleaned || cleaned.length < 4) return;
+    if (cleaned === ticket.plate_number) {
+      setShowPlateEditModal(false);
+      return;
+    }
+    setPlateEditLoading(true);
+    const last4 = cleaned.replace(/[^0-9]/g, "").slice(-4);
+    const { error } = await supabase.from("mepark_tickets").update({
+      plate_number: cleaned,
+      plate_last4: last4,
+      updated_at: new Date().toISOString(),
+    }).eq("id", id);
+
+    if (error) {
+      alert("수정 실패: " + error.message);
+    } else {
+      await fetchTicket();
+      setShowPlateEditModal(false);
+    }
+    setPlateEditLoading(false);
+  };
+
   if (loading) {
     return (
       <>
@@ -310,7 +376,16 @@ export default function CrewTicketDetailPage() {
 
         {/* 번호판 & 상태 */}
         <div className="detail-status-header">
-          <div className="detail-plate">{ticket.plate_number}</div>
+          <div className="plate-edit-wrap">
+            <div className="detail-plate">{ticket.plate_number}</div>
+            {ticket.status !== "completed" && (
+              <button className="btn-plate-edit" onClick={openPlateEdit} title="차량번호 수정">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+              </button>
+            )}
+          </div>
           <div className="detail-status-badge" style={{ background: statusCfg.bg, color: statusCfg.color }}>
             {statusCfg.label}
           </div>
@@ -487,6 +562,55 @@ export default function CrewTicketDetailPage() {
                 {actionLoading ? <span className="spinner" style={{ borderTopColor: "#fff", width: 20, height: 20 }} /> : "출차 완료"}
               </button>
               <button className="modal-btn cancel" onClick={() => setShowCheckoutModal(false)}>
+                취소
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 차량번호 수정 모달 */}
+        {showPlateEditModal && (
+          <div className="modal-overlay" onClick={() => setShowPlateEditModal(false)}>
+            <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-handle" />
+              <div className="modal-title">차량번호 수정</div>
+              <div className="modal-desc">OCR 오인식이나 수기 입력 오류 시 차량번호를 수정합니다.</div>
+
+              {/* 기존 번호 표시 */}
+              <div className="plate-edit-old">
+                <span>기존:</span>
+                <span style={{ letterSpacing: 2, fontWeight: 800 }}>{ticket.plate_number}</span>
+              </div>
+
+              {/* 화살표 */}
+              <div className="plate-edit-arrow">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 19 5 12" />
+                </svg>
+              </div>
+
+              {/* 새 번호 입력 */}
+              <input
+                className="plate-edit-input"
+                value={editPlate}
+                onChange={(e) => setEditPlate(e.target.value.toUpperCase())}
+                placeholder="12가3456"
+                maxLength={12}
+                autoFocus
+              />
+              <div className="plate-edit-hint">차량번호를 정확히 입력해주세요</div>
+
+              <button
+                className="modal-btn confirm"
+                onClick={handlePlateEdit}
+                disabled={plateEditLoading || !editPlate.trim() || editPlate.trim().length < 4 || editPlate.trim().toUpperCase() === ticket.plate_number}
+                style={{
+                  opacity: (!editPlate.trim() || editPlate.trim().length < 4 || editPlate.trim().toUpperCase() === ticket.plate_number) ? 0.4 : 1,
+                }}
+              >
+                {plateEditLoading ? <span className="spinner" style={{ borderTopColor: "#fff", width: 20, height: 20 }} /> : "✏️ 수정 완료"}
+              </button>
+              <button className="modal-btn cancel" onClick={() => setShowPlateEditModal(false)}>
                 취소
               </button>
             </div>
