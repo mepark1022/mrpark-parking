@@ -394,30 +394,50 @@ export default function AccidentPage() {
 
         {/* 크루앱 연동 안내 배너 */}
         <div style={{
-          display: "flex", alignItems: "center", gap: 12,
           background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)",
           border: "1px solid #86efac", borderRadius: 14,
-          padding: "14px 18px", marginBottom: 20,
+          padding: "14px 18px", marginBottom: 12,
         }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 12, background: "#10b981",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 20, flexShrink: 0,
-          }}>📱</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#065f46", marginBottom: 3 }}>
-              크루앱 사고보고 연동 완료
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 12, background: "#10b981",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 20, flexShrink: 0,
+            }}>📱</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#065f46", marginBottom: 3 }}>
+                크루앱 사고보고 연동 완료
+              </div>
+              <div style={{ fontSize: 13, color: "#047857", lineHeight: 1.5 }}>
+                현장 크루가 크루앱 → 사고보고 메뉴에서 접수합니다. 어드민은 접수된 내역의 상태 관리 및 메모를 작성할 수 있습니다.
+              </div>
             </div>
-            <div style={{ fontSize: 13, color: "#047857", lineHeight: 1.5 }}>
-              현장 크루가 크루앱 → 사고보고 메뉴에서 접수합니다. 어드민은 접수된 내역의 상태 관리 및 메모를 작성할 수 있습니다.
+            <div style={{
+              padding: "5px 12px", borderRadius: 8,
+              background: "#10b981", color: "#fff",
+              fontSize: 11, fontWeight: 700, flexShrink: 0,
+            }}>
+              ✓ 연동 완료
             </div>
           </div>
+        </div>
+        {/* 크루앱 예정 기능 배너 */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 12,
+          background: "linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%)",
+          border: "1px solid #c7d2fe", borderRadius: 14,
+          padding: "12px 18px", marginBottom: 20,
+        }}>
+          <div style={{ fontSize: 16, flexShrink: 0 }}>🛠️</div>
+          <div style={{ flex: 1, fontSize: 13, color: "#4338ca", lineHeight: 1.5 }}>
+            <strong>크루앱 예정:</strong> 접수 이력 조회 · 보고 내역 수정/삭제 기능 추가 예정
+          </div>
           <div style={{
-            padding: "5px 12px", borderRadius: 8,
-            background: "#10b981", color: "#fff",
-            fontSize: 11, fontWeight: 700, flexShrink: 0,
+            padding: "4px 10px", borderRadius: 6,
+            background: "#e0e7ff", color: "#4338ca",
+            fontSize: 11, fontWeight: 700, flexShrink: 0, border: "1px solid #c7d2fe",
           }}>
-            ✓ 연동 완료
+            예정
           </div>
         </div>
 
