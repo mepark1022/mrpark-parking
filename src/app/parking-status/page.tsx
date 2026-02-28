@@ -134,6 +134,7 @@ export default function ParkingStatusPage() {
       }).eq("id", plateEditTarget.id);
       if (error) { alert("수정 실패: " + error.message); setPlateEditLoading(false); return; }
       setOverdueTickets(prev => prev.map(t => t.id === plateEditTarget.id ? { ...t, plate_number: cleaned } : t));
+      setEntries(prev => prev.map(e => e.id === plateEditTarget.id ? { ...e, plate_number: cleaned } : e));
     }
     setPlateEditLoading(false);
     setPlateEditTarget(null);
@@ -173,12 +174,57 @@ export default function ParkingStatusPage() {
   const loadEntries=async()=>{
     setLoading(true);
     const supabase=createClient();
-    let q=supabase.from("parking_entries").select("*,stores(name),workers(name)")
+    const ctx=await getUserContext();
+    if(!ctx.orgId){setLoading(false);return;}
+
+    // 1) parking_entries (기존 수동입력)
+    let q1=supabase.from("parking_entries").select("*,stores(name),workers(name)")
       .gte("entry_time",`${selectedDate}T00:00:00`).lte("entry_time",`${selectedDate}T23:59:59`)
       .order("entry_time",{ascending:false});
-    if(selectedStore) q=q.eq("store_id",selectedStore);
-    const{data}=await q;
-    setEntries(data||[]);setLoading(false);
+    if(selectedStore) q1=q1.eq("store_id",selectedStore);
+
+    // 2) mepark_tickets (CREW앱 입차)
+    let q2=supabase.from("mepark_tickets")
+      .select("id,plate_number,parking_type,status,entry_at,exit_at,store_id,entry_crew_id,parking_location,is_monthly,visit_place_id,stores:store_id(name),visit_places:visit_place_id(name,floor)")
+      .eq("org_id",ctx.orgId)
+      .gte("entry_at",`${selectedDate}T00:00:00`).lte("entry_at",`${selectedDate}T23:59:59`)
+      .order("entry_at",{ascending:false});
+    if(selectedStore) q2=q2.eq("store_id",selectedStore);
+
+    const [{data:peData},{data:mtData}]=await Promise.all([q1,q2]);
+
+    // CREW 이름 조회
+    const crewIds=[...new Set((mtData||[]).map(t=>t.entry_crew_id).filter(Boolean))];
+    let crewMap:Record<string,string>={};
+    if(crewIds.length>0){
+      const{data:profiles}=await supabase.from("profiles").select("id,name").in("id",crewIds);
+      (profiles||[]).forEach(p=>{crewMap[p.id]=p.name||"CREW";});
+    }
+
+    // mepark_tickets → parking_entries 형식으로 정규화
+    const normalizedTickets=(mtData||[]).map(t=>({
+      id: t.id,
+      plate_number: t.plate_number,
+      parking_type: t.is_monthly ? "monthly" : t.parking_type==="self" ? "normal" : t.parking_type,
+      status: ["completed"].includes(t.status) ? "exited" : "parked",
+      entry_time: t.entry_at,
+      exit_time: t.exit_at,
+      store_id: t.store_id,
+      worker_id: t.entry_crew_id,
+      floor: t.visit_places?.floor || t.parking_location || null,
+      stores: t.stores,
+      workers: t.entry_crew_id ? { name: crewMap[t.entry_crew_id] || "CREW" } : null,
+      _source: "mepark_tickets" as const,
+      _ticket_status: t.status, // 원본 티켓 상태 보존
+    }));
+
+    const peNormalized=(peData||[]).map(e=>({...e, _source:"parking_entries" as const}));
+
+    // 병합 후 입차시간 내림차순
+    const merged=[...peNormalized,...normalizedTickets].sort((a,b)=>
+      new Date(b.entry_time).getTime()-new Date(a.entry_time).getTime()
+    );
+    setEntries(merged);setLoading(false);
   };
 
   const filtered=useMemo(()=>entries.filter(e=>{
@@ -462,7 +508,7 @@ export default function ParkingStatusPage() {
                         <span style={{display:"inline-flex",alignItems:"center",gap:6}}>
                           {hlPlate(e.plate_number,search)}
                           {e.status==="parked"&&(
-                            <button onClick={()=>openPlateEdit(e.id,e.plate_number,"parking_entries")}
+                            <button onClick={()=>openPlateEdit(e.id,e.plate_number,e._source||"parking_entries")}
                               style={{width:22,height:22,borderRadius:"50%",border:`1px solid ${C.borderLight}`,background:"#f8fafc",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}
                               title="차량번호 수정">
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -720,7 +766,7 @@ export default function ParkingStatusPage() {
                             {ts.label}
                           </span>
                           {isParked&&(
-                            <button onClick={(ev)=>{ev.stopPropagation();openPlateEdit(e.id,e.plate_number,"parking_entries");}}
+                            <button onClick={(ev)=>{ev.stopPropagation();openPlateEdit(e.id,e.plate_number,e._source||"parking_entries");}}
                               style={{width:24,height:24,borderRadius:"50%",border:`1.5px solid ${C.borderLight}`,background:"#f8fafc",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginLeft:"auto",WebkitTapHighlightColor:"transparent"}}>
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
