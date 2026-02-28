@@ -210,9 +210,10 @@ export default function EntryPage() {
       ["weekday"];
 
     for (const cat of categoryOrder) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("store_operating_hours").select("open_time, close_time, is_closed")
         .eq("store_id", selectedStore).eq("day_category", cat).maybeSingle();
+      if (error) continue;
       if (data) {
         if (data.is_closed) {
           setStoreHours({ open: 7, close: 22 });
@@ -248,12 +249,13 @@ export default function EntryPage() {
   }
 
   async function loadDefaultWorkers() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("default_workers")
       .select("id, worker_id, day_type, display_order, workers(id, name)")
       .eq("store_id", selectedStore)
       .eq("day_type", dayType === "holiday" ? "weekday" : dayType)
       .order("display_order");
+    if (error) { setAssignedWorkers([]); return; }
     if (data) {
       setAssignedWorkers(data.map((d: any) => ({
         worker_id: d.worker_id, worker_type: "default" as const, name: d.workers?.name || "",
@@ -264,7 +266,7 @@ export default function EntryPage() {
   async function loadExistingRecord() {
     const { data } = await supabase
       .from("daily_records").select("id, total_cars, valet_count, valet_revenue, memo")
-      .eq("store_id", selectedStore).eq("date", selectedDate).single();
+      .eq("store_id", selectedStore).eq("date", selectedDate).maybeSingle();
     if (data) {
       setExistingRecordId(data.id);
       setValetCount(data.valet_count || 0);
@@ -579,63 +581,72 @@ export default function EntryPage() {
         {/* ══ 모바일 레이아웃 ══ */}
         {isMobile ? (
           <>
-            {/* 모바일 필터 바: 가로 스크롤 칩 */}
+            {/* 모바일 필터 바: 매장 + 날짜 + 요일뱃지 세로 배치 */}
             <div style={{
-              display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4,
-              marginBottom: 12, WebkitOverflowScrolling: "touch",
+              background: "#fff", borderRadius: 14,
+              border: `1px solid ${C.borderLight}`,
+              padding: "14px 16px",
+              marginBottom: 14,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
             }}>
-              {/* 매장 칩 */}
+              {/* 매장 선택 */}
               <div style={{
-                flexShrink: 0, background: "#fff", border: `1px solid ${C.border}`,
-                borderRadius: 10, padding: "8px 14px",
-                display: "flex", flexDirection: "column", gap: 2,
+                display: "flex", alignItems: "center", gap: 10,
+                paddingBottom: 12, marginBottom: 12,
+                borderBottom: `1px solid ${C.borderLight}`,
               }}>
-                <span style={{ fontSize: 10, fontWeight: 600, color: C.textMuted, letterSpacing: "0.3px" }}>매장</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, flexShrink: 0, width: 40 }}>매장</span>
                 <select
                   value={selectedStore} onChange={e => setSelectedStore(e.target.value)}
-                  style={{ border: "none", outline: "none", fontSize: 13, fontWeight: 600, color: C.textPrimary, background: "transparent", fontFamily: "inherit", cursor: "pointer" }}
+                  style={{
+                    flex: 1, minWidth: 0,
+                    border: `1px solid ${C.border}`, borderRadius: 10,
+                    padding: "10px 14px", fontSize: 14, fontWeight: 600,
+                    color: C.textPrimary, background: "#fff",
+                    outline: "none", fontFamily: "inherit", cursor: "pointer",
+                    overflow: "hidden", textOverflow: "ellipsis",
+                  }}
                 >
                   {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
-              {/* 날짜 칩 */}
-              <div style={{
-                flexShrink: 0, background: "#fff", border: `1px solid ${C.border}`,
-                borderRadius: 10, padding: "8px 14px",
-                display: "flex", flexDirection: "column", gap: 2,
-              }}>
-                <span style={{ fontSize: 10, fontWeight: 600, color: C.textMuted }}>날짜</span>
+              {/* 날짜 + 요일 + 수정중 뱃지 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, flexShrink: 0, width: 40 }}>날짜</span>
                 <input
                   type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
-                  style={{ border: "none", outline: "none", fontSize: 12, fontWeight: 600, color: C.textPrimary, background: "transparent", fontFamily: "inherit", cursor: "pointer" }}
+                  style={{
+                    flex: 1, minWidth: 0,
+                    border: `1px solid ${C.border}`, borderRadius: 10,
+                    padding: "10px 14px", fontSize: 14, fontWeight: 600,
+                    color: C.textPrimary, background: "#fff",
+                    outline: "none", fontFamily: "inherit", cursor: "pointer",
+                  }}
                 />
-              </div>
-              {/* 요일 뱃지 */}
-              <span style={{
-                flexShrink: 0, alignSelf: "center",
-                padding: "5px 12px", borderRadius: 20,
-                fontSize: 11, fontWeight: 700,
-                background: dayLabel.bg, color: dayLabel.color, whiteSpace: "nowrap",
-              }}>
-                {dayLabel.label}
-              </span>
-              {/* 수정 중 뱃지 */}
-              {existingRecordId && (
                 <span style={{
-                  flexShrink: 0, alignSelf: "center",
-                  display: "flex", alignItems: "center", gap: 4,
-                  padding: "5px 12px", borderRadius: 20,
-                  background: `${C.navy}10`, border: `1px solid ${C.navy}22`,
-                  fontSize: 11, fontWeight: 700, color: C.navy, whiteSpace: "nowrap",
+                  flexShrink: 0,
+                  padding: "6px 14px", borderRadius: 20,
+                  fontSize: 12, fontWeight: 700,
+                  background: dayLabel.bg, color: dayLabel.color, whiteSpace: "nowrap",
                 }}>
-                  📋 수정 중
+                  {dayLabel.label}
                 </span>
-              )}
+                {existingRecordId && (
+                  <span style={{
+                    flexShrink: 0,
+                    padding: "6px 10px", borderRadius: 20,
+                    background: `${C.navy}10`, border: `1px solid ${C.navy}22`,
+                    fontSize: 11, fontWeight: 700, color: C.navy, whiteSpace: "nowrap",
+                  }}>
+                    📋 수정중
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* 모바일 카드들: 1열 풀폭 */}
             {/* 입차량 */}
-            <Card style={{ marginBottom: 10 }}>
+            <Card style={{ marginBottom: 12 }}>
               <CardHeader compact>
                 <CardTitle icon="🚗" compact>입차량 입력</CardTitle>
                 <ToggleGroup
@@ -646,14 +657,14 @@ export default function EntryPage() {
               </CardHeader>
               <CardBody compact>
                 {inputMode === "total" ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, padding: "16px 0 6px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, padding: "20px 0 8px" }}>
                     <Input
                       type="number" min={0} value={totalCarsOnly || ""}
                       onChange={e => setTotalCarsOnly(Number(e.target.value))}
                       placeholder="0"
-                      style={{ width: 100, textAlign: "center", fontSize: 32, fontWeight: 800, color: C.navy, padding: "8px 10px", borderRadius: 12 }}
+                      style={{ width: 110, textAlign: "center", fontSize: 36, fontWeight: 800, color: C.navy, padding: "10px 12px", borderRadius: 14 }}
                     />
-                    <span style={{ fontSize: 16, fontWeight: 700, color: C.textSecondary }}>대</span>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: C.textSecondary }}>대</span>
                   </div>
                 ) : hourlyGrid}
                 {totalSummary}
@@ -661,32 +672,34 @@ export default function EntryPage() {
             </Card>
 
             {/* 발렛 */}
-            {valetCard && <div style={{ marginBottom: 10 }}>{valetCard}</div>}
+            {valetCard && <div style={{ marginBottom: 12 }}>{valetCard}</div>}
 
             {/* 근무자 */}
-            <div style={{ marginBottom: 10 }}>{workerCard}</div>
+            <div style={{ marginBottom: 12 }}>{workerCard}</div>
 
             {/* 메모 */}
-            <div style={{ marginBottom: 80 }}>{memoCard}</div>
+            <div style={{ marginBottom: 100 }}>{memoCard}</div>
 
             {/* 모바일 하단 고정 저장 버튼 */}
             <div style={{
               position: "fixed",
               bottom: `calc(80px + env(safe-area-inset-bottom, 14px))`,
               left: 0, right: 0, zIndex: 150,
-              padding: "8px 16px",
-              background: "rgba(255,255,255,0.96)",
+              padding: "10px 16px",
+              background: "rgba(255,255,255,0.97)",
               borderTop: `1px solid ${C.borderLight}`,
-              backdropFilter: "blur(8px)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
             }}>
               <button
                 onClick={handleSave} disabled={saving}
                 style={{
-                  width: "100%", padding: "13px 0", borderRadius: 12,
-                  background: saving ? C.textMuted : C.navy,
-                  color: "#fff", fontSize: 15, fontWeight: 700,
+                  width: "100%", padding: "14px 0", borderRadius: 14,
+                  background: saving ? C.textMuted : `linear-gradient(135deg, ${C.navyDark}, ${C.navy})`,
+                  color: "#fff", fontSize: 16, fontWeight: 700,
                   border: "none", cursor: saving ? "not-allowed" : "pointer",
-                  boxShadow: saving ? "none" : "0 4px 12px rgba(20,40,160,0.2)",
+                  boxShadow: saving ? "none" : "0 4px 14px rgba(20,40,160,0.25)",
+                  letterSpacing: -0.3,
                 }}
               >
                 {saving ? "⏳ 저장 중..." : existingRecordId ? "✏️ 수정 저장" : "💾 저장"}
