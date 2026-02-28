@@ -109,9 +109,17 @@ input[type="number"] {
   flex: 1;
   margin-left: 0;
 }
+.app-main-content {
+  padding-bottom: 0;
+}
 @media (min-width: 768px) {
   .app-main-area {
     margin-left: 280px;
+  }
+}
+@media (max-width: 767px) {
+  .app-main-content {
+    padding-bottom: 160px;
   }
 }
 

@@ -32,7 +32,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* pb-[160px]: 모바일 네이비탭바 높이 + 여유 */}
         {/* md:pb-0: PC에서는 여백 제거 */}
         <main
-          className="pb-[160px] md:pb-0 mobile-main"
+          className="app-main-content"
           style={{
             flex: 1,
             overflowX: "hidden",
