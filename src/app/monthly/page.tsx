@@ -268,7 +268,8 @@ export default function MonthlyPage() {
           .monthly-kpi-grid .v3-info-card { border-radius: 12px !important; }
           .monthly-kpi-grid .v3-info-card > div { padding: 12px 14px !important; gap: 10px !important; }
           .monthly-kpi-grid .v3-info-card .kpi-icon { width: 36px !important; height: 36px !important; border-radius: 10px !important; font-size: 17px !important; }
-          .monthly-kpi-grid .v3-info-card .kpi-val { font-size: 20px !important; margin-bottom: 2px !important; }
+          .monthly-kpi-grid .v3-info-card .kpi-val { margin-bottom: 2px !important; }
+          .monthly-kpi-grid .v3-info-card .kpi-val-long { font-size: 15px !important; }
           .monthly-kpi-grid .v3-info-card .kpi-label { font-size: 11px !important; }
           .monthly-table-view { display: none; }
           .monthly-card-view { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
@@ -324,7 +325,7 @@ export default function MonthlyPage() {
               <div style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: 14 }}>
                 <div className="kpi-icon" style={{ width: 44, height: 44, borderRadius: 12, background: kpi.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{kpi.icon}</div>
                 <div>
-                  <div className="kpi-val" style={{ fontSize: typeof kpi.value === "string" && kpi.value.length > 5 ? 17 : 24, fontWeight: 800, color: kpi.color, lineHeight: 1, marginBottom: 4 }}>{kpi.value}</div>
+                  <div className={`kpi-val${typeof kpi.value === "string" && kpi.value.length > 5 ? " kpi-val-long" : ""}`} style={{ fontSize: typeof kpi.value === "string" && kpi.value.length > 5 ? 18 : 24, fontWeight: 800, color: kpi.color, lineHeight: 1, marginBottom: 4 }}>{kpi.value}</div>
                   <div className="kpi-label" style={{ fontSize: 13, color: "var(--text-muted)" }}>{kpi.label}</div>
                 </div>
               </div>
@@ -504,7 +505,7 @@ export default function MonthlyPage() {
               {storeDropOpen && (
                 <>
                   <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setStoreDropOpen(false)} />
-                  <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 100, maxHeight: 240, overflowY: "auto", padding: "4px" }}>
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 100, maxHeight: "60vh", overflowY: "auto", padding: "4px" }}>
                     <button onClick={() => { setFilterStore(""); setStoreDropOpen(false); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "10px 12px", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, background: !filterStore ? "#eef2ff" : "transparent", color: !filterStore ? "#1428A0" : "var(--text-primary)", cursor: "pointer", fontFamily: "inherit" }}>
                       전체 매장
                     </button>
