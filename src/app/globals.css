@@ -121,6 +121,16 @@ input[type="number"] {
   .app-main-content {
     padding-bottom: 160px;
   }
+  .app-content-inner {
+    padding: 6px 14px 0;
+  }
+  /* Edge-to-edge 모바일 뷰 보정 (analytics, parking-status) */
+  .an-mobile,
+  .ps-mobile {
+    margin-left: -14px !important;
+    margin-right: -14px !important;
+    margin-top: -6px !important;
+  }
 }
 
 .v3-sidebar {

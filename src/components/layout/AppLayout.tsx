@@ -39,7 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             overflowY: "auto",
           }}
         >
-          <div style={{ maxWidth: 1600, margin: "0 auto", width: "100%" }}>
+          <div className="app-content-inner" style={{ maxWidth: 1600, margin: "0 auto", width: "100%" }}>
             {children}
           </div>
         </main>
