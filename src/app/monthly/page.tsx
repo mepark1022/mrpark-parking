@@ -257,23 +257,35 @@ export default function MonthlyPage() {
         .btn-sm:hover { background: var(--bg-card); }
 
         @media (max-width: 767px) {
-          .monthly-kpi-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
+          .monthly-kpi-grid { grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 14px !important; }
+          .monthly-kpi-grid .v3-info-card { border-radius: 12px !important; }
+          .monthly-kpi-grid .v3-info-card > div { padding: 12px 14px !important; gap: 10px !important; }
+          .monthly-kpi-grid .v3-info-card .kpi-icon { width: 36px !important; height: 36px !important; border-radius: 10px !important; font-size: 17px !important; }
+          .monthly-kpi-grid .v3-info-card .kpi-val { font-size: 20px !important; margin-bottom: 2px !important; }
+          .monthly-kpi-grid .v3-info-card .kpi-label { font-size: 11px !important; }
           .monthly-table-view { display: none; }
           .monthly-card-view { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
           /* 필터: 세로 스택 */
-          .m-filter-row { flex-direction: column; align-items: stretch; gap: 10px; padding: 14px 16px; }
+          .m-filter-row { flex-direction: column; align-items: stretch; gap: 8px; padding: 12px 14px; }
           .m-filter-status { overflow-x: auto; -webkit-overflow-scrolling: touch; }
           .m-filter-store { width: 100%; }
           .m-filter-store select { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: #fff; outline: none; font-family: inherit; }
           .m-search { min-width: 0; width: 100%; }
           .m-filter-count { text-align: right; }
           /* 헤더 */
-          .monthly-page-header { gap: 10px; }
-          .monthly-page-header h2 { font-size: 18px !important; }
-          .monthly-page-header button { padding: 9px 16px !important; font-size: 13px !important; }
+          .monthly-page-header { gap: 8px; margin-bottom: 14px !important; }
+          .monthly-page-header h2 { font-size: 17px !important; }
+          .monthly-page-header p { font-size: 12px !important; }
+          .monthly-page-header button { padding: 8px 14px !important; font-size: 13px !important; border-radius: 8px !important; }
+          /* 배너 모바일 */
+          .monthly-expire-banner { padding: 14px !important; border-radius: 12px !important; margin-bottom: 12px !important; }
+          .monthly-expire-banner .expire-title { font-size: 12px !important; }
+          .monthly-expire-banner .expire-item { padding: 8px 10px !important; }
           /* 카드 내 정보 세로 정렬 */
-          .m-card-footer { flex-direction: column !important; gap: 12px !important; align-items: stretch !important; }
+          .m-card-footer { flex-direction: column !important; gap: 10px !important; align-items: stretch !important; }
           .m-card-footer-actions { justify-content: flex-end; }
+          /* v3-info-card 패딩 줄임 */
+          .monthly-card-view .m-contract-card { padding: 14px !important; border-radius: 12px !important; }
         }
       `}</style>
 
@@ -303,10 +315,10 @@ export default function MonthlyPage() {
           ].map((kpi, i) => (
             <div key={i} className="v3-info-card" style={{ borderLeft: `4px solid ${kpi.border}` }}>
               <div style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: kpi.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{kpi.icon}</div>
+                <div className="kpi-icon" style={{ width: 44, height: 44, borderRadius: 12, background: kpi.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{kpi.icon}</div>
                 <div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: kpi.color, lineHeight: 1, marginBottom: 4 }}>{kpi.value}</div>
-                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{kpi.label}</div>
+                  <div className="kpi-val" style={{ fontSize: 24, fontWeight: 800, color: kpi.color, lineHeight: 1, marginBottom: 4 }}>{kpi.value}</div>
+                  <div className="kpi-label" style={{ fontSize: 13, color: "var(--text-muted)" }}>{kpi.label}</div>
                 </div>
               </div>
             </div>
@@ -318,7 +330,7 @@ export default function MonthlyPage() {
           const urgent = expiringSoon.filter(c => getDaysLeft(c.end_date) <= 3);
           const isUrgent = urgent.length > 0;
           return (
-            <div style={{
+            <div className="monthly-expire-banner" style={{
               background: isUrgent ? "linear-gradient(135deg,#fef2f2,#fee2e2)" : "linear-gradient(135deg,#fff7ed,#ffedd5)",
               border: `1px solid ${isUrgent ? "#fecaca" : "#fed7aa"}`,
               borderLeft: `4px solid ${isUrgent ? "#dc2626" : "#ea580c"}`,
@@ -327,7 +339,7 @@ export default function MonthlyPage() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontSize: 18 }}>{isUrgent ? "🚨" : "⚠️"}</span>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: isUrgent ? "#991b1b" : "#9a3412" }}>
+                  <span className="expire-title" style={{ fontSize: 14, fontWeight: 800, color: isUrgent ? "#991b1b" : "#9a3412" }}>
                     {isUrgent
                       ? `긴급! D-3 이하 ${urgent.length}건 포함 · 만료 임박 총 ${expiringSoon.length}건`
                       : `만료 예정 ${expiringSoon.length}건 (7일 이내) · 알림톡을 보내 연장을 유도하세요`
@@ -342,13 +354,13 @@ export default function MonthlyPage() {
                     const days = getDaysLeft(c.end_date);
                     const isD3 = days <= 3;
                     return (
-                      <div key={c.id} style={{
+                      <div key={c.id} className="expire-item" style={{
                         display: "flex", alignItems: "center", justifyContent: "space-between",
                         background: isD3 ? "#fff5f5" : "#fff",
                         border: `1px solid ${isD3 ? "#fecaca" : "#fed7aa"}`,
                         borderRadius: 10, padding: "10px 14px", flexWrap: "wrap", gap: 8
                       }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                           <span style={{
                             fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 6,
                             background: isD3 ? "#dc2626" : "#ea580c", color: "#fff"
