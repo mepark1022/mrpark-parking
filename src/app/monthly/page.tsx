@@ -70,7 +70,8 @@ export default function MonthlyPage() {
     if (!ctx.allStores && ctx.storeIds.length > 0) query = query.in("id", ctx.storeIds);
     else if (!ctx.allStores) { setStores([]); return; }
     const { data, error } = await query;
-    console.log("[월주차] stores loaded:", data?.length, "error:", error);
+    console.error("[월주차 DEBUG] ctx:", JSON.stringify({orgId: ctx.orgId, allStores: ctx.allStores, role: ctx.role, storeIds: ctx.storeIds}));
+    console.error("[월주차 DEBUG] stores:", data?.length, data?.map((s:any) => s.name), "error:", error);
     if (data) setStores(data);
 
     // 전체 활성 계약 건수 (필터 무관)
