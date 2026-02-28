@@ -113,6 +113,8 @@ const DASH_STYLES = `
   @media(max-width:768px){.dash-chart-row{grid-template-columns:1fr;gap:10px}}
     .dash-bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
   @media(max-width:768px){.dash-bottom-row{grid-template-columns:1fr;gap:10px}}
+  .dash-mobile-spacer{display:none}
+  @media(max-width:768px){.dash-mobile-spacer{display:block;height:140px}}
   @media(max-width:768px){.dash-compact-card{padding:12px 14px !important;border-radius:14px !important}}
   }
 `;
@@ -689,8 +691,7 @@ export default function DashboardPage() {
           </div>
 
           {/* 모바일 하단 탭바 여백 */}
-          {isMobile && <div style={{ height: 120 }} />}
-
+          <div className="dash-mobile-spacer" />
         </div>
       )}
     </AppLayout>
