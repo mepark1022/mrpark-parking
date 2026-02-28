@@ -412,7 +412,7 @@ export default function AccidentPage() {
           }}>
             <span style={{ fontSize: 14 }}>🛠️</span>
             <span style={{ fontSize: 12, color: "#4338ca", fontWeight: 600 }}>
-              크루앱 업데이트 예정 — 접수 이력 조회 · 보고 내역 수정/삭제
+              크루앱 업데이트 예정 — 접수 이력 조회 · 보고 내역 수정/삭제 · 어드민 상태변경 실시간 연동
             </span>
           </div>
         </div>
