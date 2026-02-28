@@ -14,12 +14,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
       {/* 메인 영역 */}
       <div
-        className="flex-1 md:ml-[280px]"
+        className="app-main-area"
         style={{
           display: "flex",
           flexDirection: "column",
           minHeight: "100vh",
           width: "100%",
+          minWidth: 0,
           maxWidth: "100vw",
           overflowX: "hidden",
         }}

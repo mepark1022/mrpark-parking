@@ -104,6 +104,17 @@ input[type="number"] {
 /* ============================================
    v3 Sidebar
    ============================================ */
+/* ── App Main Area: Sidebar offset (PC only) ── */
+.app-main-area {
+  flex: 1;
+  margin-left: 0;
+}
+@media (min-width: 768px) {
+  .app-main-area {
+    margin-left: 280px;
+  }
+}
+
 .v3-sidebar {
   position: fixed; top: 0; left: 0;
   width: var(--sidebar-width); height: 100vh;
@@ -464,6 +475,17 @@ input[type="number"] {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     overflow-x: hidden;
+    width: 100vw;
+    max-width: 100vw;
+  }
+
+  /* ── 모바일 전체 overflow 방지 ── */
+  #__next,
+  #__next > div,
+  main,
+  .mobile-main {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
   }
 
   /* ── 하이라이트 카드 내부 수치 크기 강제 축소 ── */
