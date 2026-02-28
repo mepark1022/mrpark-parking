@@ -65,7 +65,7 @@ export default function MonthlyPage() {
   async function loadStores() {
     const ctx = await getUserContext();
     if (!ctx.orgId) return;
-    let query = supabase.from("stores").select("*").eq("org_id", ctx.orgId).eq("is_active", true).order("name");
+    let query = supabase.from("stores").select("*").eq("org_id", ctx.orgId).order("name");
     if (!ctx.allStores && ctx.storeIds.length > 0) query = query.in("id", ctx.storeIds);
     else if (!ctx.allStores) { setStores([]); return; }
     const { data } = await query;
