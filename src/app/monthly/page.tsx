@@ -57,6 +57,7 @@ export default function MonthlyPage() {
   const [searchText, setSearchText] = useState("");
   const [alimModal, setAlimModal] = useState<AlimtalkModal>({ open: false, contract: null, sending: false, sent: false, error: "" });
   const [renewModal, setRenewModal] = useState<RenewModal>({ open: false, contract: null, months: 1, customEnd: "", newFee: 0, saving: false });
+  const [storeDropOpen, setStoreDropOpen] = useState(false);
 
   useEffect(() => { loadStores(); }, []);
   useEffect(() => { loadContracts(); }, [filterStore, filterStatus]);
@@ -492,11 +493,34 @@ export default function MonthlyPage() {
                 </button>
               ))}
             </div>
-            <div className="m-filter-store">
-              <select value={filterStore} onChange={(e) => setFilterStore(e.target.value)} style={{ padding: "9px 12px", border: "1px solid var(--border)", borderRadius: 10, fontSize: 13, fontWeight: 500, background: "#fff", outline: "none", cursor: "pointer", fontFamily: "inherit", width: "auto" }}>
-                <option value="">전체 매장</option>
-                {stores.map((s) => <option key={s.id} value={s.id}>{s.name}{storeActiveMap[s.id] ? ` (${storeActiveMap[s.id]}건)` : ""}</option>)}
-              </select>
+            <div className="m-filter-store" style={{ position: "relative" }}>
+              <button onClick={() => setStoreDropOpen(!storeDropOpen)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "9px 12px", border: "1px solid var(--border)", borderRadius: 10, fontSize: 13, fontWeight: 600, background: "#fff", cursor: "pointer", fontFamily: "inherit", color: "var(--text-primary)" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {filterStore ? stores.find(s => s.id === filterStore)?.name : "전체 매장"}
+                  {filterStore && storeActiveMap[filterStore] ? <span style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: "#1428A0", borderRadius: 10, padding: "1px 7px", lineHeight: "16px" }}>{storeActiveMap[filterStore]}</span> : null}
+                </span>
+                <span style={{ fontSize: 10, color: "#8b90a0", transform: storeDropOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▼</span>
+              </button>
+              {storeDropOpen && (
+                <>
+                  <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setStoreDropOpen(false)} />
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 100, maxHeight: 240, overflowY: "auto", padding: "4px" }}>
+                    <button onClick={() => { setFilterStore(""); setStoreDropOpen(false); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "10px 12px", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, background: !filterStore ? "#eef2ff" : "transparent", color: !filterStore ? "#1428A0" : "var(--text-primary)", cursor: "pointer", fontFamily: "inherit" }}>
+                      전체 매장
+                    </button>
+                    {stores.map(s => {
+                      const cnt = storeActiveMap[s.id] || 0;
+                      const isActive = filterStore === s.id;
+                      return (
+                        <button key={s.id} onClick={() => { setFilterStore(s.id); setStoreDropOpen(false); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "10px 12px", border: "none", borderRadius: 8, fontSize: 13, fontWeight: isActive ? 700 : 500, background: isActive ? "#eef2ff" : "transparent", color: isActive ? "#1428A0" : "var(--text-primary)", cursor: "pointer", fontFamily: "inherit" }}>
+                          <span>{s.name}</span>
+                          {cnt > 0 && <span style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: "#1428A0", borderRadius: 10, padding: "1px 8px", lineHeight: "16px", minWidth: 20, textAlign: "center" }}>{cnt}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
             <div className="m-search">
               <span style={{ fontSize: 14 }}>🔍</span>
