@@ -488,6 +488,17 @@ export default function ParkingStatusPage() {
           </div>
         </div>
 
+        {/* 매장/날짜 선택 */}
+        <div style={{background:"white",padding:"8px 14px",display:"flex",gap:8,borderBottom:"1px solid #eef0f5"}}>
+          <select value={selectedStore} onChange={e=>setSelectedStore(e.target.value)}
+            style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:13,fontWeight:600,color:C.textPrimary,background:"#fff",fontFamily:"inherit"}}>
+            <option value="">전체 매장</option>
+            {stores.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)}
+            style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:13,background:"#fff",fontFamily:"inherit",color:C.textPrimary}} />
+        </div>
+
         {/* 필터 칩 */}
         <div style={{background:"white",padding:"9px 14px",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",borderBottom:"1px solid #eef0f5"}}>
           {mobileChips.map(chip=>{
