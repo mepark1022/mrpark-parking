@@ -397,27 +397,27 @@ export default function EntryPage() {
           {isMobile ? `₩${(currentStore?.valet_fee || 5000).toLocaleString()}` : `단가 ₩${(currentStore?.valet_fee || 5000).toLocaleString()} ✏️`}
         </span>
       </CardHeader>
-      <CardBody compact={isMobile}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ padding: isMobile ? "8px 14px 10px" : "20px 24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 8 : 12 }}>
           {[
             { label: "발렛 건수", value: valetCount, unit: "건", setter: (v: number) => { setValetCount(v); setValetRevenue(v * (currentStore?.valet_fee || 5000)); } },
             { label: "발렛 매출", value: valetRevenue, unit: "원", setter: setValetRevenue },
           ].map(item => (
-            <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <label style={{ width: isMobile ? 72 : 80, fontSize: isMobile ? 13 : 14, fontWeight: 600, color: C.textPrimary, flexShrink: 0 }}>
+            <div key={item.label} style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 12 }}>
+              <label style={{ width: isMobile ? 64 : 80, fontSize: isMobile ? 13 : 14, fontWeight: 600, color: C.textPrimary, flexShrink: 0 }}>
                 {item.label}
               </label>
               <Input
                 type="number" min={0} value={item.value || ""}
                 onChange={e => item.setter(Number(e.target.value))}
                 placeholder="0"
-                style={{ flex: 1, minWidth: 0, textAlign: "center", fontWeight: 700, boxSizing: "border-box" }}
+                style={{ flex: 1, minWidth: 0, textAlign: "center", fontWeight: 700, boxSizing: "border-box", padding: isMobile ? "8px 10px" : "11px 16px" }}
               />
               <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0, whiteSpace: "nowrap" }}>{item.unit}</span>
             </div>
           ))}
         </div>
-      </CardBody>
+      </div>
     </Card>
   ) : null;
 
@@ -442,10 +442,10 @@ export default function EntryPage() {
           >+ 본사</button>
         </div>
       </CardHeader>
-      <CardBody compact={isMobile}>
+      <div style={{ padding: isMobile ? "8px 14px 10px" : "20px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {assignedWorkers.length === 0 ? (
-            <p style={{ textAlign: "center", color: C.textMuted, padding: "20px 0", fontSize: 14 }}>
+            <p style={{ textAlign: "center", color: C.textMuted, padding: isMobile ? "10px 0" : "20px 0", fontSize: isMobile ? 13 : 14 }}>
               배정된 근무자가 없습니다
             </p>
           ) : (
@@ -456,7 +456,7 @@ export default function EntryPage() {
                   value={w.worker_id}
                   onChange={e => updateWorker(idx, e.target.value)}
                   style={{
-                    flex: 1, padding: "9px 12px", border: `1px solid ${C.border}`,
+                    flex: 1, padding: isMobile ? "8px 10px" : "9px 12px", border: `1px solid ${C.border}`,
                     borderRadius: 8, fontSize: isMobile ? 13 : 14, background: "#fff", outline: "none",
                   }}
                 >
@@ -477,23 +477,24 @@ export default function EntryPage() {
             ))
           )}
         </div>
-      </CardBody>
+      </div>
     </Card>
   );
 
   const memoCard = (
     <Card>
-      <CardHeader compact={isMobile}>
-        <CardTitle icon="📝" compact={isMobile}>메모</CardTitle>
-      </CardHeader>
-      <CardBody compact={isMobile}>
+      <div style={{ padding: isMobile ? "10px 14px" : "14px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: isMobile ? 6 : 10 }}>
+          <span>📝</span>
+          <span style={{ fontSize: isMobile ? 13 : 16, fontWeight: 700 }}>메모</span>
+        </div>
         <textarea
           value={memo}
           onChange={e => setMemo(e.target.value)}
           rows={isMobile ? 2 : 3}
           placeholder="특이사항 입력..."
           style={{
-            width: "100%", padding: "12px 14px",
+            width: "100%", padding: isMobile ? "8px 12px" : "12px 14px",
             border: `1px solid ${C.border}`, borderRadius: 10,
             fontSize: 14, resize: "none", outline: "none",
             fontFamily: "inherit", color: C.textPrimary,
@@ -502,7 +503,7 @@ export default function EntryPage() {
           onFocus={e => (e.target.style.borderColor = C.navy)}
           onBlur={e => (e.target.style.borderColor = C.border)}
         />
-      </CardBody>
+      </div>
     </Card>
   );
 
@@ -648,65 +649,57 @@ export default function EntryPage() {
             </div>
 
             {/* 모바일 카드들: 1열 풀폭 */}
-            {/* 입차량 */}
-            <Card style={{ marginBottom: 12 }}>
-              <CardHeader compact>
-                <CardTitle icon="🚗" compact>입차량 입력</CardTitle>
+            {/* 입차량 — 헤더+입력 한줄 */}
+            <Card style={{ marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 1, minWidth: 0 }}>
+                  <span>🚗</span>
+                  <span style={{ fontSize: 13, fontWeight: 700 }}>입차량</span>
+                </div>
                 <ToggleGroup
                   value={inputMode}
                   options={[{ id: "total", label: "총 대수" }, { id: "hourly", label: "시간대별" }]}
                   onChange={v => setInputMode(v as "total" | "hourly")}
                 />
-              </CardHeader>
-              <div style={{ padding: "10px 14px" }}>
-                {inputMode === "total" ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary }}>총 입차량</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Input
-                        type="number" min={0} value={totalCarsOnly || ""}
-                        onChange={e => setTotalCarsOnly(Number(e.target.value))}
-                        placeholder="0"
-                        style={{ width: 80, textAlign: "center", fontSize: 24, fontWeight: 800, color: C.navy, padding: "6px 8px", borderRadius: 10 }}
-                      />
-                      <span style={{ fontSize: 15, fontWeight: 700, color: C.textSecondary }}>대</span>
-                    </div>
+                {inputMode === "total" && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    <Input
+                      type="number" min={0} value={totalCarsOnly || ""}
+                      onChange={e => setTotalCarsOnly(Number(e.target.value))}
+                      placeholder="0"
+                      style={{ width: 64, textAlign: "center", fontSize: 20, fontWeight: 800, color: C.navy, padding: "4px 6px", borderRadius: 8 }}
+                    />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: C.textSecondary }}>대</span>
                   </div>
-                ) : hourlyGrid}
-                {inputMode === "hourly" && (
+                )}
+              </div>
+              {inputMode === "hourly" && (
+                <div style={{ padding: "0 14px 10px" }}>
+                  {hourlyGrid}
                   <div style={{
                     display: "flex", justifyContent: "space-between", alignItems: "center",
                     marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.borderLight}`,
                   }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary }}>총 입차량</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary }}>합계</span>
                     <span style={{ fontSize: 18, fontWeight: 800, color: C.navy }}>
                       {totalCars.toLocaleString()}<span style={{ fontSize: 12, fontWeight: 600, marginLeft: 3 }}>대</span>
                     </span>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </Card>
 
             {/* 발렛 */}
-            {valetCard && <div style={{ marginBottom: 12 }}>{valetCard}</div>}
+            {valetCard && <div style={{ marginBottom: 10 }}>{valetCard}</div>}
 
             {/* 근무자 */}
-            <div style={{ marginBottom: 12 }}>{workerCard}</div>
+            <div style={{ marginBottom: 10 }}>{workerCard}</div>
 
             {/* 메모 */}
-            <div style={{ marginBottom: 140 }}>{memoCard}</div>
+            <div style={{ marginBottom: 12 }}>{memoCard}</div>
 
-            {/* 모바일 하단 고정 저장 버튼 */}
-            <div style={{
-              position: "fixed",
-              bottom: `calc(80px + env(safe-area-inset-bottom, 14px))`,
-              left: 0, right: 0, zIndex: 150,
-              padding: "10px 16px",
-              background: "rgba(255,255,255,0.97)",
-              borderTop: `1px solid ${C.borderLight}`,
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-            }}>
+            {/* 저장 버튼 — 인라인 (스크롤 내) */}
+            <div style={{ marginBottom: 120 }}>
               <button
                 onClick={handleSave} disabled={saving}
                 style={{
