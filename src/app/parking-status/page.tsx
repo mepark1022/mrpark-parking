@@ -60,7 +60,7 @@ const PlateText = ({plate, search}: {plate: string, search?: string}) => {
               const chars = part.split("").map((ch, ci) => {
                 const globalPos = startPos + ci;
                 const needGap = globalPos === splitIdx && globalPos > 0;
-                return <span key={ci} style={needGap ? {marginLeft:4} : undefined}>{ch}</span>;
+                return <span key={ci} style={needGap ? {marginLeft:6} : undefined}>{ch}</span>;
               });
               if (pi === 1) return <span key={pi} style={{background:"#FEF08A",borderRadius:3,padding:"0 1px"}}>{chars}</span>;
               return <span key={pi}>{chars}</span>;
@@ -70,7 +70,7 @@ const PlateText = ({plate, search}: {plate: string, search?: string}) => {
       }
     }
   }
-  return <span style={{display:"inline-flex",alignItems:"baseline"}}>{prefix}<span style={{marginLeft:4}}>{nums}</span></span>;
+  return <span style={{display:"inline-flex",alignItems:"baseline"}}>{prefix}<span style={{marginLeft:6}}>{nums}</span></span>;
 };
 
 // 하위 호환용

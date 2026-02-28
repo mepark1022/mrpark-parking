@@ -378,7 +378,7 @@ export default function CrewTicketDetailPage() {
         {/* 번호판 & 상태 */}
         <div className="detail-status-header">
           <div className="plate-edit-wrap">
-            <div className="detail-plate">{(()=>{const [p,n]=splitPlate(ticket.plate_number);return p?<>{p}<span style={{marginLeft:5}}>{n}</span></>:ticket.plate_number;})()}</div>
+            <div className="detail-plate">{(()=>{const [p,n]=splitPlate(ticket.plate_number);return p?<>{p}<span style={{marginLeft:6}}>{n}</span></>:ticket.plate_number;})()}</div>
             {ticket.status !== "completed" && (
               <button className="btn-plate-edit" onClick={openPlateEdit} title="차량번호 수정">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
