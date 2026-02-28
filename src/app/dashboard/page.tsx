@@ -112,7 +112,7 @@ const DASH_STYLES = `
     .dash-chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
   @media(max-width:768px){.dash-chart-row{grid-template-columns:1fr;gap:10px}}
     .dash-bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-  @media(max-width:768px){.dash-bottom-row{grid-template-columns:1fr;gap:10px;padding-bottom:160px}}
+  @media(max-width:768px){.dash-bottom-row{grid-template-columns:1fr;gap:10px}}
   @media(max-width:768px){.dash-compact-card{padding:12px 14px !important;border-radius:14px !important}}
   }
 `;
@@ -687,6 +687,9 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
+
+          {/* 모바일 하단 탭바 여백 */}
+          {isMobile && <div style={{ height: 120 }} />}
 
         </div>
       )}
