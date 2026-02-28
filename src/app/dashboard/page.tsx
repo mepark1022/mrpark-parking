@@ -110,6 +110,7 @@ const DASH_STYLES = `
     .dash-pc-2col{display:grid;grid-template-columns:340px 1fr;gap:20px}
     .dash-kpi-grid{grid-template-columns:repeat(4,1fr)}
     .dash-chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:768px){.dash-chart-row{grid-template-columns:1fr;gap:10px}}
     .dash-bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
   @media(max-width:768px){.dash-bottom-row{grid-template-columns:1fr;gap:10px;padding-bottom:160px}}
   @media(max-width:768px){.dash-compact-card{padding:12px 14px !important;border-radius:14px !important}}
@@ -601,13 +602,13 @@ export default function DashboardPage() {
 
           {/* 4. 차트 */}
           <div className="dash-chart-row">
-            <div className="dash-card" style={{ padding: 16 }}>
-              <div className="dash-sec-label">
+            <div className="dash-card dash-compact-card">
+              <div className="dash-sec-label" style={{ marginBottom: isMobile ? 4 : 14 }}>
                 <span className="dash-sec-title">⏰ 시간대별 입차</span>
                 <span className="dash-sec-badge">{periodLabel}</span>
               </div>
               {hourlyChartData.some(d => d.count > 0) ? (
-                <ResponsiveContainer width="100%" height={isMobile ? 140 : 200}>
+                <ResponsiveContainer width="100%" height={isMobile ? 120 : 200}>
                   <BarChart data={hourlyChartData} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="hour" tick={{ fontSize: 9 }} interval={1} />
@@ -617,15 +618,15 @@ export default function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div style={{ height: 140, display: "flex", alignItems: "center", justifyContent: "center", color: "#8b90a0", fontSize: 13 }}>데이터가 없습니다</div>
+                <div style={{ height: isMobile ? 50 : 140, display: "flex", alignItems: "center", justifyContent: "center", color: "#8b90a0", fontSize: 13 }}>데이터가 없습니다</div>
               )}
             </div>
-            <div className="dash-card" style={{ padding: 16 }}>
-              <div className="dash-sec-label">
+            <div className="dash-card dash-compact-card">
+              <div className="dash-sec-label" style={{ marginBottom: isMobile ? 4 : 14 }}>
                 <span className="dash-sec-title">📈 일별 추이</span>
               </div>
               {dailyTrendData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={isMobile ? 140 : 200}>
+                <ResponsiveContainer width="100%" height={isMobile ? 120 : 200}>
                   <LineChart data={dailyTrendData} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="date" tick={{ fontSize: 9 }} />
@@ -637,7 +638,7 @@ export default function DashboardPage() {
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div style={{ height: 140, display: "flex", alignItems: "center", justifyContent: "center", color: "#8b90a0", fontSize: 13 }}>데이터가 없습니다</div>
+                <div style={{ height: isMobile ? 50 : 140, display: "flex", alignItems: "center", justifyContent: "center", color: "#8b90a0", fontSize: 13 }}>데이터가 없습니다</div>
               )}
             </div>
           </div>
