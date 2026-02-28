@@ -323,7 +323,7 @@ export default function MonthlyPage() {
               <div style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: 14 }}>
                 <div className="kpi-icon" style={{ width: 44, height: 44, borderRadius: 12, background: kpi.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{kpi.icon}</div>
                 <div>
-                  <div className="kpi-val" style={{ fontSize: 24, fontWeight: 800, color: kpi.color, lineHeight: 1, marginBottom: 4 }}>{kpi.value}</div>
+                  <div className="kpi-val" style={{ fontSize: typeof kpi.value === "string" && kpi.value.length > 5 ? 17 : 24, fontWeight: 800, color: kpi.color, lineHeight: 1, marginBottom: 4 }}>{kpi.value}</div>
                   <div className="kpi-label" style={{ fontSize: 13, color: "var(--text-muted)" }}>{kpi.label}</div>
                 </div>
               </div>
