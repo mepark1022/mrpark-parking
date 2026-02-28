@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserContext } from "@/lib/utils/org";
+import { fmtPlate } from "@/lib/utils/format";
 import AppLayout from "@/components/layout/AppLayout";
 
 const C = {
@@ -35,22 +36,26 @@ const elapsedStr = (ts) => {
   return { val: `${h}:${String(rm).padStart(2,"0")}`, unit: "시간" };
 };
 
+// 차량번호 검색 하이라이트 (fmtPlate는 @/lib/utils/format에서 import)
 const hlPlate = (plate, query) => {
-  if (!query) return plate;
+  const formatted = fmtPlate(plate);
+  if (!query) return formatted;
   const q = query.replace(/\s/g,"").toLowerCase();
   const p = (plate||"").replace(/\s/g,"").toLowerCase();
   const idx = p.indexOf(q);
-  if (idx===-1) return plate;
+  if (idx===-1) return formatted;
+  // 포맷된 문자열에서 하이라이트 위치 계산
+  const fmtStr = formatted;
   let s=-1,end=-1,cnt=0;
-  for(let i=0;i<plate.length;i++){
-    if(plate[i]!==" "){
+  for(let i=0;i<fmtStr.length;i++){
+    if(fmtStr[i]!==" "){
       if(cnt===idx) s=i;
       if(cnt===idx+q.length-1){end=i+1;break;}
       cnt++;
     }
   }
-  if(s===-1) return plate;
-  return <span>{plate.slice(0,s)}<span style={{background:"#FEF08A",borderRadius:3,padding:"0 2px"}}>{plate.slice(s,end)}</span>{plate.slice(end)}</span>;
+  if(s===-1) return formatted;
+  return <span>{fmtStr.slice(0,s)}<span style={{background:"#FEF08A",borderRadius:3,padding:"0 2px"}}>{fmtStr.slice(s,end)}</span>{fmtStr.slice(end)}</span>;
 };
 
 const FilterGroup = ({value,options,onChange}) => (
@@ -359,7 +364,7 @@ export default function ParkingStatusPage() {
                       <tr key={t.id} style={{background:i%2===0?"#fff":"#fff8f8"}}>
                         <td style={{padding:"12px 16px",fontSize:15,fontWeight:900,color:"#1A1D2B",letterSpacing:0.3,borderBottom:"1px solid #fef2f2"}}>
                           <span style={{display:"inline-flex",alignItems:"center",gap:6}}>
-                            {t.plate_number}
+                            {fmtPlate(t.plate_number)}
                             <button onClick={()=>openPlateEdit(t.id,t.plate_number,"mepark_tickets")}
                               style={{width:22,height:22,borderRadius:"50%",border:"1px solid #fecaca",background:"#fff5f5",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0}}
                               title="차량번호 수정">
@@ -687,7 +692,7 @@ export default function ParkingStatusPage() {
                         <div style={{flex:1,padding:"12px 14px"}}>
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
                             <span style={{display:"flex",alignItems:"center",gap:6}}>
-                              <span style={{fontFamily:"'Outfit',sans-serif",fontSize:17,fontWeight:900,color:"#1A1D2B",letterSpacing:"-0.3px"}}>{t.plate_number}</span>
+                              <span style={{fontFamily:"'Outfit',sans-serif",fontSize:17,fontWeight:900,color:"#1A1D2B",letterSpacing:"-0.3px"}}>{fmtPlate(t.plate_number)}</span>
                               <button onClick={(ev)=>{ev.stopPropagation();openPlateEdit(t.id,t.plate_number,"mepark_tickets");}}
                                 style={{width:22,height:22,borderRadius:"50%",border:"1.5px solid #fecaca",background:"#fff5f5",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -856,7 +861,7 @@ export default function ParkingStatusPage() {
               fontSize: 13, color: "#DC2626", fontWeight: 600, marginBottom: 12,
             }}>
               <span>기존:</span>
-              <span style={{ letterSpacing: 2, fontWeight: 800, fontSize: 16 }}>{plateEditTarget.plate}</span>
+              <span style={{ letterSpacing: 2, fontWeight: 800, fontSize: 16 }}>{fmtPlate(plateEditTarget.plate)}</span>
             </div>
 
             {/* 화살표 */}

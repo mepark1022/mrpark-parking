@@ -34,3 +34,9 @@ export function formatPhone(phone: string): string {
 export function isValidVehicleNumber(num: string): boolean {
   return /^\d{2,3}[가-힣]\d{4}$/.test(num.replace(/\s/g, ""));
 }
+
+/** 차량번호 포맷: "12가2456" → "12가 2456" (한글 뒤 공백) */
+export function fmtPlate(plate: string | null | undefined): string {
+  if (!plate) return "";
+  return plate.replace(/\s/g, "").replace(/([가-힣])(\d)/, "$1 $2");
+}

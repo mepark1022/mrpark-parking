@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useParams } from "next/navigation";
 import CrewHeader from "@/components/crew/CrewHeader";
+import { fmtPlate } from "@/lib/utils/format";
 
 const CSS = `
   .detail-page { min-height: 100dvh; background: #F8FAFC; }
@@ -377,7 +378,7 @@ export default function CrewTicketDetailPage() {
         {/* 번호판 & 상태 */}
         <div className="detail-status-header">
           <div className="plate-edit-wrap">
-            <div className="detail-plate">{ticket.plate_number}</div>
+            <div className="detail-plate">{fmtPlate(ticket.plate_number)}</div>
             {ticket.status !== "completed" && (
               <button className="btn-plate-edit" onClick={openPlateEdit} title="차량번호 수정">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -534,7 +535,7 @@ export default function CrewTicketDetailPage() {
               <div className="modal-handle" />
               <div className="modal-title">출차 완료 확인</div>
               <div className="modal-desc">
-                {ticket.plate_number} 차량을 출차 처리합니다.
+                {fmtPlate(ticket.plate_number)} 차량을 출차 처리합니다.
                 {isOverdue && " ⚠️ 30분 초과 추가요금이 발생합니다."}
               </div>
 
@@ -579,7 +580,7 @@ export default function CrewTicketDetailPage() {
               {/* 기존 번호 표시 */}
               <div className="plate-edit-old">
                 <span>기존:</span>
-                <span style={{ letterSpacing: 2, fontWeight: 800 }}>{ticket.plate_number}</span>
+                <span style={{ letterSpacing: 2, fontWeight: 800 }}>{fmtPlate(ticket.plate_number)}</span>
               </div>
 
               {/* 화살표 */}
