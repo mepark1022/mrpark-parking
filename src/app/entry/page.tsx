@@ -658,20 +658,33 @@ export default function EntryPage() {
                   onChange={v => setInputMode(v as "total" | "hourly")}
                 />
               </CardHeader>
-              <CardBody compact>
+              <div style={{ padding: "10px 14px" }}>
                 {inputMode === "total" ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, padding: "20px 0 8px" }}>
-                    <Input
-                      type="number" min={0} value={totalCarsOnly || ""}
-                      onChange={e => setTotalCarsOnly(Number(e.target.value))}
-                      placeholder="0"
-                      style={{ width: 110, textAlign: "center", fontSize: 36, fontWeight: 800, color: C.navy, padding: "10px 12px", borderRadius: 14 }}
-                    />
-                    <span style={{ fontSize: 18, fontWeight: 700, color: C.textSecondary }}>대</span>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary }}>총 입차량</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Input
+                        type="number" min={0} value={totalCarsOnly || ""}
+                        onChange={e => setTotalCarsOnly(Number(e.target.value))}
+                        placeholder="0"
+                        style={{ width: 80, textAlign: "center", fontSize: 24, fontWeight: 800, color: C.navy, padding: "6px 8px", borderRadius: 10 }}
+                      />
+                      <span style={{ fontSize: 15, fontWeight: 700, color: C.textSecondary }}>대</span>
+                    </div>
                   </div>
                 ) : hourlyGrid}
-                {totalSummary}
-              </CardBody>
+                {inputMode === "hourly" && (
+                  <div style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.borderLight}`,
+                  }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary }}>총 입차량</span>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: C.navy }}>
+                      {totalCars.toLocaleString()}<span style={{ fontSize: 12, fontWeight: 600, marginLeft: 3 }}>대</span>
+                    </span>
+                  </div>
+                )}
+              </div>
             </Card>
 
             {/* 발렛 */}
@@ -681,7 +694,7 @@ export default function EntryPage() {
             <div style={{ marginBottom: 12 }}>{workerCard}</div>
 
             {/* 메모 */}
-            <div style={{ marginBottom: 100 }}>{memoCard}</div>
+            <div style={{ marginBottom: 140 }}>{memoCard}</div>
 
             {/* 모바일 하단 고정 저장 버튼 */}
             <div style={{
