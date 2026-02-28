@@ -102,6 +102,13 @@ const CSS = `
     font-size: 20px; font-weight: 800;
     letter-spacing: 2px; color: #1A1D2B;
   }
+  .btn-plate-edit-sm {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #F1F5F9; border: 1.5px solid #E2E8F0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .btn-plate-edit-sm:active { background: #E2E8F0; transform: scale(0.9); }
   .status-badge {
     padding: 4px 10px; border-radius: 20px;
     font-size: 12px; font-weight: 700;
@@ -221,6 +228,9 @@ export default function CrewParkingListPage() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [storeId, setStoreId] = useState(null);
+  const [plateEditTarget, setPlateEditTarget] = useState(null);
+  const [editPlateValue, setEditPlateValue] = useState("");
+  const [plateEditLoading, setPlateEditLoading] = useState(false);
 
   useEffect(() => {
     const savedStoreId = localStorage.getItem("crew_store_id");
@@ -253,6 +263,29 @@ export default function CrewParkingListPage() {
   const refresh = () => {
     const sid = localStorage.getItem("crew_store_id");
     fetchTickets(sid);
+  };
+
+  const openPlateEdit = (e, ticketId, plate) => {
+    e.stopPropagation();
+    setPlateEditTarget({ id: ticketId, plate });
+    setEditPlateValue(plate);
+  };
+
+  const handlePlateEdit = async () => {
+    if (!plateEditTarget) return;
+    const cleaned = editPlateValue.trim().toUpperCase().replace(/\s/g, "");
+    if (!cleaned || cleaned.length < 4 || cleaned === plateEditTarget.plate) {
+      setPlateEditTarget(null); return;
+    }
+    setPlateEditLoading(true);
+    const last4 = cleaned.replace(/[^0-9]/g, "").slice(-4);
+    const { error } = await supabase.from("mepark_tickets").update({
+      plate_number: cleaned, plate_last4: last4, updated_at: new Date().toISOString(),
+    }).eq("id", plateEditTarget.id);
+    if (error) { alert("수정 실패: " + error.message); }
+    else { setTickets(prev => prev.map(t => t.id === plateEditTarget.id ? { ...t, plate_number: cleaned, plate_last4: last4 } : t)); }
+    setPlateEditLoading(false);
+    setPlateEditTarget(null);
   };
 
   const filtered = tickets.filter(t => {
@@ -358,7 +391,16 @@ export default function CrewParkingListPage() {
                   onClick={() => router.push(`/crew/parking-list/${ticket.id}`)}
                 >
                   <div className="vehicle-card-top">
-                    <div className="vehicle-plate">{ticket.plate_number}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div className="vehicle-plate">{ticket.plate_number}</div>
+                      {ticket.status !== "completed" && (
+                        <button className="btn-plate-edit-sm" onClick={(e) => openPlateEdit(e, ticket.id, ticket.plate_number)}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                     <div className="status-badge" style={{ background: statusCfg.bg, color: statusCfg.color }}>
                       {statusCfg.label}
                     </div>
@@ -395,6 +437,75 @@ export default function CrewParkingListPage() {
 
         {/* FAB 새로고침 */}
         <button className="fab-refresh" onClick={refresh}>↺</button>
+
+        {/* 차량번호 수정 모달 */}
+        {plateEditTarget && (
+          <div onClick={() => setPlateEditTarget(null)} style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+            display: "flex", alignItems: "flex-end", zIndex: 200,
+          }}>
+            <div onClick={(e) => e.stopPropagation()} style={{
+              background: "#fff", width: "100%",
+              borderRadius: "24px 24px 0 0", padding: "24px 20px",
+              paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0))",
+            }}>
+              <div style={{ width: 40, height: 4, background: "#E2E8F0", borderRadius: 2, margin: "0 auto 20px" }} />
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1D2B", marginBottom: 4 }}>차량번호 수정</div>
+              <div style={{ fontSize: 13, color: "#94A3B8", marginBottom: 16 }}>OCR 오인식이나 수기 입력 오류를 수정합니다.</div>
+
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                padding: 10, background: "#FEF2F2", borderRadius: 10,
+                fontSize: 13, color: "#DC2626", fontWeight: 600, marginBottom: 12,
+              }}>
+                <span>기존:</span>
+                <span style={{ letterSpacing: 2, fontWeight: 800, fontSize: 16 }}>{plateEditTarget.plate}</span>
+              </div>
+
+              <div style={{ textAlign: "center", padding: "4px 0", color: "#94A3B8" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 19 5 12" />
+                </svg>
+              </div>
+
+              <input
+                value={editPlateValue}
+                onChange={(e) => setEditPlateValue(e.target.value.toUpperCase())}
+                placeholder="12가3456"
+                maxLength={12}
+                autoFocus
+                style={{
+                  width: "100%", height: 56, border: "2px solid #1428A0",
+                  borderRadius: 14, background: "#EEF2FF",
+                  fontSize: 24, fontWeight: 800, letterSpacing: 3,
+                  textAlign: "center", color: "#1A1D2B", outline: "none",
+                  boxSizing: "border-box", marginTop: 8,
+                }}
+              />
+              <div style={{ fontSize: 12, color: "#94A3B8", textAlign: "center", marginTop: 6, marginBottom: 16 }}>
+                차량번호를 정확히 입력해주세요
+              </div>
+
+              <button
+                onClick={handlePlateEdit}
+                disabled={plateEditLoading || !editPlateValue.trim() || editPlateValue.trim().length < 4 || editPlateValue.trim().toUpperCase() === plateEditTarget.plate}
+                style={{
+                  width: "100%", height: 52, borderRadius: 12, border: "none",
+                  background: "#16A34A", color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer",
+                  opacity: (!editPlateValue.trim() || editPlateValue.trim().length < 4 || editPlateValue.trim().toUpperCase() === plateEditTarget.plate) ? 0.4 : 1,
+                  marginBottom: 10,
+                }}
+              >
+                {plateEditLoading ? "처리 중..." : "✏️ 수정 완료"}
+              </button>
+              <button onClick={() => setPlateEditTarget(null)} style={{
+                width: "100%", height: 44, borderRadius: 12,
+                border: "none", background: "#F1F5F9", color: "#475569",
+                fontSize: 14, fontWeight: 600, cursor: "pointer",
+              }}>취소</button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
