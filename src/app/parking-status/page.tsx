@@ -498,7 +498,7 @@ export default function ParkingStatusPage() {
             <div style={{textAlign:"center",padding:"60px 0"}}>
               <div style={{fontSize:44,marginBottom:12}}>🔍</div>
               <div style={{fontSize:16,fontWeight:700,color:C.textPrimary,marginBottom:6}}>
-                {entries.length===0?"입차 데이터가 없습니다":"검색 결과가 없습니다"}
+                {entries.length===0?(statusFilter==="exited"?"출차 데이터가 없습니다":"입차 데이터가 없습니다"):"검색 결과가 없습니다"}
               </div>
               <div style={{fontSize:13,color:C.textMuted}}>
                 {entries.length===0?"크루앱에서 입차를 등록하면 여기에 표시됩니다":"필터를 변경해 보세요"}
@@ -736,7 +736,7 @@ export default function ParkingStatusPage() {
 
           {activeTab!=="overdue"&&(<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <span style={{fontSize:12,fontWeight:800,color:"#333"}}>입차 목록</span>
+            <span style={{fontSize:12,fontWeight:800,color:"#333"}}>{statusFilter==="exited"?"출차 목록":"입차 목록"}</span>
             <span style={{fontSize:10,color:C.navy,fontWeight:700}}>
               총 <strong>{filtered.length}</strong>건 · 최신순
             </span>
@@ -748,14 +748,14 @@ export default function ParkingStatusPage() {
             <div style={{textAlign:"center",padding:"50px 0"}}>
               <div style={{fontSize:36,marginBottom:8}}>🔍</div>
               <div style={{fontSize:14,fontWeight:700,color:C.textPrimary,marginBottom:4}}>
-                {entries.length===0?"입차 데이터가 없습니다":"검색 결과가 없습니다"}
+                {entries.length===0?(statusFilter==="exited"?"출차 데이터가 없습니다":"입차 데이터가 없습니다"):"검색 결과가 없습니다"}
               </div>
               <div style={{fontSize:12,color:C.textMuted}}>
                 {entries.length===0?"크루앱에서 입차를 등록하면 표시됩니다":"필터를 변경해 보세요"}
               </div>
             </div>
           ):(
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
               {(showAll ? filtered : filtered.slice(0,80)).map(e=>{
                 const ts = typeStyle(e.parking_type);
                 const isParked = e.status === "parked";
@@ -766,41 +766,41 @@ export default function ParkingStatusPage() {
 
                 return (
                   <div key={e.id} style={{
-                    background:"white",borderRadius:20,overflow:"hidden",
-                    boxShadow:"0 2px 12px rgba(20,40,160,0.08)",
+                    background:"white",borderRadius:14,overflow:"hidden",
+                    boxShadow:"0 1px 8px rgba(20,40,160,0.06)",
                     display:"flex",alignItems:"stretch",
                   }}>
-                    <div style={{width:5,background:barColor,flexShrink:0,borderRadius:"20px 0 0 20px"}} />
-                    <div style={{flex:1,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:4,background:barColor,flexShrink:0,borderRadius:"14px 0 0 14px"}} />
+                    <div style={{flex:1,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5}}>
-                          <span style={{fontFamily:"'Outfit',sans-serif",fontSize:16,fontWeight:900,color:"#1A1D2B",letterSpacing:"-0.3px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                          <span style={{fontFamily:"'Outfit',sans-serif",fontSize:15,fontWeight:900,color:"#1A1D2B",letterSpacing:"-0.3px"}}>
                             {hlPlate(e.plate_number,search)}
                           </span>
-                          <span style={{fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:6,background:ts.bg,color:ts.color,flexShrink:0}}>
+                          <span style={{fontSize:10,fontWeight:800,padding:"1px 7px",borderRadius:5,background:ts.bg,color:ts.color,flexShrink:0}}>
                             {ts.label}
                           </span>
                           {isParked&&(
                             <button onClick={(ev)=>{ev.stopPropagation();openPlateEdit(e.id,e.plate_number,e._source||"parking_entries");}}
-                              style={{width:24,height:24,borderRadius:"50%",border:`1.5px solid ${C.borderLight}`,background:"#f8fafc",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginLeft:"auto",WebkitTapHighlightColor:"transparent"}}>
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              style={{width:22,height:22,borderRadius:"50%",border:`1.5px solid ${C.borderLight}`,background:"#f8fafc",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginLeft:"auto",WebkitTapHighlightColor:"transparent"}}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                               </svg>
                             </button>
                           )}
                         </div>
-                        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                          {e.stores?.name&&<span style={{fontSize:11,color:"#94a3b8",fontWeight:600}}>🏢 {e.stores.name}</span>}
-                          {e.floor&&<><span style={{color:"#e2e8f0",fontSize:10}}>|</span><span style={{fontSize:11,color:"#94a3b8"}}>📍 {e.floor}</span></>}
-                          <span style={{color:"#e2e8f0",fontSize:10}}>|</span>
-                          <span style={{fontSize:11,color:"#94a3b8"}}>⏰ {fmt(e.entry_time)}</span>
-                          {!isParked&&e.exit_time&&<><span style={{color:"#e2e8f0",fontSize:10}}>|</span><span style={{fontSize:11,color:"#bbb"}}>→ {fmt(e.exit_time)}</span></>}
-                          {e.workers?.name&&<><span style={{color:"#e2e8f0",fontSize:10}}>|</span><span style={{fontSize:11,color:"#bbb"}}>👤 {e.workers.name}</span></>}
+                        <div style={{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>
+                          {e.stores?.name&&<span style={{fontSize:10,color:"#94a3b8",fontWeight:600}}>🏢 {e.stores.name}</span>}
+                          {e.floor&&<><span style={{color:"#e2e8f0",fontSize:9}}>|</span><span style={{fontSize:10,color:"#94a3b8"}}>📍 {e.floor}</span></>}
+                          <span style={{color:"#e2e8f0",fontSize:9}}>|</span>
+                          <span style={{fontSize:10,color:"#94a3b8"}}>⏰ {fmt(e.entry_time)}</span>
+                          {!isParked&&e.exit_time&&<><span style={{color:"#e2e8f0",fontSize:9}}>|</span><span style={{fontSize:10,color:"#bbb"}}>→ {fmt(e.exit_time)}</span></>}
+                          {e.workers?.name&&<><span style={{color:"#e2e8f0",fontSize:9}}>|</span><span style={{fontSize:10,color:"#bbb"}}>👤 {e.workers.name}</span></>}
                         </div>
                       </div>
-                      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2,flexShrink:0}}>
                         <span style={{
-                          fontSize:10,fontWeight:800,padding:"3px 9px",borderRadius:7,
+                          fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:6,
                           background: isParked ? C.successBg : "#f1f5f9",
                           color: isParked ? C.success : C.textMuted,
                         }}>
@@ -809,10 +809,10 @@ export default function ParkingStatusPage() {
                         {elapsed&&(
                           <>
                             <span style={{
-                              fontFamily:"'Outfit',sans-serif",fontSize:20,fontWeight:900,lineHeight:1,
+                              fontFamily:"'Outfit',sans-serif",fontSize:18,fontWeight:900,lineHeight:1,
                               color: e.parking_type==="valet" ? C.warning : C.navy,
                             }}>{elapsed.val}</span>
-                            <span style={{fontSize:10,color:"#bbb",fontWeight:700}}>{elapsed.unit}</span>
+                            <span style={{fontSize:9,color:"#bbb",fontWeight:700}}>{elapsed.unit}</span>
                           </>
                         )}
                       </div>
