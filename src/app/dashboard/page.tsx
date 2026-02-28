@@ -111,7 +111,8 @@ const DASH_STYLES = `
     .dash-kpi-grid{grid-template-columns:repeat(4,1fr)}
     .dash-chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
     .dash-bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-  @media(max-width:768px){.dash-bottom-row{grid-template-columns:1fr;gap:12px;padding-bottom:100px}}
+  @media(max-width:768px){.dash-bottom-row{grid-template-columns:1fr;gap:10px;padding-bottom:100px}}
+  @media(max-width:768px){.dash-compact-card{padding:12px 14px !important;border-radius:14px !important}}
   }
 `;
 
@@ -643,42 +644,46 @@ export default function DashboardPage() {
 
           {/* 5. 미정산 + 월주차 만료 */}
           <div className="dash-bottom-row">
-            <div className="dash-card" style={{ padding: 16 }}>
-              <div className="dash-sec-label">
+            <div className="dash-card dash-compact-card">
+              <div className="dash-sec-label" style={{ marginBottom: 0 }}>
                 <span className="dash-sec-title">⚠️ 마감 미정산</span>
               </div>
               {records.length === 0 ? (
-                <div style={{ color: "#8b90a0", fontSize: 13, textAlign: "center", padding: "20px 0" }}>선택 기간 데이터 없음</div>
+                <div style={{ color: "#8b90a0", fontSize: 13, textAlign: "center", padding: "10px 0" }}>선택 기간 데이터 없음</div>
               ) : stores.filter(s => !records.some(r => r.store_id === s.id)).length === 0 ? (
-                <div style={{ color: "#16A34A", fontSize: 14, fontWeight: 700, textAlign: "center", padding: "20px 0" }}>✅ 모든 매장 입력 완료!</div>
+                <div style={{ color: "#16A34A", fontSize: 13, fontWeight: 700, textAlign: "center", padding: "10px 0" }}>✅ 모든 매장 입력 완료!</div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
                   {stores.filter(s => !records.some(r => r.store_id === s.id)).map(s => (
-                    <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: "#fee2e2", borderRadius: 10 }}>
+                    <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "#fee2e2", borderRadius: 8 }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: "#DC2626" }}>미정산</span>
-                      <span style={{ fontSize: 14, fontWeight: 600 }}>{s.name}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>{s.name}</span>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-            <div className="dash-card" style={{ padding: 16 }}>
-              <div className="dash-sec-label">
+            <div className="dash-card dash-compact-card">
+              <div className="dash-sec-label" style={{ marginBottom: 0 }}>
                 <span className="dash-sec-title">📅 월주차 만료 예정</span>
                 <span className="dash-sec-badge">{expiringSoon.length}건</span>
               </div>
               {expiringSoon.length === 0 ? (
-                <div style={{ color: "#16A34A", fontSize: 14, fontWeight: 700, textAlign: "center", padding: "20px 0" }}>✅ 7일 내 만료 없음</div>
-              ) : expiringSoon.map(c => {
-                const daysLeft = Math.ceil((new Date(c.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                return (
-                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: "#fff7ed", borderRadius: 10, marginBottom: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#EA580C", flexShrink: 0 }}>D-{daysLeft}</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{c.stores?.name}</span>
-                    <span style={{ fontSize: 11, color: "#8b90a0" }}>{c.end_date}</span>
-                  </div>
-                );
-              })}
+                <div style={{ color: "#16A34A", fontSize: 13, fontWeight: 700, textAlign: "center", padding: "10px 0" }}>✅ 7일 내 만료 없음</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
+                  {expiringSoon.map(c => {
+                    const daysLeft = Math.ceil((new Date(c.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                    return (
+                      <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "#fff7ed", borderRadius: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "#EA580C", flexShrink: 0 }}>D-{daysLeft}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{c.stores?.name}</span>
+                        <span style={{ fontSize: 11, color: "#8b90a0" }}>{c.end_date}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
