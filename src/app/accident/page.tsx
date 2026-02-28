@@ -392,52 +392,28 @@ export default function AccidentPage() {
           <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>사고보고</h2>
         </div>
 
-        {/* 크루앱 연동 안내 배너 */}
+        {/* 사고보고 안내 배너 */}
         <div style={{
-          background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)",
-          border: "1px solid #86efac", borderRadius: 14,
-          padding: "14px 18px", marginBottom: 12,
+          background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+          border: "1px solid #e2e8f0", borderRadius: 14,
+          padding: "16px 18px", marginBottom: 20,
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: 12, background: "#10b981",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 20, flexShrink: 0,
-            }}>📱</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#065f46", marginBottom: 3 }}>
-                크루앱 사고보고 연동 완료
-              </div>
-              <div style={{ fontSize: 13, color: "#047857", lineHeight: 1.5 }}>
-                현장 크루가 크루앱 → 사고보고 메뉴에서 접수합니다. 어드민은 접수된 내역의 상태 관리 및 메모를 작성할 수 있습니다.
-              </div>
-            </div>
-            <div style={{
-              padding: "5px 12px", borderRadius: 8,
-              background: "#10b981", color: "#fff",
-              fontSize: 11, fontWeight: 700, flexShrink: 0,
-            }}>
-              ✓ 연동 완료
-            </div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 10 }}>
+            📋 사고보고 관리 안내
           </div>
-        </div>
-        {/* 크루앱 예정 기능 배너 */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 12,
-          background: "linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%)",
-          border: "1px solid #c7d2fe", borderRadius: 14,
-          padding: "12px 18px", marginBottom: 20,
-        }}>
-          <div style={{ fontSize: 16, flexShrink: 0 }}>🛠️</div>
-          <div style={{ flex: 1, fontSize: 13, color: "#4338ca", lineHeight: 1.5 }}>
-            <strong>크루앱 예정:</strong> 접수 이력 조회 · 보고 내역 수정/삭제 기능 추가 예정
+          <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.7 }}>
+            현장 크루가 크루앱 → 사고보고에서 접수하면 이 화면에 실시간으로 표시됩니다.
+            어드민은 접수된 건의 <strong>상태 변경</strong>(접수→처리중→완료)과 <strong>관리자 메모</strong>를 작성할 수 있습니다.
           </div>
           <div style={{
-            padding: "4px 10px", borderRadius: 6,
-            background: "#e0e7ff", color: "#4338ca",
-            fontSize: 11, fontWeight: 700, flexShrink: 0, border: "1px solid #c7d2fe",
+            display: "flex", alignItems: "center", gap: 8, marginTop: 10,
+            padding: "8px 12px", borderRadius: 8,
+            background: "#e0e7ff", border: "1px solid #c7d2fe",
           }}>
-            예정
+            <span style={{ fontSize: 14 }}>🛠️</span>
+            <span style={{ fontSize: 12, color: "#4338ca", fontWeight: 600 }}>
+              크루앱 업데이트 예정 — 접수 이력 조회 · 보고 내역 수정/삭제
+            </span>
           </div>
         </div>
 
@@ -505,17 +481,9 @@ export default function AccidentPage() {
         {/* 빈 상태 */}
         {filtered.length === 0 ? (
           <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", padding: "64px 24px", textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 14 }}>✅</div>
+            <div style={{ fontSize: 48, marginBottom: 14 }}>📋</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>사고보고 내역이 없습니다</div>
-            <div style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 16 }}>크루앱에서 접수된 사고보고가 여기에 실시간으로 표시됩니다</div>
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "10px 18px", borderRadius: 10,
-              background: "#ecfdf5", border: "1px solid #86efac",
-              fontSize: 13, color: "#065f46", fontWeight: 600,
-            }}>
-              📱 크루앱 → 사고보고 메뉴에서 접수 가능
-            </div>
+            <div style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.6 }}>크루가 크루앱에서 사고를 접수하면<br/>이 화면에 실시간으로 표시됩니다</div>
           </div>
         ) : (
           <>
