@@ -401,19 +401,19 @@ export default function AccidentPage() {
           <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 10 }}>
             📋 사고보고 관리 안내
           </div>
-          <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.7 }}>
+          <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.8 }}>
             현장 크루가 크루앱 → 사고보고에서 접수하면 이 화면에 실시간으로 표시됩니다.
             어드민은 접수된 건의 <strong>상태 변경</strong>(접수→처리중→완료)과 <strong>관리자 메모</strong>를 작성할 수 있습니다.
           </div>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8, marginTop: 10,
-            padding: "8px 12px", borderRadius: 8,
-            background: "#e0e7ff", border: "1px solid #c7d2fe",
-          }}>
-            <span style={{ fontSize: 14 }}>🛠️</span>
-            <span style={{ fontSize: 12, color: "#4338ca", fontWeight: 600 }}>
-              크루앱 업데이트 예정 — 접수 이력 조회 · 보고 내역 수정/삭제 · 어드민 상태변경 실시간 연동
-            </span>
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#4338ca", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+              <span>🛠️</span> 크루앱 업데이트 예정
+            </div>
+            <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.7 }}>
+              · 크루가 본인 접수 이력 조회 가능<br/>
+              · 보고 내역 수정 및 삭제 기능<br/>
+              · 어드민 상태변경 시 크루앱에 실시간 반영 (접수→처리중→완료 알림)
+            </div>
           </div>
         </div>
 
