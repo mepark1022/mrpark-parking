@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미팍티켓 | 현장 17년이 만든 전자주차권 시스템</title>
+<meta name="description" content="주차 운영, 아직 손으로 하고 계십니까. 입차부터 정산까지 하나의 시스템으로. 6개월 무료 도입.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #1428A0;
+  --navy-dark: #0E1D6E;
+  --navy-deep: #0A1550;
+  --gold: #F5B731;
+  --gold-light: #FDE68A;
+  --gold-dark: #D49B1F;
+  --white: #FFFFFF;
+  --gray-50: #F8FAFC;
+  --gray-100: #F1F5F9;
+  --gray-200: #E2E8F0;
+  --gray-300: #CBD5E1;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1E293B;
+  --gray-900: #0F172A;
+  --success: #16A34A;
+  --font-ko: 'Noto Sans KR', sans-serif;
+  --font-en: 'Outfit', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-ko);
+  color: var(--gray-800);
+  background: var(--white);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ========== ANIMATIONS ========== */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-60px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(60px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 183, 49, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(245, 183, 49, 0); }
+}
+
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.animate-on-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ========== NAVBAR ========== */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0 24px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.4s ease;
+  background: transparent;
+}
+
+.navbar.scrolled {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 1px 20px rgba(20, 40, 160, 0.08);
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.navbar-logo-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--navy);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+  font-family: var(--font-en);
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.5px;
+}
+
+.navbar-logo-text {
+  font-family: var(--font-en);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--white);
+  letter-spacing: -0.3px;
+  transition: color 0.4s;
+}
+
+.navbar.scrolled .navbar-logo-text {
+  color: var(--navy);
+}
+
+.navbar-cta {
+  padding: 10px 24px;
+  background: var(--gold);
+  color: var(--navy-dark);
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  border-radius: 100px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s;
+  letter-spacing: -0.2px;
+}
+
+.navbar-cta:hover {
+  background: var(--gold-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(245, 183, 49, 0.4);
+}
+
+/* ========== HERO ========== */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(165deg, var(--navy-deep) 0%, var(--navy) 40%, #1E3CB0 100%);
+  overflow: hidden;
+  padding: 120px 24px 80px;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(245, 183, 49, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 183, 49, 0.3), transparent);
+}
+
+.hero-grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.hero-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: rgba(245, 183, 49, 0.12);
+  border: 1px solid rgba(245, 183, 49, 0.25);
+  border-radius: 100px;
+  margin-bottom: 32px;
+  animation: fadeUp 0.8s ease both;
+}
+
+.hero-badge-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--gold);
+  border-radius: 50%;
+  animation: pulse-gold 2s infinite;
+}
+
+.hero-badge-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gold);
+  letter-spacing: -0.2px;
+}
+
+.hero h1 {
+  font-size: clamp(36px, 5.5vw, 64px);
+  font-weight: 900;
+  color: var(--white);
+  line-height: 1.2;
+  letter-spacing: -1.5px;
+  margin-bottom: 28px;
+  animation: fadeUp 0.8s ease 0.15s both;
+}
+
+.hero h1 .highlight {
+  color: var(--gold);
+}
+
+.hero-sub {
+  font-size: clamp(16px, 2vw, 20px);
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.8;
+  max-width: 560px;
+  margin-bottom: 48px;
+  font-weight: 300;
+  letter-spacing: -0.3px;
+  animation: fadeUp 0.8s ease 0.3s both;
+}
+
+.hero-sub strong {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 500;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  animation: fadeUp 0.8s ease 0.45s both;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 40px;
+  background: var(--gold);
+  color: var(--navy-dark);
+  font-size: 17px;
+  font-weight: 700;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s;
+  letter-spacing: -0.3px;
+}
+
+.btn-primary:hover {
+  background: var(--gold-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(245, 183, 49, 0.35);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 32px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s;
+  letter-spacing: -0.3px;
+}
+
+.btn-ghost:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--white);
+}
+
+.hero-scroll-indicator {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn 1s ease 1.2s both;
+}
+
+.hero-scroll-indicator span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: var(--font-en);
+}
+
+.scroll-line {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, rgba(245, 183, 49, 0.6), transparent);
+  animation: float 2s ease-in-out infinite;
+}
+
+/* ========== SECTIONS COMMON ========== */
+.section {
+  padding: 120px 24px;
+}
+
+.section-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-family: var(--font-en);
+  margin-bottom: 16px;
+}
+
+.section-label::before {
+  content: '';
+  width: 24px;
+  height: 2px;
+  background: var(--gold);
+}
+
+.section-title {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800;
+  color: var(--gray-900);
+  line-height: 1.3;
+  letter-spacing: -1px;
+  margin-bottom: 20px;
+}
+
+.section-desc {
+  font-size: 17px;
+  color: var(--gray-500);
+  line-height: 1.8;
+  max-width: 640px;
+  font-weight: 300;
+  letter-spacing: -0.2px;
+}
+
+/* ========== PAIN POINTS ========== */
+.pain-section {
+  background: var(--gray-50);
+}
+
+.pain-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-top: 64px;
+}
+
+.pain-card {
+  position: relative;
+  padding: 40px 36px;
+  background: var(--white);
+  border-radius: 24px;
+  border: 1px solid var(--gray-200);
+  transition: all 0.4s;
+}
+
+.pain-card:hover {
+  border-color: var(--navy);
+  box-shadow: 0 8px 40px rgba(20, 40, 160, 0.08);
+  transform: translateY(-4px);
+}
+
+.pain-card-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(20, 40, 160, 0.06);
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 24px;
+}
+
+.pain-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 20px;
+  letter-spacing: -0.5px;
+  line-height: 1.4;
+}
+
+.pain-card p {
+  font-size: 15px;
+  color: var(--gray-500);
+  line-height: 1.9;
+  font-weight: 300;
+}
+
+/* ========== SOLUTION ========== */
+.solution-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 64px;
+}
+
+.solution-card {
+  position: relative;
+  padding: 44px 32px 40px;
+  background: var(--white);
+  border-radius: 24px;
+  border: 1px solid var(--gray-200);
+  transition: all 0.4s;
+  overflow: hidden;
+}
+
+.solution-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--navy);
+  transform: scaleX(0);
+  transition: transform 0.4s;
+}
+
+.solution-card:hover::before {
+  transform: scaleX(1);
+}
+
+.solution-card:hover {
+  box-shadow: 0 12px 48px rgba(20, 40, 160, 0.1);
+  transform: translateY(-6px);
+}
+
+.solution-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--navy), #2440C0);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin-bottom: 28px;
+}
+
+.solution-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 14px;
+  letter-spacing: -0.5px;
+}
+
+.solution-card p {
+  font-size: 15px;
+  color: var(--gray-500);
+  line-height: 1.8;
+  font-weight: 300;
+}
+
+/* ========== STORY ========== */
+.story-section {
+  background: linear-gradient(165deg, var(--navy-deep) 0%, var(--navy) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.story-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 183, 49, 0.3), transparent);
+}
+
+.story-content {
+  max-width: 720px;
+}
+
+.story-section .section-label {
+  color: var(--gold);
+}
+
+.story-section .section-title {
+  color: var(--white);
+}
+
+.story-text {
+  margin-top: 48px;
+}
+
+.story-text p {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 2;
+  font-weight: 300;
+  letter-spacing: -0.2px;
+  margin-bottom: 28px;
+}
+
+.story-text p strong {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+}
+
+.story-text .story-quote {
+  font-size: 15px;
+  color: var(--gold);
+  font-style: italic;
+  padding-left: 24px;
+  border-left: 2px solid rgba(245, 183, 49, 0.4);
+  margin: 40px 0;
+}
+
+.story-highlight {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--white) !important;
+  margin-top: 36px;
+}
+
+.story-timeline {
+  display: flex;
+  gap: 0;
+  margin-top: 64px;
+  position: relative;
+}
+
+.story-timeline::before {
+  content: '';
+  position: absolute;
+  top: 28px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.timeline-item {
+  flex: 1;
+  text-align: center;
+  position: relative;
+  padding-top: 44px;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 12px;
+  background: var(--gold);
+  border-radius: 50%;
+  border: 3px solid var(--navy);
+}
+
+.timeline-year {
+  font-family: var(--font-en);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: -0.5px;
+}
+
+.timeline-desc {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 8px;
+  font-weight: 300;
+}
+
+/* ========== STATS ========== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-top: 64px;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 44px 24px;
+  background: var(--gray-50);
+  border-radius: 24px;
+  border: 1px solid var(--gray-100);
+  transition: all 0.4s;
+}
+
+.stat-card:hover {
+  background: var(--white);
+  border-color: var(--navy);
+  box-shadow: 0 8px 40px rgba(20, 40, 160, 0.08);
+  transform: translateY(-4px);
+}
+
+.stat-icon {
+  font-size: 32px;
+  margin-bottom: 16px;
+}
+
+.stat-value {
+  font-family: var(--font-en);
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--navy);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: var(--gray-500);
+  margin-top: 12px;
+  font-weight: 400;
+}
+
+/* ========== PRICING ========== */
+.pricing-section {
+  background: var(--gray-50);
+}
+
+.pricing-card {
+  max-width: 520px;
+  margin: 64px auto 0;
+  background: var(--white);
+  border-radius: 32px;
+  border: 2px solid var(--gray-200);
+  overflow: hidden;
+  transition: all 0.4s;
+}
+
+.pricing-card:hover {
+  border-color: var(--navy);
+  box-shadow: 0 16px 64px rgba(20, 40, 160, 0.12);
+}
+
+.pricing-header {
+  background: linear-gradient(135deg, var(--navy-deep), var(--navy));
+  padding: 36px 40px;
+  text-align: center;
+}
+
+.pricing-badge {
+  display: inline-flex;
+  padding: 6px 18px;
+  background: rgba(245, 183, 49, 0.15);
+  border: 1px solid rgba(245, 183, 49, 0.3);
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+
+.pricing-amount {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+}
+
+.pricing-amount .won {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+}
+
+.pricing-amount .number {
+  font-family: var(--font-en);
+  font-size: 56px;
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: -2px;
+}
+
+.pricing-period {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 8px;
+}
+
+.pricing-body {
+  padding: 36px 40px;
+}
+
+.pricing-features {
+  list-style: none;
+  margin-bottom: 32px;
+}
+
+.pricing-features li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  font-size: 15px;
+  color: var(--gray-700);
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.pricing-features li:last-child {
+  border-bottom: none;
+}
+
+.pricing-features .check {
+  width: 22px;
+  height: 22px;
+  background: rgba(22, 163, 74, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.pricing-after {
+  text-align: center;
+  padding: 20px;
+  background: var(--gray-50);
+  border-radius: 16px;
+  margin-bottom: 28px;
+}
+
+.pricing-after p {
+  font-size: 14px;
+  color: var(--gray-500);
+}
+
+.pricing-after strong {
+  color: var(--gray-800);
+  font-weight: 600;
+}
+
+.pricing-after .no-lock {
+  font-size: 13px;
+  color: var(--gray-400);
+  margin-top: 4px;
+}
+
+.btn-full {
+  width: 100%;
+  padding: 18px;
+  background: var(--navy);
+  color: var(--white);
+  font-size: 17px;
+  font-weight: 700;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: -0.3px;
+}
+
+.btn-full:hover {
+  background: var(--navy-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(20, 40, 160, 0.25);
+}
+
+/* ========== FAQ ========== */
+.faq-list {
+  max-width: 740px;
+  margin: 64px auto 0;
+}
+
+.faq-item {
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.faq-question {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-800);
+  font-family: var(--font-ko);
+  letter-spacing: -0.3px;
+  transition: color 0.3s;
+}
+
+.faq-question:hover {
+  color: var(--navy);
+}
+
+.faq-arrow {
+  font-size: 20px;
+  color: var(--gray-400);
+  transition: transform 0.3s;
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+.faq-item.open .faq-arrow {
+  transform: rotate(45deg);
+  color: var(--navy);
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.4s ease;
+}
+
+.faq-item.open .faq-answer {
+  max-height: 200px;
+  padding-bottom: 24px;
+}
+
+.faq-answer p {
+  font-size: 15px;
+  color: var(--gray-500);
+  line-height: 1.8;
+  font-weight: 300;
+}
+
+/* ========== CTA ========== */
+.cta-section {
+  background: linear-gradient(165deg, var(--navy-deep) 0%, var(--navy) 100%);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 183, 49, 0.3), transparent);
+}
+
+.cta-section .section-title {
+  color: var(--white);
+  margin-bottom: 16px;
+}
+
+.cta-sub {
+  font-size: 17px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 48px;
+  font-weight: 300;
+}
+
+.cta-form {
+  max-width: 560px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.cta-form input {
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  color: var(--white);
+  font-size: 15px;
+  font-family: var(--font-ko);
+  outline: none;
+  transition: all 0.3s;
+}
+
+.cta-form input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.cta-form input:focus {
+  border-color: var(--gold);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.cta-submit {
+  grid-column: 1 / -1;
+  padding: 18px;
+  background: var(--gold);
+  color: var(--navy-dark);
+  font-size: 17px;
+  font-weight: 700;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: var(--font-ko);
+  letter-spacing: -0.3px;
+}
+
+.cta-submit:hover {
+  background: var(--gold-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(245, 183, 49, 0.35);
+}
+
+.cta-trust {
+  margin-top: 20px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* ========== FOOTER ========== */
+.footer {
+  padding: 48px 24px;
+  background: var(--gray-900);
+  text-align: center;
+}
+
+.footer-logo {
+  font-family: var(--font-en);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gray-400);
+  margin-bottom: 12px;
+}
+
+.footer p {
+  font-size: 13px;
+  color: var(--gray-600);
+  line-height: 1.8;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+  .section {
+    padding: 80px 20px;
+  }
+
+  .hero {
+    padding: 100px 20px 60px;
+    min-height: auto;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-primary, .btn-ghost {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .hero-scroll-indicator {
+    display: none;
+  }
+
+  .pain-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .solution-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .stat-card {
+    padding: 32px 16px;
+  }
+
+  .stat-value {
+    font-size: 32px;
+  }
+
+  .story-timeline {
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .story-timeline::before {
+    top: 0;
+    bottom: 0;
+    left: 28px;
+    width: 1px;
+    height: 100%;
+  }
+
+  .timeline-item {
+    text-align: left;
+    padding-top: 0;
+    padding-left: 64px;
+  }
+
+  .timeline-item::before {
+    top: 6px;
+    left: 23px;
+  }
+
+  .pricing-card {
+    margin-top: 48px;
+  }
+
+  .pricing-header, .pricing-body {
+    padding: 28px 24px;
+  }
+
+  .pricing-amount .number {
+    font-size: 44px;
+  }
+
+  .cta-form {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar">
+  <a href="#" class="navbar-logo">
+    <div class="navbar-logo-icon">M</div>
+    <span class="navbar-logo-text">ME.PARK</span>
+  </a>
+  <a href="#contact" class="navbar-cta">무료 도입 신청</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      <span class="hero-badge-text">6개월 무료 도입</span>
+    </div>
+    <h1>
+      주차 운영,<br>
+      아직 <span class="highlight">손</span>으로 하고 계십니까.
+    </h1>
+    <p class="hero-sub">
+      입차부터 정산까지, 하나의 시스템으로.<br>
+      <strong>현장 17년이 만든 전자주차권, 미팍티켓.</strong>
+    </p>
+    <div class="hero-actions">
+      <a href="#contact" class="btn-primary">6개월 무료 도입 →</a>
+      <a href="#solution" class="btn-ghost">기능 살펴보기</a>
+    </div>
+  </div>
+  <div class="hero-scroll-indicator">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- PAIN POINTS -->
+<section class="section pain-section" id="pain">
+  <div class="section-inner">
+    <div class="animate-on-scroll">
+      <div class="section-label">Problem</div>
+      <h2 class="section-title">익숙해서 못 느끼는 비효율,<br>매일 반복되고 있습니다.</h2>
+    </div>
+    <div class="pain-grid">
+      <div class="pain-card animate-on-scroll">
+        <div class="pain-card-label">🚗 발렛 서비스 업체</div>
+        <h3>매장이 늘수록,<br>관리는 사람에 의존합니다.</h3>
+        <p>
+          하루가 끝나면 시작되는 현금 정산.<br>
+          카톡으로 확인하는 크루 출퇴근.<br>
+          매장이 늘수록 관리는 사람에 의존하고,<br>
+          사람은 한계에 부딪힙니다.
+        </p>
+      </div>
+      <div class="pain-card animate-on-scroll">
+        <div class="pain-card-label">🅿️ 유료 주차장 운영사</div>
+        <h3>파악되지 않는 매출,<br>멈추지 않는 수작업.</h3>
+        <p>
+          매달 나가는 종이주차권 인쇄비.<br>
+          현금 결제 비중이 높아 파악되지 않는 실제 매출.<br>
+          월주차 만기 안내를 일일이 전화로 돌리는 오후.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOLUTION -->
+<section class="section" id="solution">
+  <div class="section-inner">
+    <div class="animate-on-scroll">
+      <div class="section-label">Solution</div>
+      <h2 class="section-title">현장의 문제를<br>기술로 풀었습니다.</h2>
+      <p class="section-desc">미팍티켓은 주차장 운영에 필요한 모든 것을 하나의 시스템에 담았습니다.</p>
+    </div>
+    <div class="solution-grid">
+      <div class="solution-card animate-on-scroll">
+        <div class="solution-icon">📱</div>
+        <h3>미팍티켓</h3>
+        <p>종이 없이, 앱 설치 없이.<br>QR 하나로 입차에서 결제까지 완결됩니다.</p>
+      </div>
+      <div class="solution-card animate-on-scroll">
+        <div class="solution-icon">📊</div>
+        <h3>실시간 현황</h3>
+        <p>사무실에서도, 이동 중에도.<br>매장별 입차량, 점유율, 매출이 실시간으로 잡힙니다.</p>
+      </div>
+      <div class="solution-card animate-on-scroll">
+        <div class="solution-icon">👥</div>
+        <h3>크루 관리</h3>
+        <p>출퇴근, 근태, 연차, 매장 배정.<br>단톡방이 아닌 시스템으로 관리합니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STORY -->
+<section class="section story-section" id="story">
+  <div class="section-inner">
+    <div class="story-content">
+      <div class="animate-on-scroll">
+        <div class="section-label">Our Story</div>
+        <h2 class="section-title">시작은 주차장<br>주말알바였습니다.</h2>
+      </div>
+      <div class="story-text animate-on-scroll">
+        <p>
+          2009년, 주차장에서 주말알바를 하던 청년이 있었습니다.
+        </p>
+        <p>
+          하루의 끝은 항상 같았습니다.<br>
+          <strong>현금을 세고, 수기로 정산하고, 맞지 않는 숫자 앞에서 밤을 보내는 일.</strong>
+        </p>
+        <p>
+          매장이 1곳에서 10곳, 10곳에서 80곳으로 늘어나는 동안<br>
+          그 비효율은 문제가 아니라 <strong>업계의 상식</strong>이었습니다.
+        </p>
+        <div class="story-quote">
+          "우리는 그 상식에 질문을 던졌습니다."
+        </div>
+        <p>
+          강남·수도권 80곳 이상의 현장을 직접 운영하며<br>
+          매일 마주한 문제를, 하나씩 기술로 풀어왔습니다.
+        </p>
+        <p class="story-highlight">
+          미팍티켓. 현장에서 태어난 시스템입니다.
+        </p>
+      </div>
+    </div>
+    <div class="story-timeline animate-on-scroll">
+      <div class="timeline-item">
+        <div class="timeline-year">2009</div>
+        <div class="timeline-desc">주차장 주말알바로 업계 입문</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">2018</div>
+        <div class="timeline-desc">주식회사 미스터팍 설립</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">2026</div>
+        <div class="timeline-desc">특허 5건 · 강남·수도권 80곳+ 운영</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="section" id="stats">
+  <div class="section-inner">
+    <div class="animate-on-scroll" style="text-align:center;">
+      <div class="section-label" style="justify-content:center;">Results</div>
+      <h2 class="section-title" style="margin-left:auto;margin-right:auto;">17년의 결과입니다.</h2>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card animate-on-scroll">
+        <div class="stat-icon">🏢</div>
+        <div class="stat-value">80<span style="font-size:24px;">+</span></div>
+        <div class="stat-label">강남·수도권 운영 현장</div>
+      </div>
+      <div class="stat-card animate-on-scroll">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value">100<span style="font-size:24px;">+</span></div>
+        <div class="stat-label">등록 크루</div>
+      </div>
+      <div class="stat-card animate-on-scroll">
+        <div class="stat-icon">📋</div>
+        <div class="stat-value">5</div>
+        <div class="stat-label">보유 특허</div>
+      </div>
+      <div class="stat-card animate-on-scroll">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-value">17</div>
+        <div class="stat-label">현장 경력 (년)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section pricing-section" id="pricing">
+  <div class="section-inner">
+    <div class="animate-on-scroll" style="text-align:center;">
+      <div class="section-label" style="justify-content:center;">Pricing</div>
+      <h2 class="section-title" style="margin-left:auto;margin-right:auto;">6개월은 무료입니다.<br>직접 경험하고 판단하세요.</h2>
+    </div>
+    <div class="pricing-card animate-on-scroll">
+      <div class="pricing-header">
+        <div class="pricing-badge">무료 체험 6개월</div>
+        <div class="pricing-amount">
+          <span class="won">₩</span>
+          <span class="number">0</span>
+        </div>
+        <div class="pricing-period">결제 수수료만 발생 (PG 수수료 + 미팍 1.5%)</div>
+      </div>
+      <div class="pricing-body">
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> 미팍티켓 무제한</li>
+          <li><span class="check">✓</span> 크루 관리 · 근태 · 연차</li>
+          <li><span class="check">✓</span> 실시간 대시보드</li>
+          <li><span class="check">✓</span> 알림톡 자동 발송</li>
+          <li><span class="check">✓</span> 통합결제 (카드 · 간편결제)</li>
+          <li><span class="check">✓</span> 온보딩 지원 포함</li>
+        </ul>
+        <div class="pricing-after">
+          <p>7개월째부터 <strong>월 19,900원</strong></p>
+          <p class="no-lock">약정 없음 · 위약금 없음</p>
+        </div>
+        <a href="#contact">
+          <button class="btn-full">무료 도입 신청</button>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq">
+  <div class="section-inner">
+    <div class="animate-on-scroll" style="text-align:center;">
+      <div class="section-label" style="justify-content:center;">FAQ</div>
+      <h2 class="section-title" style="margin-left:auto;margin-right:auto;">자주 묻는 질문</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item animate-on-scroll">
+        <button class="faq-question">
+          매장 상황에 맞게 설정할 수 있나요?
+          <span class="faq-arrow">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>방문지별 요금, 주차장 구조, 운영시간을 매장 단위로 개별 설정 가능합니다.</p>
+        </div>
+      </div>
+      <div class="faq-item animate-on-scroll">
+        <button class="faq-question">
+          현장 직원들이 바로 쓸 수 있을까요?
+          <span class="faq-arrow">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>크루 기준 1시간 온보딩이면 충분합니다. 도입 초기 교육을 지원합니다.</p>
+        </div>
+      </div>
+      <div class="faq-item animate-on-scroll">
+        <button class="faq-question">
+          기존 데이터를 옮길 수 있나요?
+          <span class="faq-arrow">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>월주차 고객 정보 등 기존 데이터 이관을 도와드립니다.</p>
+        </div>
+      </div>
+      <div class="faq-item animate-on-scroll">
+        <button class="faq-question">
+          6개월 후 해지하면?
+          <span class="faq-arrow">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>약정과 위약금이 없습니다. 데이터는 30일간 보관 후 완전 삭제됩니다.</p>
+        </div>
+      </div>
+      <div class="faq-item animate-on-scroll">
+        <button class="faq-question">
+          고객 개인정보 처리는?
+          <span class="faq-arrow">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>전화번호를 DB에 저장하지 않습니다. 알림 발송 즉시 삭제합니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section cta-section" id="contact">
+  <div class="section-inner">
+    <div class="animate-on-scroll">
+      <h2 class="section-title">현장에서 태어난 시스템,<br>현장에서 확인하세요.</h2>
+      <p class="cta-sub">도입 문의 및 데모 시연을 신청하세요.</p>
+    </div>
+    <form class="cta-form animate-on-scroll" onsubmit="handleSubmit(event)">
+      <input type="text" placeholder="회사명" required>
+      <input type="text" placeholder="담당자명" required>
+      <input type="tel" placeholder="연락처" required>
+      <input type="number" placeholder="운영 매장 수" min="1">
+      <button type="submit" class="cta-submit">무료 도입 신청</button>
+    </form>
+    <p class="cta-trust animate-on-scroll">강제 가입 없음 · 10분 내 연락드립니다</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-logo">ME.PARK</div>
+  <p>
+    주식회사 미스터팍 | 대표 박병흠<br>
+    © 2026 Mr. Park Co., Ltd. All rights reserved.
+  </p>
+</footer>
+
+<script>
+// Navbar scroll
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar.classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// Scroll animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, index) => {
+    if (entry.isIntersecting) {
+      setTimeout(() => {
+        entry.target.classList.add('visible');
+      }, index * 80);
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+
+// FAQ accordion
+document.querySelectorAll('.faq-question').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.closest('.faq-item');
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  });
+});
+
+// Form submit
+function handleSubmit(e) {
+  e.preventDefault();
+  alert('신청이 완료되었습니다.\n10분 내로 연락드리겠습니다.');
+  e.target.reset();
+}
+</script>
+</body>
+</html>
