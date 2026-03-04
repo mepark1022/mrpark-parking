@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
-import { calcAnnualLeaveDays, getYearsWorkedLabel } from "@/lib/utils/leave";
+import { calcAnnualLeaveDays, calcTotalLeaveDays, getYearsWorkedLabel } from "@/lib/utils/leave";
 
 const leaveTypeMap = {
   annual:  { label: "연차",  bg: "#ede9fe", color: "#7c3aed" },
@@ -59,7 +59,7 @@ export default function LeaveTab() {
       // is_auto_calculated면 hire_date 기반으로 재계산해서 업데이트
       const worker = workers.find(w => w.id === selectedWorker);
       if (data.is_auto_calculated !== false && worker?.hire_date) {
-        const autoDays = calcAnnualLeaveDays(worker.hire_date, year);
+        const autoDays = calcTotalLeaveDays(worker.hire_date, year);
         if (autoDays > 0 && autoDays !== data.total_days) {
           await supabase.from("worker_leaves")
             .update({ total_days: autoDays, updated_at: new Date().toISOString() })
@@ -71,7 +71,7 @@ export default function LeaveTab() {
     } else {
       // 신규 생성: hire_date 기반 자동계산
       const worker = workers.find(w => w.id === selectedWorker);
-      const autoDays = worker?.hire_date ? calcAnnualLeaveDays(worker.hire_date, year) : 15;
+      const autoDays = worker?.hire_date ? calcTotalLeaveDays(worker.hire_date, year) : 15;
       const totalDays = autoDays > 0 ? autoDays : 15;
       const { data: created } = await supabase.from("worker_leaves").insert({
         org_id: orgId, worker_id: selectedWorker, year,
@@ -184,15 +184,19 @@ export default function LeaveTab() {
                   </span>
                 );
                 const label = getYearsWorkedLabel(worker.hire_date);
-                const autoDays = calcAnnualLeaveDays(worker.hire_date, year);
+                const autoDays = calcTotalLeaveDays(worker.hire_date, year);
+                const isMonthly = (year - new Date(worker.hire_date).getFullYear()) < 1;
                 return (
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: "#1428A0", background: "#EEF2FF", padding: "2px 8px", borderRadius: 5 }}>
                       근속 {label}
                     </span>
                     {autoDays > 0 && (
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#16A34A", background: "#DCFCE7", padding: "2px 8px", borderRadius: 5 }}>
-                        법정 {autoDays}일 자동적용
+                      <span style={{ fontSize: 11, fontWeight: 700,
+                        color: isMonthly ? "#B45309" : "#16A34A",
+                        background: isMonthly ? "#FEF3C7" : "#DCFCE7",
+                        padding: "2px 8px", borderRadius: 5 }}>
+                        {isMonthly ? `월차 ${autoDays}일 자동적용` : `연차 ${autoDays}일 자동적용`}
                       </span>
                     )}
                   </div>

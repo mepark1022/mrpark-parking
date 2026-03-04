@@ -41,6 +41,39 @@ export function calcAnnualLeaveDays(
 }
 
 /**
+ * 연도별 총 부여 휴가일수 (연차 + 월차 통합)
+ *
+ * - 입사 연도       : 월차 (연도 말 기준 총 발생 예정, 최대 11일)
+ * - 입사 다음 해~   : 연차 (15~25일)
+ *
+ * 예) 2026.3.1 입사
+ *   2026년 → 10일 (3~12월 개근 시 월차 10일)
+ *   2027년 → 15일 (1년 이상 → 연차)
+ *   2029년 → 16일 (3년차)
+ */
+export function calcTotalLeaveDays(
+  hireDate: string | Date | null | undefined,
+  targetYear: number = new Date().getFullYear()
+): number {
+  if (!hireDate) return 15;
+  const hire = new Date(hireDate);
+  const yearsCompleted = targetYear - hire.getFullYear();
+
+  if (yearsCompleted < 1) {
+    // 입사 연도: 해당 연도 말 기준 총 월차 (hire.getMonth() = 0~11)
+    // 예) 3월(getMonth=2) 입사 → 12 - 2 = 10개월
+    const months = 12 - hire.getMonth();
+    return Math.min(months, 11);
+  }
+
+  // 1년 이상: 연차
+  const bonus = yearsCompleted >= 3
+    ? Math.floor((yearsCompleted - 1) / 2)
+    : 0;
+  return Math.min(15 + bonus, 25);
+}
+
+/**
  * 근속 상세 정보 (UI 표시용)
  */
 export function getLeaveDetail(

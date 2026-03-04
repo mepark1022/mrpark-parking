@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import CrewHeader from "@/components/crew/CrewHeader";
 import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 import { useCrewToast } from "@/components/crew/CrewToast";
-import { calcAnnualLeaveDays, getYearsWorkedLabel, calcMonthlyLeaveDays } from "@/lib/utils/leave";
+import { calcTotalLeaveDays, getYearsWorkedLabel, calcMonthlyLeaveDays } from "@/lib/utils/leave";
 
 /* ── 상수 ── */
 const LEAVE_TYPES = [
@@ -343,7 +343,7 @@ export default function CrewLeavePage() {
   }
 
   const year = new Date().getFullYear();
-  const autoDays = hireDate ? calcAnnualLeaveDays(hireDate, year) : null;
+  const autoDays = hireDate ? calcTotalLeaveDays(hireDate, year) : null;
   const monthlyDays = hireDate ? calcMonthlyLeaveDays(hireDate) : null;
   const yearsLabel = hireDate ? getYearsWorkedLabel(hireDate) : null;
   const totalDays = leaveInfo?.total_days ?? (autoDays && autoDays > 0 ? autoDays : 15);
