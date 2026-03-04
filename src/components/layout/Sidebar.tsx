@@ -64,6 +64,13 @@ export default function Sidebar() {
 
   useEffect(() => { loadMenuOrder(); loadBadgeCounts(); }, []);
 
+  // 입차현황 탭 진입 시 배지 초기화
+  useEffect(() => {
+    if (pathname === "/parking-status" || pathname.startsWith("/parking-status/")) {
+      setParkingCount(0);
+    }
+  }, [pathname]);
+
   async function loadBadgeCounts() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
