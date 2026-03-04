@@ -195,6 +195,218 @@ const CSS = `
 `;
 
 /* ── 메인 ── */
+
+/* ── 연차 전용 캘린더 컴포넌트 ─────────────────────────────────────── */
+function LeaveCalendarPicker({ startDate, endDate, onApply, onClose }: {
+  startDate: string; endDate: string;
+  onApply: (start: string, end: string) => void;
+  onClose: () => void;
+}) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split("T")[0];
+
+  // 2주 후 (신청 가능 최소 날짜)
+  const minDate = new Date(today);
+  minDate.setDate(today.getDate() + 14);
+  const minDateStr = minDate.toISOString().split("T")[0];
+
+  const [viewYear, setViewYear] = useState(() => minDate.getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => minDate.getMonth());
+  const [selStart, setSelStart] = useState(startDate || "");
+  const [selEnd, setSelEnd] = useState(endDate || "");
+  const [hoverDate, setHoverDate] = useState("");
+  const WEEK_DAYS = ["일","월","화","수","목","금","토"];
+
+  function toStr(y: number, m: number, d: number) {
+    return `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  }
+  function cmp(a: string, b: string) { return a < b ? -1 : a > b ? 1 : 0; }
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  function isDisabled(ds: string) {
+    return ds < minDateStr; // 오늘 기준 14일 이내는 선택 불가
+  }
+  function isWarning(ds: string) {
+    // 2주 초과지만 강조 표시용 (현재는 불필요, 예약)
+    return false;
+  }
+
+  function handleDayClick(ds: string) {
+    if (isDisabled(ds)) return;
+    if (!selStart || (selStart && selEnd)) { setSelStart(ds); setSelEnd(""); }
+    else {
+      if (cmp(ds, selStart) < 0) { setSelEnd(selStart); setSelStart(ds); }
+      else { setSelEnd(ds); }
+    }
+  }
+  function inRange(ds: string) {
+    const end = selEnd || hoverDate;
+    if (!selStart || !end) return false;
+    const lo = cmp(selStart, end) <= 0 ? selStart : end;
+    const hi = cmp(selStart, end) <= 0 ? end : selStart;
+    return cmp(ds, lo) > 0 && cmp(ds, hi) < 0;
+  }
+  function isStart(ds: string) { return ds === selStart; }
+  function isEnd(ds: string) {
+    const end = selEnd || (hoverDate && selStart ? hoverDate : "");
+    return ds === end && end !== selStart;
+  }
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewYear(y => y-1); setViewMonth(11); } else setViewMonth(m => m-1);
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewYear(y => y+1); setViewMonth(0); } else setViewMonth(m => m+1);
+  };
+  const formatDisplay = (ds: string) => {
+    if (!ds) return "";
+    const [y, m, d] = ds.split("-");
+    return `${m}월 ${d}일`;
+  };
+  const cells: (number|null)[] = [...Array(firstDay).fill(null), ...Array.from({length: daysInMonth}, (_,i) => i+1)];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:3000, padding:20 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background:"#fff", borderRadius:20, width:"100%", maxWidth:380, boxShadow:"0 20px 60px rgba(0,0,0,0.2)", overflow:"hidden" }}>
+
+        {/* 헤더 */}
+        <div style={{ background:"#1428A0", padding:"18px 24px" }}>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,0.55)", fontWeight:600, marginBottom:10 }}>연차 날짜 선택</div>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", marginBottom:2 }}>시작일</div>
+              <div style={{ fontSize:17, fontWeight:800, color: selStart?"#fff":"rgba(255,255,255,0.3)" }}>
+                {selStart ? formatDisplay(selStart) : "날짜 선택"}
+              </div>
+            </div>
+            <div style={{ color:"rgba(255,255,255,0.35)", fontSize:16 }}>→</div>
+            <div style={{ flex:1, textAlign:"right" }}>
+              <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", marginBottom:2 }}>종료일</div>
+              <div style={{ fontSize:17, fontWeight:800, color: selEnd?"#fff":"rgba(255,255,255,0.3)" }}>
+                {selEnd ? formatDisplay(selEnd) : (selStart ? "종료일 선택" : "-")}
+              </div>
+            </div>
+          </div>
+          {selStart && !selEnd && (
+            <div style={{ marginTop:7, fontSize:11, color:"#F5B731", fontWeight:600 }}>✦ 종료 날짜를 선택하세요</div>
+          )}
+          {/* 2주 최소 신청 안내 */}
+          <div style={{ marginTop:10, padding:"7px 10px", background:"rgba(245,183,49,0.18)", borderRadius:8, fontSize:11, color:"#F5B731", fontWeight:600 }}>
+            ⚠️ 신청 가능: {minDate.getMonth()+1}월 {minDate.getDate()}일 이후 ({minDateStr} ~)
+          </div>
+        </div>
+
+        {/* 캘린더 */}
+        <div style={{ padding:"16px 18px 8px" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+            <button onClick={prevMonth}
+              style={{ width:32, height:32, borderRadius:9, border:"1px solid #e2e8f0", background:"#fff", fontSize:17, display:"flex", alignItems:"center", justifyContent:"center", color:"#5c6370", fontFamily:"inherit", cursor:"pointer" }}>‹</button>
+            <span style={{ fontSize:14, fontWeight:700, color:"#1a1d26" }}>{viewYear}년 {viewMonth+1}월</span>
+            <button onClick={nextMonth}
+              style={{ width:32, height:32, borderRadius:9, border:"1px solid #e2e8f0", background:"#fff", fontSize:17, display:"flex", alignItems:"center", justifyContent:"center", color:"#5c6370", fontFamily:"inherit", cursor:"pointer" }}>›</button>
+          </div>
+
+          {/* 요일 헤더 */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", marginBottom:4 }}>
+            {WEEK_DAYS.map((w,i) => (
+              <div key={w} style={{ textAlign:"center", fontSize:11, fontWeight:700, padding:"3px 0", color:i===0?"#ef4444":i===6?"#3b82f6":"#8b919d" }}>{w}</div>
+            ))}
+          </div>
+
+          {/* 날짜 셀 */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)" }}>
+            {cells.map((day, idx) => {
+              if (!day) return <div key={idx} style={{ height:36 }} />;
+              const ds = toStr(viewYear, viewMonth, day);
+              const disabled = isDisabled(ds);
+              const isS = isStart(ds); const isE = isEnd(ds); const isIn = inRange(ds);
+              const isToday = ds === todayStr;
+              const dow = idx % 7;
+              return (
+                <div key={idx} style={{ display:"flex", alignItems:"center", justifyContent:"center",
+                  background: isIn ? "rgba(20,40,160,0.07)" : "transparent",
+                  borderRadius: isIn ? (dow===0?"8px 0 0 8px":dow===6?"0 8px 8px 0":"0") : undefined }}>
+                  <div
+                    onClick={() => handleDayClick(ds)}
+                    onMouseEnter={() => selStart && !selEnd && !disabled && setHoverDate(ds)}
+                    onMouseLeave={() => setHoverDate("")}
+                    style={{
+                      width:34, height:34, borderRadius:"50%",
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      flexDirection:"column", gap:1,
+                      background: isS||isE ? "#1428A0" : "transparent",
+                      color: disabled ? "#CBD5E1"
+                           : isS||isE ? "#fff"
+                           : dow===0 ? "#ef4444" : dow===6 ? "#3b82f6" : "#1a1d26",
+                      fontSize:13,
+                      fontWeight: isToday?800 : isS||isE?700 : 400,
+                      outline: isToday&&!isS&&!isE ? "2px solid #1428A0" : "none",
+                      outlineOffset:-2,
+                      cursor: disabled ? "not-allowed" : "pointer",
+                      position:"relative", zIndex:1,
+                      transition:"background 0.1s",
+                      opacity: disabled ? 0.4 : 1,
+                    }}
+                  >
+                    {day}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 빠른 선택 */}
+        <div style={{ padding:"6px 18px 12px", display:"flex", gap:6, flexWrap:"wrap" }}>
+          {[
+            { label:"3주 후", fn:() => {
+              const d = new Date(today); d.setDate(today.getDate()+21);
+              const s = d.toISOString().split("T")[0]; setSelStart(s); setSelEnd(s);
+            }},
+            { label:"한 달 후", fn:() => {
+              const d = new Date(today); d.setDate(today.getDate()+30);
+              const s = d.toISOString().split("T")[0]; setSelStart(s); setSelEnd(s);
+            }},
+            { label:"다음 달 초", fn:() => {
+              const d = new Date(today.getFullYear(), today.getMonth()+2, 1);
+              const s = d.toISOString().split("T")[0]; setSelStart(s); setSelEnd(s);
+              setViewYear(d.getFullYear()); setViewMonth(d.getMonth());
+            }},
+          ].map(q => (
+            <button key={q.label} onClick={q.fn}
+              style={{ padding:"4px 10px", borderRadius:7, border:"1px solid #e2e8f0",
+                background:"#fff", fontSize:12, fontWeight:600, color:"#5c6370", fontFamily:"inherit", cursor:"pointer" }}>
+              {q.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 액션 버튼 */}
+        <div style={{ padding:"10px 18px 18px", display:"flex", gap:8, borderTop:"1px solid #eef0f3" }}>
+          <button onClick={() => { setSelStart(""); setSelEnd(""); }}
+            style={{ padding:"10px 12px", borderRadius:10, border:"1px solid #fecaca", background:"#fef2f2",
+              fontSize:13, fontWeight:600, color:"#dc2626", fontFamily:"inherit", cursor:"pointer" }}>초기화</button>
+          <button onClick={onClose}
+            style={{ flex:1, padding:"10px", borderRadius:10, border:"1px solid #e2e8f0",
+              background:"#fff", fontSize:13, fontWeight:600, color:"#5c6370", fontFamily:"inherit", cursor:"pointer" }}>취소</button>
+          <button onClick={() => { if(selStart&&selEnd) onApply(selStart,selEnd); else if(selStart) onApply(selStart,selStart); }}
+            disabled={!selStart}
+            style={{ flex:2, padding:"10px", borderRadius:10, border:"none",
+              background:selStart?"#1428A0":"#e2e8f0", color:selStart?"#fff":"#8b919d",
+              fontSize:14, fontWeight:700, fontFamily:"inherit", cursor:selStart?"pointer":"not-allowed" }}>
+            적용
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+/* ─────────────────────────────────────────────────────────────────────────── */
+
 export default function CrewLeavePage() {
   const [tab, setTab] = useState<"apply" | "history">("apply");
   const [workerId, setWorkerId] = useState<string | null>(null);
@@ -264,7 +476,6 @@ export default function CrewLeavePage() {
       const start = new Date(updated.start_date);
       const end = new Date(updated.end_date);
       if (end >= start) {
-        // 주말 제외 영업일 계산
         let days = 0;
         const cur = new Date(start);
         while (cur <= end) {
@@ -276,6 +487,26 @@ export default function CrewLeavePage() {
       }
     }
     setForm(updated);
+  };
+
+  /* 캘린더 모달 오픈 상태 */
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  /* 캘린더 적용 핸들러 */
+  const handleCalendarApply = (start: string, end: string) => {
+    const updated = { ...form, start_date: start, end_date: end };
+    const s = new Date(start), e = new Date(end);
+    if (e >= s) {
+      let days = 0;
+      const cur = new Date(s);
+      while (cur <= e) {
+        if (cur.getDay() !== 0 && cur.getDay() !== 6) days++;
+        cur.setDate(cur.getDate() + 1);
+      }
+      updated.days = String(days || 1);
+    }
+    setForm(updated);
+    setShowCalendar(false);
   };
 
   /* 2주 전 신청 필수 팝업 상태 */
@@ -371,6 +602,16 @@ export default function CrewLeavePage() {
       <style>{CSS}</style>
       <div className="leave-page">
         {/* ── 2주 전 신청 필수 팝업 ── */}
+        {/* ── 연차 캘린더 모달 ── */}
+        {showCalendar && (
+          <LeaveCalendarPicker
+            startDate={form.start_date}
+            endDate={form.end_date}
+            onApply={handleCalendarApply}
+            onClose={() => setShowCalendar(false)}
+          />
+        )}
+
         {twoWeekModal && (
           <div style={{
             position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
@@ -529,37 +770,55 @@ export default function CrewLeavePage() {
             <div className="leave-form-card">
               <div className="leave-form-header">날짜 선택</div>
               <div className="leave-form-body">
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                  <div className="leave-form-group" style={{ marginBottom: 0 }}>
-                    <label className="leave-form-label">시작일 *</label>
+                {/* 캘린더 트리거 버튼 */}
+                <button
+                  onClick={() => setShowCalendar(true)}
+                  style={{
+                    width: "100%", padding: "14px 16px",
+                    borderRadius: 12, border: "1.5px solid",
+                    borderColor: form.start_date ? "#1428A0" : "#E2E8F0",
+                    background: form.start_date ? "#EEF2FF" : "#F8FAFC",
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    cursor: "pointer", fontFamily: "inherit", marginBottom: 12,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 18 }}>📅</span>
+                    <div style={{ textAlign: "left" }}>
+                      {form.start_date ? (
+                        <>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#1428A0" }}>
+                            {form.start_date}
+                            {form.end_date && form.end_date !== form.start_date && ` ~ ${form.end_date}`}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
+                            {form.days}일 ({["일","월","화","수","목","금","토"][new Date(form.start_date).getDay()]}요일 시작) · 탭해서 수정
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#94A3B8" }}>
+                          날짜를 선택하세요
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 16, color: "#94A3B8" }}>›</span>
+                </button>
+
+                {/* 일수 수정 */}
+                {form.start_date && (
+                  <div className="leave-form-group">
+                    <label className="leave-form-label">사용 일수 (자동계산 · 수정 가능)</label>
                     <input
-                      type="date"
+                      type="number"
                       className="leave-form-input"
-                      value={form.start_date}
-                      onChange={e => handleDateChange("start_date", e.target.value)}
+                      value={form.days}
+                      min="0.5"
+                      step="0.5"
+                      onChange={e => setForm(prev => ({ ...prev, days: e.target.value }))}
                     />
                   </div>
-                  <div className="leave-form-group" style={{ marginBottom: 0 }}>
-                    <label className="leave-form-label">종료일 *</label>
-                    <input
-                      type="date"
-                      className="leave-form-input"
-                      value={form.end_date}
-                      onChange={e => handleDateChange("end_date", e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="leave-form-group">
-                  <label className="leave-form-label">사용 일수 (자동계산 · 수정 가능)</label>
-                  <input
-                    type="number"
-                    className="leave-form-input"
-                    value={form.days}
-                    min="0.5"
-                    step="0.5"
-                    onChange={e => setForm(prev => ({ ...prev, days: e.target.value }))}
-                  />
-                </div>
+                )}
               </div>
             </div>
 
