@@ -475,6 +475,16 @@ export default function StoresPage() {
           region_city: city,
           region_district: district,
         }));
+        // 주소 선택 즉시 좌표 자동 조회
+        fetch(`/api/geocode/forward?address=${encodeURIComponent(fullAddr)}`)
+          .then(r => r.json())
+          .then(d => {
+            if (d.lat && d.lng) {
+              setStoreForm(f => ({ ...f, latitude: String(d.lat), longitude: String(d.lng) }));
+              showToast("📍 GPS 좌표가 자동 입력되었습니다");
+            }
+          })
+          .catch(() => {});
       },
     }).open();
   };
@@ -1976,28 +1986,12 @@ export default function StoresPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: C.textSecondary }}>📍 GPS 출퇴근 좌표</span>
               <span style={{ fontSize: 11, color: C.textMuted }}>CREW 앱 출퇴근 인증 기준점</span>
-              {storeForm.road_address && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const res = await fetch(`/api/geocode/forward?address=${encodeURIComponent(storeForm.road_address)}`);
-                      const d = await res.json();
-                      if (d.lat && d.lng) {
-                        setStoreForm(f => ({ ...f, latitude: String(d.lat), longitude: String(d.lng) }));
-                        showToast("✅ 좌표가 자동 입력되었습니다");
-                      } else {
-                        showToast("❌ 주소로 좌표를 찾지 못했습니다");
-                      }
-                    } catch { showToast("❌ 좌표 변환 실패"); }
-                  }}
-                  style={{
-                    marginLeft: "auto", padding: "4px 10px", fontSize: 11, fontWeight: 600,
-                    background: "#1428A0", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer"
-                  }}
-                >
-                  📍 주소로 자동 입력
-                </button>
+              {storeForm.latitude && storeForm.longitude ? (
+                <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "#16A34A" }}>✅ 좌표 등록됨</span>
+              ) : storeForm.road_address ? (
+                <span style={{ marginLeft: "auto", fontSize: 11, color: "#EA580C", fontWeight: 600 }}>⚠️ 주소 검색 시 자동 입력됩니다</span>
+              ) : (
+                <span style={{ marginLeft: "auto", fontSize: 11, color: C.textMuted }}>주소 검색 후 자동 입력</span>
               )}
             </div>
             <div className="stores-grid-2col" style={{ display: "grid", gap: 12 }}>
@@ -2021,7 +2015,7 @@ export default function StoresPage() {
               </FormGroup>
             </div>
             <div style={{ fontSize: 11, color: C.textMuted, marginTop: -8 }}>
-              💡 도로명 주소 입력 후 저장하면 자동으로 좌표가 등록됩니다
+              💡 주소 검색 시 GPS 좌표가 자동으로 입력됩니다. 직접 수정도 가능합니다.
             </div>
           </div>
         </div>
