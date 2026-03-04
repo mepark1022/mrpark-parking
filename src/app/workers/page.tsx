@@ -172,6 +172,13 @@ function ScheduleTab() {
   const setStatus = async (workerId, date, status) => {
     const existing = records.find(r => r.worker_id === workerId && r.date === date);
     const supabase = createClient();
+
+    const wasVacation = existing?.status === "vacation";
+    const isVacation  = status === "vacation";
+    // vacation 변화량: +1 (추가), -1 (제거), 0 (무관)
+    const vacationDelta = isVacation && !wasVacation ? 1
+                        : !isVacation && wasVacation ? -1 : 0;
+
     if (status === "delete") {
       if (existing) await supabase.from("worker_attendance").delete().eq("id", existing.id);
     } else if (existing) {
@@ -182,6 +189,32 @@ function ScheduleTab() {
         check_in: status === "present" ? "09:00" : null, store_id: selectedStore,
       });
     }
+
+    // vacation 변화가 있으면 worker_leaves.used_days 동기화
+    if (vacationDelta !== 0 || (status === "delete" && wasVacation)) {
+      const delta = status === "delete" && wasVacation ? -1 : vacationDelta;
+      const year = Number(date.slice(0, 4));
+      const { data: leaveRow } = await supabase
+        .from("worker_leaves")
+        .select("id, used_days")
+        .eq("worker_id", workerId)
+        .eq("year", year)
+        .maybeSingle();
+
+      if (leaveRow) {
+        const newUsed = Math.max(0, (leaveRow.used_days || 0) + delta);
+        await supabase.from("worker_leaves")
+          .update({ used_days: newUsed, updated_at: new Date().toISOString() })
+          .eq("id", leaveRow.id);
+      } else if (delta > 0) {
+        // 레코드 없으면 신규 생성
+        await supabase.from("worker_leaves").insert({
+          org_id: orgId, worker_id: workerId, year,
+          total_days: 15, used_days: 1, is_auto_calculated: true,
+        });
+      }
+    }
+
     setEditCell(null);
     loadAllRecords();
   };

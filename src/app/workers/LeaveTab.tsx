@@ -54,10 +54,23 @@ export default function LeaveTab() {
 
   const loadLeaveInfo = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("worker_leaves").select("*").eq("worker_id", selectedWorker).eq("year", year).single();
+    const worker = workers.find(w => w.id === selectedWorker);
+
+    // ── used_days: worker_attendance vacation 개수로 집계 (단일 진실 소스) ──
+    const startOfYear = `${year}-01-01`;
+    const endOfYear   = `${year}-12-31`;
+    const { data: attendanceVacations } = await supabase
+      .from("worker_attendance")
+      .select("id")
+      .eq("worker_id", selectedWorker)
+      .eq("status", "vacation")
+      .gte("date", startOfYear)
+      .lte("date", endOfYear);
+    const attendanceUsed = attendanceVacations?.length || 0;
+
+    const { data } = await supabase.from("worker_leaves").select("*").eq("worker_id", selectedWorker).eq("year", year).maybeSingle();
     if (data) {
-      // is_auto_calculated면 hire_date 기반으로 재계산해서 업데이트
-      const worker = workers.find(w => w.id === selectedWorker);
+      // is_auto_calculated이면 total_days 재계산
       if (data.is_auto_calculated !== false && worker?.hire_date) {
         const autoDays = calcTotalLeaveDays(worker.hire_date, year);
         if (autoDays > 0 && autoDays !== data.total_days) {
@@ -67,15 +80,21 @@ export default function LeaveTab() {
           data.total_days = autoDays;
         }
       }
+      // used_days를 attendance 집계값으로 동기화 (불일치 시 자동 보정)
+      if (data.used_days !== attendanceUsed) {
+        await supabase.from("worker_leaves")
+          .update({ used_days: attendanceUsed, updated_at: new Date().toISOString() })
+          .eq("id", data.id);
+        data.used_days = attendanceUsed;
+      }
       setLeaveInfo(data);
     } else {
-      // 신규 생성: hire_date 기반 자동계산
-      const worker = workers.find(w => w.id === selectedWorker);
+      // 신규 생성
       const autoDays = worker?.hire_date ? calcTotalLeaveDays(worker.hire_date, year) : 15;
       const totalDays = autoDays > 0 ? autoDays : 15;
       const { data: created } = await supabase.from("worker_leaves").insert({
         org_id: orgId, worker_id: selectedWorker, year,
-        total_days: totalDays, used_days: 0, is_auto_calculated: true,
+        total_days: totalDays, used_days: attendanceUsed, is_auto_calculated: true,
       }).select().single();
       setLeaveInfo(created);
     }
@@ -97,40 +116,92 @@ export default function LeaveTab() {
   const addRecord = async () => {
     if (!form.start_date || !form.end_date) { setMsg("날짜를 입력하세요"); return; }
     const supabase = createClient();
-    await supabase.from("worker_leave_records").insert({ org_id: orgId,
+
+    // worker_leave_records에 기록 (이력용)
+    await supabase.from("worker_leave_records").insert({
+      org_id: orgId,
       worker_id: selectedWorker, start_date: form.start_date, end_date: form.end_date,
-      days: Number(form.days) || 1, leave_type: form.leave_type, reason: form.reason || null, status: "approved",
+      days: Number(form.days) || 1, leave_type: form.leave_type, reason: form.reason || null,
+      status: "approved", source: "admin",
     });
-    const newUsed = (leaveInfo?.used_days || 0) + (Number(form.days) || 1);
-    await supabase.from("worker_leaves").update({ used_days: newUsed, updated_at: new Date().toISOString() }).eq("id", leaveInfo.id);
+
+    // start ~ end 날짜 루프 → worker_attendance vacation 자동 생성
+    if (form.leave_type === "annual" || form.leave_type === "half") {
+      const start = new Date(form.start_date);
+      const end   = new Date(form.end_date);
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().slice(0, 10);
+        const { data: exists } = await supabase
+          .from("worker_attendance").select("id, status")
+          .eq("worker_id", selectedWorker).eq("date", dateStr).maybeSingle();
+        if (!exists) {
+          await supabase.from("worker_attendance").insert({
+            org_id: orgId, worker_id: selectedWorker,
+            date: dateStr, status: "vacation", store_id: null,
+          });
+        } else if (exists.status !== "vacation") {
+          await supabase.from("worker_attendance")
+            .update({ status: "vacation" }).eq("id", exists.id);
+        }
+      }
+    }
+
     setShowForm(false);
     setForm({ start_date: "", end_date: "", days: 1, leave_type: "annual", reason: "" });
     setMsg("");
-    loadLeaveInfo();
+    loadLeaveInfo();   // attendance 재집계로 used_days 자동 보정
     loadRecords();
   };
 
   const deleteRecord = async (record) => {
     const supabase = createClient();
+    // 이력 삭제
     await supabase.from("worker_leave_records").delete().eq("id", record.id);
-    const newUsed = Math.max(0, (leaveInfo?.used_days || 0) - (record.days || 0));
-    await supabase.from("worker_leaves").update({ used_days: newUsed, updated_at: new Date().toISOString() }).eq("id", leaveInfo.id);
-    loadLeaveInfo();
+
+    // 해당 기간 worker_attendance vacation 삭제 (source가 admin/crew인 경우)
+    if (record.start_date && record.end_date) {
+      await supabase.from("worker_attendance")
+        .delete()
+        .eq("worker_id", selectedWorker)
+        .eq("status", "vacation")
+        .gte("date", record.start_date)
+        .lte("date", record.end_date);
+    }
+
+    loadLeaveInfo();  // attendance 재집계
     loadRecords();
   };
 
-  // 크루 신청 승인
+  // 크루 신청 승인 — attendance vacation 자동 생성
   const approveRecord = async (record) => {
     const supabase = createClient();
     await supabase.from("worker_leave_records")
       .update({ status: "approved", updated_at: new Date().toISOString() })
       .eq("id", record.id);
-    // used_days 합산
-    const newUsed = (leaveInfo?.used_days || 0) + (record.days || 0);
-    await supabase.from("worker_leaves")
-      .update({ used_days: newUsed, updated_at: new Date().toISOString() })
-      .eq("id", leaveInfo.id);
-    loadLeaveInfo();
+
+    // start ~ end 날짜 루프 → worker_attendance vacation 자동 생성
+    if (record.start_date && record.end_date &&
+        (record.leave_type === "annual" || record.leave_type === "half")) {
+      const start = new Date(record.start_date);
+      const end   = new Date(record.end_date);
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().slice(0, 10);
+        const { data: exists } = await supabase
+          .from("worker_attendance").select("id, status")
+          .eq("worker_id", selectedWorker).eq("date", dateStr).maybeSingle();
+        if (!exists) {
+          await supabase.from("worker_attendance").insert({
+            org_id: orgId, worker_id: selectedWorker,
+            date: dateStr, status: "vacation", store_id: null,
+          });
+        } else if (exists.status !== "vacation") {
+          await supabase.from("worker_attendance")
+            .update({ status: "vacation" }).eq("id", exists.id);
+        }
+      }
+    }
+
+    loadLeaveInfo();  // attendance 재집계로 used_days 자동 보정
     loadRecords();
   };
 
@@ -174,7 +245,12 @@ export default function LeaveTab() {
         <div style={{ padding: "16px 18px", borderBottom: "1px solid #f0f2f7" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1d2b", marginBottom: 4 }}>연차 현황</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1d2b", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+                  연차 현황
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#1428A0", background: "#EEF2FF", padding: "2px 7px", borderRadius: 5 }}>
+                    📋 근태탭 연동
+                  </span>
+                </div>
               {/* 근속연수 + 자동계산 배지 */}
               {(() => {
                 const worker = workers.find(w => w.id === selectedWorker);
