@@ -133,9 +133,11 @@ export default function Sidebar() {
 
   return (
     <aside className="v3-sidebar">
-      {/* Logo */}
+      {/* Logo - 클릭 시 대시보드로 이동 */}
       <div style={{ padding: "24px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "center" }}>
-        <LogoGNB theme="dark" />
+        <Link href="/dashboard" style={{ display: "flex", textDecoration: "none" }}>
+          <LogoGNB theme="dark" />
+        </Link>
       </div>
 
       {/* Edit Toggle */}
