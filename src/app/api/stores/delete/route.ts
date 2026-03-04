@@ -21,8 +21,12 @@ export async function POST(req: NextRequest) {
     "hourly_data",
     "monthly_parking",
     "parking_entries",
-    "mepark_tickets",
+    // mepark_tickets 참조 테이블 먼저
+    "alimtalk_send_logs",
+    "payment_records",
     "exit_requests",
+    // 이후 mepark_tickets
+    "mepark_tickets",
     "invitations",
     "store_members",
     "visit_places",
