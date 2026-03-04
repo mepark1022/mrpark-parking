@@ -330,6 +330,17 @@ export default function LeaveTab() {
                 background: remaining > 5 ? "linear-gradient(90deg,#1428A0,#4f6ef7)" : remaining > 0 ? "linear-gradient(90deg,#EA580C,#fb923c)" : "linear-gradient(90deg,#DC2626,#f87171)" }} />
             </div>
           </div>
+
+          {/* 연차 사용 필수 안내 */}
+          <div style={{
+            marginTop: 12, padding: "10px 14px",
+            background: "#FFF7ED", borderRadius: 10,
+            borderLeft: "3px solid #F5B731",
+            fontSize: 12, color: "#92400E", lineHeight: 1.6,
+          }}>
+            <span style={{ fontWeight: 700 }}>⚠️ 연차는 반드시 사용해야 합니다.</span><br />
+            <span style={{ color: "#B45309" }}>미사용 연차 관련 문의는 관리자에게 연락해주세요.</span>
+          </div>
         </div>
       </div>
 

@@ -278,6 +278,9 @@ export default function CrewLeavePage() {
     setForm(updated);
   };
 
+  /* 2주 전 신청 필수 팝업 상태 */
+  const [twoWeekModal, setTwoWeekModal] = useState(false);
+
   /* 연차 신청 제출 */
   const handleSubmit = async () => {
     if (!form.start_date || !form.end_date) {
@@ -288,6 +291,16 @@ export default function CrewLeavePage() {
     }
     if (!form.reason.trim()) {
       showToast("신청 사유를 입력해주세요", "error"); return;
+    }
+
+    // ── 2주 전 신청 필수 검증 ──
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDate = new Date(form.start_date);
+    const diffDays = Math.floor((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 14) {
+      setTwoWeekModal(true);
+      return;
     }
 
     setSubmitting(true);
@@ -357,6 +370,48 @@ export default function CrewLeavePage() {
     <>
       <style>{CSS}</style>
       <div className="leave-page">
+        {/* ── 2주 전 신청 필수 팝업 ── */}
+        {twoWeekModal && (
+          <div style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+            zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+          }}>
+            <div style={{
+              background: "#fff", borderRadius: 20, width: "100%", maxWidth: 340,
+              overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+            }}>
+              {/* 헤더 */}
+              <div style={{ background: "#1428A0", padding: "20px 24px 16px" }}>
+                <div style={{ fontSize: 22, marginBottom: 6 }}>📅</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>2주 전 신청 필수</div>
+              </div>
+              {/* 본문 */}
+              <div style={{ padding: "20px 24px 24px" }}>
+                <p style={{ fontSize: 14, color: "#1a1d2b", lineHeight: 1.7, margin: "0 0 12px" }}>
+                  연차는 <strong>사용일 기준 최소 14일(2주) 전</strong>에 신청해야 합니다.
+                </p>
+                <div style={{
+                  background: "#FEF3C7", borderRadius: 10, padding: "10px 14px",
+                  fontSize: 13, color: "#B45309", fontWeight: 600, marginBottom: 20,
+                }}>
+                  선택하신 시작일이 오늘로부터 14일 이내입니다.<br />
+                  날짜를 다시 선택해주세요.
+                </div>
+                <button
+                  onClick={() => setTwoWeekModal(false)}
+                  style={{
+                    width: "100%", padding: "13px", borderRadius: 12, border: "none",
+                    background: "#1428A0", color: "#fff", fontSize: 15, fontWeight: 700,
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >
+                  확인
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <CrewHeader title="연차 신청" showBack />
 
         {/* 탭 */}
@@ -432,6 +487,16 @@ export default function CrewLeavePage() {
               📌 1년 미만 월차 {monthlyDays}일 별도 발생 (관리자 확인 필요)
             </div>
           )}
+          {/* 연차 사용 필수 안내 */}
+          <div style={{
+            marginTop: 10, padding: "10px 12px",
+            background: "rgba(255,255,255,0.12)",
+            borderRadius: 8, fontSize: 12, color: "rgba(255,255,255,0.85)",
+            fontWeight: 600, lineHeight: 1.5, borderLeft: "3px solid #F5B731",
+          }}>
+            ⚠️ 연차는 반드시 사용해야 합니다.<br />
+            <span style={{ fontWeight: 400, opacity: 0.8 }}>미사용 연차 관련 문의는 관리자에게 연락해주세요.</span>
+          </div>
         </div>
 
         {/* ── 신청 탭 ── */}
