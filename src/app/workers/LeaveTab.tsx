@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
+import { calcAnnualLeaveDays, getYearsWorkedLabel } from "@/lib/utils/leave";
 
 const leaveTypeMap = {
   annual:  { label: "연차",  bg: "#ede9fe", color: "#7c3aed" },
@@ -47,16 +48,35 @@ export default function LeaveTab() {
 
   const loadWorkers = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("workers").select("id, name").eq("org_id", orgId).eq("status", "active").order("name");
+    const { data } = await supabase.from("workers").select("id, name, hire_date").eq("org_id", orgId).eq("status", "active").order("name");
     if (data) { setWorkers(data); if (data.length > 0) setSelectedWorker(data[0].id); }
   };
 
   const loadLeaveInfo = async () => {
     const supabase = createClient();
     const { data } = await supabase.from("worker_leaves").select("*").eq("worker_id", selectedWorker).eq("year", year).single();
-    if (data) setLeaveInfo(data);
-    else {
-      const { data: created } = await supabase.from("worker_leaves").insert({ org_id: orgId, worker_id: selectedWorker, year, total_days: 15, used_days: 0 }).select().single();
+    if (data) {
+      // is_auto_calculated면 hire_date 기반으로 재계산해서 업데이트
+      const worker = workers.find(w => w.id === selectedWorker);
+      if (data.is_auto_calculated !== false && worker?.hire_date) {
+        const autoDays = calcAnnualLeaveDays(worker.hire_date, year);
+        if (autoDays > 0 && autoDays !== data.total_days) {
+          await supabase.from("worker_leaves")
+            .update({ total_days: autoDays, updated_at: new Date().toISOString() })
+            .eq("id", data.id);
+          data.total_days = autoDays;
+        }
+      }
+      setLeaveInfo(data);
+    } else {
+      // 신규 생성: hire_date 기반 자동계산
+      const worker = workers.find(w => w.id === selectedWorker);
+      const autoDays = worker?.hire_date ? calcAnnualLeaveDays(worker.hire_date, year) : 15;
+      const totalDays = autoDays > 0 ? autoDays : 15;
+      const { data: created } = await supabase.from("worker_leaves").insert({
+        org_id: orgId, worker_id: selectedWorker, year,
+        total_days: totalDays, used_days: 0, is_auto_calculated: true,
+      }).select().single();
       setLeaveInfo(created);
     }
   };
@@ -152,8 +172,33 @@ export default function LeaveTab() {
       {/* ── 연차 현황 카드 (v3) ── */}
       <div style={V3.card}>
         <div style={{ padding: "16px 18px", borderBottom: "1px solid #f0f2f7" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1d2b" }}>📅 연차 현황</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1d2b", marginBottom: 4 }}>연차 현황</div>
+              {/* 근속연수 + 자동계산 배지 */}
+              {(() => {
+                const worker = workers.find(w => w.id === selectedWorker);
+                if (!worker?.hire_date) return (
+                  <span style={{ fontSize: 11, color: "#94a3b8", background: "#f1f5f9", padding: "2px 8px", borderRadius: 5 }}>
+                    입사일 미등록
+                  </span>
+                );
+                const label = getYearsWorkedLabel(worker.hire_date);
+                const autoDays = calcAnnualLeaveDays(worker.hire_date, year);
+                return (
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#1428A0", background: "#EEF2FF", padding: "2px 8px", borderRadius: 5 }}>
+                      근속 {label}
+                    </span>
+                    {autoDays > 0 && (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#16A34A", background: "#DCFCE7", padding: "2px 8px", borderRadius: 5 }}>
+                        법정 {autoDays}일 자동적용
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 12, color: "#64748b" }}>총 연차</span>
               <input type="number" value={total} onChange={e => updateTotalDays(e.target.value)} min="0" step="0.5"

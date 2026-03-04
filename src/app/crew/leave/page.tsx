@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import CrewHeader from "@/components/crew/CrewHeader";
 import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 import { useCrewToast } from "@/components/crew/CrewToast";
+import { calcAnnualLeaveDays, getYearsWorkedLabel, calcMonthlyLeaveDays } from "@/lib/utils/leave";
 
 /* ── 상수 ── */
 const LEAVE_TYPES = [
@@ -202,6 +203,7 @@ export default function CrewLeavePage() {
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [hireDate, setHireDate] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     leave_type: "annual",
@@ -222,7 +224,7 @@ export default function CrewLeavePage() {
 
       // worker 정보
       const { data: worker } = await supabase
-        .from("workers").select("id, org_id")
+        .from("workers").select("id, org_id, hire_date")
         .eq("user_id", user.id).limit(1).maybeSingle();
 
       if (!worker) {
@@ -233,6 +235,7 @@ export default function CrewLeavePage() {
 
       setWorkerId(worker.id);
       setOrgId(worker.org_id);
+      setHireDate(worker.hire_date || null);
 
       // 올해 연차 현황
       const year = new Date().getFullYear();
@@ -340,7 +343,10 @@ export default function CrewLeavePage() {
   }
 
   const year = new Date().getFullYear();
-  const totalDays = leaveInfo?.total_days ?? 15;
+  const autoDays = hireDate ? calcAnnualLeaveDays(hireDate, year) : null;
+  const monthlyDays = hireDate ? calcMonthlyLeaveDays(hireDate) : null;
+  const yearsLabel = hireDate ? getYearsWorkedLabel(hireDate) : null;
+  const totalDays = leaveInfo?.total_days ?? (autoDays && autoDays > 0 ? autoDays : 15);
   const usedDays = leaveInfo?.used_days ?? 0;
   const pendingDays = records
     .filter(r => r.status === "pending")
@@ -381,7 +387,18 @@ export default function CrewLeavePage() {
 
         {/* 연차 현황 배너 */}
         <div className="leave-summary">
-          <div className="leave-summary-title">{year}년 연차 현황</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <div className="leave-summary-title" style={{ margin: 0 }}>{year}년 연차 현황</div>
+            {yearsLabel && (
+              <span style={{
+                fontSize: 11, fontWeight: 700,
+                background: "rgba(255,255,255,0.2)", color: "#fff",
+                padding: "3px 9px", borderRadius: 6,
+              }}>
+                근속 {yearsLabel}
+              </span>
+            )}
+          </div>
           <div className="leave-summary-grid">
             <div className="leave-summary-item">
               <div className="leave-summary-val">{totalDays}</div>
@@ -403,6 +420,16 @@ export default function CrewLeavePage() {
               borderRadius: 8, fontSize: 12, color: "#F5B731", fontWeight: 600,
             }}>
               ⏳ 검토 중인 신청: {pendingDays}일
+            </div>
+          )}
+          {/* 1년 미만 월차 안내 */}
+          {monthlyDays !== null && monthlyDays > 0 && (
+            <div style={{
+              marginTop: 8, padding: "8px 12px",
+              background: "rgba(134,239,172,0.15)",
+              borderRadius: 8, fontSize: 12, color: "#86EFAC", fontWeight: 600,
+            }}>
+              📌 1년 미만 월차 {monthlyDays}일 별도 발생 (관리자 확인 필요)
             </div>
           )}
         </div>

@@ -811,7 +811,7 @@ export default function WorkersPage() {
   const [manualMsg, setManualMsg] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [formData, setFormData] = useState({ name: "", phone: "", region_id: "", district: "" });
+  const [formData, setFormData] = useState({ name: "", phone: "", region_id: "", district: "", hire_date: "" });
   const [regions, setRegions] = useState([]);
   // 명부 팝업 state
   const [rosterPopup, setRosterPopup] = useState<{ type: "edit"|"edit_form"|"deact"|"del"|null; worker: any }>({ type: null, worker: null });
@@ -1044,13 +1044,13 @@ export default function WorkersPage() {
     const supabase = createClient();
     const oid = await getOrgId();
     if (editItem) {
-      const { error } = await supabase.from("workers").update({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null }).eq("id", editItem.id);
+      const { error } = await supabase.from("workers").update({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, hire_date: formData.hire_date || null }).eq("id", editItem.id);
       if (error) { setMessage(`수정 실패: ${error.message}`); return; }
     } else {
-      const { error } = await supabase.from("workers").insert({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, status: "active", org_id: oid });
+      const { error } = await supabase.from("workers").insert({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, hire_date: formData.hire_date || null, status: "active", org_id: oid });
       if (error) { setMessage(`추가 실패: ${error.message}`); return; }
     }
-    setShowForm(false); setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "" }); setMessage(""); loadAll(); showToast(editItem ? "✅ 근무자 정보가 수정되었습니다" : "✅ 근무자가 추가되었습니다");
+    setShowForm(false); setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "", hire_date: "" }); setMessage(""); loadAll(); showToast(editItem ? "✅ 근무자 정보가 수정되었습니다" : "✅ 근무자가 추가되었습니다");
   };
 
   const toggleStatus = async (worker) => {
@@ -1490,7 +1490,7 @@ export default function WorkersPage() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 700 }}>
                 <span>📋</span> 근무자 명부 <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-muted)" }}>({workers.length}명)</span>
               </div>
-              <button onClick={() => { setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "" }); setShowForm(true); }}
+              <button onClick={() => { setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "", hire_date: "" }); setShowForm(true); }}
                 style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
                 + 근무자 추가
               </button>
@@ -1507,6 +1507,18 @@ export default function WorkersPage() {
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>연락처</div>
                     <input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="010-0000-0000" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>
+                      입사일
+                      <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, color: "#1428A0", background: "#EEF2FF", padding: "1px 6px", borderRadius: 4 }}>연차 자동계산</span>
+                    </div>
+                    <input
+                      type="date"
+                      value={formData.hire_date}
+                      onChange={e => setFormData({ ...formData, hire_date: e.target.value })}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+                    />
                   </div>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>시/도</div>
@@ -1566,7 +1578,7 @@ export default function WorkersPage() {
                         <td style={{ padding: "12px 14px" }}>
                           <div style={{ display: "flex", gap: 6 }}>
                             <button onClick={() => {
-                                setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "" });
+                                setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", hire_date: w.hire_date || "" });
                                 setRosterPopup({ type: "edit_form", worker: w });
                               }}
                               style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #c7d2fe", background: "#fff", fontSize: 12, fontWeight: 700, color: "#1428A0", cursor: "pointer" }}>✏️ 수정</button>
@@ -1657,7 +1669,7 @@ export default function WorkersPage() {
                           <button onClick={() => setRosterPopup({ type: null, worker: null })}
                             style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#f1f5f9", color: "#64748b", border: "none", fontFamily: "inherit" }}>취소</button>
                           <button onClick={() => {
-                              setFormData({ name: rosterPopup.worker.name, phone: rosterPopup.worker.phone || "", region_id: rosterPopup.worker.region_id || "", district: rosterPopup.worker.district || "" });
+                              setFormData({ name: rosterPopup.worker.name, phone: rosterPopup.worker.phone || "", region_id: rosterPopup.worker.region_id || "", district: rosterPopup.worker.district || "", hire_date: rosterPopup.worker.hire_date || "" });
                               setRosterPopup({ type: "edit_form", worker: rosterPopup.worker });
                             }}
                             style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#1428A0", color: "#fff", border: "none", fontFamily: "inherit" }}>수정 화면으로</button>

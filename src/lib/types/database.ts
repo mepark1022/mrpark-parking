@@ -27,17 +27,17 @@ export type Database = {
         Row: {
           id: string; name: string; phone: string | null;
           status: "active" | "inactive"; region_id: string | null; created_at: string;
-          daily_wage: number | null;
+          daily_wage: number | null; hire_date: string | null;
         };
         Insert: {
           id?: string; name: string; phone?: string | null;
           status?: "active" | "inactive"; region_id?: string | null; created_at?: string;
-          daily_wage?: number | null;
+          daily_wage?: number | null; hire_date?: string | null;
         };
         Update: {
           id?: string; name?: string; phone?: string | null;
           status?: "active" | "inactive"; region_id?: string | null; created_at?: string;
-          daily_wage?: number | null;
+          daily_wage?: number | null; hire_date?: string | null;
         };
       };
       profiles: {
