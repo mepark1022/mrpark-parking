@@ -387,6 +387,15 @@ export default function StoresPage() {
   const [editingItem, setEditingItem] = useState<Record<string, unknown> | null>(null);
   const [storeForAction, setStoreForAction] = useState<string | null>(null);
 
+  // 삭제 확인 모달
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    type: "store" | "lot";
+    id: string;
+    name: string;
+    subItems?: { label: string; count: number }[];
+  } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   // Form 상태
   const [storeForm, setStoreForm] = useState({
     name: "", region_city: "", region_district: "", road_address: "", manager_name: "",
@@ -636,13 +645,17 @@ export default function StoresPage() {
   }
 
   async function deleteStore(id: string) {
+    const store = stores.find(s => s.id === id);
     const lotsCount = parkingLots[id]?.length ?? 0;
-    const msg = lotsCount > 0
-      ? `${stores.find(s => s.id === id)?.name} 매장을 삭제하면 주차장 ${lotsCount}개도 함께 삭제됩니다. 계속하시겠습니까?`
-      : `${stores.find(s => s.id === id)?.name} 매장을 삭제하시겠습니까?`;
-    if (!confirm(msg)) return;
+    const visitCount = visitPlaces[id]?.length ?? 0;
+    const subItems = [];
+    if (lotsCount > 0) subItems.push({ label: "주차장", count: lotsCount });
+    if (visitCount > 0) subItems.push({ label: "방문지", count: visitCount });
+    setDeleteConfirm({ type: "store", id, name: store?.name ?? "매장", subItems });
+  }
 
-    // 연관 테이블 먼저 삭제 (FK 제약 해소)
+  async function execDeleteStore(id: string) {
+    setDeleteLoading(true);
     await supabase.from("invitations").delete().eq("store_id", id);
     await supabase.from("store_members").delete().eq("store_id", id);
     await supabase.from("visit_places").delete().eq("store_id", id);
@@ -651,9 +664,10 @@ export default function StoresPage() {
     await supabase.from("store_late_rules").delete().eq("store_id", id);
     await supabase.from("overtime_shifts").delete().eq("store_id", id);
     await supabase.from("parking_lots").delete().eq("store_id", id);
-
     const { error } = await supabase.from("stores").delete().eq("id", id);
-    if (error) { alert("삭제 실패: " + error.message); return; }
+    setDeleteLoading(false);
+    setDeleteConfirm(null);
+    if (error) { showToast("❌ 삭제 실패: " + error.message); return; }
     showToast("🗑️ 매장이 삭제되었습니다");
     loadData();
   }
@@ -680,14 +694,20 @@ export default function StoresPage() {
   }
 
   async function deleteLot(lotId: string, storeId: string) {
+    const lot = (parkingLots[storeId] ?? []).find(l => l.id === lotId);
     const lotsForStore = parkingLots[storeId] ?? [];
-    if (lotsForStore.length <= 1) {
-      if (!confirm("마지막 주차장을 삭제하면 대시보드 주차장 현황이 표시되지 않습니다. 계속하시겠습니까?")) return;
-    } else {
-      if (!confirm("주차장을 삭제하시겠습니까?")) return;
-    }
-    const { error } = await supabase.from("parking_lots").delete().eq("id", lotId);
-    if (error) { alert("삭제 실패: " + error.message); return; }
+    const subItems = lotsForStore.length <= 1
+      ? [{ label: "⚠️ 마지막 주차장 — 대시보드 현황이 표시되지 않을 수 있습니다", count: 0 }]
+      : [];
+    setDeleteConfirm({ type: "lot", id: lotId, name: lot?.name ?? "주차장", subItems });
+  }
+
+  async function execDeleteLot(id: string) {
+    setDeleteLoading(true);
+    const { error } = await supabase.from("parking_lots").delete().eq("id", id);
+    setDeleteLoading(false);
+    setDeleteConfirm(null);
+    if (error) { showToast("❌ 삭제 실패: " + error.message); return; }
     showToast("🗑️ 주차장이 삭제되었습니다");
     loadData();
   }
@@ -2264,6 +2284,94 @@ export default function StoresPage() {
       {mainTab === "shifts" && renderShifts()}
       {mainTab === "late-check" && renderLateCheck()}
       {renderModal()}
+
+      {/* 삭제 확인 모달 */}
+      {deleteConfirm && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 9999, padding: 20,
+        }} onClick={() => !deleteLoading && setDeleteConfirm(null)}>
+          <div style={{
+            background: "#fff", borderRadius: 16, padding: 28,
+            width: "100%", maxWidth: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+          }} onClick={e => e.stopPropagation()}>
+            {/* 아이콘 + 제목 */}
+            <div style={{ textAlign: "center", marginBottom: 20 }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: "50%",
+                background: "#FEE2E2", display: "flex", alignItems: "center",
+                justifyContent: "center", margin: "0 auto 14px",
+                fontSize: 24,
+              }}>🗑️</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#1A1D2B", marginBottom: 6 }}>
+                {deleteConfirm.type === "store" ? "매장 삭제" : "주차장 삭제"}
+              </div>
+              <div style={{ fontSize: 15, color: "#475569" }}>
+                <span style={{ fontWeight: 700, color: "#DC2626" }}>{deleteConfirm.name}</span>
+                {deleteConfirm.type === "store" ? "을(를) 삭제하시겠습니까?" : "을(를) 삭제하시겠습니까?"}
+              </div>
+            </div>
+
+            {/* 연관 데이터 목록 */}
+            {deleteConfirm.subItems && deleteConfirm.subItems.length > 0 && (
+              <div style={{
+                background: "#FFF7ED", border: "1px solid #FED7AA",
+                borderRadius: 10, padding: "12px 16px", marginBottom: 20,
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#C2410C", marginBottom: 8 }}>
+                  ⚠️ 함께 삭제되는 데이터
+                </div>
+                {deleteConfirm.subItems.map((item, i) => (
+                  <div key={i} style={{ fontSize: 13, color: "#7C2D12", lineHeight: 1.8 }}>
+                    {item.count > 0 ? `• ${item.label} ${item.count}개` : `• ${item.label}`}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 경고 문구 */}
+            <div style={{
+              fontSize: 12, color: "#94A3B8", textAlign: "center", marginBottom: 22,
+            }}>
+              이 작업은 되돌릴 수 없습니다
+            </div>
+
+            {/* 버튼 */}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleteLoading}
+                style={{
+                  flex: 1, padding: "13px 0", borderRadius: 10, border: "1.5px solid #E2E8F0",
+                  background: "#F8FAFC", color: "#475569", fontSize: 15, fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  if (deleteConfirm.type === "store") execDeleteStore(deleteConfirm.id);
+                  else execDeleteLot(deleteConfirm.id);
+                }}
+                disabled={deleteLoading}
+                style={{
+                  flex: 1, padding: "13px 0", borderRadius: 10, border: "none",
+                  background: deleteLoading ? "#FCA5A5" : "#DC2626",
+                  color: "#fff", fontSize: 15, fontWeight: 700,
+                  cursor: deleteLoading ? "not-allowed" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                }}
+              >
+                {deleteLoading ? (
+                  <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }}></span> 삭제 중...</>
+                ) : "삭제하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </AppLayout>
   );
