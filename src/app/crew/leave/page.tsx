@@ -590,7 +590,7 @@ export default function CrewLeavePage() {
   const autoDays = hireDate ? calcTotalLeaveDays(hireDate, year) : null;
   const monthlyDays = hireDate ? calcMonthlyLeaveDays(hireDate) : null;
   const yearsLabel = hireDate ? getYearsWorkedLabel(hireDate) : null;
-  const totalDays = leaveInfo?.total_days ?? (autoDays && autoDays > 0 ? autoDays : 15);
+  const totalDays = leaveInfo?.total_days ?? (autoDays && autoDays > 0 ? autoDays : (hireDate ? 15 : null));
   const usedDays = leaveInfo?.used_days ?? 0;
   const pendingDays = records
     .filter(r => r.status === "pending")
@@ -682,6 +682,35 @@ export default function CrewLeavePage() {
         </div>
 
         {/* 연차 현황 배너 */}
+        {!hireDate ? (
+          /* 입사일 미등록 안내 */
+          <div style={{
+            margin: "0 16px 16px",
+            background: "#FFF7ED",
+            border: "1.5px solid #FED7AA",
+            borderRadius: 16,
+            padding: "18px 20px",
+            display: "flex", gap: 14, alignItems: "flex-start",
+          }}>
+            <div style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>📋</div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#B45309", marginBottom: 6 }}>
+                입사일이 등록되지 않았어요
+              </div>
+              <div style={{ fontSize: 13, color: "#92400E", lineHeight: 1.6, marginBottom: 10 }}>
+                연차 일수는 입사일 기준으로 자동 계산됩니다.<br />
+                관리자에게 <strong>입사일 등록을 요청</strong>해주세요.
+              </div>
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                background: "#FEF3C7", borderRadius: 8, padding: "6px 12px",
+                fontSize: 12, fontWeight: 700, color: "#B45309",
+              }}>
+                📞 관리자에게 문의하기
+              </div>
+            </div>
+          </div>
+        ) : (
         <div className="leave-summary">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div className="leave-summary-title" style={{ margin: 0 }}>{year}년 연차 현황</div>
@@ -739,6 +768,7 @@ export default function CrewLeavePage() {
             <span style={{ fontWeight: 400, opacity: 0.8 }}>미사용 연차 관련 문의는 관리자에게 연락해주세요.</span>
           </div>
         </div>
+        )} {/* hire_date 조건부 종료 */}
 
         {/* ── 신청 탭 ── */}
         {tab === "apply" && (
