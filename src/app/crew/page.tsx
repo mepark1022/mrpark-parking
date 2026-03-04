@@ -370,8 +370,13 @@ export default function CrewHomePage() {
         }
         
         .crew-stat-icon {
-          font-size: 20px;
-          margin-bottom: 6px;
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 6px;
         }
         
         .crew-stat-value {
@@ -388,13 +393,12 @@ export default function CrewHomePage() {
         
         /* 빠른 메뉴 */
         .crew-section-title {
-          font-size: 15px;
+          font-size: 13px;
           font-weight: 700;
-          color: #1A1D2B;
+          color: #94A3B8;
           margin-bottom: 12px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
         }
         
         .crew-quick-menu {
@@ -407,14 +411,15 @@ export default function CrewHomePage() {
         .crew-quick-btn {
           background: #fff;
           border: 1px solid #E2E8F0;
-          border-radius: 14px;
+          border-radius: 16px;
           padding: 20px 16px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
           cursor: pointer;
           transition: all 0.15s;
+          -webkit-tap-highlight-color: transparent;
         }
         
         .crew-quick-btn:active {
@@ -422,8 +427,13 @@ export default function CrewHomePage() {
           background: #F8FAFC;
         }
         
-        .crew-quick-icon {
-          font-size: 28px;
+        .crew-quick-icon-wrap {
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
         .crew-quick-label {
@@ -480,6 +490,7 @@ export default function CrewHomePage() {
       <div className="crew-home">
         <CrewHeader
           title=""
+          showLogo
           showStoreSelector
           storeName={store?.name || "매장 선택"}
           onStoreChange={handleStoreChange}
@@ -508,27 +519,43 @@ export default function CrewHomePage() {
             )}
           </div>
 
-          {/* 통계 */}
+        {/* 통계 */}
           <div className="crew-stats-grid">
             <div className="crew-stat-card">
-              <div className="crew-stat-icon">🚗</div>
+              <div className="crew-stat-icon" style={{ background: "#EEF2FF" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1428A0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 17H3v-5l2.5-5h11L19 12v5h-2" /><circle cx="7.5" cy="17.5" r="1.5" /><circle cx="16.5" cy="17.5" r="1.5" /><path d="M5 12h14" />
+                </svg>
+              </div>
               <div className="crew-stat-value">{stats.total}</div>
-              <div className="crew-stat-label">현재</div>
+              <div className="crew-stat-label">현재입차</div>
             </div>
             <div className="crew-stat-card">
-              <div className="crew-stat-icon">🅿️</div>
+              <div className="crew-stat-icon" style={{ background: "#FEF9EC" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
               <div className="crew-stat-value">{stats.valet}</div>
               <div className="crew-stat-label">발렛</div>
             </div>
             <div className="crew-stat-card">
-              <div className="crew-stat-icon">📊</div>
+              <div className="crew-stat-icon" style={{ background: "#F0FDF4" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 20V10M12 20V4M6 20v-6" />
+                </svg>
+              </div>
               <div className="crew-stat-value">{stats.occupancyRate}%</div>
-              <div className="crew-stat-label">점유</div>
+              <div className="crew-stat-label">점유율</div>
             </div>
             <div className="crew-stat-card">
-              <div className="crew-stat-icon">💰</div>
-              <div className="crew-stat-value">{formatRevenue(stats.todayRevenue)}</div>
-              <div className="crew-stat-label">매출</div>
+              <div className="crew-stat-icon" style={{ background: "#FFF7ED" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9" /><path d="M12 6v6l4 2" />
+                </svg>
+              </div>
+              <div className="crew-stat-value" style={{ fontSize: 16 }}>{formatRevenue(stats.todayRevenue)}</div>
+              <div className="crew-stat-label">오늘매출</div>
             </div>
           </div>
 
@@ -558,23 +585,39 @@ export default function CrewHomePage() {
           )}
 
           {/* 빠른 메뉴 */}
-          <div className="crew-section-title">━━ 빠른 메뉴 ━━</div>
+          <div className="crew-section-title">빠른 메뉴</div>
           <div className="crew-quick-menu">
             <button className="crew-quick-btn" onClick={() => router.push("/crew/entry")}>
-              <span className="crew-quick-icon">🚗</span>
+              <div className="crew-quick-icon-wrap" style={{ background: "#EEF2FF" }}>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1428A0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 17H3v-5l2.5-5h11L19 12v5h-2" /><circle cx="7.5" cy="17.5" r="1.5" /><circle cx="16.5" cy="17.5" r="1.5" /><path d="M5 12h14" />
+                </svg>
+              </div>
               <span className="crew-quick-label">입차 등록</span>
             </button>
             <button className="crew-quick-btn" onClick={() => router.push("/crew/parking-list")}>
-              <span className="crew-quick-icon">🚙</span>
+              <div className="crew-quick-icon-wrap" style={{ background: "#F0FDF4" }}>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="3" /><path d="M9 17V10h3a2.5 2.5 0 0 1 0 5H9" />
+                </svg>
+              </div>
               <span className="crew-quick-label">출차 처리</span>
             </button>
             <button className="crew-quick-btn" onClick={() => router.push("/crew/accident")}>
-              <span className="crew-quick-icon">⚠️</span>
-              <span className="crew-quick-label">사고보고</span>
+              <div className="crew-quick-icon-wrap" style={{ background: "#FFF7ED" }}>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 4 2.5 20h19L12 4z" /><line x1="12" y1="10" x2="12" y2="14" strokeWidth={2} /><circle cx="12" cy="17" r="0.8" fill="#EA580C" stroke="none" />
+                </svg>
+              </div>
+              <span className="crew-quick-label">사고 보고</span>
             </button>
             <button className="crew-quick-btn" onClick={() => router.push("/crew/monthly")}>
-              <span className="crew-quick-icon">📅</span>
-              <span className="crew-quick-label">월주차</span>
+              <div className="crew-quick-icon-wrap" style={{ background: "#F5F3FF" }}>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+              </div>
+              <span className="crew-quick-label">월주차 조회</span>
             </button>
           </div>
         </div>
