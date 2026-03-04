@@ -353,42 +353,45 @@ export default function CrewHomePage() {
           opacity: 0.85;
         }
         
-        /* 통계 그리드 */
-        .crew-stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 10px;
-          margin-bottom: 20px;
-        }
-        
-        .crew-stat-card {
+        /* KPI 배너 통합형 (안 D) */
+        .crew-kpi-banner {
           background: #fff;
-          border-radius: 12px;
-          padding: 14px 10px;
-          text-align: center;
+          border-radius: 16px;
           border: 1px solid #E2E8F0;
+          overflow: hidden;
+          margin-bottom: 20px;
+          box-shadow: 0 1px 6px rgba(20,40,160,0.06);
         }
-        
-        .crew-stat-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
+        .crew-kpi-divider {
+          height: 3px;
+          background: linear-gradient(90deg, #1428A0 0%, #D97706 33%, #16A34A 66%, #EA580C 100%);
+        }
+        .crew-kpi-row {
           display: flex;
+          align-items: stretch;
+        }
+        .crew-kpi-item {
+          flex: 1;
+          padding: 14px 8px 12px;
+          display: flex;
+          flex-direction: column;
           align-items: center;
-          justify-content: center;
-          margin: 0 auto 6px;
+          gap: 3px;
+          border-right: 1px solid #F1F5F9;
         }
-        
-        .crew-stat-value {
+        .crew-kpi-item:last-child { border-right: none; }
+        .crew-kpi-icon { margin-bottom: 4px; }
+        .crew-kpi-value {
+          font-family: 'Outfit', sans-serif;
           font-size: 22px;
-          font-weight: 700;
+          font-weight: 800;
           color: #1A1D2B;
+          line-height: 1;
         }
-        
-        .crew-stat-label {
-          font-size: 11px;
-          color: #64748B;
-          margin-top: 2px;
+        .crew-kpi-label {
+          font-size: 10px;
+          color: #94A3B8;
+          font-weight: 600;
         }
         
         /* 빠른 메뉴 */
@@ -519,43 +522,48 @@ export default function CrewHomePage() {
             )}
           </div>
 
-        {/* 통계 */}
-          <div className="crew-stats-grid">
-            <div className="crew-stat-card">
-              <div className="crew-stat-icon" style={{ background: "#EEF2FF" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1428A0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 17H3v-5l2.5-5h11L19 12v5h-2" /><circle cx="7.5" cy="17.5" r="1.5" /><circle cx="16.5" cy="17.5" r="1.5" /><path d="M5 12h14" />
-                </svg>
+        {/* KPI 배너 통합형 (안 D) */}
+          <div className="crew-kpi-banner">
+            <div className="crew-kpi-divider" />
+            <div className="crew-kpi-row">
+              <div className="crew-kpi-item">
+                <div className="crew-kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1428A0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 17H3v-5l2.5-5h11L19 12v5h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M5 12h14"/>
+                  </svg>
+                </div>
+                <div className="crew-kpi-value">{stats.total}</div>
+                <div className="crew-kpi-label">현재입차</div>
               </div>
-              <div className="crew-stat-value">{stats.total}</div>
-              <div className="crew-stat-label">현재입차</div>
-            </div>
-            <div className="crew-stat-card">
-              <div className="crew-stat-icon" style={{ background: "#FEF9EC" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
+              <div className="crew-kpi-item">
+                <div className="crew-kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </div>
+                <div className="crew-kpi-value">{stats.valet}</div>
+                <div className="crew-kpi-label">발렛</div>
               </div>
-              <div className="crew-stat-value">{stats.valet}</div>
-              <div className="crew-stat-label">발렛</div>
-            </div>
-            <div className="crew-stat-card">
-              <div className="crew-stat-icon" style={{ background: "#F0FDF4" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 20V10M12 20V4M6 20v-6" />
-                </svg>
+              <div className="crew-kpi-item">
+                <div className="crew-kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 20V10M12 20V4M6 20v-6"/>
+                  </svg>
+                </div>
+                <div className="crew-kpi-value">{stats.occupancyRate}%</div>
+                <div className="crew-kpi-label">점유율</div>
               </div>
-              <div className="crew-stat-value">{stats.occupancyRate}%</div>
-              <div className="crew-stat-label">점유율</div>
-            </div>
-            <div className="crew-stat-card">
-              <div className="crew-stat-icon" style={{ background: "#FFF7ED" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="9" /><path d="M12 6v6l4 2" />
-                </svg>
+              <div className="crew-kpi-item">
+                <div className="crew-kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>
+                  </svg>
+                </div>
+                <div className="crew-kpi-value" style={{ fontSize: stats.todayRevenue >= 10000 ? 16 : 22 }}>
+                  {formatRevenue(stats.todayRevenue)}
+                </div>
+                <div className="crew-kpi-label">오늘매출</div>
               </div>
-              <div className="crew-stat-value" style={{ fontSize: 16 }}>{formatRevenue(stats.todayRevenue)}</div>
-              <div className="crew-stat-label">오늘매출</div>
             </div>
           </div>
 
