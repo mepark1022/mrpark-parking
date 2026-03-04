@@ -656,27 +656,15 @@ export default function StoresPage() {
 
   async function execDeleteStore(id: string) {
     setDeleteLoading(true);
-    // FK 참조 테이블 전체 삭제 (순서 중요)
-    await supabase.from("accident_reports").delete().eq("store_id", id);
-    await supabase.from("worker_assignments").delete().eq("store_id", id);
-    await supabase.from("worker_attendance").delete().eq("store_id", id);
-    await supabase.from("checkout_requests").delete().eq("store_id", id);
-    await supabase.from("daily_records").delete().eq("store_id", id);
-    await supabase.from("hourly_data").delete().eq("store_id", id);
-    await supabase.from("monthly_parking").delete().eq("store_id", id);
-    await supabase.from("parking_entries").delete().eq("store_id", id);
-    await supabase.from("invitations").delete().eq("store_id", id);
-    await supabase.from("store_members").delete().eq("store_id", id);
-    await supabase.from("visit_places").delete().eq("store_id", id);
-    await supabase.from("store_operating_hours").delete().eq("store_id", id);
-    await supabase.from("store_shifts").delete().eq("store_id", id);
-    await supabase.from("store_late_rules").delete().eq("store_id", id);
-    await supabase.from("overtime_shifts").delete().eq("store_id", id);
-    await supabase.from("parking_lots").delete().eq("store_id", id);
-    const { error } = await supabase.from("stores").delete().eq("id", id);
+    const res = await fetch("/api/stores/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ storeId: id }),
+    });
+    const data = await res.json();
     setDeleteLoading(false);
     setDeleteConfirm(null);
-    if (error) { showToast("❌ 삭제 실패: " + error.message); return; }
+    if (!res.ok || data.error) { showToast("❌ 삭제 실패: " + (data.error || "오류")); return; }
     showToast("🗑️ 매장이 삭제되었습니다");
     loadData();
   }
