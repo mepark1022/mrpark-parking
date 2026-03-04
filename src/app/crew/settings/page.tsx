@@ -306,6 +306,22 @@ export default function CrewSettingsPage() {
             </div>
             <div
               className="settings-item"
+              onClick={() => router.push("/crew/leave")}
+            >
+              <div className="settings-item-left">
+                <div className="settings-item-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1428A0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+                  </svg>
+                </div>
+                <span className="settings-item-text">연차 신청</span>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
+            <div
+              className="settings-item"
               onClick={handleAddToHomeScreen}
             >
               <div className="settings-item-left">

@@ -38,6 +38,8 @@ export default function LeaveTab() {
   const [form, setForm] = useState({ start_date: "", end_date: "", days: 1, leave_type: "annual", reason: "" });
   const [msg, setMsg] = useState("");
   const [orgId, setOrgId] = useState<string | null>(null);
+  const [rejectModal, setRejectModal] = useState<{ id: string; days: number } | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   useEffect(() => { getOrgId().then(oid => { if (oid) setOrgId(oid); }); }, []);
   useEffect(() => { if (orgId) loadWorkers(); }, [orgId]);
@@ -94,6 +96,33 @@ export default function LeaveTab() {
     const newUsed = Math.max(0, (leaveInfo?.used_days || 0) - (record.days || 0));
     await supabase.from("worker_leaves").update({ used_days: newUsed, updated_at: new Date().toISOString() }).eq("id", leaveInfo.id);
     loadLeaveInfo();
+    loadRecords();
+  };
+
+  // 크루 신청 승인
+  const approveRecord = async (record) => {
+    const supabase = createClient();
+    await supabase.from("worker_leave_records")
+      .update({ status: "approved", updated_at: new Date().toISOString() })
+      .eq("id", record.id);
+    // used_days 합산
+    const newUsed = (leaveInfo?.used_days || 0) + (record.days || 0);
+    await supabase.from("worker_leaves")
+      .update({ used_days: newUsed, updated_at: new Date().toISOString() })
+      .eq("id", leaveInfo.id);
+    loadLeaveInfo();
+    loadRecords();
+  };
+
+  // 크루 신청 반려
+  const rejectRecord = async () => {
+    if (!rejectModal) return;
+    const supabase = createClient();
+    await supabase.from("worker_leave_records")
+      .update({ status: "rejected", reject_reason: rejectReason || null, updated_at: new Date().toISOString() })
+      .eq("id", rejectModal.id);
+    setRejectModal(null);
+    setRejectReason("");
     loadRecords();
   };
 
@@ -160,6 +189,74 @@ export default function LeaveTab() {
           </div>
         </div>
       </div>
+
+      {/* ── 크루 신청 대기 섹션 ── */}
+      {(() => {
+        const pendingList = records.filter(r => r.requested_by_crew && r.status === "pending");
+        if (pendingList.length === 0) return null;
+        return (
+          <div style={{ ...V3.card, border: "1.5px solid #FED7AA" }}>
+            <div style={{ padding: "12px 18px", borderBottom: "1px solid #FEF3C7", display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#EA580C", animation: "pulse 1.5s infinite" }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#EA580C" }}>
+                크루 연차신청 검토 대기 ({pendingList.length}건)
+              </span>
+            </div>
+            <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+              {pendingList.map(r => {
+                const lt = leaveTypeMap[r.leave_type];
+                return (
+                  <div key={r.id} style={{ background: "#FFF7ED", borderRadius: 12, padding: "12px 14px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                      <div>
+                        <span style={{ padding: "2px 8px", borderRadius: 5, fontSize: 11, fontWeight: 700, background: lt?.bg, color: lt?.color, marginRight: 6 }}>{lt?.label}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1d2b" }}>{r.start_date} ~ {r.end_date}</span>
+                        <span style={{ fontSize: 12, color: "#64748b", marginLeft: 6 }}>({r.days}일)</span>
+                      </div>
+                    </div>
+                    {r.reason && (
+                      <div style={{ fontSize: 12, color: "#64748b", marginBottom: 10 }}>💬 {r.reason}</div>
+                    )}
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        onClick={() => approveRecord(r)}
+                        style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#16A34A", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                      >
+                        ✓ 승인
+                      </button>
+                      <button
+                        onClick={() => { setRejectModal({ id: r.id, days: r.days }); setRejectReason(""); }}
+                        style={{ padding: "7px 16px", borderRadius: 8, border: "1.5px solid #FCA5A5", background: "#fff", color: "#DC2626", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                      >
+                        반려
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── 반려 모달 ── */}
+      {rejectModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 400, padding: 24 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#1a1d2b", marginBottom: 16 }}>반려 사유 입력</div>
+            <textarea
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              placeholder="반려 사유를 입력하세요 (선택)"
+              style={{ ...V3.inp, resize: "none", minHeight: 80, marginBottom: 16 } as any}
+            />
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={rejectRecord} style={{ ...V3.btnNav, flex: 1, background: "#DC2626" }}>반려 처리</button>
+              <button onClick={() => setRejectModal(null)} style={{ ...V3.btnGhost, flex: 1 }}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 사용 기록 ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, marginTop: 4 }}>
