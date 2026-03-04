@@ -204,7 +204,13 @@ export default function CrewSettingsPage() {
         }
         
         .settings-item-icon {
-          font-size: 20px;
+          width: 34px;
+          height: 34px;
+          background: #EEF2FF;
+          border-radius: 9px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
         .settings-item-text {
@@ -261,14 +267,20 @@ export default function CrewSettingsPage() {
           {/* 프로필 */}
           <div className="settings-profile">
             <div className="settings-profile-header">
-              <div className="settings-avatar">👤</div>
+              <div className="settings-avatar">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                </svg>
+              </div>
               <div>
                 <div className="settings-name">{user?.name}</div>
                 <div className="settings-email">{user?.email}</div>
               </div>
             </div>
             <div className="settings-store">
-              <span>🏪</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1428A0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
               <span>{user?.storeName} 소속</span>
             </div>
           </div>
@@ -276,25 +288,37 @@ export default function CrewSettingsPage() {
           {/* 앱 설정 */}
           <div className="settings-section">
             <div className="settings-section-title">앱 설정</div>
-            <div 
+            <div
               className="settings-item"
               onClick={() => router.push("/crew/select-store")}
             >
               <div className="settings-item-left">
-                <span className="settings-item-icon">🔄</span>
+                <div className="settings-item-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1428A0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  </svg>
+                </div>
                 <span className="settings-item-text">매장 변경</span>
               </div>
-              <span className="settings-item-arrow">→</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
             </div>
-            <div 
+            <div
               className="settings-item"
               onClick={handleAddToHomeScreen}
             >
               <div className="settings-item-left">
-                <span className="settings-item-icon">📲</span>
+                <div className="settings-item-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1428A0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2" /><line x1="12" y1="18" x2="12" y2="18" strokeWidth={3} strokeLinecap="round" />
+                  </svg>
+                </div>
                 <span className="settings-item-text">홈화면 추가 안내</span>
               </div>
-              <span className="settings-item-arrow">→</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
             </div>
           </div>
 
@@ -303,10 +327,14 @@ export default function CrewSettingsPage() {
             <div className="settings-section-title">앱 정보</div>
             <div className="settings-item">
               <div className="settings-item-left">
-                <span className="settings-item-icon">ℹ️</span>
+                <div className="settings-item-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1428A0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" strokeWidth={3} strokeLinecap="round" />
+                  </svg>
+                </div>
                 <span className="settings-item-text">버전</span>
               </div>
-              <span className="settings-item-value">1.0.0 (MVP)</span>
+              <span className="settings-item-value">2.0.0</span>
             </div>
           </div>
 

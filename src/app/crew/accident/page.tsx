@@ -229,7 +229,11 @@ export default function CrewAccidentPage() {
       <div className="acc-page">
         <CrewHeader title="사고보고" showBack />
         <div className="acc-done">
-          <div className="acc-done-icon">✅</div>
+          <div style={{ width: 72, height: 72, background: "#DCFCE7", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "popIn .4s ease" }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12l5 5L20 7" />
+            </svg>
+          </div>
           <div className="acc-done-title">사고보고 접수 완료!</div>
           <div className="acc-done-sub">
             관리자에게 보고되었습니다.<br />
@@ -271,7 +275,7 @@ export default function CrewAccidentPage() {
               </div>
             )}
             <div className="acc-section">
-              <div className="acc-section-title">📋 사고 유형 선택</div>
+              <div className="acc-section-title">사고 유형 선택</div>
               <div className="acc-section-body">
                 <div className="acc-type-grid">
                   {ACCIDENT_TYPES.map(t => (
@@ -299,7 +303,7 @@ export default function CrewAccidentPage() {
         {step === 1 && (
           <>
             <div className="acc-section">
-              <div className="acc-section-title">🚗 차량 정보</div>
+              <div className="acc-section-title">차량 정보</div>
               <div className="acc-section-body">
                 {selectedType && (
                   <div className="acc-type-summary">
@@ -345,7 +349,7 @@ export default function CrewAccidentPage() {
         {step === 2 && (
           <>
             <div className="acc-section">
-              <div className="acc-section-title">📝 사고 내용</div>
+              <div className="acc-section-title">사고 내용</div>
               <div className="acc-section-body">
                 <div className="acc-form-group">
                   <label className="acc-form-label">

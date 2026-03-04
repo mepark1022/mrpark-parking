@@ -116,8 +116,12 @@ export default function CrewSelectStorePage() {
         padding: 24,
         gap: 16,
       }}>
-        <div style={{ fontSize: 48 }}>🏢</div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: "#1A1D2B" }}>{error}</div>
+        <div style={{ width: 64, height: 64, background: "#FEE2E2", borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          </svg>
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#1A1D2B", textAlign: "center" }}>{error}</div>
         <button
           onClick={() => { setLoading(true); setError(""); window.location.reload(); }}
           style={{
@@ -137,42 +141,55 @@ export default function CrewSelectStorePage() {
         .select-store-page {
           min-height: 100dvh;
           background: #F8FAFC;
-          padding: 24px;
-          padding-top: calc(24px + env(safe-area-inset-top, 0));
         }
-        
-        .select-store-header {
-          margin-bottom: 24px;
+
+        /* 상단 헤더 */
+        .select-store-header-bar {
+          background: linear-gradient(135deg, #0a1352 0%, #1428A0 100%);
+          padding: 48px 24px 28px;
+          padding-top: calc(48px + env(safe-area-inset-top, 0));
         }
-        
+
+        .select-store-logo {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+
+        .select-store-content {
+          padding: 20px 16px;
+        }
+
         .select-store-title {
-          font-size: 22px;
+          font-size: 20px;
           font-weight: 700;
-          color: #1A1D2B;
-          margin-bottom: 8px;
+          color: #fff;
+          margin-bottom: 4px;
         }
         
         .select-store-subtitle {
           font-size: 14px;
-          color: #64748B;
+          color: rgba(255,255,255,0.65);
         }
         
         .store-list {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 10px;
         }
         
         .store-card {
           background: #fff;
           border-radius: 14px;
           border: 2px solid #E2E8F0;
-          padding: 18px 16px;
+          padding: 16px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           cursor: pointer;
           transition: all 0.15s;
+          -webkit-tap-highlight-color: transparent;
         }
         
         .store-card:active {
@@ -191,14 +208,15 @@ export default function CrewSelectStorePage() {
         }
         
         .store-icon {
-          width: 44px;
-          height: 44px;
+          width: 46px;
+          height: 46px;
           background: #F1F5F9;
           border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 20px;
+          flex-shrink: 0;
+          transition: background 0.15s;
         }
         
         .store-card.selected .store-icon {
@@ -207,53 +225,74 @@ export default function CrewSelectStorePage() {
         
         .store-name {
           font-size: 16px;
-          font-weight: 600;
+          font-weight: 700;
           color: #1A1D2B;
-          margin-bottom: 4px;
+          margin-bottom: 3px;
         }
         
         .store-address {
           font-size: 13px;
           color: #64748B;
         }
-        
-        .store-arrow {
-          color: #94A3B8;
-          font-size: 20px;
-        }
-        
-        .store-card.selected .store-arrow {
-          color: #1428A0;
-        }
       `}</style>
 
       <div className="select-store-page">
-        <div className="select-store-header">
+        {/* 상단 네이비 헤더 */}
+        <div className="select-store-header-bar">
+          <div className="select-store-logo">
+            {/* P 아이콘 */}
+            <div style={{
+              width: 34, height: 34, background: "rgba(255,255,255,0.15)",
+              borderRadius: 10, position: "relative",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ fontFamily: "'Outfit',sans-serif", fontSize: 20, fontWeight: 900, color: "#fff", marginTop: -2 }}>P</span>
+              <span style={{ position: "absolute", bottom: 6, left: "50%", transform: "translateX(-50%)", width: 14, height: 3, background: "#F5B731", borderRadius: 1.5 }} />
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
+              <span style={{ fontFamily: "'Noto Sans KR',sans-serif", fontSize: 18, fontWeight: 800, color: "#fff" }}>미팍</span>
+              <span style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 700, color: "#F5B731" }}>Ticket</span>
+            </div>
+          </div>
           <div className="select-store-title">매장 선택</div>
           <div className="select-store-subtitle">근무할 매장을 선택하세요</div>
         </div>
 
-        <div className="store-list">
-          {stores.map((store) => (
-            <div
-              key={store.id}
-              className={`store-card ${selecting === store.id ? "selected" : ""}`}
-              onClick={() => handleSelectStore(store.id)}
-            >
-              <div className="store-info">
-                <div className="store-icon">
-                  {selecting === store.id ? "✓" : "🏪"}
-                </div>
-                <div>
-                  <div className="store-name">{store.name}</div>
-                  <div className="store-address">
-                    {store.road_address || store.region_city || "주소 미등록"}
+        <div className="select-store-content">
+          <div className="store-list">
+            {stores.map((store) => (
+              <div
+                key={store.id}
+                className={`store-card ${selecting === store.id ? "selected" : ""}`}
+                onClick={() => handleSelectStore(store.id)}
+              >
+                <div className="store-info">
+                  <div className="store-icon">
+                    {selecting === store.id ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12l5 5L20 7" />
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <div className="store-name">{store.name}</div>
+                    <div className="store-address">
+                      {store.road_address || store.region_city || "주소 미등록"}
+                    </div>
                   </div>
                 </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke={selecting === store.id ? "#1428A0" : "#CBD5E1"}
+                  strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
               </div>
-              <div className="store-arrow">→</div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </>

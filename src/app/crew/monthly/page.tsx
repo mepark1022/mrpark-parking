@@ -81,7 +81,6 @@ const CSS = `
     display:flex; flex-direction:column; align-items:center;
     padding:60px 32px; text-align:center; gap:12px;
   }
-  .mly-empty-icon { font-size:48px; }
   .mly-empty-title { font-size:16px; font-weight:700; color:#1A1D2B; }
   .mly-empty-sub { font-size:13px; color:#64748B; line-height:1.6; }
 
@@ -302,7 +301,11 @@ export default function CrewMonthlyPage() {
 
             {results.length === 0 ? (
               <div className="mly-empty">
-                <div className="mly-empty-icon">🔍</div>
+                <div style={{ width: 56, height: 56, background: "#F1F5F9", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" strokeWidth={2.5} />
+                  </svg>
+                </div>
                 <div className="mly-empty-title">검색 결과 없음</div>
                 <div className="mly-empty-sub">
                   "{query}" 에 해당하는<br />월주차 계약이 없습니다.
@@ -327,7 +330,12 @@ export default function CrewMonthlyPage() {
                       <div className="mly-card-header">
                         <div>
                           <div className="mly-card-plate">{c.vehicle_number}</div>
-                          <div className="mly-card-name">👤 {c.customer_name}</div>
+                          <div className="mly-card-name">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }}>
+                              <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                            </svg>
+                            {c.customer_name}
+                          </div>
                         </div>
                         <div
                           className="mly-status-badge"
