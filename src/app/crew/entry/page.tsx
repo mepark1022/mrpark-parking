@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import CrewHeader from "@/components/crew/CrewHeader";
 import { useCrewToast } from "@/components/crew/CrewToast";
+import CameraOcr from "@/components/crew/CameraOcr";
 
 const CSS = `
   .entry-page {
@@ -125,6 +126,22 @@ const CSS = `
     border: none; border-radius: 12px;
     font-size: 15px; font-weight: 600; cursor: pointer;
   }
+  .btn-ocr {
+    width: 100%; height: 52px;
+    background: #1428A0; color: #fff;
+    border: none; border-radius: 12px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .btn-ocr:active { opacity: 0.85; }
+  .divider-or {
+    display: flex; align-items: center; gap: 10px;
+    margin: 4px 0 10px; color: #94A3B8; font-size: 12px;
+  }
+  .divider-or::before, .divider-or::after {
+    content: ""; flex: 1; height: 1px; background: #E2E8F0;
+  }
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner {
     width: 20px; height: 20px;
@@ -158,6 +175,9 @@ export default function CrewEntryPage() {
   const [storeId, setStoreId] = useState(null);
   const [orgId, setOrgId] = useState(null);
   const [userId, setUserId] = useState(null);
+
+  // OCR 카메라
+  const [showCamera, setShowCamera] = useState(false);
 
   // Step 1
   const [plateNumber, setPlateNumber] = useState("");
@@ -291,6 +311,19 @@ export default function CrewEntryPage() {
       <div className="entry-page">
         <CrewHeader title="입차 등록" showBack />
 
+        {/* ── OCR 카메라 오버레이 ── */}
+        {showCamera && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 100 }}>
+            <CameraOcr
+              onConfirm={(plate) => {
+                handlePlateChange(plate);
+                setShowCamera(false);
+              }}
+              onCancel={() => setShowCamera(false)}
+            />
+          </div>
+        )}
+
         {/* 진행 단계 */}
         <div className="step-indicator">
           {stepLabels.map((label, i) => {
@@ -316,6 +349,11 @@ export default function CrewEntryPage() {
             <div className="entry-section">
               <div className="entry-section-title">🚗 차량 번호판</div>
               <div className="entry-section-body">
+                {/* OCR 스캔 버튼 */}
+                <button className="btn-ocr" onClick={() => setShowCamera(true)}>
+                  📷 번호판 자동 스캔
+                </button>
+                <div className="divider-or">또는 직접 입력</div>
                 <input
                   className={`plate-input${monthlyInfo ? " monthly" : ""}`}
                   value={plateNumber}
