@@ -43,7 +43,10 @@ const managementMenuItems = [
   )},
 ];
 
-const allMenuItems = [...defaultMenuItems, ...managementMenuItems];
+// divider: 메뉴/관리 구분선 (드래그로 위치 조정 가능)
+const DIVIDER_ID = "__divider__";
+const dividerItem = { id: DIVIDER_ID, href: "", label: "── 관리", icon: null };
+const allMenuItems = [...defaultMenuItems, dividerItem, ...managementMenuItems];
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -91,11 +94,17 @@ export default function Sidebar() {
       if (profile.menu_order && Array.isArray(profile.menu_order)) {
         const ordered = [];
         for (const id of profile.menu_order) {
+          if (id === DIVIDER_ID) { ordered.push(dividerItem); continue; }
           const item = allMenuItems.find((m) => m.id === id);
           if (item) ordered.push(item);
         }
+        // 새로 추가된 메뉴가 있으면 divider 앞에 삽입
         for (const item of allMenuItems) {
-          if (!ordered.find((o) => o.id === item.id)) ordered.push(item);
+          if (!ordered.find((o) => o.id === item.id)) {
+            const divIdx = ordered.findIndex(o => o.id === DIVIDER_ID);
+            if (divIdx >= 0) ordered.splice(divIdx, 0, item);
+            else ordered.push(item);
+          }
         }
         setMenuItems(ordered);
       }
@@ -127,10 +136,10 @@ export default function Sidebar() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const roleLabel = userRole === "admin" ? "Admin" : userRole === "crew" ? "CREW" : userRole;
 
-  // Split items: first 5 are main, rest are management
-  const mainItems = menuItems.filter((m) => defaultMenuItems.some((d) => d.id === m.id));
-  const mgmtItems = menuItems.filter((m) => managementMenuItems.some((d) => d.id === m.id));
-  const allOrdered = editMode ? menuItems : [...mainItems, null, ...mgmtItems]; // null = divider
+  // divider 위치로 메뉴/관리 분리
+  const dividerIdx = menuItems.findIndex(m => m.id === DIVIDER_ID);
+  const mainItems = dividerIdx >= 0 ? menuItems.slice(0, dividerIdx) : menuItems.filter(m => defaultMenuItems.some(d => d.id === m.id));
+  const mgmtItems = dividerIdx >= 0 ? menuItems.slice(dividerIdx + 1) : menuItems.filter(m => managementMenuItems.some(d => d.id === m.id));
 
   return (
     <aside className="v3-sidebar">
@@ -159,7 +168,7 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav style={{ flex: 1, padding: "8px 14px", overflowY: "auto" }}>
         {editMode ? (
-          // Edit mode: flat list with drag
+          // Edit mode: flat list with drag, divider도 드래그 가능
           menuItems.map((item, idx) => (
             <div
               key={item.id}
@@ -173,11 +182,23 @@ export default function Sidebar() {
                 borderTop: overIdx === idx && dragIdx !== idx ? "2px solid #F5B731" : "2px solid transparent",
               }}
             >
-              <div className="v3-nav-item" style={{ cursor: "grab" }}>
-                <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 14, marginRight: -4 }}>☰</span>
-                <span style={{ display: "flex", alignItems: "center", width: 22 }}>{item.icon}</span>
-                <span>{item.label}</span>
-              </div>
+              {item.id === DIVIDER_ID ? (
+                // 구분선 아이템
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
+                  borderRadius: 10, border: "1px dashed rgba(245,183,49,0.4)",
+                  cursor: "grab", margin: "4px 0",
+                }}>
+                  <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 14 }}>☰</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#F5B731", letterSpacing: 1 }}>── 관리 영역 구분선 ──</span>
+                </div>
+              ) : (
+                <div className="v3-nav-item" style={{ cursor: "grab" }}>
+                  <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 14, marginRight: -4 }}>☰</span>
+                  <span style={{ display: "flex", alignItems: "center", width: 22 }}>{item.icon}</span>
+                  <span>{item.label}</span>
+                </div>
+              )}
             </div>
           ))
         ) : (
