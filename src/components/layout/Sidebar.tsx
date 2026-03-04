@@ -105,7 +105,8 @@ export default function Sidebar() {
   async function saveMenuOrder(items: typeof allMenuItems) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("profiles").update({ menu_order: items.map((m) => m.id) }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update({ menu_order: items.map((m) => m.id) }).eq("id", user.id);
+    if (error) console.error("[Sidebar] 메뉴 순서 저장 실패:", error.message);
   }
 
   function handleDragStart(idx: number) { setDragIdx(idx); }
