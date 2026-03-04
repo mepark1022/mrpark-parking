@@ -597,11 +597,26 @@ export default function StoresPage() {
     if (!storeForm.name.trim()) { alert("매장명을 입력해주세요."); return; }
     const oid = await getOrgId();
     if (!oid) { alert("로그인 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요."); return; }
+
+    // 좌표 없고 도로명주소 있으면 자동 변환
+    let lat = storeForm.latitude === "" ? null : Number(storeForm.latitude) || null;
+    let lng = storeForm.longitude === "" ? null : Number(storeForm.longitude) || null;
+    if ((!lat || !lng) && storeForm.road_address) {
+      try {
+        const geo = await fetch(`/api/geocode/forward?address=${encodeURIComponent(storeForm.road_address)}`);
+        const geoData = await geo.json();
+        if (geoData.lat && geoData.lng) {
+          lat = geoData.lat;
+          lng = geoData.lng;
+        }
+      } catch { /* 좌표 변환 실패 시 무시 */ }
+    }
+
     // numeric 필드 빈 문자열 → null 변환
     const cleanedForm = {
       ...storeForm,
-      latitude: storeForm.latitude === "" ? null : Number(storeForm.latitude) || null,
-      longitude: storeForm.longitude === "" ? null : Number(storeForm.longitude) || null,
+      latitude: lat,
+      longitude: lng,
     };
     if (editingItem?.id) {
       const { error } = await supabase.from("stores").update(cleanedForm).eq("id", editingItem.id);
@@ -1933,6 +1948,29 @@ export default function StoresPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: C.textSecondary }}>📍 GPS 출퇴근 좌표</span>
               <span style={{ fontSize: 11, color: C.textMuted }}>CREW 앱 출퇴근 인증 기준점</span>
+              {storeForm.road_address && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`/api/geocode/forward?address=${encodeURIComponent(storeForm.road_address)}`);
+                      const d = await res.json();
+                      if (d.lat && d.lng) {
+                        setStoreForm(f => ({ ...f, latitude: String(d.lat), longitude: String(d.lng) }));
+                        showToast("✅ 좌표가 자동 입력되었습니다");
+                      } else {
+                        showToast("❌ 주소로 좌표를 찾지 못했습니다");
+                      }
+                    } catch { showToast("❌ 좌표 변환 실패"); }
+                  }}
+                  style={{
+                    marginLeft: "auto", padding: "4px 10px", fontSize: 11, fontWeight: 600,
+                    background: "#1428A0", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer"
+                  }}
+                >
+                  📍 주소로 자동 입력
+                </button>
+              )}
             </div>
             <div className="stores-grid-2col" style={{ display: "grid", gap: 12 }}>
               <FormGroup label="위도 (Latitude)">
@@ -1955,7 +1993,7 @@ export default function StoresPage() {
               </FormGroup>
             </div>
             <div style={{ fontSize: 11, color: C.textMuted, marginTop: -8 }}>
-              💡 구글 지도에서 매장 위치 우클릭 → 좌표 복사
+              💡 도로명 주소 입력 후 저장하면 자동으로 좌표가 등록됩니다
             </div>
           </div>
         </div>
