@@ -641,6 +641,17 @@ export default function StoresPage() {
       ? `${stores.find(s => s.id === id)?.name} 매장을 삭제하면 주차장 ${lotsCount}개도 함께 삭제됩니다. 계속하시겠습니까?`
       : `${stores.find(s => s.id === id)?.name} 매장을 삭제하시겠습니까?`;
     if (!confirm(msg)) return;
+
+    // 연관 테이블 먼저 삭제 (FK 제약 해소)
+    await supabase.from("invitations").delete().eq("store_id", id);
+    await supabase.from("store_members").delete().eq("store_id", id);
+    await supabase.from("visit_places").delete().eq("store_id", id);
+    await supabase.from("store_operating_hours").delete().eq("store_id", id);
+    await supabase.from("store_shifts").delete().eq("store_id", id);
+    await supabase.from("store_late_rules").delete().eq("store_id", id);
+    await supabase.from("overtime_shifts").delete().eq("store_id", id);
+    await supabase.from("parking_lots").delete().eq("store_id", id);
+
     const { error } = await supabase.from("stores").delete().eq("id", id);
     if (error) { alert("삭제 실패: " + error.message); return; }
     showToast("🗑️ 매장이 삭제되었습니다");
