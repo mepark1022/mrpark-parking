@@ -164,6 +164,15 @@ export default function CrewEntryPage() {
   const [monthlyInfo, setMonthlyInfo] = useState(null);
   const [monthlyChecking, setMonthlyChecking] = useState(false);
   const plateTimer = useRef(null);
+  const [plateError, setPlateError] = useState("");
+
+  // 한국 차량번호 유효성 검사
+  const validatePlate = (plate) => {
+    const n = plate.replace(/\s/g, "");
+    const hasKorean = /[가-힣]/.test(n);
+    const digitCount = (n.match(/\d/g) || []).length;
+    return n.length >= 6 && hasKorean && digitCount >= 4;
+  };
 
   // Step 2
   const [parkingType, setParkingType] = useState("self");
@@ -207,6 +216,7 @@ export default function CrewEntryPage() {
     // 공백 제거 + 영문만 대문자 변환 (한글은 그대로 유지)
     const cleaned = val.replace(/\s/g, "").replace(/[a-z]/g, (c) => c.toUpperCase()).slice(0, 10);
     setPlateNumber(cleaned);
+    setPlateError("");
     setMonthlyInfo(null);
     if (plateTimer.current) clearTimeout(plateTimer.current);
     if (cleaned.length >= 4) {
@@ -335,11 +345,28 @@ export default function CrewEntryPage() {
                 {!monthlyChecking && plateNumber.length >= 4 && !monthlyInfo && (
                   <div className="monthly-badge no">ℹ️&nbsp; 일반 차량</div>
                 )}
+                {plateError && (
+                  <div style={{
+                    marginTop: 8, padding: "10px 14px", borderRadius: 10,
+                    background: "#fee2e2", color: "#dc2626",
+                    fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-line",
+                    display: "flex", alignItems: "flex-start", gap: 6
+                  }}>
+                    ⚠️ {plateError}
+                  </div>
+                )}
               </div>
             </div>
             <div className="entry-footer">
               <button className="btn-secondary" onClick={() => router.back()}>취소</button>
-              <button className="btn-primary" onClick={() => setStep(2)} disabled={!plateNumber.trim()}>
+              <button className="btn-primary" onClick={() => {
+                if (!validatePlate(plateNumber)) {
+                  setPlateError("올바른 차량번호를 입력해주세요\n예: 12가3456 / 123가4567");
+                  return;
+                }
+                setPlateError("");
+                setStep(2);
+              }} disabled={!plateNumber.trim()}>
                 다음 →
               </button>
             </div>
