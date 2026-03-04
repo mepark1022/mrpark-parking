@@ -43,13 +43,16 @@ export function calcAnnualLeaveDays(
 /**
  * 연도별 총 부여 휴가일수 (연차 + 월차 통합)
  *
- * - 입사 연도       : 월차 (연도 말 기준 총 발생 예정, 최대 11일)
- * - 입사 다음 해~   : 연차 (15~25일)
+ * - 입사 연도 (현재) : 월차 — 오늘까지 실제 발생한 일수 (매월 실시간 증가)
+ * - 입사 연도 (과거) : 월차 — 해당 연도 말 기준 확정값 (최대 11일)
+ * - 입사 다음 해~    : 연차 (15~25일)
  *
  * 예) 2026.3.1 입사
- *   2026년 → 10일 (3~12월 개근 시 월차 10일)
- *   2027년 → 15일 (1년 이상 → 연차)
- *   2029년 → 16일 (3년차)
+ *   2026.3월 → 0일  (아직 1개월 미경과)
+ *   2026.4월 → 1일  (1개월 개근 후)
+ *   2026.12월→ 9일  (9개월 경과)
+ *   2027년   → 15일 (1년 이상 → 연차)
+ *   2029년   → 16일 (3년차)
  */
 export function calcTotalLeaveDays(
   hireDate: string | Date | null | undefined,
@@ -60,16 +63,40 @@ export function calcTotalLeaveDays(
   const yearsCompleted = targetYear - hire.getFullYear();
 
   if (yearsCompleted < 1) {
-    // 입사 연도: 해당 연도 말 기준 총 월차 (hire.getMonth() = 0~11)
-    // 예) 3월(getMonth=2) 입사 → 12 - 2 = 10개월
-    const months = 12 - hire.getMonth();
-    return Math.min(months, 11);
+    const currentYear = new Date().getFullYear();
+    if (targetYear === currentYear) {
+      // 현재 연도: 오늘까지 실제 발생한 월차 (실시간 증가)
+      return calcMonthlyLeaveDays(hireDate);
+    } else {
+      // 과거 연도: 해당 연도 말 기준 확정값
+      // 예) 2025.3.1 입사 → 2025년 10일 확정 (3~12월 = 10개월)
+      const months = 12 - hire.getMonth();
+      return Math.min(months, 11);
+    }
   }
 
   // 1년 이상: 연차
   const bonus = yearsCompleted >= 3
     ? Math.floor((yearsCompleted - 1) / 2)
     : 0;
+  return Math.min(15 + bonus, 25);
+}
+
+/**
+ * 입사 연도 기준 연말 최종 예정 월차 (UI 안내용)
+ * "올해 최대 X일" 표시에 사용. calcTotalLeaveDays와 달리 항상 연말 기준 확정값 반환.
+ */
+export function calcYearEndLeaveDays(
+  hireDate: string | Date | null | undefined,
+  targetYear: number = new Date().getFullYear()
+): number {
+  if (!hireDate) return 15;
+  const hire = new Date(hireDate);
+  const yearsCompleted = targetYear - hire.getFullYear();
+  if (yearsCompleted < 1) {
+    return Math.min(12 - hire.getMonth(), 11);
+  }
+  const bonus = yearsCompleted >= 3 ? Math.floor((yearsCompleted - 1) / 2) : 0;
   return Math.min(15 + bonus, 25);
 }
 

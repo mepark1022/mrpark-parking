@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
-import { calcAnnualLeaveDays, calcTotalLeaveDays, getYearsWorkedLabel } from "@/lib/utils/leave";
+import { calcAnnualLeaveDays, calcTotalLeaveDays, calcYearEndLeaveDays, getYearsWorkedLabel } from "@/lib/utils/leave";
 
 const leaveTypeMap = {
   annual:  { label: "연차",  bg: "#ede9fe", color: "#7c3aed" },
@@ -186,17 +186,35 @@ export default function LeaveTab() {
                 const label = getYearsWorkedLabel(worker.hire_date);
                 const autoDays = calcTotalLeaveDays(worker.hire_date, year);
                 const isMonthly = (year - new Date(worker.hire_date).getFullYear()) < 1;
+                const isCurrentYear = year === new Date().getFullYear();
+                const yearEndDays = calcYearEndLeaveDays(worker.hire_date, year);
                 return (
                   <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: "#1428A0", background: "#EEF2FF", padding: "2px 8px", borderRadius: 5 }}>
                       근속 {label}
                     </span>
-                    {autoDays > 0 && (
+                    {/* 월차 배지 (1년 미만) */}
+                    {isMonthly && autoDays >= 0 && (
                       <span style={{ fontSize: 11, fontWeight: 700,
-                        color: isMonthly ? "#B45309" : "#16A34A",
-                        background: isMonthly ? "#FEF3C7" : "#DCFCE7",
+                        color: "#B45309", background: "#FEF3C7",
                         padding: "2px 8px", borderRadius: 5 }}>
-                        {isMonthly ? `월차 ${autoDays}일 자동적용` : `연차 ${autoDays}일 자동적용`}
+                        월차 {autoDays}일 발생
+                      </span>
+                    )}
+                    {/* 현재 연도: 연말 예정 & 다음달 +1일 안내 */}
+                    {isMonthly && isCurrentYear && autoDays < yearEndDays && (
+                      <span style={{ fontSize: 11, fontWeight: 600,
+                        color: "#64748b", background: "#f1f5f9",
+                        padding: "2px 8px", borderRadius: 5 }}>
+                        연말까지 최대 {yearEndDays}일 · 다음달 +1일
+                      </span>
+                    )}
+                    {/* 1년 이상: 연차 자동적용 배지 */}
+                    {!isMonthly && autoDays > 0 && (
+                      <span style={{ fontSize: 11, fontWeight: 700,
+                        color: "#16A34A", background: "#DCFCE7",
+                        padding: "2px 8px", borderRadius: 5 }}>
+                        연차 {autoDays}일 자동적용
                       </span>
                     )}
                   </div>
