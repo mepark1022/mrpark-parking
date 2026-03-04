@@ -60,7 +60,7 @@ export default function CrewAttendancePage() {
   const [correctionDate, setCorrectionDate] = useState("");
   const [correctionTime, setCorrectionTime] = useState("");
   const [storeId, setStoreId] = useState<string | null>(null);
-  const [storeInfo, setStoreInfo] = useState<{name: string; address: string; lat: number | null; lng: number | null} | null>(null);
+  const [storeInfo, setStoreInfo] = useState<{name: string; address: string; lat: number | null; lng: number | null; gpsRadius: number} | null>(null);
   const [checkInCoords, setCheckInCoords] = useState<{lat: number; lng: number} | null>(null);
   const [checkOutCoords, setCheckOutCoords] = useState<{lat: number; lng: number} | null>(null);
   const router = useRouter();
@@ -94,7 +94,7 @@ export default function CrewAttendancePage() {
 
       // 매장 정보 로드 (이름, 주소, 좌표)
       const { data: storeData } = await supabase
-        .from("stores").select("name, road_address, latitude, longitude")
+        .from("stores").select("name, road_address, latitude, longitude, gps_radius_meters")
         .eq("id", savedStoreId).single();
       if (storeData) {
         setStoreInfo({
@@ -102,6 +102,7 @@ export default function CrewAttendancePage() {
           address: storeData.road_address || "",
           lat: storeData.latitude ? parseFloat(storeData.latitude) : null,
           lng: storeData.longitude ? parseFloat(storeData.longitude) : null,
+          gpsRadius: storeData.gps_radius_meters ?? 150,
         });
       }
 
@@ -495,64 +496,89 @@ export default function CrewAttendancePage() {
             </div>
           )}
 
-          {/* 퇴근 완료 시 매장 정보 + 카카오맵 */}
-          {attendance.isCheckedOut && storeInfo && (
-            <div style={{ marginBottom: 20 }}>
-              {/* 매장 정보 */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 16 }}>📍</span>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: "#1A1D2B" }}>{storeInfo.name}</span>
+          {/* 매장 지도 - 출근 중 또는 퇴근 완료 시 표시 */}
+          {(attendance.isCheckedIn || attendance.isCheckedOut) && storeInfo && (
+            <div style={{ marginBottom: 16 }}>
+              {/* 매장명 + 반경 안내 */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 14 }}>🏪</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#1A1D2B" }}>{storeInfo.name}</span>
                 </div>
-                {storeInfo.address && (
-                  <div style={{ fontSize: 13, color: "#64748B", paddingLeft: 26 }}>{storeInfo.address}</div>
-                )}
+                <span style={{ fontSize: 12, color: "#64748B", background: "#F1F5F9", padding: "3px 8px", borderRadius: 6 }}>
+                  반경 {storeInfo.gpsRadius}m
+                </span>
               </div>
 
-              {/* 카카오맵 */}
+              {/* 지도 */}
               <AttendanceMapView
                 storeLat={storeInfo.lat}
                 storeLng={storeInfo.lng}
                 checkInCoords={checkInCoords}
                 checkOutCoords={checkOutCoords}
+                currentCoords={!attendance.isCheckedOut ? currentCoords : null}
+                gpsRadius={storeInfo.gpsRadius}
               />
 
               {/* 거리 정보 */}
-              <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-                {checkInCoords && storeInfo.lat && storeInfo.lng && (
-                  <div style={{ flex: 1, minWidth: 120, background: "#F0FDF4", borderRadius: 10, padding: "8px 12px", textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: "#166534", fontWeight: 600 }}>🟢 출근 거리</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#166534", marginTop: 2 }}>
-                      {getDistanceM(checkInCoords.lat, checkInCoords.lng, storeInfo.lat, storeInfo.lng)}m
+              {storeInfo.lat && storeInfo.lng && (
+                <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                  {currentCoords && !attendance.isCheckedOut && (
+                    <div style={{ flex: 1, minWidth: 100, background: "#EFF6FF", borderRadius: 10, padding: "8px 12px", textAlign: "center" }}>
+                      <div style={{ fontSize: 11, color: "#1D4ED8", fontWeight: 600 }}>📱 현재 거리</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#1D4ED8", marginTop: 2 }}>
+                        {getDistanceM(currentCoords.lat, currentCoords.lng, storeInfo.lat, storeInfo.lng)}m
+                      </div>
                     </div>
-                  </div>
-                )}
-                {checkOutCoords && storeInfo.lat && storeInfo.lng && (
-                  <div style={{ flex: 1, minWidth: 120, background: "#FEF2F2", borderRadius: 10, padding: "8px 12px", textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: "#991B1B", fontWeight: 600 }}>🔴 퇴근 거리</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#991B1B", marginTop: 2 }}>
-                      {getDistanceM(checkOutCoords.lat, checkOutCoords.lng, storeInfo.lat, storeInfo.lng)}m
+                  )}
+                  {checkInCoords && (
+                    <div style={{ flex: 1, minWidth: 100, background: "#F0FDF4", borderRadius: 10, padding: "8px 12px", textAlign: "center" }}>
+                      <div style={{ fontSize: 11, color: "#166534", fontWeight: 600 }}>🟢 출근 거리</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#166534", marginTop: 2 }}>
+                        {getDistanceM(checkInCoords.lat, checkInCoords.lng, storeInfo.lat, storeInfo.lng)}m
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                  {checkOutCoords && (
+                    <div style={{ flex: 1, minWidth: 100, background: "#FEF2F2", borderRadius: 10, padding: "8px 12px", textAlign: "center" }}>
+                      <div style={{ fontSize: 11, color: "#991B1B", fontWeight: 600 }}>🔴 퇴근 거리</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#991B1B", marginTop: 2 }}>
+                        {getDistanceM(checkOutCoords.lat, checkOutCoords.lng, storeInfo.lat, storeInfo.lng)}m
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
-          {/* 출근 상태 카드 */}
-          <div className={`att-card ${attendance.isCheckedOut ? "done" : ""}`}>
-            {attendance.isCheckedOut ? (
-              <><div className="att-icon">✅</div><div className="att-title">퇴근 완료</div>
-                <div className="att-time">{attendance.checkInTime && fmt(attendance.checkInTime)} ~ {attendance.checkOutTime && fmt(attendance.checkOutTime)}</div>
-                <div className="att-sub">총 근무: {fmtWork(attendance.workingMinutes)}</div></>
-            ) : attendance.isCheckedIn ? (
-              <><div className="att-icon">🟢</div><div className="att-title">출근 중</div>
-                <div className="att-time">{attendance.checkInTime && fmt(attendance.checkInTime)}~</div>
-                <div className="att-sub">근무시간: {fmtWork(attendance.workingMinutes)}</div></>
-            ) : (
-              <><div className="att-icon">⚪</div><div className="att-title">미출근</div>
-                <div className="att-sub">출근 버튼을 눌러주세요</div></>
-            )}
+          {/* 출근 상태 카드 - compact */}
+          <div style={{
+            background: attendance.isCheckedOut ? "#F0FDF4" : attendance.isCheckedIn ? "#fff" : "#fff",
+            border: `1.5px solid ${attendance.isCheckedOut ? "#86EFAC" : attendance.isCheckedIn ? "#BFDBFE" : "#E2E8F0"}`,
+            borderRadius: 14, padding: "14px 16px",
+            display: "flex", alignItems: "center", gap: 12, marginBottom: 16,
+          }}>
+            <div style={{ fontSize: 28 }}>
+              {attendance.isCheckedOut ? "✅" : attendance.isCheckedIn ? "🟢" : "⚪"}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#1A1D2B" }}>
+                {attendance.isCheckedOut ? "퇴근 완료" : attendance.isCheckedIn ? "출근 중" : "미출근"}
+              </div>
+              {attendance.isCheckedOut ? (
+                <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>
+                  {attendance.checkInTime && fmt(attendance.checkInTime)} ~ {attendance.checkOutTime && fmt(attendance.checkOutTime)}
+                  &nbsp;·&nbsp;총 {fmtWork(attendance.workingMinutes)}
+                </div>
+              ) : attendance.isCheckedIn ? (
+                <div style={{ fontSize: 13, color: "#1428A0", marginTop: 2 }}>
+                  {attendance.checkInTime && fmt(attendance.checkInTime)}~ &nbsp;·&nbsp; {fmtWork(attendance.workingMinutes)}
+                </div>
+              ) : (
+                <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 2 }}>출근 버튼을 눌러주세요</div>
+              )}
+            </div>
           </div>
 
           {/* 퇴근수정 요청 상태 배너 */}
