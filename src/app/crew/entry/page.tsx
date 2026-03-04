@@ -204,7 +204,8 @@ export default function CrewEntryPage() {
   }, []);
 
   const handlePlateChange = (val) => {
-    const cleaned = val.replace(/\s/g, "").toUpperCase().slice(0, 10);
+    // 공백 제거 + 영문만 대문자 변환 (한글은 그대로 유지)
+    const cleaned = val.replace(/\s/g, "").replace(/[a-z]/g, (c) => c.toUpperCase()).slice(0, 10);
     setPlateNumber(cleaned);
     setMonthlyInfo(null);
     if (plateTimer.current) clearTimeout(plateTimer.current);
@@ -309,8 +310,12 @@ export default function CrewEntryPage() {
                   className={`plate-input${monthlyInfo ? " monthly" : ""}`}
                   value={plateNumber}
                   onChange={(e) => handlePlateChange(e.target.value)}
-                  placeholder="12가 3456"
+                  placeholder="12가3456"
                   inputMode="text"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
                   autoFocus
                   maxLength={10}
                 />
