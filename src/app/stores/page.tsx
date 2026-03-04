@@ -656,6 +656,15 @@ export default function StoresPage() {
 
   async function execDeleteStore(id: string) {
     setDeleteLoading(true);
+    // FK 참조 테이블 전체 삭제 (순서 중요)
+    await supabase.from("accident_reports").delete().eq("store_id", id);
+    await supabase.from("worker_assignments").delete().eq("store_id", id);
+    await supabase.from("worker_attendance").delete().eq("store_id", id);
+    await supabase.from("checkout_requests").delete().eq("store_id", id);
+    await supabase.from("daily_records").delete().eq("store_id", id);
+    await supabase.from("hourly_data").delete().eq("store_id", id);
+    await supabase.from("monthly_parking").delete().eq("store_id", id);
+    await supabase.from("parking_entries").delete().eq("store_id", id);
     await supabase.from("invitations").delete().eq("store_id", id);
     await supabase.from("store_members").delete().eq("store_id", id);
     await supabase.from("visit_places").delete().eq("store_id", id);
