@@ -55,9 +55,30 @@ export default function Sidebar() {
   const [userName, setUserName] = useState("사용자");
   const [userEmail, setUserEmail] = useState("");
   const [userRole, setUserRole] = useState("admin");
+  const [parkingCount, setParkingCount] = useState(0);
+  const [accidentCount, setAccidentCount] = useState(0);
   const saveTimer = useRef<any>(null);
 
-  useEffect(() => { loadMenuOrder(); }, []);
+  useEffect(() => { loadMenuOrder(); loadBadgeCounts(); }, []);
+
+  async function loadBadgeCounts() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", user.id).single();
+    if (!prof?.org_id) return;
+    // 입차 현황: 현재 주차 중인 티켓 수
+    const { count: pCount } = await supabase.from("mepark_tickets")
+      .select("*", { count: "exact", head: true })
+      .eq("org_id", prof.org_id)
+      .in("status", ["parking", "pre_paid", "exit_requested", "car_ready"]);
+    setParkingCount(pCount ?? 0);
+    // 사고보고: 미처리(pending) 건수
+    const { count: aCount } = await supabase.from("accident_reports")
+      .select("*", { count: "exact", head: true })
+      .eq("org_id", prof.org_id)
+      .eq("status", "pending");
+    setAccidentCount(aCount ?? 0);
+  }
 
   async function loadMenuOrder() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -163,7 +184,7 @@ export default function Sidebar() {
               <Link key={item.id} href={item.href} className={`v3-nav-item ${isActive(item.href) ? "active" : ""}`}>
                 <span style={{ display: "flex", alignItems: "center", width: 22 }}>{item.icon}</span>
                 <span>{item.label}</span>
-                {item.badge && <span className="v3-nav-badge">12</span>}
+                {item.badge && parkingCount > 0 && <span className="v3-nav-badge">{parkingCount}</span>}
               </Link>
             ))}
 
@@ -174,8 +195,8 @@ export default function Sidebar() {
               <Link key={item.id} href={item.href} className={`v3-nav-item ${isActive(item.href) ? "active" : ""}`}>
                 <span style={{ display: "flex", alignItems: "center", width: 22 }}>{item.icon}</span>
                 <span>{item.label}</span>
-                {item.badge && (
-                  <span style={{ marginLeft: "auto", width: 18, height: 18, borderRadius: 9, background: "#dc2626", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>2</span>
+                {item.badge && accidentCount > 0 && (
+                  <span style={{ marginLeft: "auto", width: 18, height: 18, borderRadius: 9, background: "#dc2626", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{accidentCount}</span>
                 )}
               </Link>
             ))}
