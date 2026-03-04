@@ -323,6 +323,7 @@ export default function DashboardPage() {
   const [hourlyData, setHourlyData] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [monthlyContracts, setMonthlyContracts] = useState([]);
+  const [ticketData, setTicketData] = useState([]); // mepark_tickets 연동
   const [loading, setLoading] = useState(true);
   const [orgId, setOrgId] = useState(null);
   const [parkingStatus, setParkingStatus] = useState([]);
@@ -337,20 +338,55 @@ export default function DashboardPage() {
 
   useEffect(() => { loadStores(); }, []);
   useEffect(() => { loadData(); }, [selectedStore, period, customStart, customEnd]);
-  useEffect(() => { if (orgId) loadParkingStatus(); }, [orgId]);
+  useEffect(() => {
+    if (!orgId) return;
+    loadParkingStatus();
+    // mepark_tickets 변경 시 주차 현황 실시간 갱신
+    const channel = supabase
+      .channel("dashboard-tickets")
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "mepark_tickets",
+        filter: `org_id=eq.${orgId}`,
+      }, () => { loadParkingStatus(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [orgId]);
 
   async function loadParkingStatus() {
     if (!orgId) return;
     const { data: lots } = await supabase.from("parking_lots").select("*, stores(name)").eq("org_id", orgId);
     if (!lots || lots.length === 0) { setParkingStatus([]); return; }
+
+    // mepark_tickets에서 현재 주차 중인 차량 수 집계 (store별)
+    const { data: activeTickets } = await supabase
+      .from("mepark_tickets")
+      .select("store_id")
+      .eq("org_id", orgId)
+      .in("status", ["parking", "pre_paid", "exit_requested", "car_ready"]);
+
+    const ticketCountByStore = {};
+    (activeTickets || []).forEach(t => {
+      ticketCountByStore[t.store_id] = (ticketCountByStore[t.store_id] || 0) + 1;
+    });
+
     const storeMap = {};
     lots.forEach(lot => {
       const lotTotal = (lot.self_spaces || 0) + (lot.mechanical_normal || 0) + (lot.mechanical_suv || 0);
       if (!storeMap[lot.store_id]) storeMap[lot.store_id] = { storeId: lot.store_id, storeName: lot.stores?.name || "알 수 없음", lots: [], totalSpaces: 0, currentCars: 0 };
       storeMap[lot.store_id].lots.push(lot);
       storeMap[lot.store_id].totalSpaces += lotTotal;
-      storeMap[lot.store_id].currentCars += (lot.current_cars || 0);
     });
+
+    // currentCars: mepark_tickets 우선, 없으면 parking_lots.current_cars 폴백
+    Object.values(storeMap).forEach((s: any) => {
+      const ticketCount = ticketCountByStore[s.storeId];
+      if (ticketCount !== undefined) {
+        s.currentCars = ticketCount;
+      } else {
+        s.currentCars = s.lots.reduce((sum, lot) => sum + (lot.current_cars || 0), 0);
+      }
+    });
+
     setParkingStatus(Object.values(storeMap));
   }
 
@@ -377,21 +413,33 @@ export default function DashboardPage() {
     setLoading(true);
     const { start, end } = getDateRange();
 
-    // daily_records + monthly_parking 병렬 실행
-    let recQ = supabase.from("daily_records").select("id, store_id, date, total_cars, valet_count, valet_revenue, daily_revenue, stores(name)").gte("date", start).lte("date", end).order("date");
-    if (selectedStore) recQ = recQ.eq("store_id", selectedStore);
+    // mepark_tickets (기간 내 입차 티켓) + monthly_parking + daily_records(차트용) 병렬 실행
+    let tQ = supabase
+      .from("mepark_tickets")
+      .select("id, store_id, parking_type, paid_amount, is_monthly, status, entry_at, exit_at")
+      .gte("entry_at", start + "T00:00:00+09:00")
+      .lte("entry_at", end + "T23:59:59+09:00");
+    if (selectedStore) tQ = tQ.eq("store_id", selectedStore);
+
     let mpQ = supabase.from("monthly_parking").select("id, store_id, contract_status, monthly_fee, end_date, stores(name)");
     if (selectedStore) mpQ = mpQ.eq("store_id", selectedStore);
 
-    const [{ data: rData }, { data: mpData }] = await Promise.all([recQ, mpQ]);
+    let recQ = supabase.from("daily_records")
+      .select("id, store_id, date, total_cars, valet_count, valet_revenue, daily_revenue, stores(name)")
+      .gte("date", start).lte("date", end).order("date");
+    if (selectedStore) recQ = recQ.eq("store_id", selectedStore);
+
+    const [{ data: tData }, { data: mpData }, { data: rData }] = await Promise.all([tQ, mpQ, recQ]);
+
+    const tickets = tData || [];
+    setTicketData(tickets);
+    setMonthlyContracts(mpData || []);
 
     const recs = rData || [];
     setRecords(recs);
-    setMonthlyContracts(mpData || []);
 
     if (recs.length > 0) {
       const ids = recs.map(r => r.id);
-      // hourly_data + worker_assignments 병렬 실행
       const [{ data: hData }, { data: aData }] = await Promise.all([
         supabase.from("hourly_data").select("hour, car_count, record_id").in("record_id", ids),
         supabase.from("worker_assignments").select("worker_id, worker_type, workers:worker_id(name), record_id").in("record_id", ids),
@@ -406,14 +454,26 @@ export default function DashboardPage() {
   }
 
   const kpi = useMemo(() => {
-    const totalCars = records.reduce((s, r) => s + r.total_cars, 0);
-    const totalValet = records.reduce((s, r) => s + r.valet_revenue, 0);
-    const totalRevenue = records.reduce((s, r) => s + (r.daily_revenue || 0), 0);
+    // mepark_tickets 기반 KPI (완료 + 진행 중 모두 포함)
+    const completedTickets = ticketData.filter(t => t.status === "completed");
+    const totalCars = ticketData.length; // 기간 내 전체 입차
+    const totalRevenue = completedTickets.reduce((s, t) => s + (t.paid_amount || 0), 0);
+    const totalValet = completedTickets
+      .filter(t => t.parking_type === "valet")
+      .reduce((s, t) => s + (t.paid_amount || 0), 0);
     const totalParking = Math.max(totalRevenue - totalValet, 0);
     const workerIds = new Set(assignments.map(a => a.worker_id));
     const activeContracts = monthlyContracts.filter(c => c.contract_status === "active").length;
+    // mepark_tickets 데이터 없으면 daily_records 폴백
+    const useFallback = ticketData.length === 0 && records.length > 0;
+    if (useFallback) {
+      const fbCars = records.reduce((s, r) => s + r.total_cars, 0);
+      const fbValet = records.reduce((s, r) => s + r.valet_revenue, 0);
+      const fbRev = records.reduce((s, r) => s + (r.daily_revenue || 0), 0);
+      return { totalCars: fbCars, totalValet: fbValet, totalParking: Math.max(fbRev - fbValet, 0), workerCount: workerIds.size, activeContracts, totalRevenue: fbRev };
+    }
     return { totalCars, totalValet, totalParking, workerCount: workerIds.size, activeContracts, totalRevenue };
-  }, [records, assignments, monthlyContracts]);
+  }, [ticketData, records, assignments, monthlyContracts]);
 
   const hourlyChartData = useMemo(() => {
     const hourMap = {}; for (let h = 7; h <= 22; h++) hourMap[h] = 0;
