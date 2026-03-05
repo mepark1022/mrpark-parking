@@ -51,6 +51,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
   const [overdueMinutes, setOverdueMinutes] = useState(0);
   const [additionalFee, setAdditionalFee] = useState(0);
   const [payLoading, setPayLoading] = useState(false);
+  const [exitLoading, setExitLoading] = useState(false);
   const [hasKiosk, setHasKiosk] = useState(false);
 
   /* ─── 티켓 로드 ─── */
@@ -332,6 +333,49 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
           </div>
         </div>
       </div>
+
+      {/* ─── 발렛 출차요청 버튼 ─── */}
+      {ticket.parking_type === "valet" && ticket.status === "parking" && (
+        <div style={{ padding: "20px 16px 0" }}>
+          <button
+            onClick={async () => {
+              setExitLoading(true);
+              try {
+                const supabase = createClient();
+                // exit_requests 테이블에 출차요청 생성
+                await supabase.from("exit_requests").insert({
+                  ticket_id: ticketId,
+                  org_id: ticket.org_id,
+                  store_id: ticket.store_id,
+                  plate_number: ticket.plate_number,
+                  parking_location: ticket.parking_location ?? "",
+                  status: "requested",
+                });
+                // 티켓 상태 → exit_requested
+                await supabase.from("mepark_tickets")
+                  .update({ status: "exit_requested" })
+                  .eq("id", ticketId);
+                setTicket((prev) => ({ ...prev!, status: "exit_requested" }));
+              } catch (e) {
+                alert("출차요청 중 오류가 발생했습니다. 다시 시도해주세요.");
+              } finally {
+                setExitLoading(false);
+              }
+            }}
+            disabled={exitLoading}
+            style={{
+              width: "100%", padding: "18px", borderRadius: 14, border: "none",
+              background: exitLoading ? "#ccc" : "#1428A0",
+              color: "#fff", fontSize: 17, fontWeight: 800, cursor: exitLoading ? "not-allowed" : "pointer",
+            }}
+          >
+            {exitLoading ? "요청 중..." : "🚗 출차 요청하기"}
+          </button>
+          <div style={{ textAlign: "center", fontSize: 12, color: "#999", marginTop: 8 }}>
+            요청 후 크루가 차량을 준비합니다
+          </div>
+        </div>
+      )}
 
       {/* ─── overdue 결제 버튼 섹션 ─── */}
       {isOverdue && (
