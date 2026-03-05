@@ -109,6 +109,28 @@ function InviteAcceptContent() {
     }
   }
 
+  // 공통: API 라우트 경유로 수락 처리 (service role 사용 → RLS 우회)
+  async function callAcceptApi(userId: string, inv: any, nameVal?: string) {
+    const res = await fetch("/api/invite/accept", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        invitationId: inv.id,
+        email: inv.email,
+        name: nameVal || undefined,
+        role: inv.role,
+        orgId: inv.org_id,
+        storeId: inv.store_id,
+        storeIds: inv.store_ids,
+      }),
+    });
+    if (!res.ok) {
+      const d = await res.json();
+      throw new Error(d.error || "수락 처리 실패");
+    }
+  }
+
   async function handleSignUp() {
     if (!name || !password) return;
     setFormLoading(true);
@@ -132,15 +154,8 @@ function InviteAcceptContent() {
       }
 
       if (data.user) {
-        await supabase.from("profiles").upsert({
-          id: data.user.id,
-          email: email,
-          name: name,
-          role: invitation.role === "crew" ? "crew" : "admin",
-          status: "active",
-          org_id: invitation.org_id || null,
-        });
-        await acceptInvitation(data.user.id, invitation, email);
+        await callAcceptApi(data.user.id, invitation, name);
+        setStep("done");
       }
     } catch (err) {
       setError(err.message || "회원가입에 실패했습니다.");
@@ -162,14 +177,9 @@ function InviteAcceptContent() {
       if (loginErr) throw loginErr;
 
       if (data.user) {
-        await supabase.from("profiles").upsert({
-          id: data.user.id,
-          email: email,
-          role: invitation.role === "crew" ? "crew" : "admin",
-          status: "active",
-          org_id: invitation.org_id || null,
-        });
-        await acceptInvitation(data.user.id, invitation, email);
+        // 기존 로그인 유저: name은 API에서 기존 profile name 유지
+        await callAcceptApi(data.user.id, invitation);
+        setStep("done");
       }
     } catch (err) {
       setError(err.message || "로그인에 실패했습니다.");
@@ -180,23 +190,7 @@ function InviteAcceptContent() {
   async function acceptInvitation(userId, inv, userEmail) {
     setStep("accepting");
     try {
-      await supabase
-        .from("invitations")
-        .update({ status: "accepted" })
-        .eq("id", inv.id);
-
-      if (inv.role === "crew" && inv.store_id) {
-        try {
-          await supabase.from("store_members").upsert({
-            user_id: userId,
-            store_id: inv.store_id,
-            org_id: inv.org_id || null,
-          });
-        } catch (e) {
-          console.log("store_members upsert skipped:", e);
-        }
-      }
-
+      await callAcceptApi(userId, inv);
       setStep("done");
       setTimeout(() => {
         if (inv.role === "crew") {
