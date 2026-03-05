@@ -433,6 +433,27 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
             <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, margin: "0 0 16px" }}>
               번호판 중간 한글을 입력해주세요 (예: 가, 나, 허 등)
             </p>
+
+            {/* 후보 번호판이 있을 때 — 패턴 선택 먼저 */}
+            {candidates.filter(c => c.includes("?")).length > 0 && (
+              <div style={{ marginBottom: 16, background: "rgba(245,183,49,0.1)", border: "1.5px solid rgba(245,183,49,0.3)", borderRadius: 12, padding: "12px 14px" }}>
+                <p style={{ color: "#F5B731", fontSize: 12, fontWeight: 700, margin: "0 0 10px" }}>
+                  ⚠️ 번호판 자릿수를 선택해주세요
+                </p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {[detected, ...candidates.filter(c => c.includes("?"))].filter(Boolean).map((cand, i) => (
+                    <button key={i} onClick={() => { setDetected(cand!); setKoreanVal(""); }}
+                      style={{ flex: 1, padding: "12px 6px", background: detected === cand ? "#F5B731" : "rgba(255,255,255,0.07)", border: detected === cand ? "2px solid #F5B731" : "1.5px solid rgba(255,255,255,0.2)", borderRadius: 10, color: detected === cand ? "#1A1D2B" : "rgba(255,255,255,0.8)", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace", letterSpacing: 2 }}>
+                      {cand?.replace("?", "□")}
+                      <div style={{ fontSize: 10, fontWeight: 600, marginTop: 4, fontFamily: "sans-serif", letterSpacing: 0 }}>
+                        {cand === detected ? (i === 0 ? "신형(3자리)" : "구형(2자리)") : "구형(2자리)"}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* 현재 번호판 미리보기 */}
             <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 0", textAlign: "center", marginBottom: 16, fontFamily: "monospace", fontSize: 22, fontWeight: 900, color: "#fff", letterSpacing: 4 }}>
               {detected?.replace("?", koreanVal || "□")}

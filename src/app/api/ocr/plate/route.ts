@@ -42,22 +42,29 @@ function parsePlates(texts: string[]): string[] {
 
   // 2차 폴백: 한글 미인식 시
   if (results.size === 0) {
-    // 케이스 A: "1584 2953" → 4자리+4자리 (한글이 숫자로 오인식된 경우)
-    // → 앞 4자리의 첫 3자리 + ? + 뒤 4자리
+    // 케이스 A: 4자리+4자리 (한글→숫자 오인식)
+    // "164 4764" = 16나4764(구형) OR 164나4764(신형) 두 가지 가능 → 둘 다 후보로 제공
     const m44 = fullText.match(/\b(\d{4})\s+(\d{4})\b/);
     if (m44) {
-      results.add(`${m44[1].slice(0, 3)}? ${m44[2]}`);
+      results.add(`${m44[1].slice(0, 3)}? ${m44[2]}`); // 신형: 164? 4764
+      results.add(`${m44[1].slice(0, 2)}? ${m44[2]}`); // 구형/이륜: 16? 4764
     } else {
-      // 케이스 B: "1582953" → 7자리 연속 (한글 완전 제거된 경우)
+      // 케이스 B: 7자리 연속
       const m7 = fullText.replace(/\s+/g, "").match(NUMERIC_FALLBACK_7);
       if (m7) {
         const n = m7[0];
-        results.add(`${n.slice(0, 3)}? ${n.slice(3)}`);
+        results.add(`${n.slice(0, 3)}? ${n.slice(3)}`); // 신형
+        results.add(`${n.slice(0, 2)}? ${n.slice(2)}`); // 구형/이륜
       } else {
-        // 케이스 C: "158 2953" → 3자리+4자리 분리
+        // 케이스 C: 3자리+4자리 분리
         const m34 = fullText.match(/\b(\d{3})\s+(\d{4})\b/);
         if (m34) {
           results.add(`${m34[1]}? ${m34[2]}`);
+        }
+        // 케이스 D: 2자리+4자리 분리
+        const m24 = fullText.match(/\b(\d{2})\s+(\d{4})\b/);
+        if (m24) {
+          results.add(`${m24[1]}? ${m24[2]}`);
         }
       }
     }
