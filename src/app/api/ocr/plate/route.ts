@@ -42,16 +42,23 @@ function parsePlates(texts: string[]): string[] {
 
   // 2차 폴백: 한글 미인식 시
   if (results.size === 0) {
-    // fullText에서 3자리+공백/한글+4자리 패턴 추출 (158 나 2953 → "158? 2953")
-    const m34 = fullText.replace(/\s+/g, " ").match(/(\d{3})[^0-9]{0,3}(\d{4})/);
-    if (m34) {
-      results.add(`${m34[1]}? ${m34[2]}`);
+    // 케이스 A: "1584 2953" → 4자리+4자리 (한글이 숫자로 오인식된 경우)
+    // → 앞 4자리의 첫 3자리 + ? + 뒤 4자리
+    const m44 = fullText.match(/\b(\d{4})\s+(\d{4})\b/);
+    if (m44) {
+      results.add(`${m44[1].slice(0, 3)}? ${m44[2]}`);
     } else {
-      // 7자리 연속 숫자 폴백
+      // 케이스 B: "1582953" → 7자리 연속 (한글 완전 제거된 경우)
       const m7 = fullText.replace(/\s+/g, "").match(NUMERIC_FALLBACK_7);
       if (m7) {
         const n = m7[0];
         results.add(`${n.slice(0, 3)}? ${n.slice(3)}`);
+      } else {
+        // 케이스 C: "158 2953" → 3자리+4자리 분리
+        const m34 = fullText.match(/\b(\d{3})\s+(\d{4})\b/);
+        if (m34) {
+          results.add(`${m34[1]}? ${m34[2]}`);
+        }
       }
     }
   }
