@@ -137,19 +137,26 @@ export async function POST(req: NextRequest) {
       ticketId,
     });
 
-    // 티켓에 발송 완료 표시
+    // 티켓에 발송 완료 표시 (컬럼 없어도 무시)
     if (result.success) {
-      await supabase
-        .from("mepark_tickets")
-        .update({ entry_alimtalk_sent: true })
-        .eq("id", ticketId);
+      try {
+        await supabase
+          .from("mepark_tickets")
+          .update({ entry_alimtalk_sent: true })
+          .eq("id", ticketId);
+      } catch (e) {
+        console.warn("[Alimtalk/entry] entry_alimtalk_sent 업데이트 실패 (무시):", e);
+      }
     }
 
     // ⚠️ 전화번호는 여기서 소멸. DB에 저장하지 않음.
 
+    console.log(`[Alimtalk/entry] 결과: success=${result.success} simulated=${result.simulated} error=${result.error} messageId=${result.messageId}`);
+
     return NextResponse.json({
       success: result.success,
       simulated: result.simulated,
+      messageId: result.messageId,
       error: result.error,
     });
   } catch (err) {

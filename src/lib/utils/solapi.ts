@@ -131,16 +131,21 @@ export async function logAlimtalk(params: LogAlimtalkParams): Promise<void> {
   const supabaseService = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   if (!supabaseUrl || !supabaseService) return;
 
-  const supabase = createClient(supabaseUrl, supabaseService);
-  await supabase.from("alimtalk_send_logs").insert({
-    org_id:              orgId,
-    template_type:       templateType,
-    phone_masked:        phoneMasked,
-    send_status:         result.success ? "success" : "failed",
-    message_id:          result.messageId ?? null,
-    error_message:       result.error ?? null,
-    ticket_id:           ticketId ?? null,
-    monthly_parking_id:  monthlyParkingId ?? null,
-    sent_at:             new Date().toISOString(),
-  });
+  try {
+    const supabase = createClient(supabaseUrl, supabaseService);
+    await supabase.from("alimtalk_send_logs").insert({
+      org_id:              orgId,
+      template_type:       templateType,
+      phone_masked:        phoneMasked,
+      send_status:         result.success ? "success" : "failed",
+      message_id:          result.messageId ?? null,
+      error_message:       result.error ?? null,
+      ticket_id:           ticketId ?? null,
+      monthly_parking_id:  monthlyParkingId ?? null,
+      sent_at:             new Date().toISOString(),
+    });
+  } catch (e) {
+    // 로그 저장 실패는 무시 (테이블 미생성 등) - 발송 자체에 영향 없음
+    console.warn("[Solapi] 로그 저장 실패 (무시):", e);
+  }
 }
