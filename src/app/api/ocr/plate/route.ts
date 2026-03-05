@@ -15,6 +15,9 @@ const PLATE_PATTERNS = [
   /\d{2}[가-힣]\d{4}/,
 ];
 
+// 한글 미인식 폴백: 숫자 7자리 (123+4567 형태)
+const NUMERIC_FALLBACK = /\d{7}/;
+
 // ─────────────────────────────────────────────
 // 번호판 후보 파싱
 // ─────────────────────────────────────────────
@@ -22,14 +25,24 @@ function parsePlates(texts: string[]): string[] {
   const results = new Set<string>();
 
   for (const text of texts) {
-    // 공백/줄바꿈 제거 후 패턴 매칭
     const cleaned = text.replace(/\s+/g, "").replace(/[^\w가-힣]/g, "");
 
+    // 1차: 한글 포함 정규식 매칭
     for (const pattern of PLATE_PATTERNS) {
       const match = cleaned.match(pattern);
       if (match) {
-        // 표준 형식으로 포맷: 123가 4567
         results.add(formatPlate(match[0]));
+      }
+    }
+
+    // 2차 폴백: 한글 미인식 시 숫자 7자리 매칭 (123가4567 → 1234567)
+    // 사용자 확인 화면에서 한글 1자리 수동 수정 유도
+    if (results.size === 0) {
+      const numMatch = cleaned.match(NUMERIC_FALLBACK);
+      if (numMatch) {
+        // 앞 3자리 + ? + 뒤 4자리 형태로 표시 (한글 자리 표시)
+        const n = numMatch[0];
+        results.add(`${n.slice(0, 3)}? ${n.slice(3)}`);
       }
     }
   }
