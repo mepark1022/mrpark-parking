@@ -55,7 +55,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: "environment", // 후면 카메라
+          facingMode: { ideal: "environment" }, // 후면 우선, 없으면 전면/PC 웹캠 사용
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -125,6 +125,15 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
       setPhase(STATES.DETECTING);
       setShakeBox(true);
       setTimeout(() => setShakeBox(false), 600);
+
+      // video 실제 재생 확인 (videoWidth 0이면 카메라 미준비)
+      const video = videoRef.current;
+      if (!video || video.videoWidth === 0 || video.readyState < 2) {
+        setErrorMsg("카메라가 준비되지 않았습니다. 다시 시도해주세요.");
+        setPhase(STATES.IDLE);
+        stopCamera();
+        return;
+      }
 
       const frame = captureFrame();
 
