@@ -762,9 +762,9 @@ export default function StoresPage() {
     if (!oid) { alert("로그인 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요."); return; }
     let error: any;
     if (editingItem?.id) {
-      ({ error } = await supabase.from("store_shifts").update({ ...shiftForm }).eq("id", editingItem.id));
+      ({ error } = await supabase.from("store_shifts").update({ ...shiftForm, name: shiftForm.shift_name }).eq("id", editingItem.id));
     } else {
-      ({ error } = await supabase.from("store_shifts").insert({ ...shiftForm, store_id: selectedStoreId, org_id: oid }));
+      ({ error } = await supabase.from("store_shifts").insert({ ...shiftForm, name: shiftForm.shift_name, store_id: selectedStoreId, org_id: oid }));
     }
     if (error) { alert("저장 실패: " + error.message); return; }
     showToast(editingItem?.id ? "✅ 근무조가 수정되었습니다" : "✅ 근무조가 추가되었습니다");
