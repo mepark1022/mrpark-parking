@@ -88,7 +88,7 @@ export async function sendAlimtalk(params: SendAlimtalkParams): Promise<SendAlim
     message: {
       to: to.replace(/-/g, ""),
       from: sender,
-      kakaoOptions: { pfId, templateCode, variables },
+      kakaoOptions: { pfId, templateId: templateCode, variables },
     },
   };
 
