@@ -326,7 +326,15 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         </div>
       </div>
 
-      {/* 오류 메시지 */}
+      {/* 안내 문구 */}
+      <div style={{ position: "absolute", zIndex: 15, top: "calc(25% + 37%)", left: 0, right: 0, display: "flex", justifyContent: "center", padding: "0 16px" }}>
+        <div style={{ background: "rgba(245,183,49,0.12)", border: "1px solid rgba(245,183,49,0.35)", borderRadius: 10, padding: "8px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 14 }}>⚠️</span>
+          <span style={{ color: "#F5B731", fontSize: 12, fontWeight: 600, lineHeight: 1.5 }}>
+            번호판 한글 "나" 등은 인식 오류가 많으니<br />수동 입력을 권장합니다
+          </span>
+        </div>
+      </div>
       {errorMsg && phase === STATES.IDLE && (
         <div style={{ position: "absolute", zIndex: 15, top: "calc(25% + 38%)", left: "5%", right: "5%", marginTop: 12 }}>
           <div style={{ background: "rgba(220,38,38,0.15)", border: "1.5px solid rgba(220,38,38,0.5)", borderRadius: 10, padding: "10px 16px", textAlign: "center" }}>
