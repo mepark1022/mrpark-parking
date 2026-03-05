@@ -23,6 +23,30 @@ const fmt = (ts: string) => {
 
 const fmtMoney = (n: number) => `${(n || 0).toLocaleString()}원`;
 
+/* ─── 요금 계산 (고객 페이지용) ─── */
+const calcTicketFee = (entryAt: string, vp: Record<string, unknown> | null, parkingType: string): number => {
+  if (!entryAt) return 0;
+  const totalMinutes = Math.ceil((Date.now() - new Date(entryAt).getTime()) / 60000);
+  const freeMin = (vp?.free_minutes as number) ?? 0;
+  const baseMin = (vp?.base_minutes as number) ?? 30;
+  const baseFee = (vp?.base_fee as number) ?? 0;
+  const extraFee = (vp?.extra_fee as number) ?? 0;
+  const dailyMax = (vp?.daily_max as number) ?? 0;
+  const valetFee = (vp?.valet_fee as number) ?? 0;
+
+  if (totalMinutes <= freeMin) return parkingType === "valet" ? valetFee : 0;
+  const chargeable = totalMinutes - freeMin;
+  let fee = 0;
+  if (chargeable <= baseMin) {
+    fee = baseFee;
+  } else {
+    const extraUnits = Math.ceil((chargeable - baseMin) / 10);
+    fee = baseFee + extraUnits * extraFee;
+  }
+  fee += parkingType === "valet" ? valetFee : 0;
+  return dailyMax > 0 ? Math.min(fee, dailyMax) : fee;
+};
+
 const fmtCountdown = (deadline: string) => {
   const diff = new Date(deadline).getTime() - Date.now();
   if (diff <= 0) return null;
@@ -53,6 +77,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
   const [payLoading, setPayLoading] = useState(false);
   const [exitLoading, setExitLoading] = useState(false);
   const [hasKiosk, setHasKiosk] = useState(false);
+  const [liveFee, setLiveFee] = useState(0); // 실시간 예상 요금
 
   /* ─── 티켓 로드 ─── */
   const loadTicket = useCallback(async () => {
@@ -118,6 +143,15 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
   /* ─── 카운트다운 & overdue 감지 타이머 ─── */
   useEffect(() => {
     if (!ticket) return;
+    // 초기 liveFee 즉시 계산
+    if (["parking", "exit_requested", "car_ready"].includes(ticket.status as string)) {
+      const fee = calcTicketFee(
+        ticket.entry_at as string,
+        ticket.visit_places as Record<string, unknown> | null,
+        ticket.parking_type as string
+      );
+      setLiveFee(fee);
+    }
     const interval = setInterval(() => {
       if (ticket.status === "pre_paid" && ticket.pre_paid_deadline) {
         const cd = fmtCountdown(ticket.pre_paid_deadline as string);
@@ -131,6 +165,14 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
         const extraFee = (ticket.visit_places as Record<string, unknown>)?.extra_fee as number ?? 1000;
         const units = Math.ceil(m / 10);
         setAdditionalFee(units * extraFee);
+      } else if (["parking", "exit_requested", "car_ready"].includes(ticket.status as string)) {
+        // 1분마다 예상 요금 갱신
+        const fee = calcTicketFee(
+          ticket.entry_at as string,
+          ticket.visit_places as Record<string, unknown> | null,
+          ticket.parking_type as string
+        );
+        setLiveFee(fee);
       }
     }, 1000);
     return () => clearInterval(interval);
@@ -304,11 +346,26 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
 
           {/* 결제 정보 */}
           <div style={{ marginTop: 16, background: "#f8f9fb", borderRadius: 12, padding: "14px 16px" }}>
-            {ticket.status === "parking" && (
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 13, color: "#666" }}>예상 요금</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: "#1428A0" }}>
-                  {ticket.calculated_fee as number > 0 ? fmtMoney(ticket.calculated_fee as number) : "무료"}
+            {/* parking / exit_requested / car_ready → 실시간 예상 요금 */}
+            {["parking", "exit_requested", "car_ready"].includes(ticket.status as string) && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: (ticket.paid_amount as number > 0) ? 10 : 0 }}>
+                <span style={{ fontSize: 13, color: "#666" }}>
+                  {ticket.status === "car_ready" ? "결제 예정 요금" : "예상 요금"}
+                </span>
+                <span style={{
+                  fontSize: 16, fontWeight: 800,
+                  color: ticket.status === "car_ready" ? "#16A34A" : "#1428A0",
+                }}>
+                  {liveFee > 0 ? fmtMoney(liveFee) : "무료"}
+                </span>
+              </div>
+            )}
+            {/* completed → 실제 납부 요금 */}
+            {isCompleted && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 13, color: "#666" }}>납부 금액</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: "#1428A0" }}>
+                  {(ticket.paid_amount as number) > 0 ? fmtMoney(ticket.paid_amount as number) : "무료"}
                 </span>
               </div>
             )}
