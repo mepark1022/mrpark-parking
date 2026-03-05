@@ -204,6 +204,7 @@ export default function CrewEntryPage() {
 
   // Step 3
   const [phone, setPhone] = useState("");
+  const [dupTicket, setDupTicket] = useState(null); // 중복 차량 팝업용
 
   useEffect(() => {
     const init = async () => {
@@ -269,6 +270,20 @@ export default function CrewEntryPage() {
     if (!storeId || !orgId || !userId) return;
     setLoading(true);
     try {
+      // ── 중복 차량 체크 ──
+      const { data: existing } = await supabase
+        .from("mepark_tickets")
+        .select("id, plate_number, entry_at, status")
+        .eq("store_id", storeId)
+        .eq("plate_number", plateNumber)
+        .not("status", "eq", "completed")
+        .maybeSingle();
+
+      if (existing) {
+        setDupTicket(existing);
+        setLoading(false);
+        return;
+      }
       const { data: ticket, error } = await supabase
         .from("mepark_tickets")
         .insert({
@@ -549,6 +564,94 @@ export default function CrewEntryPage() {
           </>
         )}
       </div>
+
+      {/* ── 중복 차량 팝업 ── */}
+      {dupTicket && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+          display: "flex", alignItems: "flex-end", zIndex: 300,
+        }}>
+          <div style={{
+            background: "#fff", width: "100%",
+            borderRadius: "24px 24px 0 0",
+            padding: "28px 20px",
+            paddingBottom: "calc(28px + env(safe-area-inset-bottom, 0))",
+          }}>
+            {/* 핸들 */}
+            <div style={{ width: 40, height: 4, background: "#E2E8F0", borderRadius: 2, margin: "0 auto 20px" }} />
+
+            {/* 경고 아이콘 */}
+            <div style={{ textAlign: "center", marginBottom: 12 }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: "50%",
+                background: "#FEF2F2", margin: "0 auto 12px",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 32,
+              }}>⚠️</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#1A1D2B", marginBottom: 6 }}>
+                이미 입차된 차량입니다
+              </div>
+              <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.6 }}>
+                동일 번호판이 현재 주차 중입니다.<br />
+                중복 입차를 방지하기 위해 등록이 차단되었습니다.
+              </div>
+            </div>
+
+            {/* 기존 입차 정보 */}
+            <div style={{
+              background: "#FEF2F2", borderRadius: 14, padding: "14px 16px",
+              margin: "16px 0", border: "1.5px solid #FECACA",
+            }}>
+              <div style={{ fontSize: 12, color: "#DC2626", fontWeight: 700, marginBottom: 10, letterSpacing: 0.5 }}>
+                현재 주차 중인 티켓 정보
+              </div>
+              {[
+                { label: "차량번호", value: dupTicket.plate_number },
+                { label: "입차시각", value: (() => {
+                  const d = new Date(dupTicket.entry_at);
+                  return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) +
+                    " (" + Math.floor((Date.now() - d.getTime()) / 60000) + "분 경과)";
+                })() },
+                { label: "상태", value: {
+                  parking: "주차 중", pre_paid: "사전정산 완료",
+                  exit_requested: "출차 요청됨", car_ready: "차량 준비 완료",
+                }[dupTicket.status] || dupTicket.status },
+              ].map((row) => (
+                <div key={row.label} style={{
+                  display: "flex", justifyContent: "space-between",
+                  fontSize: 14, padding: "5px 0",
+                  borderBottom: "1px solid #FECACA",
+                }}>
+                  <span style={{ color: "#7F1D1D" }}>{row.label}</span>
+                  <span style={{ fontWeight: 700, color: "#DC2626" }}>{row.value}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* 버튼 */}
+            <button
+              onClick={() => router.push(`/crew/parking-list/${dupTicket.id}`)}
+              style={{
+                width: "100%", height: 52, borderRadius: 12, border: "none",
+                background: "#1428A0", color: "#fff",
+                fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10,
+              }}
+            >
+              기존 티켓 출차 처리하기
+            </button>
+            <button
+              onClick={() => setDupTicket(null)}
+              style={{
+                width: "100%", height: 48, borderRadius: 12,
+                border: "none", background: "#F1F5F9", color: "#475569",
+                fontSize: 14, fontWeight: 600, cursor: "pointer",
+              }}
+            >
+              돌아가기
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
