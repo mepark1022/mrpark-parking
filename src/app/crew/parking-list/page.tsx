@@ -9,6 +9,10 @@ import CrewHeader from "@/components/crew/CrewHeader";
 import { fmtPlate, splitPlate } from "@/lib/utils/format";
 
 const CSS = `
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateX(-50%) translateY(-16px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
   .plist-page {
     min-height: 100dvh;
     background: #F8FAFC;
@@ -257,6 +261,7 @@ export default function CrewParkingListPage() {
   const [plateEditTarget, setPlateEditTarget] = useState(null);
   const [editPlateValue, setEditPlateValue] = useState("");
   const [plateEditLoading, setPlateEditLoading] = useState(false);
+  const [exitToast, setExitToast] = useState(null); // { plate, id }
 
   useEffect(() => {
     const savedStoreId = localStorage.getItem("crew_store_id");
@@ -279,6 +284,9 @@ export default function CrewParkingListPage() {
         if (updated.status === "exit_requested") {
           fetchTickets(savedStoreId);
           if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+          // 토스트 팝업
+          setExitToast({ plate: updated.plate_number, id: updated.id });
+          setTimeout(() => setExitToast(null), 5000);
         } else {
           // 다른 상태 변경도 목록에 반영
           setTickets((prev) =>
@@ -358,11 +366,63 @@ export default function CrewParkingListPage() {
     monthly: tickets.filter(t => t.is_monthly).length,
   };
 
+  const exitReqCount = tickets.filter(t => t.status === "exit_requested").length;
+
   return (
     <>
       <style>{CSS}</style>
       <div className="plist-page">
         <CrewHeader title="입차 현황" />
+
+        {/* ─── 출차요청 고정 배너 ─── */}
+        {exitReqCount > 0 && (
+          <div
+            onClick={() => setActiveTab("all")}
+            style={{
+              position: "sticky", top: 56, zIndex: 50,
+              background: "#EA580C", color: "#fff",
+              padding: "12px 16px", display: "flex",
+              alignItems: "center", justifyContent: "space-between",
+              cursor: "pointer",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 20 }}>🚗</span>
+              <span style={{ fontWeight: 800, fontSize: 15 }}>
+                출차요청 {exitReqCount}건 대기 중
+              </span>
+            </div>
+            <span style={{ fontSize: 12, opacity: 0.85 }}>탭하여 확인 →</span>
+          </div>
+        )}
+
+        {/* ─── 토스트 팝업 ─── */}
+        {exitToast && (
+          <div
+            onClick={() => router.push(`/crew/parking-list/${exitToast.id}`)}
+            style={{
+              position: "fixed", top: 72, left: "50%", transform: "translateX(-50%)",
+              zIndex: 9999, background: "#1A1D2B", color: "#fff",
+              borderRadius: 14, padding: "14px 20px", minWidth: 260,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+              display: "flex", alignItems: "center", gap: 12,
+              cursor: "pointer", animation: "slideDown 0.3s ease",
+            }}
+          >
+            <span style={{ fontSize: 28 }}>🚗</span>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 15 }}>출차요청 도착!</div>
+              <div style={{ fontSize: 13, color: "#F5B731", fontWeight: 700, marginTop: 2 }}>
+                {exitToast.plate}
+              </div>
+              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>탭하여 처리하기</div>
+            </div>
+            <div
+              onClick={(e) => { e.stopPropagation(); setExitToast(null); }}
+              style={{ marginLeft: "auto", fontSize: 18, color: "#94A3B8", padding: 4 }}
+            >✕</div>
+          </div>
+        )}
 
         {/* 검색/탭 */}
         <div className="plist-toolbar">
