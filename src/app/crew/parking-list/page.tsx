@@ -154,6 +154,31 @@ const CSS = `
   .vehicle-card.exit_requested { border-color: #F5B731; }
   .vehicle-card.car_ready      { border-color: #16A34A; }
 
+  /* ── 출차처리 버튼 ── */
+  .btn-checkout-inline {
+    flex-shrink: 0;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: none;
+    background: #16A34A;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(22,163,74,0.3);
+  }
+  .btn-checkout-inline:active { transform: scale(0.95); opacity: 0.9; }
+  .btn-checkout-inline.exit_requested,
+  .btn-checkout-inline.car_ready {
+    background: #EA580C;
+    box-shadow: 0 2px 8px rgba(234,88,12,0.3);
+  }
+
   /* ── 새로고침 버튼 ── */
   .fab-refresh {
     position: fixed;
@@ -392,7 +417,7 @@ export default function CrewParkingListPage() {
                   onClick={() => router.push(`/crew/parking-list/${ticket.id}`)}
                 >
                   <div className="vehicle-card-top">
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0}}>
                       <div className="vehicle-plate">{(()=>{const [p,n]=splitPlate(ticket.plate_number);return p?<>{p}<span style={{marginLeft:6}}>{n}</span></>:ticket.plate_number;})()}</div>
                       {ticket.status !== "completed" && (
                         <button className="btn-plate-edit-sm" onClick={(e) => openPlateEdit(e, ticket.id, ticket.plate_number)}>
@@ -402,8 +427,19 @@ export default function CrewParkingListPage() {
                         </button>
                       )}
                     </div>
-                    <div className="status-badge" style={{ background: statusCfg.bg, color: statusCfg.color }}>
-                      {statusCfg.label}
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                      <div className="status-badge" style={{ background: statusCfg.bg, color: statusCfg.color }}>
+                        {statusCfg.label}
+                      </div>
+                      <button
+                        className={`btn-checkout-inline ${ticket.status}`}
+                        onClick={(e) => { e.stopPropagation(); router.push(`/crew/parking-list/${ticket.id}`); }}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        출차
+                      </button>
                     </div>
                   </div>
                   <div className="vehicle-card-body">
