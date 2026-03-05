@@ -124,6 +124,7 @@ export async function POST(req: NextRequest) {
         "#{차량번호}": plateNumber,
         "#{입차시간}": entryAt,
         "#{요금안내}": "아래 버튼에서 확인",
+        "#{티켓ID}":   ticketId,   // 버튼 URL: ticket.mepark.kr/ticket/#{티켓ID}
       },
     });
 
