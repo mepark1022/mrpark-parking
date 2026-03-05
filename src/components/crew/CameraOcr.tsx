@@ -44,6 +44,9 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
   const [manualInput, setManualInput] = useState(false);
   const [manualVal, setManualVal] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // 한글 수정 팝업 (? 감지 시)
+  const [koreanEdit, setKoreanEdit] = useState(false);
+  const [koreanVal, setKoreanVal] = useState("");
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -82,13 +85,13 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     const canvas = canvasRef.current;
     if (!video || !canvas) return null;
 
-    // 번호판 영역만 크롭 (뷰파인더 비율 기준: 세로 30~54%, 가로 10~90%)
+    // 번호판 영역만 크롭 (뷰파인더 비율 기준: 세로 25~60%, 가로 5~95%)
     const vw = video.videoWidth;
     const vh = video.videoHeight;
-    const cropX = vw * 0.1;
-    const cropY = vh * 0.30;
-    const cropW = vw * 0.8;
-    const cropH = vh * 0.24;
+    const cropX = vw * 0.05;
+    const cropY = vh * 0.25;
+    const cropW = vw * 0.90;
+    const cropH = vh * 0.35;
 
     canvas.width = cropW;
     canvas.height = cropH;
@@ -150,7 +153,12 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         setDetected(result.plate);
         setCandidates(result.candidates ?? []);
         setPhase(STATES.CONFIRMING);
-        stopCamera(); // 확인 화면에서는 카메라 종료
+        stopCamera();
+        // ? 포함 시 한글 수정 팝업 자동 표시
+        if (result.plate.includes("?")) {
+          setKoreanVal("");
+          setKoreanEdit(true);
+        }
       } else {
         setErrorMsg(result.error ?? "번호판을 인식하지 못했습니다. 다시 시도해주세요.");
         setPhase(STATES.IDLE);
@@ -176,6 +184,8 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     setScanLine(0);
     setDetected(null);
     setErrorMsg(null);
+    setKoreanEdit(false);
+    setKoreanVal("");
   }, [stopCamera]);
 
   // ── 입차 완료 → 상위 컴포넌트 전달 ──────────
@@ -282,7 +292,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
       </div>
 
       {/* 스캔 박스 */}
-      <div style={{ position: "absolute", zIndex: 10, top: "30%", left: "10%", right: "10%", height: "24%", border: boxBorder[phase], borderRadius: 12, boxShadow: boxGlow[phase], transition: "border 0.3s,box-shadow 0.4s", animation: shakeBox ? "shake 0.4s ease" : "none", overflow: "hidden" }}>
+      <div style={{ position: "absolute", zIndex: 10, top: "25%", left: "5%", right: "5%", height: "35%", border: boxBorder[phase], borderRadius: 12, boxShadow: boxGlow[phase], transition: "border 0.3s,box-shadow 0.4s", animation: shakeBox ? "shake 0.4s ease" : "none", overflow: "hidden" }}>
         {/* 모서리 마커 */}
         {([
           { t: 0, l: 0, bTop: "3px solid #F5B731", bLeft: "3px solid #F5B731" },
@@ -312,7 +322,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
       </div>
 
       {/* 상태 레이블 */}
-      <div style={{ position: "absolute", zIndex: 15, top: "calc(30% - 44px)", left: 0, right: 0, display: "flex", justifyContent: "center" }}>
+      <div style={{ position: "absolute", zIndex: 15, top: "calc(25% - 44px)", left: 0, right: 0, display: "flex", justifyContent: "center" }}>
         <div style={{ background: "rgba(0,0,0,0.6)", borderRadius: 20, padding: "6px 18px", display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: phase === STATES.CONFIRMED || phase === STATES.CONFIRMING ? "#16A34A" : phase === STATES.SCANNING || phase === STATES.DETECTING ? "#F5B731" : "rgba(255,255,255,0.4)" }} />
           <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{phaseLabel[phase]}</span>
@@ -321,7 +331,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
 
       {/* 오류 메시지 */}
       {errorMsg && phase === STATES.IDLE && (
-        <div style={{ position: "absolute", zIndex: 15, top: "calc(30% + 28%)", left: "10%", right: "10%", marginTop: 12 }}>
+        <div style={{ position: "absolute", zIndex: 15, top: "calc(25% + 38%)", left: "5%", right: "5%", marginTop: 12 }}>
           <div style={{ background: "rgba(220,38,38,0.15)", border: "1.5px solid rgba(220,38,38,0.5)", borderRadius: 10, padding: "10px 16px", textAlign: "center" }}>
             <span style={{ color: "#fca5a5", fontSize: 13 }}>⚠️ {errorMsg}</span>
           </div>
@@ -363,7 +373,14 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         {phase === STATES.CONFIRMING && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, margin: "0 0 2px", textAlign: "center" }}>인식된 번호판이 맞나요?</p>
-            <button onClick={() => confirm(detected!)} style={{ width: "100%", padding: "15px 0", background: "#16A34A", border: "none", borderRadius: 12, fontSize: 17, fontWeight: 800, color: "#fff", cursor: "pointer" }}>
+            {/* ? 포함 시 한글 수정 안내 */}
+            {detected?.includes("?") && (
+              <div style={{ background: "rgba(245,183,49,0.15)", border: "1.5px solid rgba(245,183,49,0.4)", borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ color: "#F5B731", fontSize: 12 }}>⚠️ 한글 인식 실패 — 직접 입력해주세요</span>
+                <button onClick={() => { setKoreanVal(""); setKoreanEdit(true); }} style={{ background: "#F5B731", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 700, color: "#1A1D2B", cursor: "pointer" }}>수정</button>
+              </div>
+            )}
+            <button onClick={() => confirm(detected!)} disabled={!!detected?.includes("?")} style={{ width: "100%", padding: "15px 0", background: detected?.includes("?") ? "rgba(255,255,255,0.1)" : "#16A34A", border: "none", borderRadius: 12, fontSize: 17, fontWeight: 800, color: detected?.includes("?") ? "rgba(255,255,255,0.3)" : "#fff", cursor: detected?.includes("?") ? "default" : "pointer" }}>
               ✅ {detected} — 맞습니다
             </button>
             {candidates.length > 0 && (
@@ -407,6 +424,52 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
           </div>
         )}
       </div>
+
+      {/* 한글 수정 팝업 (? 감지 시 자동 표시) */}
+      {koreanEdit && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "flex-end" }}>
+          <div style={{ width: "100%", background: "#1a1a2e", borderRadius: "20px 20px 0 0", padding: "28px 24px 48px", border: "1.5px solid rgba(245,183,49,0.3)", boxSizing: "border-box" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <span style={{ color: "#fff", fontWeight: 800, fontSize: 17 }}>한글 문자 입력</span>
+              <button onClick={() => setKoreanEdit(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 20, cursor: "pointer" }}>✕</button>
+            </div>
+            <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, margin: "0 0 16px" }}>
+              번호판 중간 한글을 입력해주세요 (예: 가, 나, 허 등)
+            </p>
+            {/* 현재 번호판 미리보기 */}
+            <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 0", textAlign: "center", marginBottom: 16, fontFamily: "monospace", fontSize: 22, fontWeight: 900, color: "#fff", letterSpacing: 4 }}>
+              {detected?.replace("?", koreanVal || "□")}
+            </div>
+            {/* 자주 쓰는 한글 빠른 선택 */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+              {["가","나","다","라","마","바","사","아","자","차","카","타","파","하","허","호"].map(ch => (
+                <button key={ch} onClick={() => setKoreanVal(ch)} style={{ padding: "10px 14px", background: koreanVal === ch ? "#F5B731" : "rgba(255,255,255,0.1)", border: koreanVal === ch ? "2px solid #F5B731" : "1.5px solid rgba(255,255,255,0.2)", borderRadius: 8, color: koreanVal === ch ? "#1A1D2B" : "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", minWidth: 44 }}>
+                  {ch}
+                </button>
+              ))}
+            </div>
+            {/* 직접 입력 */}
+            <input
+              value={koreanVal}
+              onChange={(e) => setKoreanVal(e.target.value.slice(-1))}
+              placeholder="한글 1자 직접 입력"
+              style={{ width: "100%", padding: "12px 16px", fontSize: 18, background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 10, color: "#fff", outline: "none", boxSizing: "border-box", textAlign: "center", marginBottom: 12 }}
+            />
+            <button
+              onClick={() => {
+                if (koreanVal) {
+                  const fixed = detected?.replace("?", koreanVal) ?? "";
+                  setDetected(fixed);
+                  setKoreanEdit(false);
+                }
+              }}
+              style={{ width: "100%", padding: "15px 0", background: koreanVal ? "#16A34A" : "rgba(255,255,255,0.1)", border: "none", borderRadius: 12, fontSize: 16, fontWeight: 800, color: koreanVal ? "#fff" : "rgba(255,255,255,0.3)", cursor: koreanVal ? "pointer" : "default" }}
+            >
+              ✅ 확인 — {detected?.replace("?", koreanVal || "□")}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 직접 입력 모달 */}
       {manualInput && (
