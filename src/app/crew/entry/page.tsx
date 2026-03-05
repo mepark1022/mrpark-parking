@@ -584,26 +584,37 @@ export default function CrewEntryPage() {
             <div style={{ textAlign: "center", marginBottom: 12 }}>
               <div style={{
                 width: 64, height: 64, borderRadius: "50%",
-                background: "#FEF2F2", margin: "0 auto 12px",
+                background: ["exit_requested","car_ready"].includes(dupTicket.status) ? "#FFF7ED" : "#FEF2F2",
+                margin: "0 auto 12px",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 32,
-              }}>⚠️</div>
+              }}>
+                {["exit_requested","car_ready"].includes(dupTicket.status) ? "🚗" : "⚠️"}
+              </div>
               <div style={{ fontSize: 20, fontWeight: 800, color: "#1A1D2B", marginBottom: 6 }}>
-                이미 입차된 차량입니다
+                {["exit_requested","car_ready"].includes(dupTicket.status)
+                  ? "출차 처리 중인 차량입니다"
+                  : "이미 입차된 차량입니다"}
               </div>
               <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.6 }}>
-                동일 번호판이 현재 주차 중입니다.<br />
-                중복 입차를 방지하기 위해 등록이 차단되었습니다.
+                {["exit_requested","car_ready"].includes(dupTicket.status)
+                  ? <>출차 처리가 진행 중입니다.<br />출차 완료 후 입차 등록해 주세요.</>
+                  : <>동일 번호판이 현재 주차 중입니다.<br />중복 입차를 방지하기 위해 등록이 차단되었습니다.</>
+                }
               </div>
             </div>
 
             {/* 기존 입차 정보 */}
             <div style={{
-              background: "#FEF2F2", borderRadius: 14, padding: "14px 16px",
-              margin: "16px 0", border: "1.5px solid #FECACA",
+              background: ["exit_requested","car_ready"].includes(dupTicket.status) ? "#FFF7ED" : "#FEF2F2",
+              borderRadius: 14, padding: "14px 16px",
+              margin: "16px 0",
+              border: ["exit_requested","car_ready"].includes(dupTicket.status) ? "1.5px solid #FED7AA" : "1.5px solid #FECACA",
             }}>
-              <div style={{ fontSize: 12, color: "#DC2626", fontWeight: 700, marginBottom: 10, letterSpacing: 0.5 }}>
-                현재 주차 중인 티켓 정보
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10, letterSpacing: 0.5,
+                color: ["exit_requested","car_ready"].includes(dupTicket.status) ? "#EA580C" : "#DC2626"
+              }}>
+                {["exit_requested","car_ready"].includes(dupTicket.status) ? "출차 진행 중인 티켓 정보" : "현재 주차 중인 티켓 정보"}
               </div>
               {[
                 { label: "차량번호", value: dupTicket.plate_number },
@@ -620,25 +631,40 @@ export default function CrewEntryPage() {
                 <div key={row.label} style={{
                   display: "flex", justifyContent: "space-between",
                   fontSize: 14, padding: "5px 0",
-                  borderBottom: "1px solid #FECACA",
+                  borderBottom: ["exit_requested","car_ready"].includes(dupTicket.status) ? "1px solid #FED7AA" : "1px solid #FECACA",
                 }}>
-                  <span style={{ color: "#7F1D1D" }}>{row.label}</span>
-                  <span style={{ fontWeight: 700, color: "#DC2626" }}>{row.value}</span>
+                  <span style={{ color: ["exit_requested","car_ready"].includes(dupTicket.status) ? "#92400E" : "#7F1D1D" }}>{row.label}</span>
+                  <span style={{ fontWeight: 700, color: ["exit_requested","car_ready"].includes(dupTicket.status) ? "#EA580C" : "#DC2626" }}>{row.value}</span>
                 </div>
               ))}
             </div>
 
             {/* 버튼 */}
-            <button
-              onClick={() => router.push(`/crew/parking-list/${dupTicket.id}`)}
-              style={{
-                width: "100%", height: 52, borderRadius: 12, border: "none",
-                background: "#1428A0", color: "#fff",
-                fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10,
-              }}
-            >
-              기존 티켓 출차 처리하기
-            </button>
+            {["exit_requested","car_ready"].includes(dupTicket.status) ? (
+              // 출차 중 → 출차현황 확인 버튼만
+              <button
+                onClick={() => router.push(`/crew/parking-list/${dupTicket.id}`)}
+                style={{
+                  width: "100%", height: 52, borderRadius: 12, border: "none",
+                  background: "#EA580C", color: "#fff",
+                  fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10,
+                }}
+              >
+                출차 현황 확인하기
+              </button>
+            ) : (
+              // 주차 중 → 기존 티켓 출차처리 버튼
+              <button
+                onClick={() => router.push(`/crew/parking-list/${dupTicket.id}`)}
+                style={{
+                  width: "100%", height: 52, borderRadius: 12, border: "none",
+                  background: "#1428A0", color: "#fff",
+                  fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10,
+                }}
+              >
+                기존 티켓 출차 처리하기
+              </button>
+            )}
             <button
               onClick={() => setDupTicket(null)}
               style={{
