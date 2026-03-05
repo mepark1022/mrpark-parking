@@ -358,6 +358,14 @@ export default function TeamPage() {
     return false;
   }
 
+  // 제거 권한: admin도 super_admin 외 모든 멤버 제거 가능 (본인 제외)
+  function canRemoveMember(targetProfile: Profile): boolean {
+    if (targetProfile.id === currentUserId) return false;
+    if (targetProfile.role === "super_admin") return false; // super_admin은 제거 불가
+    if (currentUserRole === "super_admin" || currentUserRole === "admin") return true;
+    return false;
+  }
+
   // --- UI Helpers ---
   const roleBadge = (role: string) => ROLE_CONFIG[role] || { bg: "#f1f5f9", color: "#475569", border: "#e2e8f0", label: role, desc: "", icon: "👤" };
   const statusBadge = (status: string) => {
@@ -471,11 +479,13 @@ export default function TeamPage() {
                                     {p.status === "active" ? "비활성" : "활성화"}
                                   </button>
                                   <span style={{ color: "#e2e8f0" }}>|</span>
-                                  <button
-                                    onClick={() => setRemoveTarget(p)}
-                                    style={{ fontSize: 12, fontWeight: 600, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}
-                                  >제거</button>
                                 </>
+                              )}
+                              {canRemoveMember(p) && (
+                                <button
+                                  onClick={() => setRemoveTarget(p)}
+                                  style={{ fontSize: 12, fontWeight: 600, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}
+                                >제거</button>
                               )}
                             </div>
                           </td>
@@ -516,6 +526,13 @@ export default function TeamPage() {
                           <button onClick={() => toggleStatus(p)} style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                             {p.status === "active" ? "비활성" : "활성화"}
                           </button>
+                          {canRemoveMember(p) && (
+                            <button onClick={() => setRemoveTarget(p)} style={{ fontSize: 11, fontWeight: 600, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: 0 }}>제거</button>
+                          )}
+                        </div>
+                      )}
+                      {!canManageRole(p) && canRemoveMember(p) && (
+                        <div className="flex gap-3 mt-1">
                           <button onClick={() => setRemoveTarget(p)} style={{ fontSize: 11, fontWeight: 600, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: 0 }}>제거</button>
                         </div>
                       )}

@@ -76,11 +76,14 @@ export default function Sidebar() {
     if (!user) return;
     const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", user.id).single();
     if (!prof?.org_id) return;
-    // 입차 현황: 현재 주차 중인 티켓 수
+    // 입차 현황: 오늘 입차한 주차 중인 티켓 수 (과거 미처리 데이터 제외)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
     const { count: pCount } = await supabase.from("mepark_tickets")
       .select("*", { count: "exact", head: true })
       .eq("org_id", prof.org_id)
-      .in("status", ["parking", "pre_paid", "exit_requested", "car_ready"]);
+      .in("status", ["parking", "pre_paid", "exit_requested", "car_ready"])
+      .gte("entry_at", todayStart.toISOString());
     setParkingCount(pCount ?? 0);
     // 사고보고: 미처리(pending) 건수
     const { count: aCount } = await supabase.from("accident_reports")
