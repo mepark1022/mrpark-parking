@@ -193,6 +193,9 @@ export default function TeamPage() {
   const [assignProfile, setAssignProfile] = useState<Profile | null>(null);
   const [assignStoreIds, setAssignStoreIds] = useState<string[]>([]);
 
+  // 멤버 제거 확인
+  const [removeTarget, setRemoveTarget] = useState<Profile | null>(null);
+
   // 초대 매핑
   const [inviteMap, setInviteMap] = useState<Record<string, { invited: string; accepted: string }>>({});
 
@@ -372,6 +375,25 @@ export default function TeamPage() {
     loadData();
   }
 
+  // 멤버 완전 제거 (store_members 삭제 + profile org_id 제거 + 초대 기록 삭제)
+  async function removeMember(profile: Profile) {
+    setSending(true);
+    try {
+      // 1. 모든 매장 배정 제거
+      await supabase.from("store_members").delete().eq("user_id", profile.id);
+      // 2. profile에서 org_id 제거 + disabled 처리
+      await supabase.from("profiles").update({ org_id: null, status: "disabled" }).eq("id", profile.id);
+      // 3. 해당 이메일의 초대 기록 삭제 (깔끔한 재초대를 위해)
+      await supabase.from("invitations").delete().eq("email", profile.email).eq("org_id", orgId);
+      setMessage({ text: `${profile.name || profile.email}님이 조직에서 제거되었습니다. 재초대 시 새 초대 이메일을 발송하세요.`, type: "success" });
+      setRemoveTarget(null);
+      loadData();
+    } catch (e) {
+      setMessage({ text: "제거 중 오류가 발생했습니다.", type: "error" });
+    }
+    setSending(false);
+  }
+
   return (
     <AppLayout>
       <div className="max-w-5xl">
@@ -448,6 +470,11 @@ export default function TeamPage() {
                                   >
                                     {p.status === "active" ? "비활성" : "활성화"}
                                   </button>
+                                  <span style={{ color: "#e2e8f0" }}>|</span>
+                                  <button
+                                    onClick={() => setRemoveTarget(p)}
+                                    style={{ fontSize: 12, fontWeight: 600, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}
+                                  >제거</button>
                                 </>
                               )}
                             </div>
@@ -489,6 +516,7 @@ export default function TeamPage() {
                           <button onClick={() => toggleStatus(p)} style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                             {p.status === "active" ? "비활성" : "활성화"}
                           </button>
+                          <button onClick={() => setRemoveTarget(p)} style={{ fontSize: 11, fontWeight: 600, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: 0 }}>제거</button>
                         </div>
                       )}
                     </div>
@@ -701,6 +729,44 @@ export default function TeamPage() {
             </div>
           </div>
         )}
+        {/* ===== 멤버 제거 확인 모달 ===== */}
+        {removeTarget && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-7 w-full max-w-sm shadow-2xl">
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>🗑️</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">팀원 제거</h3>
+              <p className="text-sm text-gray-500 mb-4" style={{ lineHeight: 1.6 }}>
+                <strong>{removeTarget.name || removeTarget.email}</strong>님을 조직에서 제거합니다.<br/>
+                <span style={{ color: "#ef4444", fontSize: 12, marginTop: 6, display: "block" }}>
+                  ⚠️ 모든 매장 배정이 삭제되고 초대 기록도 지워집니다.<br/>
+                  재초대 시 새 초대 이메일을 발송해야 합니다.
+                </span>
+              </p>
+              <div style={{ background: "#fafafa", borderRadius: 10, padding: "10px 14px", marginBottom: 20, fontSize: 13, color: "#374151" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ color: "#6b7280" }}>이메일</span>
+                  <span style={{ fontWeight: 600 }}>{removeTarget.email}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "#6b7280" }}>현재 권한</span>
+                  <span style={{ fontWeight: 600 }}>{ROLE_CONFIG[removeTarget.role]?.label || removeTarget.role}</span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setRemoveTarget(null)}
+                  style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", fontSize: 14, fontWeight: 600, color: "#6b7280", cursor: "pointer" }}
+                >취소</button>
+                <button
+                  onClick={() => removeMember(removeTarget)}
+                  disabled={sending}
+                  style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "#ef4444", fontSize: 14, fontWeight: 700, color: "#fff", cursor: sending ? "not-allowed" : "pointer", opacity: sending ? 0.7 : 1 }}
+                >{sending ? "제거 중..." : "제거 확인"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </AppLayout>
   );
