@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const feeGuide = buildFeeGuide(feeData, parkingType);
+    // 요금 상세는 주차현황 버튼에서 확인
 
     // 알림톡 발송
     const result = await sendAlimtalk({
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
         "#{매장명}":   storeName,
         "#{차량번호}": plateNumber,
         "#{입차시간}": entryAt,
-        "#{요금안내}": feeGuide,
+        "#{요금안내}": "아래 버튼에서 확인",
       },
     });
 
