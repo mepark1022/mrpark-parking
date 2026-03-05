@@ -424,7 +424,7 @@ export default function StoresPage() {
     extra_fee: 500, daily_max: 0, valet_fee: 3000, monthly_fee: 150000
   });
   const [hourForm, setHourForm] = useState({ day_category: "weekday", open_time: "08:00", close_time: "22:00" });
-  const [shiftForm, setShiftForm] = useState({ name: "오전조", start_time: "08:00", end_time: "14:00" });
+  const [shiftForm, setShiftForm] = useState({ shift_name: "오전조", start_time: "08:00", end_time: "14:00" });
   const [lateForm, setLateForm] = useState({ late_minutes: 5, absent_minutes: 30 });
 
   // 카카오 주소 API 스크립트 로드
@@ -1590,13 +1590,13 @@ export default function StoresPage() {
               {storeShifts.map(sh => (
                 <div key={sh.id} style={{
                   background: C.bgCard, borderRadius: 14, padding: 20,
-                  borderLeft: `4px solid ${SHIFT_COLORS[sh.name] ?? C.navy}`,
+                  borderLeft: `4px solid ${SHIFT_COLORS[sh.shift_name] ?? C.navy}`,
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                    <div style={{ fontSize: 17, fontWeight: 700 }}>{sh.name}</div>
+                    <div style={{ fontSize: 17, fontWeight: 700 }}>{sh.shift_name}</div>
                     <div style={{ display: "flex", gap: 6 }}>
                       <BtnGhost onClick={() => {
-                        setShiftForm({ name: sh.name, start_time: sh.start_time, end_time: sh.end_time });
+                        setShiftForm({ shift_name: sh.shift_name, start_time: sh.start_time, end_time: sh.end_time });
                         setEditingItem(sh as unknown as Record<string, unknown>);
                         setModalType("shifts");
                       }} style={{ padding: "5px 8px", fontSize: 12 }}>수정</BtnGhost>
@@ -2170,7 +2170,7 @@ export default function StoresPage() {
     if (modalType === "shifts") return (
       <Modal title={editingItem ? "근무조 수정" : "근무조 추가"} onClose={() => setModalType(null)} width={420}>
         <FormGroup label="근무조 이름">
-          <Input value={shiftForm.name} onChange={e => setShiftForm(f => ({ ...f, name: e.target.value }))} placeholder="예: 오전조, 오후조, 야간조" />
+          <Input value={shiftForm.shift_name} onChange={e => setShiftForm(f => ({ ...f, shift_name: e.target.value }))} placeholder="예: 오전조, 오후조, 야간조" />
         </FormGroup>
         <div className="stores-grid-2col" style={{ display: "grid", gap: 16 }}>
           <FormGroup label="시작 시간">
