@@ -307,6 +307,8 @@ export default function CrewEntryPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ phone, ticketId: ticket.id, plateNumber, orgId }),
         }).catch(() => {});
+        // 차량준비 알림톡 재사용을 위해 임시 저장 (출차 완료 후 자동 삭제)
+        try { localStorage.setItem(`mepark_phone_${ticket.id}`, phone); } catch {}
       }
 
       router.push(`/crew/entry/qr?ticketId=${ticket.id}&plate=${encodeURIComponent(plateNumber)}&type=${parkingType}`);

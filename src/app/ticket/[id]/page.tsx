@@ -12,7 +12,7 @@ const STATUS_THEME = {
   overdue:        { bg: "#DC2626", text: "#fff",     label: "⚠️ 유예시간 초과", sub: "추가요금 결제 후 출차 가능합니다" },
   exit_requested: { bg: "#F5B731", text: "#1A1D2B",  label: "🚗 출차 요청중",  sub: "크루가 차량을 준비하고 있습니다" },
   car_ready:      { bg: "#16A34A", text: "#fff",     label: "🟢 차량 준비 완료", sub: "출구로 이동해 주세요" },
-  completed:      { bg: "#64748B", text: "#fff",     label: "🏁 출차 완료",    sub: "이용해 주셔서 감사합니다" },
+  completed:      { bg: "#1428A0", text: "#fff",     label: "🏁 출차 완료",    sub: "이용해 주셔서 감사합니다" },
 };
 
 const fmt = (ts: string) => {
@@ -192,6 +192,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
   const theme = STATUS_THEME[status] || STATUS_THEME.parking;
   const isOverdue = status === "overdue";
   const isPrePaid = status === "pre_paid";
+  const isCompleted = status === "completed";
   const gracePeriod = (store as Record<string, unknown>)?.grace_period_minutes as number ?? 30;
 
   return (
@@ -208,10 +209,22 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
         </div>
 
         <div style={{ fontSize: 36, marginBottom: 8 }}>
-          {isOverdue ? "⚠️" : isPrePaid ? "✅" : status === "car_ready" ? "🟢" : status === "completed" ? "🏁" : "🅿️"}
+          {isOverdue ? "⚠️" : isPrePaid ? "✅" : status === "car_ready" ? "🟢" : isCompleted ? "✅" : "🅿️"}
         </div>
         <div style={{ color: theme.text, fontSize: 20, fontWeight: 800, marginBottom: 6 }}>{theme.label}</div>
         <div style={{ color: `${theme.text}cc`, fontSize: 14 }}>{theme.sub}</div>
+
+        {/* completed: 골드 완료 배너 */}
+        {isCompleted && (
+          <div style={{
+            marginTop: 20, background: "#F5B731", borderRadius: 14,
+            padding: "14px 28px", display: "inline-block",
+          }}>
+            <div style={{ color: "#1A1D2B", fontSize: 15, fontWeight: 900, letterSpacing: 0.3 }}>
+              🙏 감사합니다! 안전하게 가세요
+            </div>
+          </div>
+        )}
 
         {/* pre_paid: 카운트다운 */}
         {isPrePaid && ticket.pre_paid_deadline && (

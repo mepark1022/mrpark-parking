@@ -284,7 +284,9 @@ export default function CrewTicketDetailPage() {
 
   /* ── 발렛: 차량준비 완료 ── */
   const handleCarReady = () => {
-    setReadyPhone("");
+    // 입차 시 저장된 전화번호 자동 로드
+    const savedPhone = (() => { try { return localStorage.getItem(`mepark_phone_${id}`) ?? ""; } catch { return ""; } })();
+    setReadyPhone(savedPhone);
     setShowReadyModal(true);
   };
 
@@ -307,6 +309,8 @@ export default function CrewTicketDetailPage() {
           orgId,
         }),
       }).catch(() => {});
+      // 발송 완료 → localStorage에서 전화번호 삭제
+      try { localStorage.removeItem(`mepark_phone_${id}`); } catch {}
     }
 
     await fetchTicket();
@@ -329,6 +333,8 @@ export default function CrewTicketDetailPage() {
     };
 
     await supabase.from("mepark_tickets").update(updates).eq("id", id);
+    // 출차 완료 → 저장된 전화번호 삭제
+    try { localStorage.removeItem(`mepark_phone_${id}`); } catch {}
     setShowCheckoutModal(false);
     router.replace("/crew/parking-list");
   };
@@ -570,6 +576,11 @@ export default function CrewTicketDetailPage() {
                   고객에게 알림톡을 보내려면<br/>전화번호를 입력하세요.<br/>
                   <span style={{ fontSize: 11, color: "#94A3B8" }}>번호는 발송 즉시 삭제됩니다.</span>
                 </div>
+                {readyPhone ? (
+                  <div style={{ background: "#F0FDF4", border: "2px solid #16A34A", borderRadius: 12, padding: "10px 16px", marginBottom: 12, fontSize: 13, color: "#15803D", fontWeight: 700, textAlign: "center" }}>
+                    📱 입차 시 등록된 번호 자동 입력됨
+                  </div>
+                ) : null}
                 <input
                   type="tel"
                   placeholder="010-0000-0000 (선택)"
