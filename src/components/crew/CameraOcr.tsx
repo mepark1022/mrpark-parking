@@ -96,7 +96,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     const ctx = canvas.getContext("2d");
     ctx?.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-    return canvas.toDataURL("image/jpeg", 0.92);
+    return canvas.toDataURL("image/jpeg", 0.95);
   }, []);
 
   // ── Google Vision API 호출 ───────────────────
@@ -120,7 +120,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
 
     await startCamera();
 
-    // 1.5초 후 프레임 캡처 → API 호출
+    // 2.5초 후 프레임 캡처 → API 호출 (카메라 안정화 시간 확보)
     timerRef.current = setTimeout(async () => {
       setPhase(STATES.DETECTING);
       setShakeBox(true);
@@ -156,7 +156,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         setPhase(STATES.IDLE);
         stopCamera();
       }
-    }, 1500);
+    }, 2500);
   }, [startCamera, stopCamera, captureFrame, callOcrApi]);
 
   // ── 확정 ─────────────────────────────────────

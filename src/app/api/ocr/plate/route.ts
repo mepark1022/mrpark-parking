@@ -91,8 +91,14 @@ async function callGoogleVision(base64Image: string): Promise<string[]> {
             image: { content: base64Image },
             features: [
               { type: "TEXT_DETECTION", maxResults: 10 },
-              { type: "DOCUMENT_TEXT_DETECTION", maxResults: 5 }, // 번호판 텍스트 정확도 향상
+              { type: "DOCUMENT_TEXT_DETECTION", maxResults: 5 },
             ],
+            imageContext: {
+              languageHints: ["ko", "ko-KR"], // 한국어 우선 인식
+              textDetectionParams: {
+                enableTextDetectionConfidenceScore: true,
+              },
+            },
           },
         ],
       }),
