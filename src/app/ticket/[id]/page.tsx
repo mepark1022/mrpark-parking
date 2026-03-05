@@ -52,7 +52,7 @@ export default function TicketPage({ params }: { params: { id: string } }) {
   /* ─── 티켓 로드 ─── */
   const loadTicket = useCallback(async () => {
     const supabase = createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("mepark_tickets")
       .select(`
         *,
@@ -61,6 +61,8 @@ export default function TicketPage({ params }: { params: { id: string } }) {
       `)
       .eq("id", ticketId)
       .single();
+
+    console.log("[ticket] data:", data, "error:", error);
 
     if (data) {
       setTicket(data);
