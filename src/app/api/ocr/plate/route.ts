@@ -149,11 +149,15 @@ export async function POST(req: NextRequest) {
     // 번호판 후보 파싱
     const plates = parsePlates(texts);
 
+    // 디버그 로그 (Vercel Function Logs에서 확인)
+    console.log("[OCR] Vision API 인식 텍스트:", JSON.stringify(texts.slice(0, 5)));
+    console.log("[OCR] 파싱된 번호판:", JSON.stringify(plates));
+
     if (plates.length === 0) {
       return NextResponse.json({
         success: false,
         error: "번호판을 인식하지 못했습니다",
-        raw: texts.slice(0, 3), // 디버깅용 (프로덕션에서 제거 가능)
+        raw: texts.slice(0, 5), // 디버깅용
       });
     }
 
