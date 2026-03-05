@@ -155,8 +155,18 @@ const CSS = `
   .vehicle-fee { font-size: 14px; font-weight: 700; color: #1A1D2B; }
 
   /* ── 상태별 카드 강조 ── */
-  .vehicle-card.exit_requested { border-color: #F5B731; }
-  .vehicle-card.car_ready      { border-color: #16A34A; }
+  .vehicle-card.exit_requested {
+    border-color: #EA580C;
+    border-width: 2.5px;
+    background: #FFF7ED;
+    box-shadow: 0 0 0 3px rgba(234,88,12,0.15);
+    animation: pulseOrange 1.5s ease-in-out infinite;
+  }
+  @keyframes pulseOrange {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(234,88,12,0.15); }
+    50%       { box-shadow: 0 0 0 6px rgba(234,88,12,0.08); }
+  }
+  .vehicle-card.car_ready { border-color: #16A34A; border-width: 2px; background: #F0FDF4; }
 
   /* ── 출차처리 버튼 ── */
   .btn-checkout-inline {
@@ -401,25 +411,36 @@ export default function CrewParkingListPage() {
           <div
             onClick={() => router.push(`/crew/parking-list/${exitToast.id}`)}
             style={{
-              position: "fixed", top: 72, left: "50%", transform: "translateX(-50%)",
-              zIndex: 9999, background: "#1A1D2B", color: "#fff",
-              borderRadius: 14, padding: "14px 20px", minWidth: 260,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-              display: "flex", alignItems: "center", gap: 12,
+              position: "fixed", top: 64, left: 16, right: 16,
+              zIndex: 9999, background: "#EA580C", color: "#fff",
+              borderRadius: 16, padding: "16px 18px",
+              boxShadow: "0 8px 32px rgba(234,88,12,0.5)",
+              display: "flex", alignItems: "center", gap: 14,
               cursor: "pointer", animation: "slideDown 0.3s ease",
+              border: "2px solid rgba(255,255,255,0.3)",
             }}
           >
-            <span style={{ fontSize: 28 }}>🚗</span>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 15 }}>출차요청 도착!</div>
-              <div style={{ fontSize: 13, color: "#F5B731", fontWeight: 700, marginTop: 2 }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: 12,
+              background: "rgba(255,255,255,0.2)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 26, flexShrink: 0,
+            }}>🚗</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 900, fontSize: 16, marginBottom: 2 }}>출차요청 도착!</div>
+              <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: 1 }}>
                 {exitToast.plate}
               </div>
-              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>탭하여 처리하기</div>
+              <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>탭하여 처리하기 →</div>
             </div>
             <div
               onClick={(e) => { e.stopPropagation(); setExitToast(null); }}
-              style={{ marginLeft: "auto", fontSize: 18, color: "#94A3B8", padding: 4 }}
+              style={{
+                width: 28, height: 28, borderRadius: "50%",
+                background: "rgba(255,255,255,0.25)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 14, flexShrink: 0,
+              }}
             >✕</div>
           </div>
         )}

@@ -52,6 +52,7 @@ export default function CrewHomePage() {
   });
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [exitReqCount, setExitReqCount] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -182,12 +183,15 @@ export default function CrewHomePage() {
       // 주차 현황 조회 (mepark_tickets 사용)
       const { data: tickets } = await supabase
         .from("mepark_tickets")
-        .select("id, parking_type, paid_amount")
+        .select("id, parking_type, paid_amount, status")
         .eq("store_id", storeId)
-        .eq("status", "parking");
+        .in("status", ["parking", "exit_requested", "car_ready"]);
 
       if (tickets) {
-        const valetCount = tickets.filter(t => t.parking_type === "valet").length;
+        const parkingTickets = tickets.filter(t => t.status === "parking");
+        const valetCount = parkingTickets.filter(t => t.parking_type === "valet").length;
+        const exitReq = tickets.filter(t => t.status === "exit_requested").length;
+        setExitReqCount(exitReq);
         
         // 오늘 매출 (완료된 티켓)
         const todayStart = new Date();
@@ -212,9 +216,9 @@ export default function CrewHomePage() {
           sum + (lot.self_spaces || 0) + (lot.mechanical_normal || 0) + (lot.mechanical_suv || 0), 0) || 100;
 
         setStats({
-          total: tickets.length,
+          total: parkingTickets.length,
           valet: valetCount,
-          occupancyRate: Math.round((tickets.length / totalSpaces) * 100),
+          occupancyRate: Math.round((parkingTickets.length / totalSpaces) * 100),
           todayRevenue,
         });
       }
@@ -244,6 +248,25 @@ export default function CrewHomePage() {
     };
 
     init();
+
+    // Realtime: 출차요청 즉시 감지
+    const supabaseRt = createClient();
+    const channel = supabaseRt
+      .channel("crew-home-exit")
+      .on("postgres_changes", {
+        event: "UPDATE", schema: "public", table: "mepark_tickets",
+      }, (payload) => {
+        const updated = payload.new as Record<string, unknown>;
+        if (updated.status === "exit_requested") {
+          setExitReqCount((prev) => prev + 1);
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        } else if (updated.status === "completed" || updated.status === "car_ready") {
+          setExitReqCount((prev) => Math.max(0, prev - 1));
+        }
+      })
+      .subscribe();
+
+    return () => { supabaseRt.removeChannel(channel); };
   }, [router]);
 
   const handleStoreChange = () => {
@@ -498,6 +521,31 @@ export default function CrewHomePage() {
           storeName={store?.name || "매장 선택"}
           onStoreChange={handleStoreChange}
         />
+
+        {/* ─── 출차요청 배너 ─── */}
+        {exitReqCount > 0 && (
+          <div
+            onClick={() => router.push("/crew/parking-list")}
+            style={{
+              background: "#EA580C", color: "#fff",
+              padding: "14px 20px",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              cursor: "pointer",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 24 }}>🚗</span>
+              <div>
+                <div style={{ fontWeight: 900, fontSize: 15 }}>출차요청 {exitReqCount}건!</div>
+                <div style={{ fontSize: 12, opacity: 0.85 }}>즉시 처리가 필요합니다</div>
+              </div>
+            </div>
+            <div style={{
+              background: "rgba(255,255,255,0.25)", borderRadius: 8,
+              padding: "6px 12px", fontSize: 13, fontWeight: 700,
+            }}>처리하기 →</div>
+          </div>
+        )}
 
         <div className="crew-home-content">
           {/* 출근 상태 카드 */}
