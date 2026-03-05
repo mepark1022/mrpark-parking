@@ -85,19 +85,16 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     const canvas = canvasRef.current;
     if (!video || !canvas) return null;
 
-    // 번호판 영역만 크롭 (뷰파인더 비율 기준: 세로 25~60%, 가로 5~95%)
+    // 전체 이미지 전송 (크롭 없음)
+    // 크롭 시 번호판 외 영역 포함되어 숫자 오인식 발생 → Vision API가 전체에서 패턴 검출
     const vw = video.videoWidth;
     const vh = video.videoHeight;
-    const cropX = vw * 0.05;
-    const cropY = vh * 0.25;
-    const cropW = vw * 0.90;
-    const cropH = vh * 0.35;
 
-    canvas.width = cropW;
-    canvas.height = cropH;
+    canvas.width = vw;
+    canvas.height = vh;
 
     const ctx = canvas.getContext("2d");
-    ctx?.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+    ctx?.drawImage(video, 0, 0, vw, vh);
 
     return canvas.toDataURL("image/jpeg", 0.95);
   }, []);

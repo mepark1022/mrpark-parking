@@ -15,14 +15,18 @@ const PLATE_PATTERNS = [
   /\d{2}[가-힣]\d{4}/,
 ];
 
-// 한글 미인식 폴백: 숫자 7자리 (123+4567 형태)
-const NUMERIC_FALLBACK = /\d{7}/;
+// 한글 미인식 폴백 패턴
+const NUMERIC_FALLBACK_7 = /\d{7}/;     // 1234567 (붙어있는 경우)
+const NUMERIC_FALLBACK_3_4 = /(\d{3})\D*(\d{4})/; // 158 나 2953 → 3자리+4자리 분리
 
 // ─────────────────────────────────────────────
 // 번호판 후보 파싱
 // ─────────────────────────────────────────────
 function parsePlates(texts: string[]): string[] {
   const results = new Set<string>();
+
+  // 전체 텍스트 합치기 (분리된 토큰 합산용)
+  const fullText = texts.join(" ");
 
   for (const text of texts) {
     const cleaned = text.replace(/\s+/g, "").replace(/[^\w가-힣]/g, "");
@@ -34,14 +38,19 @@ function parsePlates(texts: string[]): string[] {
         results.add(formatPlate(match[0]));
       }
     }
+  }
 
-    // 2차 폴백: 한글 미인식 시 숫자 7자리 매칭 (123가4567 → 1234567)
-    // 사용자 확인 화면에서 한글 1자리 수동 수정 유도
-    if (results.size === 0) {
-      const numMatch = cleaned.match(NUMERIC_FALLBACK);
-      if (numMatch) {
-        // 앞 3자리 + ? + 뒤 4자리 형태로 표시 (한글 자리 표시)
-        const n = numMatch[0];
+  // 2차 폴백: 한글 미인식 시
+  if (results.size === 0) {
+    // fullText에서 3자리+공백/한글+4자리 패턴 추출 (158 나 2953 → "158? 2953")
+    const m34 = fullText.replace(/\s+/g, " ").match(/(\d{3})[^0-9]{0,3}(\d{4})/);
+    if (m34) {
+      results.add(`${m34[1]}? ${m34[2]}`);
+    } else {
+      // 7자리 연속 숫자 폴백
+      const m7 = fullText.replace(/\s+/g, "").match(NUMERIC_FALLBACK_7);
+      if (m7) {
+        const n = m7[0];
         results.add(`${n.slice(0, 3)}? ${n.slice(3)}`);
       }
     }
