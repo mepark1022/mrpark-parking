@@ -96,6 +96,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
 
   /* ─── 실시간 업데이트 ─── */
   useEffect(() => {
+    if (!ticketId) return;  // ticketId 없으면 실행 안 함
     loadTicket();
     const supabase = createClient();
     const channel = supabase
