@@ -38,8 +38,12 @@ const fmtOverdue = (deadline: string) => {
   return `${m}분`;
 };
 
-export default function TicketPage({ params }: { params: { id: string } }) {
-  const ticketId = params.id;
+export default function TicketPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const [ticketId, setTicketId] = useState<string>("");
+
+  useEffect(() => {
+    Promise.resolve(params).then((p) => setTicketId(p.id));
+  }, []);
   const [ticket, setTicket] = useState<Record<string, unknown> | null>(null);
   const [store, setStore] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
