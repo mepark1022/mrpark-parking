@@ -289,8 +289,17 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
           </div>
 
           {/* 결제 정보 */}
+          <div style={{ marginTop: 16, background: "#f8f9fb", borderRadius: 12, padding: "14px 16px" }}>
+            {ticket.status === "parking" && (
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 13, color: "#666" }}>예상 요금</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#1428A0" }}>
+                  {ticket.calculated_fee as number > 0 ? fmtMoney(ticket.calculated_fee as number) : "무료"}
+                </span>
+              </div>
+            )}
           {(ticket.paid_amount as number > 0 || isOverdue) && (
-            <div style={{ marginTop: 16, background: "#f8f9fb", borderRadius: 12, padding: "14px 16px" }}>
+            <>
               {ticket.paid_amount as number > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: isOverdue ? 8 : 0 }}>
                   <span style={{ fontSize: 13, color: "#666" }}>사전정산 금액</span>
@@ -318,8 +327,9 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
                   </div>
                 </>
               )}
-            </div>
+            </>
           )}
+          </div>
         </div>
       </div>
 
