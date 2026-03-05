@@ -414,6 +414,14 @@ export default function StoresPage() {
     enable_valet: true,
     enable_monthly: true,
     require_visit_place: false,
+    // 기본 요금 설정
+    free_minutes: 0,
+    base_fee: 1000,
+    base_minutes: 30,
+    extra_fee: 500,
+    extra_unit_minutes: 10,
+    daily_max: 0,
+    valet_fee: 3000,
   });
   const [lotForm, setLotForm] = useState({
     name: "", lot_type: "internal", parking_type: ["self"],
@@ -1012,6 +1020,14 @@ export default function StoresPage() {
                           enable_valet: (store as any).enable_valet ?? true,
                           enable_monthly: (store as any).enable_monthly ?? true,
                           require_visit_place: (store as any).require_visit_place ?? false,
+                          // 기본 요금 설정
+                          free_minutes: (store as any).free_minutes ?? 0,
+                          base_fee: (store as any).base_fee ?? 1000,
+                          base_minutes: (store as any).base_minutes ?? 30,
+                          extra_fee: (store as any).extra_fee ?? 500,
+                          extra_unit_minutes: (store as any).extra_unit_minutes ?? 10,
+                          daily_max: (store as any).daily_max ?? 0,
+                          valet_fee: (store as any).valet_fee ?? 3000,
                         });
                         setEditingItem(store as unknown as Record<string, unknown>);
                         setModalType("store");
@@ -1099,6 +1115,14 @@ export default function StoresPage() {
                               enable_valet: (store as any).enable_valet ?? true,
                               enable_monthly: (store as any).enable_monthly ?? true,
                               require_visit_place: (store as any).require_visit_place ?? false,
+                              // 기본 요금 설정
+                              free_minutes: (store as any).free_minutes ?? 0,
+                              base_fee: (store as any).base_fee ?? 1000,
+                              base_minutes: (store as any).base_minutes ?? 30,
+                              extra_fee: (store as any).extra_fee ?? 500,
+                              extra_unit_minutes: (store as any).extra_unit_minutes ?? 10,
+                              daily_max: (store as any).daily_max ?? 0,
+                              valet_fee: (store as any).valet_fee ?? 3000,
                             });
                             setEditingItem(store as unknown as Record<string, unknown>);
                             setModalType("store");
@@ -1979,6 +2003,147 @@ export default function StoresPage() {
                 />
               </FormGroup>
             </div>
+          </div>
+
+          {/* ── 기본요금 설정 섹션 ── */}
+          <div style={{ borderTop: `2px solid ${C.borderLight}`, marginTop: 16, paddingTop: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <div style={{ width: 4, height: 18, background: "#EA580C", borderRadius: 2 }} />
+              <span style={{ fontSize: 14, fontWeight: 700, color: C.textPrimary }}>💰 기본요금 설정</span>
+              <span style={{ fontSize: 11, color: C.textMuted, marginLeft: 4 }}>방문지 없이도 적용되는 매장 기본 요금</span>
+            </div>
+
+            {/* 무료/유료 선택 */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              {[
+                { val: false, label: "💳 유료 운영", desc: "요금 설정 적용" },
+                { val: true, label: "🆓 무료 운영", desc: "결제 없이 출차" },
+              ].map(({ val, label, desc }) => {
+                const selected = storeForm.is_free_parking === val;
+                return (
+                  <button
+                    key={String(val)}
+                    onClick={() => setStoreForm(f => ({ ...f, is_free_parking: val }))}
+                    style={{
+                      flex: 1, padding: "12px 10px", borderRadius: 10, border: "none", cursor: "pointer",
+                      background: selected ? (val ? "#dcfce7" : "#EEF2FF") : "#f8f9fc",
+                      outline: selected ? `2px solid ${val ? "#16a34a" : C.navy}` : `1px solid ${C.borderLight}`,
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    <div style={{ fontSize: 14, fontWeight: 700, color: selected ? (val ? "#15803d" : C.navy) : C.textMuted }}>{label}</div>
+                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>{desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 유료일 때만 요금 입력 */}
+            {!storeForm.is_free_parking && (
+              <div style={{ background: "#f8f9fc", borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+
+                {/* 무료 주차 시간 */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <FormGroup label="무료 주차 시간">
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Input type="number" min={0} value={storeForm.free_minutes}
+                        onChange={e => setStoreForm(f => ({ ...f, free_minutes: Number(e.target.value) }))}
+                        style={{ textAlign: "right" }} />
+                      <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0 }}>분</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>0분 = 무료 없음</div>
+                  </FormGroup>
+
+                  <FormGroup label="일 최대 요금">
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Input type="number" min={0} value={storeForm.daily_max}
+                        onChange={e => setStoreForm(f => ({ ...f, daily_max: Number(e.target.value) }))}
+                        style={{ textAlign: "right" }} />
+                      <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0 }}>원</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>0원 = 제한 없음</div>
+                  </FormGroup>
+                </div>
+
+                {/* 구분선 */}
+                <div style={{ borderTop: `1px dashed ${C.borderLight}` }} />
+
+                {/* 기본 요금 */}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.textSecondary, marginBottom: 8 }}>📌 기본 요금 (유료 주차)</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <FormGroup label="기본 시간">
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Input type="number" min={1} value={storeForm.base_minutes}
+                          onChange={e => setStoreForm(f => ({ ...f, base_minutes: Number(e.target.value) }))}
+                          style={{ textAlign: "right" }} />
+                        <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0 }}>분</span>
+                      </div>
+                    </FormGroup>
+                    <FormGroup label="기본 요금">
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Input type="number" min={0} value={storeForm.base_fee}
+                          onChange={e => setStoreForm(f => ({ ...f, base_fee: Number(e.target.value) }))}
+                          style={{ textAlign: "right" }} />
+                        <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0 }}>원</span>
+                      </div>
+                    </FormGroup>
+                  </div>
+                </div>
+
+                {/* 추가 요금 */}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.textSecondary, marginBottom: 8 }}>⏱️ 추가 요금 (초과 시)</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <FormGroup label="추가 단위">
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Input type="number" min={1} value={storeForm.extra_unit_minutes}
+                          onChange={e => setStoreForm(f => ({ ...f, extra_unit_minutes: Number(e.target.value) }))}
+                          style={{ textAlign: "right" }} />
+                        <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0 }}>분당</span>
+                      </div>
+                    </FormGroup>
+                    <FormGroup label="추가 요금">
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Input type="number" min={0} value={storeForm.extra_fee}
+                          onChange={e => setStoreForm(f => ({ ...f, extra_fee: Number(e.target.value) }))}
+                          style={{ textAlign: "right" }} />
+                        <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0 }}>원</span>
+                      </div>
+                    </FormGroup>
+                  </div>
+                </div>
+
+                {/* 발렛 요금 */}
+                {storeForm.enable_valet && (
+                  <div>
+                    <div style={{ borderTop: `1px dashed ${C.borderLight}`, marginBottom: 14 }} />
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#EA580C", marginBottom: 8 }}>🚗 발렛 요금</div>
+                    <FormGroup label="발렛 기본 요금">
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Input type="number" min={0} value={storeForm.valet_fee}
+                          onChange={e => setStoreForm(f => ({ ...f, valet_fee: Number(e.target.value) }))}
+                          style={{ textAlign: "right" }} />
+                        <span style={{ fontSize: 13, color: C.textMuted, flexShrink: 0 }}>원</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>발렛 서비스 ON 시에만 표시</div>
+                    </FormGroup>
+                  </div>
+                )}
+
+                {/* 요금 요약 미리보기 */}
+                <div style={{ background: "#fff", borderRadius: 8, padding: "10px 14px", border: `1px solid ${C.borderLight}` }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: C.textSecondary, marginBottom: 6 }}>📋 요금 요약</div>
+                  <div style={{ fontSize: 12, color: C.textPrimary, lineHeight: 1.8 }}>
+                    {storeForm.free_minutes > 0 && <div>✓ 무료 {storeForm.free_minutes}분</div>}
+                    <div>✓ 기본 {storeForm.base_minutes}분 → <strong>₩{storeForm.base_fee.toLocaleString()}</strong></div>
+                    <div>✓ 초과 {storeForm.extra_unit_minutes}분마다 → <strong>₩{storeForm.extra_fee.toLocaleString()}</strong></div>
+                    {storeForm.daily_max > 0 && <div>✓ 일 최대 → <strong>₩{storeForm.daily_max.toLocaleString()}</strong></div>}
+                    {storeForm.enable_valet && <div>✓ 발렛 → <strong>₩{storeForm.valet_fee.toLocaleString()}</strong></div>}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* GPS 좌표 (출퇴근 연동) */}
