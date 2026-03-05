@@ -265,7 +265,33 @@ export default function CrewParkingListPage() {
 
     // 30초마다 자동 새로고침
     const interval = setInterval(() => fetchTickets(savedStoreId), 30000);
-    return () => clearInterval(interval);
+
+    // Realtime 구독 - 출차요청 즉시 감지
+    const channel = supabase
+      .channel("crew-parking-list")
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "mepark_tickets",
+      }, (payload) => {
+        const updated = payload.new as Record<string, unknown>;
+        // exit_requested 상태로 바뀌면 즉시 전체 새로고침 + 진동
+        if (updated.status === "exit_requested") {
+          fetchTickets(savedStoreId);
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        } else {
+          // 다른 상태 변경도 목록에 반영
+          setTickets((prev) =>
+            prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t))
+          );
+        }
+      })
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchTickets = useCallback(async (sid) => {
