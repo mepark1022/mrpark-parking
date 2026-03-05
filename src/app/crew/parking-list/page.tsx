@@ -278,38 +278,36 @@ export default function CrewParkingListPage() {
     setStoreId(savedStoreId);
     fetchTickets(savedStoreId);
 
-    // 30초마다 자동 새로고침
-    const interval = setInterval(() => fetchTickets(savedStoreId), 30000);
+    // 5초 폴링 - 출차요청 상태 변화 감지
+    let prevExitIds = new Set<string>();
+    const interval = setInterval(async () => {
+      if (!savedStoreId) return;
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("mepark_tickets")
+        .select("id, plate_number, status")
+        .eq("store_id", savedStoreId)
+        .eq("status", "exit_requested");
 
-    // Realtime 구독 - 출차요청 즉시 감지
-    const channel = supabase
-      .channel("crew-parking-list")
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "mepark_tickets",
-      }, (payload) => {
-        const updated = payload.new as Record<string, unknown>;
-        // exit_requested 상태로 바뀌면 즉시 전체 새로고침 + 진동
-        if (updated.status === "exit_requested") {
+      if (data) {
+        const newExitIds = new Set(data.map((t) => t.id));
+        // 새로 추가된 출차요청 감지
+        const newRequests = data.filter((t) => !prevExitIds.has(t.id));
+        if (newRequests.length > 0) {
           fetchTickets(savedStoreId);
           if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-          // 토스트 팝업
-          setExitToast({ plate: updated.plate_number, id: updated.id });
-          setTimeout(() => setExitToast(null), 5000);
-        } else {
-          // 다른 상태 변경도 목록에 반영
-          setTickets((prev) =>
-            prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t))
-          );
+          const first = newRequests[0];
+          setExitToast({ plate: first.plate_number, id: first.id });
+          setTimeout(() => setExitToast(null), 6000);
+        } else if (data.length !== prevExitIds.size) {
+          // 출차요청 수 변화 시 목록 새로고침
+          fetchTickets(savedStoreId);
         }
-      })
-      .subscribe();
+        prevExitIds = newExitIds;
+      }
+    }, 5000);
 
-    return () => {
-      clearInterval(interval);
-      supabase.removeChannel(channel);
-    };
+    return () => { clearInterval(interval); };
   }, []);
 
   const fetchTickets = useCallback(async (sid) => {

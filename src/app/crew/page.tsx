@@ -249,24 +249,26 @@ export default function CrewHomePage() {
 
     init();
 
-    // Realtime: 출차요청 즉시 감지
+    // 5초 폴링 - 출차요청 감지
+    let prevCount = 0;
     const supabaseRt = createClient();
-    const channel = supabaseRt
-      .channel("crew-home-exit")
-      .on("postgres_changes", {
-        event: "UPDATE", schema: "public", table: "mepark_tickets",
-      }, (payload) => {
-        const updated = payload.new as Record<string, unknown>;
-        if (updated.status === "exit_requested") {
-          setExitReqCount((prev) => prev + 1);
-          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-        } else if (updated.status === "completed" || updated.status === "car_ready") {
-          setExitReqCount((prev) => Math.max(0, prev - 1));
-        }
-      })
-      .subscribe();
+    const pollInterval = setInterval(async () => {
+      const sid = localStorage.getItem("crew_store_id");
+      if (!sid) return;
+      const { data } = await supabaseRt
+        .from("mepark_tickets")
+        .select("id")
+        .eq("store_id", sid)
+        .eq("status", "exit_requested");
+      const count = data?.length || 0;
+      if (count > prevCount) {
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      }
+      setExitReqCount(count);
+      prevCount = count;
+    }, 5000);
 
-    return () => { supabaseRt.removeChannel(channel); };
+    return () => { clearInterval(pollInterval); };
   }, [router]);
 
   const handleStoreChange = () => {
