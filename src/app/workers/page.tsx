@@ -850,6 +850,10 @@ export default function WorkersPage() {
   const [rosterPopup, setRosterPopup] = useState<{ type: "edit"|"edit_form"|"deact"|"del"|null; worker: any }>({ type: null, worker: null });
   // 근무자별 배정 매장 map
   const [workerStoreMap, setWorkerStoreMap] = useState<Record<string, string[]>>({});
+  // 근무자별 stores map (store_id 기준)
+  const [workerStoreIdMap, setWorkerStoreIdMap] = useState<Record<string, string[]>>({});
+  // 이름 기준 profile role map
+  const [workerRoleMap, setWorkerRoleMap] = useState<Record<string, string>>({});
   const editFormRef = useRef<HTMLDivElement>(null);
   const [successToast, setSuccessToast] = useState("");
   const showToast = (msg: string) => _showToast(msg);
@@ -922,15 +926,29 @@ export default function WorkersPage() {
           .in("store_id", storeIds);
         if (mData) {
           const map: Record<string, string[]> = {};
+          const idMap: Record<string, string[]> = {};
           mData.forEach((m: any) => {
             const storeName = storeNameMap[m.store_id];
             if (!storeName) return;
             if (!map[m.user_id]) map[m.user_id] = [];
             if (!map[m.user_id].includes(storeName)) map[m.user_id].push(storeName);
+            if (!idMap[m.user_id]) idMap[m.user_id] = [];
+            if (!idMap[m.user_id].includes(m.store_id)) idMap[m.user_id].push(m.store_id);
           });
           setWorkerStoreMap(map);
+          setWorkerStoreIdMap(idMap);
         }
       }
+    }
+    // profiles → 이름 기준 role 매핑
+    const { data: pData } = await supabase
+      .from("profiles")
+      .select("name, role")
+      .eq("org_id", oid);
+    if (pData) {
+      const roleMap: Record<string, string> = {};
+      pData.forEach((p: any) => { if (p.name) roleMap[p.name] = p.role; });
+      setWorkerRoleMap(roleMap);
     }
   };
 
@@ -1517,167 +1535,95 @@ export default function WorkersPage() {
         })()}
 
         {/* ── 명부 탭 ── */}
-        {tab === "roster" && (
-          <div style={{ background: "var(--white)", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderBottom: "1px solid var(--border-light)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 700 }}>
-                <span>📋</span> 근무자 명부 <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-muted)" }}>({workers.length}명)</span>
+        {tab === "roster" && (() => {
+          const ROLE_BADGE = {
+            super_admin: { label: "최고관리자", bg: "#fef3c7", color: "#b45309", icon: "👑" },
+            admin:       { label: "어드민",    bg: "#EEF2FF", color: "#1428A0", icon: "🔑" },
+            crew:        { label: "크루",      bg: "#dcfce7", color: "#15803d", icon: "👤" },
+          };
+          const hqWorkers = workers.filter((w) => !(workerStoreIdMap[w.id] || []).length);
+          const storeGroups = stores.map((s) => ({
+            store: s,
+            workers: workers.filter((w) => (workerStoreIdMap[w.id] || []).includes(s.id)),
+          })).filter((g) => g.workers.length > 0);
+          const STORE_COLORS = ["#1428A0","#EA580C","#7C3AED","#0F9ED5","#15803d","#b45309","#DC2626"];
+
+          const WorkerCard = ({ w }: { w: any }) => {
+            const role = workerRoleMap[w.name];
+            const rb = ROLE_BADGE[role] || ROLE_BADGE["crew"];
+            return (
+              <div style={{ background: "#fff", borderRadius: 14, padding: "14px 18px", border: "1px solid var(--border-light)", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 12, flexShrink: 0, background: rb.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{rb.icon}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" as const, marginBottom: 4 }}>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: "#1a1d2b" }}>{w.name}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: rb.bg, color: rb.color }}>{rb.label}</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: w.status === "active" ? "#dcfce7" : "#f1f5f9", color: w.status === "active" ? "#16A34A" : "#94a3b8" }}>{w.status === "active" ? "활성" : "비활성"}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" as const }}>
+                      {[w.regions?.name, w.district].filter(Boolean).join(" ") && <span style={{ fontSize: 11, color: "#94a3b8" }}>📍 {[w.regions?.name, w.district].filter(Boolean).join(" ")}</span>}
+                      {w.phone && <span style={{ fontSize: 11, color: "#94a3b8" }}>📱 {w.phone}</span>}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  <button onClick={() => { setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", hire_date: w.hire_date || "" }); setRosterPopup({ type: "edit_form", worker: w }); }} style={{ padding: "5px 11px", borderRadius: 8, border: "1px solid #c7d2fe", background: "#fff", fontSize: 12, fontWeight: 700, color: "#1428A0", cursor: "pointer" }}>✏️ 수정</button>
+                  <button onClick={() => toggleStatus(w)} style={{ padding: "5px 11px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", background: w.status === "active" ? "var(--error-bg)" : "var(--success-bg)", color: w.status === "active" ? "var(--error)" : "var(--success)" }}>{w.status === "active" ? "비활성" : "활성화"}</button>
+                  <button onClick={async () => { if (!confirm(`${w.name} 근무자를 삭제하시겠습니까?`)) return; const supabase = createClient(); await supabase.from("workers").delete().eq("id", w.id); setWorkers((prev: any[]) => prev.filter((x: any) => x.id !== w.id)); showToast("🗑️ 근무자가 삭제되었습니다"); }} style={{ padding: "5px 11px", borderRadius: 8, border: "1px solid #fecaca", background: "#fff", fontSize: 12, fontWeight: 700, color: "#DC2626", cursor: "pointer" }}>🗑 삭제</button>
+                </div>
               </div>
-              <button onClick={() => { setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "", hire_date: "" }); setShowForm(true); }}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
-                + 근무자 추가
-              </button>
+            );
+          };
+
+          const GroupSection = ({ title, accentColor, workers: gWorkers, isHq }: any) => (
+            <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden", marginBottom: 16 }}>
+              <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)", display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 4, height: 20, background: accentColor, borderRadius: 2 }} />
+                <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{title}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 20, background: accentColor + "20", color: accentColor }}>{gWorkers.length}명</span>
+                {isHq && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>매장 미배정 근무자</span>}
+              </div>
+              <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column" as const, gap: 8 }}>
+                {gWorkers.length === 0
+                  ? <div style={{ textAlign: "center" as const, padding: "16px 0", fontSize: 13, color: "var(--text-muted)" }}>근무자 없음</div>
+                  : gWorkers.map((w: any) => <WorkerCard key={w.id} w={w} />)
+                }
+              </div>
             </div>
+          );
 
-            {showForm && (
-              <div ref={editFormRef} style={{ margin: "0 24px 0 24px", marginTop: 20, background: "var(--bg-card)", borderRadius: 14, padding: 24, border: "1px solid var(--border-light)" }}>
-                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>{editItem ? "근무자 수정" : "근무자 추가"}</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>이름 *</div>
-                    <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="홍길동" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+          return (
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 700 }}>
+                  <span>📋</span> 근무자 명부
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-muted)" }}>({workers.length}명)</span>
+                </div>
+                <button onClick={() => { setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "", hire_date: "" }); setShowForm(true); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>+ 근무자 추가</button>
+              </div>
+
+              {showForm && (
+                <div ref={editFormRef} style={{ background: "var(--bg-card)", borderRadius: 14, padding: 24, border: "1px solid var(--border-light)", marginBottom: 20 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>{editItem ? "근무자 수정" : "근무자 추가"}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                    <div><div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>이름 *</div><input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="홍길동" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" as const }} /></div>
+                    <div><div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>연락처</div><input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="010-0000-0000" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" as const }} /></div>
+                    <div><div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>입사일 <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, color: "#1428A0", background: "#EEF2FF", padding: "1px 6px", borderRadius: 4 }}>연차 자동계산</span></div><input type="date" value={formData.hire_date} onChange={e => setFormData({ ...formData, hire_date: e.target.value })} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" as const }} /></div>
+                    <div><div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>시/도</div><select value={formData.region_id} onChange={e => setFormData({ ...formData, region_id: e.target.value, district: "" })} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" as const }}><option value="">선택</option>{regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
+                    <div><div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>구/시</div><select value={formData.district} onChange={e => setFormData({ ...formData, district: e.target.value })} disabled={districts.length === 0} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", background: districts.length === 0 ? "var(--bg-card)" : "var(--white)", boxSizing: "border-box" as const }}><option value="">선택</option>{districts.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
                   </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>연락처</div>
-                    <input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="010-0000-0000" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>
-                      입사일
-                      <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, color: "#1428A0", background: "#EEF2FF", padding: "1px 6px", borderRadius: 4 }}>연차 자동계산</span>
-                    </div>
-                    <input
-                      type="date"
-                      value={formData.hire_date}
-                      onChange={e => setFormData({ ...formData, hire_date: e.target.value })}
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" }}
-                    />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>시/도</div>
-                    <select value={formData.region_id} onChange={e => setFormData({ ...formData, region_id: e.target.value, district: "" })} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" }}>
-                      <option value="">선택</option>
-                      {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>구/시</div>
-                    <select value={formData.district} onChange={e => setFormData({ ...formData, district: e.target.value })} disabled={districts.length === 0} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", background: districts.length === 0 ? "var(--bg-card)" : "var(--white)", boxSizing: "border-box" }}>
-                      <option value="">선택</option>
-                      {districts.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
+                  {message && <p style={{ color: "var(--error)", fontSize: 13, marginBottom: 10 }}>{message}</p>}
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button onClick={handleSave} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{editItem ? "수정" : "추가"}</button>
+                    <button onClick={() => { setShowForm(false); setMessage(""); }} style={{ padding: "10px 24px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--white)", color: "var(--text-secondary)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>취소</button>
                   </div>
                 </div>
-                {message && <p style={{ color: "var(--error)", fontSize: 13, marginBottom: 10 }}>{message}</p>}
-                <div style={{ display: "flex", gap: 10 }}>
-                  <button onClick={handleSave} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{editItem ? "수정" : "추가"}</button>
-                  <button onClick={() => { setShowForm(false); setMessage(""); }} style={{ padding: "10px 24px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--white)", color: "var(--text-secondary)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>취소</button>
-                </div>
-              </div>
-            )}
+              )}
 
-            <div style={{ padding: "16px 24px" }}>
-              {/* PC 테이블 */}
-              <div className="hidden md:block">
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr>
-                      {["이름", "배정매장", "지역", "연락처", "상태", "관리"].map(h => (
-                        <th key={h} style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textAlign: "left", background: "var(--bg-card)", borderBottom: "1px solid var(--border-light)" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {workers.map(w => (
-                      <tr key={w.id} style={{ borderBottom: "1px solid var(--border-light)" }}>
-                        <td style={{ padding: "12px 14px", fontSize: 14, fontWeight: 600 }}>{w.name}</td>
-                        <td style={{ padding: "12px 14px" }}>
-                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                            {(workerStoreMap[w.id] || []).length > 0
-                              ? (workerStoreMap[w.id] || []).map((sn, si) => (
-                                  <span key={si} style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: "#e0e8ff", color: "#1428A0" }}>{sn}</span>
-                                ))
-                              : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>-</span>
-                            }
-                          </div>
-                        </td>
-                        <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "-"}</td>
-                        <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>{w.phone || "-"}</td>
-                        <td style={{ padding: "12px 14px" }}>
-                          <span style={{ padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: w.status === "active" ? "var(--success-bg)" : "var(--error-bg)", color: w.status === "active" ? "var(--success)" : "var(--error)" }}>
-                            {w.status === "active" ? "활성" : "비활성"}
-                          </span>
-                        </td>
-                        <td style={{ padding: "12px 14px" }}>
-                          <div style={{ display: "flex", gap: 6 }}>
-                            <button onClick={() => {
-                                setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", hire_date: w.hire_date || "" });
-                                setRosterPopup({ type: "edit_form", worker: w });
-                              }}
-                              style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #c7d2fe", background: "#fff", fontSize: 12, fontWeight: 700, color: "#1428A0", cursor: "pointer" }}>✏️ 수정</button>
-                            <button onClick={() => toggleStatus(w)}
-                              style={{ padding: "5px 12px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", background: w.status === "active" ? "var(--error-bg)" : "var(--success-bg)", color: w.status === "active" ? "var(--error)" : "var(--success)" }}>
-                              {w.status === "active" ? "비활성" : "✅ 활성화"}
-                            </button>
-                            <button onClick={async () => {
-                                if (!confirm(`${w.name} 근무자를 삭제하시겠습니까?`)) return;
-                                const supabase = createClient();
-                                await supabase.from("workers").delete().eq("id", w.id);
-                                setWorkers((prev: any[]) => prev.filter((x: any) => x.id !== w.id));
-                                showToast("🗑️ 근무자가 삭제되었습니다");
-                              }}
-                              style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #fecaca", background: "#fff", fontSize: 12, fontWeight: 700, color: "#DC2626", cursor: "pointer" }}>🗑 삭제</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {workers.length === 0 && (
-                      <tr><td colSpan={6} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)", fontSize: 14 }}>등록된 근무자가 없습니다</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              {/* 모바일 카드 */}
-              <div className="md:hidden space-y-2">
-                {workers.map(w => (
-                  <div key={w.id} style={{ background: "#fff", borderRadius: 16, padding: 16, boxShadow: "0 1px 6px rgba(0,0,0,0.05)", marginBottom: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 12, background: w.status === "active" ? "#ecf0ff" : "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, opacity: w.status === "active" ? 1 : 0.6 }}>👤</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
-                            <span style={{ fontSize: 15, fontWeight: 800, color: "#1a1d2b" }}>{w.name}</span>
-                            {/* 배정 매장 태그 */}
-                            {(workerStoreMap[w.id] || []).map((sn, si) => (
-                              <span key={si} style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: "#e0e8ff", color: "#1428A0", whiteSpace: "nowrap" as const }}>
-                                🏢 {sn}
-                              </span>
-                            ))}
-                            {(workerStoreMap[w.id] || []).length === 0 && (
-                              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 6, background: "#f1f5f9", color: "#94a3b8" }}>미배정</span>
-                            )}
-                          </div>
-                          <div style={{ fontSize: 11, color: "#94a3b8" }}>{[w.regions?.name, w.district].filter(Boolean).join(" ") || "지역 없음"}</div>
-                        </div>
-                      </div>
-                      <span style={{ padding: "4px 11px", borderRadius: 8, fontSize: 11, fontWeight: 700, background: w.status === "active" ? "#dcfce7" : "#f1f5f9", color: w.status === "active" ? "#16A34A" : "#94a3b8", flexShrink: 0 }}>
-                        {w.status === "active" ? "활성" : "비활성"}
-                      </span>
-                    </div>
-                    {w.phone && <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>📱 {w.phone}</div>}
-                    <div style={{ display: "flex", gap: 7 }}>
-                      <button onClick={() => setRosterPopup({ type: "edit", worker: w })}
-                        style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1.5px solid #c7d2fe", background: "#fff", color: "#1428A0" }}>✏️ 수정</button>
-                      <button onClick={() => setRosterPopup({ type: "deact", worker: w })}
-                        style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1.5px solid #fed7aa", background: "#fff", color: "#EA580C" }}>
-                        {w.status === "active" ? "비활성" : "활성화"}
-                      </button>
-                      <button onClick={() => setRosterPopup({ type: "del", worker: w })}
-                        style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1.5px solid #fecaca", background: "#fff", color: "#DC2626" }}>🗑 삭제</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {hqWorkers.length > 0 && <GroupSection title="🏢 본사 / 미배정" accentColor="#1428A0" workers={hqWorkers} isHq />}
+              {storeGroups.map((g, idx) => <GroupSection key={g.store.id} title={`🏪 ${g.store.name}`} accentColor={STORE_COLORS[idx % STORE_COLORS.length]} workers={g.workers} isHq={false} />)}
+              {workers.length === 0 && <div style={{ textAlign: "center" as const, padding: "48px 0", color: "var(--text-muted)", fontSize: 14 }}>등록된 근무자가 없습니다</div>}
 
               {/* ── 명부 팝업 ── */}
               {rosterPopup.type && rosterPopup.worker && (
@@ -1858,8 +1804,8 @@ export default function WorkersPage() {
                 </div>
               )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── 나머지 탭 ── */}
         {tab === "schedule" && <ScheduleTab />}
