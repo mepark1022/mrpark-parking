@@ -383,19 +383,28 @@ export default function TeamPage() {
     loadData();
   }
 
-  // 멤버 완전 제거 (store_members 삭제 + profile org_id 제거 + 초대 기록 삭제)
+  // 멤버 완전 제거 (API 라우트 경유 - service role 필요)
   async function removeMember(profile: Profile) {
     setSending(true);
     try {
-      // 1. 모든 매장 배정 제거
-      await supabase.from("store_members").delete().eq("user_id", profile.id);
-      // 2. profile에서 org_id 제거 + disabled 처리
-      await supabase.from("profiles").update({ org_id: null, status: "disabled" }).eq("id", profile.id);
-      // 3. 해당 이메일의 초대 기록 삭제 (깔끔한 재초대를 위해)
-      await supabase.from("invitations").delete().eq("email", profile.email).eq("org_id", orgId);
-      setMessage({ text: `${profile.name || profile.email}님이 조직에서 제거되었습니다. 재초대 시 새 초대 이메일을 발송하세요.`, type: "success" });
-      setRemoveTarget(null);
-      loadData();
+      const res = await fetch("/api/team/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: profile.id,
+          userEmail: profile.email,
+          orgId,
+          requesterId: currentUserId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ text: data.error || "제거 실패", type: "error" });
+      } else {
+        setMessage({ text: `${profile.name || profile.email}님이 조직에서 제거되었습니다. 재초대 시 새 초대 이메일을 발송하세요.`, type: "success" });
+        setRemoveTarget(null);
+        loadData();
+      }
     } catch (e) {
       setMessage({ text: "제거 중 오류가 발생했습니다.", type: "error" });
     }
