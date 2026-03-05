@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
                 <p style="color:#8B90A0;font-size:11px;margin-top:8px;letter-spacing:0.5px;">AI스마트주차운영솔루션</p>
               </div>
 
-              <h2 style="color:#1A1D2B;font-size:18px;margin-bottom:8px;text-align:center;font-weight:800;">팀원 초대</h2>
+              <h2 style="color:#1A1D2B;font-size:18px;margin-bottom:8px;text-align:center;font-weight:800;">${role === "crew" ? "크루 초대" : "팀원 초대"}</h2>
               <p style="color:#666;font-size:14px;line-height:1.7;text-align:center;">
                 ME.PARK 2.0 AI스마트주차운영솔루션 시스템에<br/>
                 <strong style="color:${roleColor};">${roleLabel}</strong>으로 초대되었습니다.
