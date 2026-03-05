@@ -46,9 +46,10 @@ export async function POST(req: NextRequest) {
       to: phone,
       templateKey: "entry",
       variables: {
-        "#{차량번호}": plateNumber,
         "#{매장명}":   storeName,
-        "#{입차시각}": entryAt,
+        "#{차량번호}": plateNumber,
+        "#{입차시간}": entryAt,       // 템플릿 변수명: 입차시각 X → 입차시간 O
+        "#{요금안내}": "주차현황 확인 버튼을 눌러주세요",  // 템플릿 필수 변수
       },
     });
 
