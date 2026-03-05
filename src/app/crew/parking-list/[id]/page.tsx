@@ -238,11 +238,20 @@ export default function CrewTicketDetailPage() {
   const [plateEditLoading, setPlateEditLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [userId, setUserId] = useState(null);
+  const [orgId, setOrgId] = useState(null);
+
+  // 차량준비 알림톡 모달
+  const [showReadyModal, setShowReadyModal] = useState(false);
+  const [readyPhone, setReadyPhone] = useState("");
 
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) setUserId(user.id);
+      if (user) {
+        setUserId(user.id);
+        const { data: profile } = await supabase.from("profiles").select("org_id").eq("id", user.id).single();
+        if (profile) setOrgId(profile.org_id);
+      }
     };
     init();
     fetchTicket();
@@ -274,11 +283,32 @@ export default function CrewTicketDetailPage() {
   };
 
   /* ── 발렛: 차량준비 완료 ── */
-  const handleCarReady = async () => {
+  const handleCarReady = () => {
+    setReadyPhone("");
+    setShowReadyModal(true);
+  };
+
+  const handleCarReadyConfirm = async () => {
     setActionLoading(true);
+    setShowReadyModal(false);
     await supabase.from("mepark_tickets")
       .update({ status: "car_ready", updated_at: new Date().toISOString() })
       .eq("id", id);
+
+    // 전화번호 입력한 경우 → 알림톡 발송 (발송 즉시 소멸)
+    if (readyPhone && readyPhone.replace(/-/g, "").length >= 10) {
+      fetch("/api/alimtalk/ready", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: readyPhone,
+          ticketId: id,
+          plateNumber: ticket?.plate_number ?? "",
+          orgId,
+        }),
+      }).catch(() => {});
+    }
+
     await fetchTicket();
     setActionLoading(false);
   };
@@ -524,6 +554,47 @@ export default function CrewTicketDetailPage() {
               <button className="btn-secondary-sm" onClick={() => router.back()}>
                 ← 목록으로
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* 차량준비 완료 모달 (알림톡 전화번호 입력) */}
+        {showReadyModal && (
+          <div className="modal-overlay" onClick={() => setShowReadyModal(false)}>
+            <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-handle" />
+              <div style={{ padding: "20px 20px 8px", textAlign: "center" }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>🚗</div>
+                <div style={{ fontSize: 17, fontWeight: 800, color: "#1A1D2B", marginBottom: 6 }}>차량준비 완료</div>
+                <div style={{ fontSize: 13, color: "#64748B", marginBottom: 20, lineHeight: 1.6 }}>
+                  고객에게 알림톡을 보내려면<br/>전화번호를 입력하세요.<br/>
+                  <span style={{ fontSize: 11, color: "#94A3B8" }}>번호는 발송 즉시 삭제됩니다.</span>
+                </div>
+                <input
+                  type="tel"
+                  placeholder="010-0000-0000 (선택)"
+                  value={readyPhone}
+                  onChange={(e) => setReadyPhone(e.target.value)}
+                  style={{
+                    width: "100%", height: 48, border: "2px solid #E2E8F0",
+                    borderRadius: 12, fontSize: 16, textAlign: "center",
+                    outline: "none", marginBottom: 16, boxSizing: "border-box",
+                    fontWeight: 600, letterSpacing: 1,
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = "#1428A0"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "#E2E8F0"; }}
+                />
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    onClick={() => setShowReadyModal(false)}
+                    style={{ flex: 1, height: 48, borderRadius: 12, border: "1.5px solid #E2E8F0", background: "#fff", fontSize: 15, fontWeight: 700, color: "#64748B", cursor: "pointer" }}
+                  >취소</button>
+                  <button
+                    onClick={handleCarReadyConfirm}
+                    style={{ flex: 2, height: 48, borderRadius: 12, border: "none", background: "#16A34A", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer" }}
+                  >{readyPhone ? "완료 + 알림톡 발송" : "알림톡 없이 완료"}</button>
+                </div>
+              </div>
             </div>
           </div>
         )}

@@ -194,6 +194,27 @@ export default function MonthlyPage() {
     }).eq("id", c.id);
     if (error) { alert("갱신 실패: " + error.message); setRenewModal(m => ({ ...m, saving: false })); return; }
     showToast("✅ 계약이 갱신되었습니다");
+
+    // 갱신 완료 알림톡 (전화번호 있는 경우)
+    if (c.customer_phone) {
+      fetch("/api/alimtalk/monthly", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: c.customer_phone,
+          customerName: c.customer_name,
+          vehicleNumber: c.vehicle_number,
+          storeName: c.stores?.name ?? "",
+          startDate: newStart,
+          endDate: renewModal.customEnd,
+          fee: renewModal.newFee,
+          templateType: "renewal_complete",
+          contractId: c.id,
+          orgId: c.org_id,
+        }),
+      }).catch(() => {});
+    }
+
     setRenewModal(m => ({ ...m, open: false, saving: false }));
     loadContracts();
   }
