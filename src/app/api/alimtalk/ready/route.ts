@@ -35,14 +35,24 @@ export async function POST(req: NextRequest) {
     const storeName = ticket?.stores?.name ?? "";
     const location  = parkingLocation || ticket?.parking_location || "안내 데스크 문의";
 
+    // 준비완료 시간 (KST)
+    const readyTime = new Date().toLocaleString("ko-KR", {
+      timeZone: "Asia/Seoul",
+      month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit",
+    });
+
     // 알림톡 발송
+    // ※ 솔라피 템플릿 변수명에 맞게 모두 포함 (#{대기위치}/#{준비완료}/#{주차위치} 호환)
     const result = await sendAlimtalk({
       to: phone,
       templateKey: "ready",
       variables: {
         "#{차량번호}": plateNumber,
         "#{매장명}":   storeName,
-        "#{주차위치}": location,
+        "#{대기위치}": location,   // 템플릿 변수명: #{대기위치}
+        "#{준비완료}": readyTime,  // 템플릿 변수명: #{준비완료}
+        "#{주차위치}": location,   // 구버전 호환
       },
     });
 

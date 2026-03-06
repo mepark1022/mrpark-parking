@@ -263,7 +263,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
             padding: "14px 28px", display: "inline-block",
           }}>
             <div style={{ color: "#1A1D2B", fontSize: 15, fontWeight: 900, letterSpacing: 0.3 }}>
-              🙏 감사합니다! 안전하게 가세요
+              🙏 감사합니다! 즐거운 하루 되세요!
             </div>
           </div>
         )}

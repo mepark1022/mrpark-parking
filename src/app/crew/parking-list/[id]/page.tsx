@@ -307,6 +307,7 @@ export default function CrewTicketDetailPage() {
           ticketId: id,
           plateNumber: ticket?.plate_number ?? "",
           orgId,
+          parkingLocation: ticket?.parking_location ?? "",
         }),
       }).catch(() => {});
       // 발송 완료 → localStorage에서 전화번호 삭제
