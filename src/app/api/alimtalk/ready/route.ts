@@ -6,6 +6,9 @@
  * Body: { phone, ticketId, plateNumber, orgId, parkingLocation? }
  *
  * ⚠️ 전화번호는 이 API에서만 사용. DB 저장 절대 금지.
+ *
+ * 솔라피 템플릿 변수 (2026.3.6 확인):
+ *   #{차량번호}, #{출구위치}, #{준비시간}, #{티켓ID}
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -35,7 +38,7 @@ export async function POST(req: NextRequest) {
     const storeName = ticket?.stores?.name ?? "";
     const location  = parkingLocation || ticket?.parking_location || "안내 데스크 문의";
 
-    // 준비완료 시간 (KST)
+    // 준비시간 (KST) — 템플릿 변수명: #{준비시간}
     const readyTime = new Date().toLocaleString("ko-KR", {
       timeZone: "Asia/Seoul",
       month: "2-digit", day: "2-digit",
@@ -43,16 +46,14 @@ export async function POST(req: NextRequest) {
     });
 
     // 알림톡 발송
-    // ※ 솔라피 템플릿 변수명에 맞게 모두 포함 (#{대기위치}/#{준비완료}/#{주차위치} 호환)
     const result = await sendAlimtalk({
       to: phone,
       templateKey: "ready",
       variables: {
-        "#{차량번호}": plateNumber,
-        "#{매장명}":   storeName,
-        "#{대기위치}": location,   // 템플릿 변수명: #{대기위치}
-        "#{준비완료}": readyTime,  // 템플릿 변수명: #{준비완료}
-        "#{주차위치}": location,   // 구버전 호환
+        "#{차량번호}": plateNumber,  // 템플릿 변수
+        "#{출구위치}": location,      // 대기 위치 (출구위치)
+        "#{준비시간}": readyTime,     // 준비완료 시간
+        "#{티켓ID}":   ticketId,      // 버튼 URL용
       },
     });
 
