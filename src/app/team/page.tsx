@@ -184,7 +184,10 @@ export default function TeamPage() {
 
   // 초대 모달
   const [showInvite, setShowInvite] = useState(false);
+  const [inviteMode, setInviteMode] = useState<"email" | "direct">("email"); // 이메일 초대 vs 직접 생성
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [invitePassword, setInvitePassword] = useState("");
   const [inviteRole, setInviteRole] = useState("admin");
   const [inviteStoreIds, setInviteStoreIds] = useState<string[]>([]);
 
@@ -276,6 +279,44 @@ export default function TeamPage() {
         loadData();
       } else {
         setMessage({ text: `초대 생성됨. 이메일 발송 실패: ${data.emailError || ""}`, type: "warning" });
+        loadData();
+      }
+    } catch (e) { setMessage({ text: "서버 오류", type: "error" }); }
+    setSending(false);
+  }
+
+  // --- 계정 직접 생성 ---
+  async function handleDirectCreate() {
+    if (!inviteEmail || !inviteName || !invitePassword) return;
+    if (invitePassword.length < 6) {
+      setMessage({ text: "비밀번호는 6자 이상이어야 합니다.", type: "error" });
+      return;
+    }
+    if (inviteRole === "crew" && inviteStoreIds.length === 0) {
+      setMessage({ text: "CREW는 배정 매장을 선택해주세요.", type: "error" });
+      return;
+    }
+    setSending(true);
+    setMessage({ text: "", type: "" });
+    try {
+      const res = await fetch("/api/team/create-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: inviteEmail,
+          password: invitePassword,
+          name: inviteName,
+          role: inviteRole,
+          orgId: orgId,
+          storeIds: inviteStoreIds,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setMessage({ text: data.error || "계정 생성 실패", type: "error" });
+      } else {
+        setMessage({ text: `✅ ${inviteName}(${inviteEmail}) 계정이 생성되었습니다. 비밀번호를 본인에게 전달해주세요.`, type: "success" });
+        setInviteEmail(""); setInviteName(""); setInvitePassword(""); setInviteRole("admin"); setInviteStoreIds([]); setShowInvite(false);
         loadData();
       }
     } catch (e) { setMessage({ text: "서버 오류", type: "error" }); }
@@ -416,7 +457,7 @@ export default function TeamPage() {
       <div className="max-w-5xl">
         <div className="flex items-center justify-between mb-6">
           <h3 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>팀원 관리</h3>
-          <button onClick={() => setShowInvite(true)} style={{ padding: "10px 20px", borderRadius: 10, background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer" }}>+ 팀원 초대</button>
+          <button onClick={() => setShowInvite(true)} style={{ padding: "10px 20px", borderRadius: 10, background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer" }}>+ 팀원 추가</button>
         </div>
 
         {message.text && (
@@ -636,13 +677,37 @@ export default function TeamPage() {
         {showInvite && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-7 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-              <h3 className="text-xl font-bold text-gray-900 mb-5">팀원 초대</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-5">팀원 추가</h3>
+
+              {/* 모드 토글 */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 20, background: "#f1f5f9", borderRadius: 10, padding: 4 }}>
+                <button onClick={() => setInviteMode("direct")} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: inviteMode === "direct" ? "#1428A0" : "transparent", color: inviteMode === "direct" ? "#fff" : "#64748b", transition: "all 0.15s" }}>🔑 계정 직접 생성</button>
+                <button onClick={() => setInviteMode("email")} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: inviteMode === "email" ? "#1428A0" : "transparent", color: inviteMode === "email" ? "#fff" : "#64748b", transition: "all 0.15s" }}>📧 이메일 초대</button>
+              </div>
+
               <div className="space-y-4">
+                {/* 이름 (직접 생성만) */}
+                {inviteMode === "direct" && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1.5">이름 *</label>
+                    <input type="text" value={inviteName} onChange={(e) => setInviteName(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-[15px] text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="홍길동" />
+                  </div>
+                )}
+
                 {/* 이메일 */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">이메일 주소 *</label>
                   <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-[15px] text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="example@email.com" />
                 </div>
+
+                {/* 비밀번호 (직접 생성만) */}
+                {inviteMode === "direct" && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1.5">비밀번호 *</label>
+                    <input type="text" value={invitePassword} onChange={(e) => setInvitePassword(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-[15px] text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="6자 이상 (본인에게 전달)" />
+                    <p className="text-xs text-orange-500 mt-1.5 font-medium">⚠️ 생성 후 본인에게 비밀번호를 전달해주세요</p>
+                  </div>
+                )}
 
                 {/* 역할 */}
                 <div>
@@ -698,8 +763,12 @@ export default function TeamPage() {
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-7">
-                <button onClick={() => { setShowInvite(false); setInviteEmail(""); setInviteRole("admin"); setInviteStoreIds([]); }} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg">취소</button>
-                <button onClick={handleInvite} disabled={!inviteEmail || sending || (inviteRole === "crew" && inviteStoreIds.length === 0)} className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-dark disabled:opacity-50 shadow-sm">{sending ? "발송 중..." : "초대 발송"}</button>
+                <button onClick={() => { setShowInvite(false); setInviteEmail(""); setInviteName(""); setInvitePassword(""); setInviteRole("admin"); setInviteStoreIds([]); setInviteMode("direct"); }} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg">취소</button>
+                {inviteMode === "email" ? (
+                  <button onClick={handleInvite} disabled={!inviteEmail || sending || (inviteRole === "crew" && inviteStoreIds.length === 0)} className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-dark disabled:opacity-50 shadow-sm">{sending ? "발송 중..." : "초대 발송"}</button>
+                ) : (
+                  <button onClick={handleDirectCreate} disabled={!inviteEmail || !inviteName || !invitePassword || invitePassword.length < 6 || sending || (inviteRole === "crew" && inviteStoreIds.length === 0)} className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-dark disabled:opacity-50 shadow-sm">{sending ? "생성 중..." : "계정 생성"}</button>
+                )}
               </div>
             </div>
           </div>
