@@ -194,6 +194,13 @@ export default function TeamPage() {
   // 매장 배정 모달
   const [showAssign, setShowAssign] = useState(false);
   const [assignProfile, setAssignProfile] = useState<Profile | null>(null);
+
+  // 생성 완료 팝업 (아이디/비번 표시)
+  const [createdAccount, setCreatedAccount] = useState<{ name: string; email: string; password: string } | null>(null);
+
+  // 비밀번호 재설정 모달
+  const [resetTarget, setResetTarget] = useState<Profile | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
   const [assignStoreIds, setAssignStoreIds] = useState<string[]>([]);
 
   // 멤버 제거 확인
@@ -315,7 +322,7 @@ export default function TeamPage() {
       if (!res.ok || data.error) {
         setMessage({ text: data.error || "계정 생성 실패", type: "error" });
       } else {
-        setMessage({ text: `✅ ${inviteName}(${inviteEmail}) 계정이 생성되었습니다. 비밀번호를 본인에게 전달해주세요.`, type: "success" });
+        setCreatedAccount({ name: inviteName, email: inviteEmail, password: invitePassword });
         setInviteEmail(""); setInviteName(""); setInvitePassword(""); setInviteRole("admin"); setInviteStoreIds([]); setShowInvite(false);
         loadData();
       }
@@ -325,6 +332,32 @@ export default function TeamPage() {
 
   function toggleInviteStore(storeId: string) {
     setInviteStoreIds(prev => prev.includes(storeId) ? prev.filter(id => id !== storeId) : [...prev, storeId]);
+  }
+
+  // --- 비밀번호 재설정 ---
+  async function handleResetPassword() {
+    if (!resetTarget || !resetPassword) return;
+    if (resetPassword.length < 6) {
+      setMessage({ text: "비밀번호는 6자 이상이어야 합니다.", type: "error" });
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await fetch("/api/team/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: resetTarget.id, newPassword: resetPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setMessage({ text: data.error || "비밀번호 재설정 실패", type: "error" });
+      } else {
+        setCreatedAccount({ name: resetTarget.name, email: resetTarget.email, password: resetPassword });
+        setResetTarget(null);
+        setResetPassword("");
+      }
+    } catch (e) { setMessage({ text: "서버 오류", type: "error" }); }
+    setSending(false);
   }
 
   async function cancelInvitation(id: string) {
@@ -522,6 +555,8 @@ export default function TeamPage() {
                                 <>
                                   <button onClick={() => openAssignModal(p)} style={{ fontSize: 12, fontWeight: 600, color: "#1428A0", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>매장배정</button>
                                   <span style={{ color: "#e2e8f0" }}>|</span>
+                                  <button onClick={() => { setResetTarget(p); setResetPassword(""); }} style={{ fontSize: 12, fontWeight: 600, color: "#ea580c", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>비번재설정</button>
+                                  <span style={{ color: "#e2e8f0" }}>|</span>
                                   <button
                                     onClick={() => toggleStatus(p)}
                                     style={{ fontSize: 12, fontWeight: 600, color: p.status === "active" ? "#94a3b8" : "#16a34a", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}
@@ -573,6 +608,7 @@ export default function TeamPage() {
                       {canManageRole(p) && (
                         <div className="flex gap-3 mt-1">
                           <button onClick={() => openAssignModal(p)} style={{ fontSize: 11, fontWeight: 700, color: "#1428A0", background: "none", border: "none", cursor: "pointer", padding: 0 }}>매장배정</button>
+                          <button onClick={() => { setResetTarget(p); setResetPassword(""); }} style={{ fontSize: 11, fontWeight: 600, color: "#ea580c", background: "none", border: "none", cursor: "pointer", padding: 0 }}>비번재설정</button>
                           <button onClick={() => toggleStatus(p)} style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                             {p.status === "active" ? "비활성" : "활성화"}
                           </button>
@@ -857,6 +893,78 @@ export default function TeamPage() {
                   disabled={sending}
                   style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "#ef4444", fontSize: 14, fontWeight: 700, color: "#fff", cursor: sending ? "not-allowed" : "pointer", opacity: sending ? 0.7 : 1 }}
                 >{sending ? "제거 중..." : "제거 확인"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== 계정 생성/비번 재설정 완료 팝업 ===== */}
+        {createdAccount && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-7 w-full max-w-sm shadow-2xl">
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>✅</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">계정 정보</h3>
+              <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+                아래 정보를 <strong>{createdAccount.name}</strong>님에게 전달해주세요.
+              </p>
+              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <span style={{ fontSize: 13, color: "#6b7280" }}>이름</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#1A1D2B" }}>{createdAccount.name}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <span style={{ fontSize: 13, color: "#6b7280" }}>이메일(아이디)</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#1A1D2B" }}>{createdAccount.email}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, color: "#6b7280" }}>비밀번호</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#ea580c" }}>{createdAccount.password}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  const text = `[미팍Ticket 로그인 정보]\n이름: ${createdAccount.name}\n이메일: ${createdAccount.email}\n비밀번호: ${createdAccount.password}\n\n로그인: https://mrpark-parking.vercel.app/crew/login`;
+                  navigator.clipboard.writeText(text).then(() => {
+                    setMessage({ text: "로그인 정보가 클립보드에 복사되었습니다.", type: "success" });
+                  }).catch(() => {});
+                }}
+                style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", fontSize: 14, fontWeight: 700, color: "#1428A0", cursor: "pointer", marginBottom: 10 }}
+              >📋 로그인 정보 복사</button>
+              <button
+                onClick={() => setCreatedAccount(null)}
+                style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: "none", background: "#1428A0", fontSize: 14, fontWeight: 700, color: "#fff", cursor: "pointer" }}
+              >확인</button>
+            </div>
+          </div>
+        )}
+
+        {/* ===== 비밀번호 재설정 모달 ===== */}
+        {resetTarget && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-7 w-full max-w-sm shadow-2xl">
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "#fff7ed", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>🔑</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">비밀번호 재설정</h3>
+              <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+                <strong>{resetTarget.name}</strong> ({resetTarget.email})
+              </p>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#1A1D2B", marginBottom: 6 }}>새 비밀번호 *</label>
+              <input
+                type="text"
+                value={resetPassword}
+                onChange={(e) => setResetPassword(e.target.value)}
+                placeholder="6자 이상 입력"
+                style={{ width: "100%", padding: "12px 16px", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 14, color: "#1A1D2B", outline: "none", boxSizing: "border-box", marginBottom: 20 }}
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setResetTarget(null); setResetPassword(""); }}
+                  style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", fontSize: 14, fontWeight: 600, color: "#6b7280", cursor: "pointer" }}
+                >취소</button>
+                <button
+                  onClick={handleResetPassword}
+                  disabled={sending || !resetPassword || resetPassword.length < 6}
+                  style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "#ea580c", fontSize: 14, fontWeight: 700, color: "#fff", cursor: sending ? "not-allowed" : "pointer", opacity: sending || !resetPassword || resetPassword.length < 6 ? 0.5 : 1 }}
+                >{sending ? "변경 중..." : "비밀번호 변경"}</button>
               </div>
             </div>
           </div>
