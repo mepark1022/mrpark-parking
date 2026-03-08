@@ -56,10 +56,20 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 로그인 상태 + /login → /dashboard 리다이렉트
+  // 로그인 상태 + /login → role에 따라 분기
   if (user && pathname === "/login") {
+    // 서버사이드에서 role 확인 없이 /dashboard로 보내면 crew도 어드민 화면 진입
+    // → /store-select로 보내서 role별 분기 위임 (store-select 내부에서 admin은 바로 /dashboard로)
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/store-select";
+    url.search = "?return=/dashboard";
+    return NextResponse.redirect(url);
+  }
+
+  // 로그인 상태 + /crew/login → /crew로 리다이렉트
+  if (user && pathname === "/crew/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/crew";
     return NextResponse.redirect(url);
   }
 
