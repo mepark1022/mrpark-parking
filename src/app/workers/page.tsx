@@ -1554,19 +1554,24 @@ export default function WorkersPage() {
             const locationStr = [w.regions?.name, w.district].filter(Boolean).join(" ");
             return (
               <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-light)", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", overflow: "hidden" }}>
-                {/* 상단: 아이콘 + 이름 + 배지 */}
-                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px 10px" }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 12, flexShrink: 0, background: rb.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{rb.icon}</div>
+                {/* 상단: 아이콘 + [이름(block) / 배지(flex row) / 연락처] */}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px 12px" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: rb.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginTop: 2 }}>{rb.icon}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" as const }}>
-                      <span style={{ fontSize: 16, fontWeight: 800, color: "#1a1d2b", whiteSpace: "nowrap" as const }}>{w.name}</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: rb.bg, color: rb.color, whiteSpace: "nowrap" as const }}>{rb.label}</span>
-                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: w.status === "active" ? "#dcfce7" : "#f1f5f9", color: w.status === "active" ? "#16A34A" : "#94a3b8", whiteSpace: "nowrap" as const }}>{w.status === "active" ? "활성" : "비활성"}</span>
+                    {/* 이름: 독립 block — flex child가 아니므로 squeeze 불가 */}
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#1a1d2b", marginBottom: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w.name}</div>
+                    {/* 배지 row */}
+                    <div style={{ display: "flex", gap: 5, marginBottom: 5, flexWrap: "wrap" as const }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: rb.bg, color: rb.color }}>{rb.label}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: w.status === "active" ? "#dcfce7" : "#f1f5f9", color: w.status === "active" ? "#16A34A" : "#94a3b8" }}>{w.status === "active" ? "활성" : "비활성"}</span>
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const }}>
-                      {locationStr && <span style={{ fontSize: 11, color: "#94a3b8" }}>📍 {locationStr}</span>}
-                      {w.phone && <span style={{ fontSize: 11, color: "#94a3b8" }}>📱 {w.phone}</span>}
-                    </div>
+                    {/* 연락처/지역 */}
+                    {(locationStr || w.phone) && (
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const }}>
+                        {locationStr && <span style={{ fontSize: 11, color: "#94a3b8" }}>📍 {locationStr}</span>}
+                        {w.phone && <span style={{ fontSize: 11, color: "#94a3b8" }}>📱 {w.phone}</span>}
+                      </div>
+                    )}
                   </div>
                 </div>
                 {/* 하단: 액션 버튼 3개 (전체 너비 균등 분할) */}
