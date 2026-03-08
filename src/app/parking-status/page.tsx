@@ -221,7 +221,7 @@ export default function ParkingStatusPage() {
       .order("entry_time",{ascending:false});
     if(selectedStore) q1=q1.eq("store_id",selectedStore);
 
-    // 2) mepark_tickets (CREW앱 입차)
+    // 2) mepark_tickets - 선택한 날짜 입차분
     let q2=supabase.from("mepark_tickets")
       .select("id,plate_number,parking_type,status,entry_at,exit_at,store_id,entry_crew_id,parking_location,is_monthly,visit_place_id,stores:store_id(name),visit_places:visit_place_id(name,floor)")
       .eq("org_id",ctx.orgId)
@@ -229,7 +229,18 @@ export default function ParkingStatusPage() {
       .order("entry_at",{ascending:false});
     if(selectedStore) q2=q2.eq("store_id",selectedStore);
 
-    const [{data:peData},{data:mtData}]=await Promise.all([q1,q2]);
+    // 3) 날짜 무관 현재 주차 중인 이전 날짜 티켓 (좀비 티켓 — 오늘 날짜에 안 잡힘)
+    const todayStart=`${selectedDate}T00:00:00`;
+    let q3=supabase.from("mepark_tickets")
+      .select("id,plate_number,parking_type,status,entry_at,exit_at,store_id,entry_crew_id,parking_location,is_monthly,visit_place_id,stores:store_id(name),visit_places:visit_place_id(name,floor)")
+      .eq("org_id",ctx.orgId)
+      .in("status",["parking","pre_paid","exit_requested","car_ready"])
+      .lt("entry_at",todayStart)  // 오늘 이전 날짜만
+      .order("entry_at",{ascending:false});
+    if(selectedStore) q3=q3.eq("store_id",selectedStore);
+
+    const [{data:peData},{data:mtData},zombieResult]=await Promise.all([q1,q2,q3]);
+    const zombieData=zombieResult?.data||[];
 
     // CREW 이름 조회
     const crewIds=[...new Set((mtData||[]).map(t=>t.entry_crew_id).filter(Boolean))];
@@ -256,12 +267,36 @@ export default function ParkingStatusPage() {
       _ticket_status: t.status, // 원본 티켓 상태 보존
     }));
 
+    // 이전 날짜 좀비 티켓 정규화 (현재 날짜 티켓과 중복 방지)
+    const todayTicketIds=new Set((mtData||[]).map(t=>t.id));
+    const normalizedZombies=zombieData
+      .filter(t=>!todayTicketIds.has(t.id))
+      .map(t=>({
+        id: t.id,
+        plate_number: t.plate_number,
+        parking_type: t.is_monthly ? "monthly" : t.parking_type==="self" ? "normal" : t.parking_type,
+        status: "parked" as const,
+        entry_time: t.entry_at,
+        exit_time: t.exit_at,
+        store_id: t.store_id,
+        worker_id: t.entry_crew_id,
+        floor: t.visit_places?.floor || t.parking_location || null,
+        stores: t.stores,
+        workers: t.entry_crew_id ? { name: crewMap[t.entry_crew_id] || "CREW" } : null,
+        _source: "mepark_tickets" as const,
+        _ticket_status: t.status,
+        _is_zombie: true, // 이전 날짜 미출차 표시
+      }));
+
     const peNormalized=(peData||[]).map(e=>({...e, _source:"parking_entries" as const}));
 
-    // 병합 후 입차시간 내림차순
-    const merged=[...peNormalized,...normalizedTickets].sort((a,b)=>
-      new Date(b.entry_time).getTime()-new Date(a.entry_time).getTime()
-    );
+    // 병합: 좀비 티켓은 맨 위에 표시 (날짜 내림차순)
+    const merged=[...normalizedZombies,...peNormalized,...normalizedTickets].sort((a,b)=>{
+      // 좀비 먼저
+      if((a as any)._is_zombie && !(b as any)._is_zombie) return -1;
+      if(!(a as any)._is_zombie && (b as any)._is_zombie) return 1;
+      return new Date(b.entry_time).getTime()-new Date(a.entry_time).getTime();
+    });
     setEntries(merged);setLoading(false);
   };
 
@@ -800,6 +835,11 @@ export default function ParkingStatusPage() {
                           <span style={{fontFamily:"'Outfit',sans-serif",fontSize:15,fontWeight:900,color:"#1A1D2B",letterSpacing:"-0.3px"}}>
                             {hlPlate(e.plate_number,search)}
                           </span>
+                          {(e as any)._is_zombie&&(
+                            <span style={{fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:4,background:"#fef2f2",color:"#dc2626",flexShrink:0,border:"1px solid #fecaca"}}>
+                              ⚠ 이전날짜 미출차
+                            </span>
+                          )}
                           <span style={{fontSize:10,fontWeight:800,padding:"1px 7px",borderRadius:5,background:ts.bg,color:ts.color,flexShrink:0}}>
                             {ts.label}
                           </span>
