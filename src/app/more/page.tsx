@@ -95,6 +95,9 @@ export default function MorePage() {
   }
 
   const handleLogout = async () => {
+    // org 캐시 정리 (크루가 이어서 로그인해도 이전 role이 남지 않도록)
+    const { clearOrgCache } = await import("@/lib/utils/org");
+    clearOrgCache();
     await supabase.auth.signOut();
     router.push("/login");
   };

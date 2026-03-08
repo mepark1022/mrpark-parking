@@ -17,12 +17,12 @@ export async function login(formData: FormData) {
     return { error: "이메일 또는 비밀번호가 올바르지 않습니다." };
   }
 
-  // 프로필 상태 확인
+  // 프로필 상태 + role 확인
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("status")
+      .select("status, role")
       .eq("id", user.id)
       .single();
 
@@ -34,6 +34,14 @@ export async function login(formData: FormData) {
     if (profile?.status === "disabled") {
       await supabase.auth.signOut();
       return { error: "비활성화된 계정입니다. 관리자에게 문의하세요." };
+    }
+
+    revalidatePath("/", "layout");
+
+    // role에 따라 분기: admin/owner/super_admin → 대시보드, crew/viewer → 매장 선택
+    const adminRoles = ["admin", "owner", "super_admin"];
+    if (!profile?.role || !adminRoles.includes(profile.role)) {
+      redirect("/store-select?return=/dashboard");
     }
   }
 

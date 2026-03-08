@@ -357,7 +357,9 @@ function StoreSelectInner() {
 
       // crew & 매장 1개면 바로 자동 진입
       if (!isAdmin && list.length === 1 && !isChange) {
-        saveAndGo(list[0], returnTo);
+        // crew가 /dashboard로 진입하지 않도록: returnTo가 /dashboard면 /crew로 보냄
+        const crewReturnTo = returnTo === "/dashboard" ? "/crew" : returnTo;
+        saveAndGo(list[0], crewReturnTo);
         return;
       }
     } catch (e) {
@@ -377,7 +379,10 @@ function StoreSelectInner() {
     const store = stores.find(s => s.id === selectedId);
     if (!store) return;
     setConfirming(true);
-    saveAndGo(store, returnTo);
+    // crew는 /dashboard 대신 /crew로 이동
+    const isAdminRole = role === "admin" || role === "owner" || role === "super_admin";
+    const dest = (!isAdminRole && returnTo === "/dashboard") ? "/crew" : returnTo;
+    saveAndGo(store, dest);
   }
 
   const filtered = stores.filter(s =>

@@ -166,8 +166,12 @@ export async function GET(request: Request) {
         }
       }
 
-      // crew / viewer → 매장 선택 후 진입
-      return NextResponse.redirect(`${origin}/store-select?return=${next}`);
+      // crew / viewer → 매장 선택 후 진입 (crew는 /dashboard 아닌 /crew로)
+      const crewNext = next === "/dashboard" ? "/crew" : next;
+      return NextResponse.redirect(`${origin}/store-select?return=${crewNext}`);
+    } else {
+      // user가 null인 경우 (세션 교환은 됐으나 user를 못 가져온 경우)
+      return NextResponse.redirect(`${origin}/login?message=error`);
     }
     // code exchange 실패 - 잘못된 state/PKCE 불일치 → 깨끗하게 재시도
     const response = NextResponse.redirect(`${origin}/login?message=error`);
