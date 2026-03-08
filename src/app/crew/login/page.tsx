@@ -56,11 +56,20 @@ function CrewLoginContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [showEmailForm, setShowEmailForm] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [saveEmail, setSaveEmail] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // 저장된 이메일 불러오기
+  useEffect(() => {
+    const saved = localStorage.getItem("crew_saved_email");
+    if (saved) {
+      setLoginEmail(saved);
+      setSaveEmail(true);
+    }
+  }, []);
 
   // 콜백에서 전달된 에러 메시지 처리
   useEffect(() => {
@@ -128,6 +137,12 @@ function CrewLoginContent() {
     setLoading(true);
     setError("");
     try {
+      // 아이디 저장 처리
+      if (saveEmail) {
+        localStorage.setItem("crew_saved_email", loginEmail);
+      } else {
+        localStorage.removeItem("crew_saved_email");
+      }
       const supabase = createClient();
       const { error: loginError } = await supabase.auth.signInWithPassword({
         email: loginEmail,
@@ -142,7 +157,6 @@ function CrewLoginContent() {
         setLoading(false);
         return;
       }
-      // 로그인 성공 → crew callback과 동일한 검증을 위해 리다이렉트
       router.replace("/crew");
     } catch {
       setError("로그인 중 오류가 발생했습니다.");
@@ -238,27 +252,6 @@ function CrewLoginContent() {
           opacity: 0.9;
         }
         
-        .crew-email-btn {
-          width: 100%;
-          padding: 14px;
-          border-radius: 12px;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          font-size: 14px;
-          font-weight: 600;
-          color: #475569;
-          cursor: pointer;
-          transition: opacity 0.15s;
-        }
-        
-        .crew-email-btn:active {
-          opacity: 0.9;
-        }
-        
         .crew-login-error {
           margin-top: 16px;
           padding: 12px;
@@ -317,91 +310,88 @@ function CrewLoginContent() {
         <div className="crew-login-card">
           <div className="crew-login-title">로그인</div>
           
-          {!showEmailForm ? (
-            <>
-              <button
-                className="crew-google-btn"
-                onClick={() => handleSocialLogin("google")}
-                disabled={loading}
-              >
-                {loading ? (
-                  <span>연결 중...</span>
-                ) : (
-                  <>
-                    <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
-                      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-                      <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
-                      <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-                      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-                    </svg>
-                    <span>Google로 시작하기</span>
-                  </>
-                )}
-              </button>
+          {/* 안내문 */}
+          <div style={{ background: "#f0f4ff", borderRadius: 10, padding: "10px 14px", marginBottom: 18, fontSize: 13, color: "#1428A0", lineHeight: 1.6, textAlign: "center" }}>
+            관리자가 발급한 <strong>이메일과 비밀번호</strong>로 로그인하세요
+          </div>
 
-              {/* 구분선 */}
-              <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0" }}>
-                <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-                <span style={{ fontSize: 12, color: "#94a3b8" }}>또는</span>
-                <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-              </div>
+          {/* 이메일/비번 폼 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>이메일</label>
+              <input
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="example@email.com"
+                style={{ width: "100%", padding: "13px 14px", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 15, color: "#1A1D2B", outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>비밀번호</label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="비밀번호 입력"
+                onKeyDown={(e) => e.key === "Enter" && handleEmailLogin()}
+                style={{ width: "100%", padding: "13px 14px", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 15, color: "#1A1D2B", outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
 
-              <button
-                className="crew-email-btn"
-                onClick={() => setShowEmailForm(true)}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/>
+            {/* 아이디 저장 */}
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "2px 0" }}>
+              <input
+                type="checkbox"
+                checked={saveEmail}
+                onChange={(e) => setSaveEmail(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: "#1428A0", cursor: "pointer" }}
+              />
+              <span style={{ fontSize: 13, color: "#64748b" }}>아이디 저장</span>
+            </label>
+
+            <button
+              onClick={handleEmailLogin}
+              disabled={loading || !loginEmail || !loginPassword}
+              style={{
+                width: "100%", padding: "14px", borderRadius: 12, border: "none",
+                background: "#1428A0", color: "#fff", fontSize: 15, fontWeight: 700,
+                cursor: loading || !loginEmail || !loginPassword ? "not-allowed" : "pointer",
+                opacity: loading || !loginEmail || !loginPassword ? 0.5 : 1,
+                marginTop: 2,
+              }}
+            >
+              {loading ? "로그인 중..." : "로그인"}
+            </button>
+          </div>
+
+          {/* 구분선 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0" }}>
+            <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
+            <span style={{ fontSize: 12, color: "#94a3b8" }}>또는</span>
+            <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
+          </div>
+
+          {/* 구글 로그인 */}
+          <button
+            className="crew-google-btn"
+            onClick={() => handleSocialLogin("google")}
+            disabled={loading}
+          >
+            {loading ? (
+              <span>연결 중...</span>
+            ) : (
+              <>
+                <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+                  <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+                  <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+                  <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                  <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
                 </svg>
-                <span>이메일로 로그인</span>
-              </button>
-            </>
-          ) : (
-            <>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div>
-                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>이메일</label>
-                  <input
-                    type="email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="example@email.com"
-                    style={{ width: "100%", padding: "13px 14px", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 15, color: "#1A1D2B", outline: "none", boxSizing: "border-box" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>비밀번호</label>
-                  <input
-                    type="password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="비밀번호 입력"
-                    onKeyDown={(e) => e.key === "Enter" && handleEmailLogin()}
-                    style={{ width: "100%", padding: "13px 14px", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 15, color: "#1A1D2B", outline: "none", boxSizing: "border-box" }}
-                  />
-                </div>
-                <button
-                  onClick={handleEmailLogin}
-                  disabled={loading || !loginEmail || !loginPassword}
-                  style={{
-                    width: "100%", padding: "14px", borderRadius: 12, border: "none",
-                    background: "#1428A0", color: "#fff", fontSize: 15, fontWeight: 700,
-                    cursor: loading || !loginEmail || !loginPassword ? "not-allowed" : "pointer",
-                    opacity: loading || !loginEmail || !loginPassword ? 0.5 : 1,
-                    marginTop: 4,
-                  }}
-                >
-                  {loading ? "로그인 중..." : "로그인"}
-                </button>
-                <button
-                  onClick={() => { setShowEmailForm(false); setError(""); setLoginEmail(""); setLoginPassword(""); }}
-                  style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, cursor: "pointer", padding: "4px 0" }}
-                >
-                  ← 돌아가기
-                </button>
-              </div>
-            </>
-          )}
+                <span>Google 계정으로 로그인</span>
+              </>
+            )}
+          </button>
 
           {error && (
             <div className="crew-login-error">{error}</div>

@@ -62,11 +62,11 @@ const SOCIAL_BUTTONS = [
 ──────────────────────────────────────────── */
 function LoginContent() {
   const [isSignup, setIsSignup] = useState(false);
-  const [showEmailForm, setShowEmailForm] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState("");
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [saveEmail, setSaveEmail] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -75,13 +75,25 @@ function LoginContent() {
     if (msg === "pending")       setError("관리자 승인 대기 중입니다. 승인 후 로그인 가능합니다.");
     else if (msg === "disabled") setError("비활성화된 계정입니다. 관리자에게 문의하세요.");
     else if (msg === "error")    setError("로그인 중 오류가 발생했습니다. 다시 시도해주세요.");
-    // URL에서 message 파라미터 제거 (새로고침 시 에러 재표시 방지)
     if (msg) router.replace("/login");
   }, [searchParams]);
+
+  // 저장된 이메일 불러오기 → input 기본값으로 설정
+  useEffect(() => {
+    const saved = localStorage.getItem("admin_saved_email");
+    if (saved) setSaveEmail(true);
+  }, []);
 
   async function handleSubmit(formData: FormData) {
     setError(""); setLoading(true);
     try {
+      // 아이디 저장 처리
+      const email = formData.get("email") as string;
+      if (saveEmail && email) {
+        localStorage.setItem("admin_saved_email", email);
+      } else {
+        localStorage.removeItem("admin_saved_email");
+      }
       const result = isSignup ? await signup(formData) : await login(formData);
       if (result?.error) setError(result.error);
       if (result?.success) setSignupSuccess(true);
@@ -103,7 +115,7 @@ function LoginContent() {
   }
 
   function resetToMain() {
-    setIsSignup(false); setSignupSuccess(false); setShowEmailForm(false); setError("");
+    setIsSignup(false); setSignupSuccess(false); setError("");
   }
 
   /* ── 공통 입력 스타일 ── */
@@ -152,12 +164,24 @@ function LoginContent() {
       )}
       <div>
         <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>이메일</label>
-        <input type="email" name="email" required style={inputStyle} placeholder="example@mrpark.co.kr" />
+        <input type="email" name="email" required style={inputStyle} placeholder="example@mrpark.co.kr" defaultValue={!isSignup ? (localStorage.getItem("admin_saved_email") || "") : ""} />
       </div>
       <div>
         <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>비밀번호</label>
         <input type="password" name="password" required minLength={6} style={inputStyle} placeholder="6자 이상" />
       </div>
+      {/* 아이디 저장 (로그인 모드만) */}
+      {!isSignup && (
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "2px 0" }}>
+          <input
+            type="checkbox"
+            checked={saveEmail}
+            onChange={(e) => setSaveEmail(e.target.checked)}
+            style={{ width: 16, height: 16, accentColor: "#1428A0", cursor: "pointer" }}
+          />
+          <span style={{ fontSize: 13, color: "#64748b" }}>아이디 저장</span>
+        </label>
+      )}
       {error && (
         <div style={{ padding: "10px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, fontSize: 13, color: "#dc2626" }}>
           {error}
@@ -175,15 +199,6 @@ function LoginContent() {
       >
         {loading ? "처리 중..." : isSignup ? "회원가입" : "로그인"}
       </button>
-      {showEmailForm && !isSignup && (
-        <button
-          type="button"
-          onClick={() => { setShowEmailForm(false); setError(""); }}
-          style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, cursor: "pointer", padding: "4px 0" }}
-        >
-          ← 소셜 로그인으로 돌아가기
-        </button>
-      )}
     </form>
   );
 
@@ -208,47 +223,24 @@ function LoginContent() {
         {/* 모드 헤더 */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1D2B", margin: 0 }}>
-            {isSignup ? "회원가입" : showEmailForm ? "이메일 로그인" : "로그인"}
+            {isSignup ? "회원가입" : "로그인"}
           </h2>
-          {!isSignup && !showEmailForm && (
-            <span style={{ fontSize: 12, color: "#94a3b8" }}>소셜 계정으로 간편 로그인</span>
-          )}
         </div>
 
-        {/* 소셜 또는 이메일 폼 */}
-        {!isSignup && !showEmailForm && (
+        {/* 이메일 폼 (항상 표시) */}
+        {renderEmailForm()}
+
+        {/* 구글 로그인 (로그인 모드만) */}
+        {!isSignup && (
           <>
-            {renderSocialButtons()}
-            {/* 구분선 */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0 14px" }}>
               <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
               <span style={{ fontSize: 12, color: "#94a3b8" }}>또는</span>
               <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
             </div>
-            {/* 이메일 버튼 */}
-            <button
-              onClick={() => setShowEmailForm(true)}
-              style={{
-                width: "100%", padding: "13px 16px", borderRadius: 12,
-                background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0",
-                fontSize: 14, fontWeight: 600, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/>
-              </svg>
-              이메일로 로그인
-            </button>
-            {/* 소셜 에러 */}
-            {error && (
-              <div style={{ padding: "10px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, fontSize: 13, color: "#dc2626", marginTop: 12 }}>
-                {error}
-              </div>
-            )}
+            {renderSocialButtons()}
           </>
         )}
-        {(showEmailForm || isSignup) && renderEmailForm()}
 
         {/* 회원가입 전환 */}
         {!signupSuccess && (
@@ -257,7 +249,7 @@ function LoginContent() {
               {isSignup ? "이미 계정이 있으신가요? " : "계정이 없으신가요? "}
             </span>
             <button
-              onClick={() => { setIsSignup(!isSignup); setError(""); setShowEmailForm(isSignup ? false : true); }}
+              onClick={() => { setIsSignup(!isSignup); setError(""); }}
               style={{ background: "none", border: "none", color: "#1428A0", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0 }}
             >
               {isSignup ? "로그인" : "회원가입"}
