@@ -231,17 +231,6 @@ function InviteAcceptContent() {
 
   const socialButtons = [
     {
-      provider: "kakao",
-      label: "카카오로 시작하기",
-      bg: "#FEE500",
-      color: "#191919",
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-          <path d="M9 1.5C4.86 1.5 1.5 4.14 1.5 7.38C1.5 9.42 2.88 11.22 4.95 12.24L4.14 15.18C4.08 15.39 4.32 15.57 4.5 15.45L7.95 13.14C8.28 13.2 8.64 13.23 9 13.23C13.14 13.23 16.5 10.59 16.5 7.35C16.5 4.14 13.14 1.5 9 1.5Z" fill="#191919"/>
-        </svg>
-      ),
-    },
-    {
       provider: "google",
       label: "Google로 시작하기",
       bg: "#ffffff",

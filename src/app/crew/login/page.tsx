@@ -97,7 +97,7 @@ function CrewLoginContent() {
     checkAuth();
   }, [router]);
 
-  async function handleSocialLogin(provider: "kakao" | "google") {
+  async function handleSocialLogin(provider: "google") {
     setLoading(true);
     setError("");
     
@@ -182,32 +182,6 @@ function CrewLoginContent() {
           text-align: center;
         }
         
-        .crew-kakao-btn {
-          width: 100%;
-          padding: 16px;
-          border-radius: 12px;
-          background: #FEE500;
-          border: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          font-size: 16px;
-          font-weight: 600;
-          color: #191919;
-          cursor: pointer;
-          transition: opacity 0.15s;
-        }
-        
-        .crew-kakao-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-        
-        .crew-kakao-btn:active:not(:disabled) {
-          opacity: 0.9;
-        }
-        
         .crew-google-btn {
           width: 100%;
           padding: 16px;
@@ -223,7 +197,6 @@ function CrewLoginContent() {
           color: #344054;
           cursor: pointer;
           transition: opacity 0.15s;
-          margin-top: 10px;
         }
         
         .crew-google-btn:disabled {
@@ -293,23 +266,6 @@ function CrewLoginContent() {
         <div className="crew-login-card">
           <div className="crew-login-title">로그인</div>
           
-          <button
-            className="crew-kakao-btn"
-            onClick={() => handleSocialLogin("kakao")}
-            disabled={loading}
-          >
-            {loading ? (
-              <span>연결 중...</span>
-            ) : (
-              <>
-                <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
-                  <path d="M9 1.5C4.86 1.5 1.5 4.14 1.5 7.38C1.5 9.42 2.88 11.22 4.95 12.24L4.14 15.18C4.08 15.39 4.32 15.57 4.5 15.45L7.95 13.14C8.28 13.2 8.64 13.23 9 13.23C13.14 13.23 16.5 10.59 16.5 7.35C16.5 4.14 13.14 1.5 9 1.5Z" fill="#191919"/>
-                </svg>
-                <span>카카오로 시작하기</span>
-              </>
-            )}
-          </button>
-
           <button
             className="crew-google-btn"
             onClick={() => handleSocialLogin("google")}
