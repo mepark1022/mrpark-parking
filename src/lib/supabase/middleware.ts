@@ -7,7 +7,8 @@ const PUBLIC_PATHS = [
   "/login",
   "/invite",
   "/auth/callback",
-  "/crew",              // CREW앱 전체 (클라이언트 사이드 인증 사용)
+  "/crew/login",          // CREW 로그인 페이지
+  "/crew/auth/callback",  // CREW OAuth 콜백
   "/ticket",   // 미팍티켓 고객 페이지
   "/scan",     // 고정 QR 스캔
   "/api/payment", // 토스페이먼츠 웹훅
