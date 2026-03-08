@@ -90,7 +90,7 @@ export default function MorePage() {
       if (profile.name) setUserName(profile.name);
       if (profile.role) setUserRole(profile.role);
     }
-    const { data: org } = await supabase.from("organizations").select("name").limit(1).single();
+    const { data: org } = await supabase.from("organizations").select("name").limit(1).maybeSingle();
     if (org?.name) setOrgName(org.name);
   }
 

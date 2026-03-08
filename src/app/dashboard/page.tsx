@@ -15,8 +15,7 @@ import type { Store } from "@/lib/types/database";
 type DailyRecord = {
   id: string; store_id: string; date: string;
   total_cars: number; valet_count: number;
-  valet_revenue: number; daily_revenue: number;
-  stores: { name: string } | null;
+  valet_revenue: number;
 };
 type HourlyRow = { hour: number; car_count: number; record_id: string };
 type AssignmentRow = { worker_id: string; worker_type: string; workers: { name: string } | null; record_id: string };
@@ -425,7 +424,7 @@ export default function DashboardPage() {
     if (selectedStore) mpQ = mpQ.eq("store_id", selectedStore);
 
     let recQ = supabase.from("daily_records")
-      .select("id, store_id, date, total_cars, valet_count, valet_revenue, daily_revenue, stores(name)")
+      .select("id, store_id, date, total_cars, valet_count, valet_revenue")
       .gte("date", start).lte("date", end).order("date");
     if (selectedStore) recQ = recQ.eq("store_id", selectedStore);
 
@@ -469,7 +468,7 @@ export default function DashboardPage() {
     if (useFallback) {
       const fbCars = records.reduce((s, r) => s + r.total_cars, 0);
       const fbValet = records.reduce((s, r) => s + r.valet_revenue, 0);
-      const fbRev = records.reduce((s, r) => s + (r.daily_revenue || 0), 0);
+      const fbRev = records.reduce((s, r) => s + (r.valet_revenue || 0), 0);
       return { totalCars: fbCars, totalValet: fbValet, totalParking: Math.max(fbRev - fbValet, 0), workerCount: workerIds.size, activeContracts, totalRevenue: fbRev };
     }
     return { totalCars, totalValet, totalParking, workerCount: workerIds.size, activeContracts, totalRevenue };
@@ -490,7 +489,7 @@ export default function DashboardPage() {
   const storeRankData = useMemo(() => {
     if (selectedStore) return [];
     const storeMap = {};
-    records.forEach(r => { const name = r.stores?.name || "알 수 없음"; if (!storeMap[r.store_id]) storeMap[r.store_id] = { name, cars: 0 }; storeMap[r.store_id].cars += r.total_cars; });
+    records.forEach(r => { const name = stores.find(s => s.id === r.store_id)?.name || "알 수 없음"; if (!storeMap[r.store_id]) storeMap[r.store_id] = { name, cars: 0 }; storeMap[r.store_id].cars += r.total_cars; });
     return Object.values(storeMap).sort((a, b) => b.cars - a.cars).slice(0, 5);
   }, [records, selectedStore]);
 
