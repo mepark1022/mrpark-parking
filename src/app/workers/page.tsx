@@ -1620,12 +1620,11 @@ export default function WorkersPage() {
                   <span>📋</span> 근무자 명부
                   <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-muted)" }}>({workers.length}명)</span>
                 </div>
-                <button onClick={() => { setEditItem(null); setFormData({ name: "", phone: "", region_id: "", district: "", hire_date: "" }); setShowForm(true); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>+ 근무자 추가</button>
               </div>
 
               {showForm && (
                 <div ref={editFormRef} style={{ background: "var(--bg-card)", borderRadius: 14, padding: 24, border: "1px solid var(--border-light)", marginBottom: 20 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>{editItem ? "근무자 수정" : "근무자 추가"}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>근무자 수정</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                     <div><div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>이름 *</div><input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="홍길동" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" as const }} /></div>
                     <div><div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>연락처</div><input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="010-0000-0000" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: 14, outline: "none", boxSizing: "border-box" as const }} /></div>
