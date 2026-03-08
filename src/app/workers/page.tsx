@@ -1551,26 +1551,41 @@ export default function WorkersPage() {
           const WorkerCard = ({ w }: { w: any }) => {
             const role = workerRoleMap[w.name];
             const rb = ROLE_BADGE[role] || ROLE_BADGE["crew"];
+            const locationStr = [w.regions?.name, w.district].filter(Boolean).join(" ");
             return (
-              <div style={{ background: "#fff", borderRadius: 14, padding: "14px 18px", border: "1px solid var(--border-light)", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-light)", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", overflow: "hidden" }}>
+                {/* 상단: 아이콘 + 이름 + 배지 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px 10px" }}>
                   <div style={{ width: 42, height: 42, borderRadius: 12, flexShrink: 0, background: rb.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{rb.icon}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" as const, marginBottom: 4 }}>
-                      <span style={{ fontSize: 15, fontWeight: 800, color: "#1a1d2b" }}>{w.name}</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: rb.bg, color: rb.color }}>{rb.label}</span>
-                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: w.status === "active" ? "#dcfce7" : "#f1f5f9", color: w.status === "active" ? "#16A34A" : "#94a3b8" }}>{w.status === "active" ? "활성" : "비활성"}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" as const }}>
+                      <span style={{ fontSize: 16, fontWeight: 800, color: "#1a1d2b", whiteSpace: "nowrap" as const }}>{w.name}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: rb.bg, color: rb.color, whiteSpace: "nowrap" as const }}>{rb.label}</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: w.status === "active" ? "#dcfce7" : "#f1f5f9", color: w.status === "active" ? "#16A34A" : "#94a3b8", whiteSpace: "nowrap" as const }}>{w.status === "active" ? "활성" : "비활성"}</span>
                     </div>
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" as const }}>
-                      {[w.regions?.name, w.district].filter(Boolean).join(" ") && <span style={{ fontSize: 11, color: "#94a3b8" }}>📍 {[w.regions?.name, w.district].filter(Boolean).join(" ")}</span>}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const }}>
+                      {locationStr && <span style={{ fontSize: 11, color: "#94a3b8" }}>📍 {locationStr}</span>}
                       {w.phone && <span style={{ fontSize: 11, color: "#94a3b8" }}>📱 {w.phone}</span>}
                     </div>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                  <button onClick={() => { setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", hire_date: w.hire_date || "" }); setRosterPopup({ type: "edit_form", worker: w }); }} style={{ padding: "5px 11px", borderRadius: 8, border: "1px solid #c7d2fe", background: "#fff", fontSize: 12, fontWeight: 700, color: "#1428A0", cursor: "pointer" }}>✏️ 수정</button>
-                  <button onClick={() => toggleStatus(w)} style={{ padding: "5px 11px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", background: w.status === "active" ? "var(--error-bg)" : "var(--success-bg)", color: w.status === "active" ? "var(--error)" : "var(--success)" }}>{w.status === "active" ? "비활성" : "활성화"}</button>
-                  <button onClick={async () => { if (!confirm(`${w.name} 근무자를 삭제하시겠습니까?`)) return; const supabase = createClient(); await supabase.from("workers").delete().eq("id", w.id); setWorkers((prev: any[]) => prev.filter((x: any) => x.id !== w.id)); showToast("🗑️ 근무자가 삭제되었습니다"); }} style={{ padding: "5px 11px", borderRadius: 8, border: "1px solid #fecaca", background: "#fff", fontSize: 12, fontWeight: 700, color: "#DC2626", cursor: "pointer" }}>🗑 삭제</button>
+                {/* 하단: 액션 버튼 3개 (전체 너비 균등 분할) */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid #f1f5f9" }}>
+                  <button
+                    onClick={() => { setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", hire_date: w.hire_date || "" }); setRosterPopup({ type: "edit_form", worker: w }); }}
+                    style={{ padding: "10px 0", border: "none", borderRight: "1px solid #f1f5f9", background: "#fff", fontSize: 13, fontWeight: 600, color: "#1428A0", cursor: "pointer" }}>
+                    ✏️ 수정
+                  </button>
+                  <button
+                    onClick={() => toggleStatus(w)}
+                    style={{ padding: "10px 0", border: "none", borderRight: "1px solid #f1f5f9", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: w.status === "active" ? "var(--error)" : "var(--success)" }}>
+                    {w.status === "active" ? "비활성" : "활성화"}
+                  </button>
+                  <button
+                    onClick={async () => { if (!confirm(`${w.name} 근무자를 삭제하시겠습니까?`)) return; const supabase = createClient(); await supabase.from("workers").delete().eq("id", w.id); setWorkers((prev: any[]) => prev.filter((x: any) => x.id !== w.id)); showToast("🗑️ 근무자가 삭제되었습니다"); }}
+                    style={{ padding: "10px 0", border: "none", background: "#fff", fontSize: 13, fontWeight: 600, color: "#DC2626", cursor: "pointer" }}>
+                    🗑 삭제
+                  </button>
                 </div>
               </div>
             );
