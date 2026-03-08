@@ -57,6 +57,8 @@ export default function Header() {
   }
 
   const handleLogout = async () => {
+    const { clearOrgCache } = await import("@/lib/utils/org");
+    clearOrgCache();
     await supabase.auth.signOut();
     router.push("/login");
   };
