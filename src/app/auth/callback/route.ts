@@ -33,6 +33,11 @@ export async function GET(request: Request) {
     if (!error) {
       const { data: { user } } = await supabase.auth.getUser();
 
+      // 세션 교환 성공했으나 user를 못 가져온 경우
+      if (!user) {
+        return NextResponse.redirect(`${origin}/login?message=error`);
+      }
+
       if (user) {
         const admin = getAdminClient(); // RLS 무시
         const name = user.user_metadata?.full_name || 
@@ -170,15 +175,12 @@ export async function GET(request: Request) {
       const crewNext = next === "/dashboard" ? "/crew" : next;
       return NextResponse.redirect(`${origin}/store-select?return=${crewNext}`);
     } else {
-      // user가 null인 경우 (세션 교환은 됐으나 user를 못 가져온 경우)
-      return NextResponse.redirect(`${origin}/login?message=error`);
+      // exchangeCodeForSession 실패 - PKCE 불일치 등 → 쿠키 초기화 후 재시도
+      const response = NextResponse.redirect(`${origin}/login?message=error`);
+      response.cookies.set("sb-xwkatswgojahuaimbuhw-auth-token", "", { maxAge: 0, path: "/" });
+      response.cookies.set("sb-xwkatswgojahuaimbuhw-auth-token-code-verifier", "", { maxAge: 0, path: "/" });
+      return response;
     }
-    // code exchange 실패 - 잘못된 state/PKCE 불일치 → 깨끗하게 재시도
-    const response = NextResponse.redirect(`${origin}/login?message=error`);
-    // Supabase auth 쿠키 제거하여 PKCE 상태 초기화
-    response.cookies.set("sb-xwkatswgojahuaimbuhw-auth-token", "", { maxAge: 0, path: "/" });
-    response.cookies.set("sb-xwkatswgojahuaimbuhw-auth-token-code-verifier", "", { maxAge: 0, path: "/" });
-    return response;
   }
 
   return NextResponse.redirect(`${origin}/login?message=error`);
