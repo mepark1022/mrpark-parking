@@ -323,24 +323,6 @@ export default function CrewHomePage() {
           margin-bottom: 16px;
         }
         
-        .crew-status-header {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 12px;
-        }
-        
-        .crew-status-avatar {
-          width: 40px;
-          height: 40px;
-          background: rgba(255,255,255,0.2);
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 18px;
-        }
-        
         .crew-status-name {
           font-size: 17px;
           font-weight: 700;
@@ -369,14 +351,6 @@ export default function CrewHomePage() {
           background: rgba(100, 116, 139, 0.3);
         }
         
-        .crew-status-time {
-          margin-top: 14px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 14px;
-          opacity: 0.85;
-        }
         
         /* KPI 배너 통합형 (안 D) */
         .crew-kpi-banner {
@@ -551,23 +525,14 @@ export default function CrewHomePage() {
         <div className="crew-home-content">
           {/* 출근 상태 카드 */}
           <div className="crew-status-card">
-            <div className="crew-status-header">
-              <div className="crew-status-avatar">👤</div>
-              <div style={{ flex: 1 }}>
-                <div className="crew-status-name">{user?.name} 크루</div>
-                <div className={`crew-status-badge ${attendance.isCheckedOut ? "checked-out" : attendance.isCheckedIn ? "checked-in" : "not-checked"}`}>
-                  {attendance.isCheckedOut
-                    ? `✅ 퇴근 (${attendance.checkInTime}~${attendance.checkOutTime})`
-                    : attendance.isCheckedIn
-                      ? `🟢 출근 중 (${attendance.checkInTime}~)`
-                      : "⚪ 미출근"}
-                </div>
-              </div>
+            {/* 상단: 이름 + 매장 버튼 */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div className="crew-status-name">{user?.name} 크루</div>
               <button
                 onClick={handleStoreChange}
                 style={{
                   display: "flex", alignItems: "center", gap: 5,
-                  padding: "8px 12px",
+                  padding: "7px 12px",
                   background: "rgba(255,255,255,0.15)",
                   borderRadius: 10, border: "1px solid rgba(255,255,255,0.25)",
                   cursor: "pointer",
@@ -586,11 +551,21 @@ export default function CrewHomePage() {
                 </svg>
               </button>
             </div>
-            {(attendance.isCheckedIn || attendance.isCheckedOut) && (
-              <div className="crew-status-time">
-                ⏱️ {attendance.isCheckedOut ? "총 근무시간" : "근무시간"}: {formatWorkingTime(attendance.workingMinutes)}
+            {/* 출근 상태 + 근무시간 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <div className={`crew-status-badge ${attendance.isCheckedOut ? "checked-out" : attendance.isCheckedIn ? "checked-in" : "not-checked"}`}>
+                {attendance.isCheckedOut
+                  ? `✅ 퇴근 (${attendance.checkInTime}~${attendance.checkOutTime})`
+                  : attendance.isCheckedIn
+                    ? `🟢 출근 중 (${attendance.checkInTime}~)`
+                    : "⚪ 미출근"}
               </div>
-            )}
+              {(attendance.isCheckedIn || attendance.isCheckedOut) && (
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>
+                  ⏱️ {attendance.isCheckedOut ? "총 근무시간" : "근무시간"}: {formatWorkingTime(attendance.workingMinutes)}
+                </div>
+              )}
+            </div>
           </div>
 
         {/* KPI 배너 통합형 (안 D) */}
