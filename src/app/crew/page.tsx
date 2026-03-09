@@ -519,7 +519,6 @@ export default function CrewHomePage() {
         <CrewHeader
           title=""
           showLogo
-          showStoreSelector
           storeName={store?.name || "매장 선택"}
           onStoreChange={handleStoreChange}
         />
@@ -554,7 +553,7 @@ export default function CrewHomePage() {
           <div className="crew-status-card">
             <div className="crew-status-header">
               <div className="crew-status-avatar">👤</div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div className="crew-status-name">{user?.name} 크루</div>
                 <div className={`crew-status-badge ${attendance.isCheckedOut ? "checked-out" : attendance.isCheckedIn ? "checked-in" : "not-checked"}`}>
                   {attendance.isCheckedOut
@@ -564,6 +563,28 @@ export default function CrewHomePage() {
                       : "⚪ 미출근"}
                 </div>
               </div>
+              <button
+                onClick={handleStoreChange}
+                style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "8px 12px",
+                  background: "rgba(255,255,255,0.15)",
+                  borderRadius: 10, border: "1px solid rgba(255,255,255,0.25)",
+                  cursor: "pointer",
+                  fontSize: 13, fontWeight: 600, color: "#fff",
+                  whiteSpace: "nowrap", flexShrink: 0,
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="#F5B731" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                </svg>
+                {store?.name || "매장"}
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                  stroke="rgba(255,255,255,0.6)" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
             </div>
             {(attendance.isCheckedIn || attendance.isCheckedOut) && (
               <div className="crew-status-time">
