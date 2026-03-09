@@ -3,7 +3,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getUserContext } from "@/lib/utils/org";
+import { getUserContext, clearOrgCache } from "@/lib/utils/org";
 import { useRouter, useSearchParams } from "next/navigation";
 
 /* ────────────────────────────────────────────
@@ -157,6 +157,7 @@ function CrewLoginContent() {
         setLoading(false);
         return;
       }
+      clearOrgCache();
       router.replace("/crew");
     } catch {
       setError("로그인 중 오류가 발생했습니다.");
