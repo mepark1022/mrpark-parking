@@ -62,6 +62,7 @@ export default function CrewAttendancePage() {
   const [missingCheckouts, setMissingCheckouts] = useState<any[]>([]);
   const [selectedMissing, setSelectedMissing] = useState<any | null>(null);
   const [missingLoading, setMissingLoading] = useState(false);
+  const [showCheckoutConfirm, setShowCheckoutConfirm] = useState(false);
   const [storeId, setStoreId] = useState<string | null>(null);
   const [storeInfo, setStoreInfo] = useState<{name: string; address: string; lat: number | null; lng: number | null; gpsRadius: number} | null>(null);
   const [checkInCoords, setCheckInCoords] = useState<{lat: number; lng: number} | null>(null);
@@ -348,6 +349,29 @@ export default function CrewAttendancePage() {
     finally { setActionLoading(false); }
   };
 
+  // ── 퇴근 취소 (잘못 누른 경우) ──
+  const handleCancelCheckout = async () => {
+    if (!attendance.workerId || !storeId) return;
+    setActionLoading(true);
+    const supabase = createClient();
+    const today = new Date().toISOString().split("T")[0];
+    try {
+      const { data: existing } = await supabase
+        .from("worker_attendance").select("id")
+        .eq("worker_id", attendance.workerId).eq("date", today).maybeSingle();
+      if (existing) {
+        await supabase.from("worker_attendance").update({
+          check_out: null, check_out_lat: null, check_out_lng: null, check_out_distance_m: null,
+        }).eq("id", existing.id);
+      }
+      setCheckOutCoords(null);
+      setAttendance({ ...attendance, isCheckedOut: false, checkOutTime: null });
+      checkLocation();
+      showToast("퇴근이 취소되었습니다. 출근 중 상태로 복귀합니다.", "info");
+    } catch (e: any) { showToast(`퇴근 취소 실패: ${e?.message || ""}`, "error"); }
+    finally { setActionLoading(false); }
+  };
+
   // ── 퇴근수정 요청 (깜빡했을 때 관리자에게 요청) ──
   const handleCorrectionRequest = async () => {
     if (!attendance.workerId || !storeId || !selectedMissing) return;
@@ -468,6 +492,7 @@ export default function CrewAttendancePage() {
         .att-btn { width: 100%; padding: 18px; border-radius: 14px; border: none; font-size: 17px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; }
         .att-btn.in { background: #1428A0; color: #fff; }
         .att-btn.out { background: #F5B731; color: #1A1D2B; }
+        .att-btn.cancel-out { background: #fff; color: #DC2626; border: 1.5px solid #FECACA; }
         .att-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .shift-info { background: #F1F5F9; border-radius: 12px; padding: 16px; margin-bottom: 24px; }
         .shift-info-t { font-size: 13px; font-weight: 600; color: #64748B; margin-bottom: 8px; }
@@ -635,8 +660,13 @@ export default function CrewAttendancePage() {
             </button>
           )}
           {attendance.isCheckedIn && !attendance.isCheckedOut && (
-            <button className="att-btn out" onClick={handleCheckOut} disabled={actionLoading || locationStatus !== "ok"}>
+            <button className="att-btn out" onClick={() => setShowCheckoutConfirm(true)} disabled={actionLoading || locationStatus !== "ok"}>
               {actionLoading ? "처리 중..." : "🌙 퇴근하기"}
+            </button>
+          )}
+          {attendance.isCheckedOut && (
+            <button className="att-btn cancel-out" onClick={handleCancelCheckout} disabled={actionLoading}>
+              {actionLoading ? "처리 중..." : "↩️ 퇴근 취소"}
             </button>
           )}
 
@@ -675,6 +705,25 @@ export default function CrewAttendancePage() {
 
         <CrewNavSpacer />
         <CrewBottomNav />
+
+        {/* 퇴근 확인 모달 */}
+        {showCheckoutConfirm && (
+          <div className="modal-ov" onClick={() => setShowCheckoutConfirm(false)}>
+            <div className="modal-c" onClick={e => e.stopPropagation()} style={{ borderRadius: 20, textAlign: "center", paddingTop: 32 }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🌙</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1D2B", marginBottom: 8 }}>퇴근하시겠습니까?</div>
+              <div style={{ fontSize: 14, color: "#64748B", marginBottom: 24, lineHeight: 1.5 }}>
+                퇴근 처리 후에도 취소할 수 있습니다.
+              </div>
+              <div className="modal-btns">
+                <button className="modal-b cc" onClick={() => setShowCheckoutConfirm(false)}>아니요</button>
+                <button className="modal-b sb" onClick={() => { setShowCheckoutConfirm(false); handleCheckOut(); }}>
+                  네, 퇴근합니다
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 퇴근수정 요청 모달 */}
         {showCorrectionModal && (

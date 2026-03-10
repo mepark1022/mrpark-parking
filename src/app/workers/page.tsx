@@ -854,6 +854,7 @@ export default function WorkersPage() {
   const [workerStoreIdMap, setWorkerStoreIdMap] = useState<Record<string, string[]>>({});
   // 이름 기준 profile role map
   const [workerRoleMap, setWorkerRoleMap] = useState<Record<string, string>>({});
+  const [workerProfileMap, setWorkerProfileMap] = useState<Record<string, { email: string; role: string }>>({});
   const editFormRef = useRef<HTMLDivElement>(null);
   const [successToast, setSuccessToast] = useState("");
   const showToast = (msg: string) => _showToast(msg);
@@ -940,15 +941,20 @@ export default function WorkersPage() {
         }
       }
     }
-    // profiles → 이름 기준 role 매핑
+    // profiles → 이름 기준 role 매핑 + id 기준 email/role 매핑
     const { data: pData } = await supabase
       .from("profiles")
-      .select("name, role")
+      .select("id, name, role, email")
       .eq("org_id", oid);
     if (pData) {
       const roleMap: Record<string, string> = {};
-      pData.forEach((p: any) => { if (p.name) roleMap[p.name] = p.role; });
+      const profileMap: Record<string, { email: string; role: string }> = {};
+      pData.forEach((p: any) => {
+        if (p.name) roleMap[p.name] = p.role;
+        if (p.id) profileMap[p.id] = { email: p.email || "", role: p.role || "" };
+      });
       setWorkerRoleMap(roleMap);
+      setWorkerProfileMap(profileMap);
     }
   };
 
@@ -1109,6 +1115,17 @@ export default function WorkersPage() {
     await supabase.from("workers").update({ status: worker.status === "active" ? "inactive" : "active" }).eq("id", worker.id);
     loadAll();
     showToast(worker.status === "active" ? "⏸️ 비활성 처리되었습니다" : "✅ 활성화되었습니다");
+  };
+
+  const changeRole = async (worker: any, newRole: string) => {
+    if (!worker.user_id) { showToast("로그인 계정이 연결되지 않은 근무자입니다", "error"); return; }
+    const label = newRole === "crew" ? "크루" : "어드민";
+    if (!confirm(`${worker.name}님의 역할을 ${label}(으)로 변경하시겠습니까?`)) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("profiles").update({ role: newRole }).eq("id", worker.user_id);
+    if (error) { showToast(`역할 변경 실패: ${error.message}`, "error"); return; }
+    loadAll();
+    showToast(`✅ ${worker.name}님이 ${label}(으)로 변경되었습니다`);
   };
 
   const activeWorkers = workers.filter(w => w.status === "active");
@@ -1549,9 +1566,11 @@ export default function WorkersPage() {
           const STORE_COLORS = ["#1428A0","#EA580C","#7C3AED","#0F9ED5","#15803d","#b45309","#DC2626"];
 
           const WorkerCard = ({ w }: { w: any }) => {
-            const role = workerRoleMap[w.name];
+            const prof = w.user_id ? workerProfileMap[w.user_id] : null;
+            const role = prof?.role || workerRoleMap[w.name];
             const rb = ROLE_BADGE[role] || ROLE_BADGE["crew"];
             const locationStr = [w.regions?.name, w.district].filter(Boolean).join(" ");
+            const email = prof?.email || "";
             return (
               <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-light)", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", overflow: "hidden" }}>
                 {/* 상단: 아이콘 + [이름(block) / 배지(flex row) / 연락처] */}
@@ -1565,6 +1584,12 @@ export default function WorkersPage() {
                       <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: rb.bg, color: rb.color }}>{rb.label}</span>
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: w.status === "active" ? "#dcfce7" : "#f1f5f9", color: w.status === "active" ? "#16A34A" : "#94a3b8" }}>{w.status === "active" ? "활성" : "비활성"}</span>
                     </div>
+                    {/* 로그인 ID (이메일) */}
+                    {email && (
+                      <div style={{ fontSize: 11, color: "#1D4ED8", background: "#EFF6FF", padding: "3px 8px", borderRadius: 6, marginBottom: 4, display: "inline-block" }}>
+                        🔑 {email}
+                      </div>
+                    )}
                     {/* 연락처/지역 */}
                     {(locationStr || w.phone) && (
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const }}>
@@ -1574,13 +1599,20 @@ export default function WorkersPage() {
                     )}
                   </div>
                 </div>
-                {/* 하단: 액션 버튼 3개 (전체 너비 균등 분할) */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid #f1f5f9" }}>
+                {/* 하단: 액션 버튼 */}
+                <div style={{ display: "grid", gridTemplateColumns: role === "admin" ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", borderTop: "1px solid #f1f5f9" }}>
                   <button
                     onClick={() => { setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", hire_date: w.hire_date || "" }); setRosterPopup({ type: "edit_form", worker: w }); }}
                     style={{ padding: "10px 0", border: "none", borderRight: "1px solid #f1f5f9", background: "#fff", fontSize: 13, fontWeight: 600, color: "#1428A0", cursor: "pointer" }}>
                     ✏️ 수정
                   </button>
+                  {role === "admin" && (
+                    <button
+                      onClick={() => changeRole(w, "crew")}
+                      style={{ padding: "10px 0", border: "none", borderRight: "1px solid #f1f5f9", background: "#fff", fontSize: 12, fontWeight: 600, color: "#7C3AED", cursor: "pointer" }}>
+                      👤 크루전환
+                    </button>
+                  )}
                   <button
                     onClick={() => toggleStatus(w)}
                     style={{ padding: "10px 0", border: "none", borderRight: "1px solid #f1f5f9", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: w.status === "active" ? "var(--error)" : "var(--success)" }}>
