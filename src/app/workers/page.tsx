@@ -1451,46 +1451,43 @@ export default function WorkersPage() {
                 </div>
 
                 {/* 모바일 카드 */}
-                <div className="md:hidden space-y-2">
+                <div className="md:hidden">
                   {displayWorkers.map(w => {
                     const rec = attendanceRecords.find(r => r.worker_id === w.id);
                     const sm = rec ? statusMap[rec.status] : null;
+                    const store = rec ? stores.find((s: any) => s.id === rec.store_id) : null;
+                    const maxDist = Math.max(rec?.check_in_distance_m || 0, rec?.check_out_distance_m || 0);
+                    const hasGps = rec && (rec.check_in_distance_m || rec.check_out_distance_m);
                     return (
                       <div key={w.id} style={{
-                        background: "#fff", borderRadius: 16, padding: "14px 16px",
-                        marginBottom: 8, boxShadow: "0 1px 6px rgba(0,0,0,0.05)",
-                        borderLeft: `3.5px solid ${sm ? sm.color : "#cbd5e1"}`,
+                        display: "flex", alignItems: "center", gap: 8, padding: "10px 12px",
+                        borderBottom: "1px solid #f1f5f9",
+                        borderLeft: `3px solid ${sm ? sm.color : "#cbd5e1"}`,
                       }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                          <div style={{ fontSize: 15, fontWeight: 700 }}>{w.name}</div>
-                          {sm ? (
-                            <span style={{ padding: "4px 12px", borderRadius: 8, background: sm.bg, color: sm.color, fontSize: 11, fontWeight: 700 }}>{sm.label}</span>
-                          ) : (
-                            <span style={{ padding: "4px 12px", borderRadius: 8, background: "#f1f5f9", color: "#64748b", fontSize: 11, fontWeight: 700 }}>미기록</span>
-                          )}
+                        {/* 이름 + 시간 */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 14, fontWeight: 800, color: "#1a1d2b" }}>{w.name}</span>
+                            {sm ? (
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 4, background: sm.bg, color: sm.color }}>{sm.label}</span>
+                            ) : (
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4, background: "#f1f5f9", color: "#94a3b8" }}>미기록</span>
+                            )}
+                            {hasGps && (
+                              <span onClick={() => setGpsPopup({ show: true, workerName: w.name, rec, store })}
+                                style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4, background: maxDist > 200 ? "#FEF2F2" : "#F0F9FF", color: maxDist > 200 ? "#DC2626" : "#1428A0", cursor: "pointer" }}>
+                                📍{maxDist}m
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+                            {rec?.check_in || "-"} ~ {rec?.check_out || "-"}{rec ? ` · ${calcWorkHours(rec.check_in, rec.check_out)}` : ""}
+                          </div>
                         </div>
-                        <div style={{ display: "flex", gap: 14, fontSize: 12, color: "#64748b", marginBottom: 8 }}>
-                          <span>출근 <strong style={{ color: "#1a1d2b" }}>{rec?.check_in || "-"}</strong></span>
-                          <span>퇴근 <strong style={{ color: "#1a1d2b" }}>{rec?.check_out || "-"}</strong></span>
-                          {rec && <span>근무 <strong style={{ color: "#1a1d2b" }}>{calcWorkHours(rec.check_in, rec.check_out)}</strong></span>}
-                        </div>
-                        {w.phone && <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 10 }}>📱 {w.phone}</div>}
-                        {/* GPS 위치 거리 */}
-                        {rec && (rec.check_in_distance_m || rec.check_out_distance_m) && (() => {
-                          const store = stores.find((s: any) => s.id === rec.store_id);
-                          const maxDist = Math.max(rec.check_in_distance_m || 0, rec.check_out_distance_m || 0);
-                          const isOver = maxDist > 200;
-                          return (
-                            <button onClick={() => setGpsPopup({ show: true, workerName: w.name, rec, store })}
-                              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 12px", borderRadius: 8, border: `1px solid ${isOver ? "#FECACA" : "#E2E8F0"}`, background: isOver ? "#FEF2F2" : "#F0F9FF", cursor: "pointer", marginBottom: 10, fontSize: 12, fontWeight: 600, color: isOver ? "#DC2626" : "#1428A0" }}>
-                              {isOver ? "⚠️" : "📍"} GPS 위치 · {rec.check_in_distance_m ? `출근 ${rec.check_in_distance_m}m` : ""}{rec.check_in_distance_m && rec.check_out_distance_m ? " / " : ""}{rec.check_out_distance_m ? `퇴근 ${rec.check_out_distance_m}m` : ""}
-                            </button>
-                          );
-                        })()}
-                        {/* 수정만 — 삭제 없음 */}
+                        {/* 수정 버튼 */}
                         <button onClick={() => { setManualForm({ workerId: w.id, status: rec?.status || "present", checkIn: rec?.check_in || "", checkOut: rec?.check_out || "" }); setManualMsg(""); setManualModal({ show: true, record: rec }); }}
-                          style={{ width: "100%", padding: 10, borderRadius: 11, border: "none", background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                          {rec ? "✏️ 수정" : "+ 등록"}
+                          style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", fontSize: 11, fontWeight: 600, color: "#1428A0", cursor: "pointer", flexShrink: 0 }}>
+                          {rec ? "수정" : "등록"}
                         </button>
                       </div>
                     );
