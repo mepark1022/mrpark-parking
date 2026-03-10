@@ -164,21 +164,39 @@ export default function MeParkDatePicker({ value, onChange, style, compact }: Pr
           overflow: "hidden",
           animation: "meparkCalFadeIn 0.15s ease-out",
         }}>
-          {/* 헤더 */}
+          {/* 헤더: 좌측 미팍Ticket 로고 + 우측 월 네비 */}
           <div style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "14px 16px 10px",
+            padding: "12px 14px 10px",
             borderBottom: `1px solid ${C.lightGray}`,
           }}>
-            <button type="button" onClick={prevMonth} style={navBtn}>
-              <svg width="7" height="12" viewBox="0 0 7 12"><path d="M6 1L1 6l5 5" stroke={C.navy} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-            </button>
-            <span style={{ fontSize: 15, fontWeight: 700, color: C.navy, letterSpacing: -0.3 }}>
-              {viewYear}년 {String(viewMonth + 1).padStart(2, "0")}월
-            </span>
-            <button type="button" onClick={nextMonth} style={navBtn}>
-              <svg width="7" height="12" viewBox="0 0 7 12"><path d="M1 1l5 5-5 5" stroke={C.navy} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-            </button>
+            {/* 미팍Ticket 로고 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{
+                width: 18, height: 18, borderRadius: 5,
+                background: C.white, border: "1.5px solid #1A1D2B",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                position: "relative", overflow: "hidden",
+              }}>
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 5, background: C.gold }} />
+                <span style={{ fontFamily: "Outfit, sans-serif", fontSize: 11, fontWeight: 900, color: "#1A1D2B", position: "relative", zIndex: 1, marginTop: -1 }}>P</span>
+              </div>
+              <span style={{ fontWeight: 800, fontSize: 12, color: "#1A1D2B", letterSpacing: -0.3 }}>
+                미팍<span style={{ fontFamily: "Outfit, sans-serif", fontWeight: 700, color: C.gold }}>Ticket</span>
+              </span>
+            </div>
+            {/* 월 네비게이션 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <button type="button" onClick={prevMonth} style={navBtn}>
+                <svg width="6" height="10" viewBox="0 0 6 10"><path d="M5 1L1 5l4 4" stroke={C.navy} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+              </button>
+              <span style={{ fontSize: 14, fontWeight: 700, color: C.navy, minWidth: 90, textAlign: "center" }}>
+                {viewYear}년 {String(viewMonth + 1).padStart(2, "0")}월
+              </span>
+              <button type="button" onClick={nextMonth} style={navBtn}>
+                <svg width="6" height="10" viewBox="0 0 6 10"><path d="M1 1l4 4-4 4" stroke={C.navy} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+              </button>
+            </div>
           </div>
 
           {/* 요일 헤더 */}
@@ -283,9 +301,9 @@ export default function MeParkDatePicker({ value, onChange, style, compact }: Pr
 }
 
 const navBtn: React.CSSProperties = {
-  width: 32, height: 32,
+  width: 28, height: 28,
   display: "flex", alignItems: "center", justifyContent: "center",
-  background: "none", border: `1px solid ${C.border}`, borderRadius: 8,
+  background: "none", border: `1px solid ${C.border}`, borderRadius: 6,
   cursor: "pointer", transition: "background 0.15s",
 };
 
