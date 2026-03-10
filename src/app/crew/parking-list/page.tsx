@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 import CrewHeader from "@/components/crew/CrewHeader";
+import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 import { fmtPlate, splitPlate } from "@/lib/utils/format";
 
 const CSS = `
@@ -63,6 +64,9 @@ const CSS = `
   }
   .plist-tab.active {
     background: #1428A0; color: #fff; border-color: #1428A0;
+  }
+  .plist-tab.active-exit {
+    background: #94A3B8; color: #fff; border-color: #94A3B8;
   }
 
   /* ── 통계 바 ── */
@@ -238,6 +242,7 @@ const TABS = [
   { key: "valet",   label: "🔑 발렛" },
   { key: "self",    label: "🏢 자주식" },
   { key: "monthly", label: "📅 월주차" },
+  { key: "exited",  label: "🚗 출차" },
 ];
 
 function elapsedString(entryAt) {
@@ -272,6 +277,9 @@ export default function CrewParkingListPage() {
   const [editPlateValue, setEditPlateValue] = useState("");
   const [plateEditLoading, setPlateEditLoading] = useState(false);
   const [exitToast, setExitToast] = useState(null); // { plate, id }
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [exitedTickets, setExitedTickets] = useState([]);
+  const [exitedLoading, setExitedLoading] = useState(false);
 
   useEffect(() => {
     const savedStoreId = localStorage.getItem("crew_store_id");
@@ -330,8 +338,36 @@ export default function CrewParkingListPage() {
 
   const refresh = () => {
     const sid = localStorage.getItem("crew_store_id");
-    fetchTickets(sid);
+    if (activeTab === "exited") fetchExitedTickets(sid, selectedDate);
+    else fetchTickets(sid);
   };
+
+  const fetchExitedTickets = useCallback(async (sid, date) => {
+    if (!sid) return;
+    setExitedLoading(true);
+    const { data } = await supabase
+      .from("mepark_tickets")
+      .select(`
+        id, plate_number, plate_last4, parking_type, status,
+        entry_at, exit_at, parking_location, is_monthly, paid_amount,
+        entry_method, entry_crew_id, exit_crew_id,
+        visit_place_id, visit_places(name, free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee)
+      `)
+      .eq("store_id", sid)
+      .eq("status", "completed")
+      .gte("entry_at", `${date}T00:00:00`)
+      .lte("entry_at", `${date}T23:59:59`)
+      .order("exit_at", { ascending: false });
+    setExitedTickets(data || []);
+    setExitedLoading(false);
+  }, [supabase]);
+
+  // 출차탭 선택 or 날짜 변경 시 fetch
+  useEffect(() => {
+    if (activeTab === "exited" && storeId) {
+      fetchExitedTickets(storeId, selectedDate);
+    }
+  }, [activeTab, selectedDate, storeId]);
 
   const openPlateEdit = (e, ticketId, plate) => {
     e.stopPropagation();
@@ -462,25 +498,33 @@ export default function CrewParkingListPage() {
             {TABS.map(tab => (
               <div
                 key={tab.key}
-                className={`plist-tab${activeTab === tab.key ? " active" : ""}`}
+                className={`plist-tab${activeTab === tab.key ? (tab.key === "exited" ? " active-exit" : " active") : ""}`}
                 onClick={() => setActiveTab(tab.key)}
               >
                 {tab.label}
               </div>
             ))}
           </div>
+          {activeTab === "exited" && (
+            <MeParkDatePicker value={selectedDate} onChange={setSelectedDate} compact style={{ width: "100%" }} />
+          )}
         </div>
 
         {/* 통계 */}
         <div className="plist-stats">
-          {[
+          {(activeTab === "exited" ? [
+            { num: exitedTickets.length, label: "출차완료" },
+            { num: exitedTickets.filter(t => t.parking_type === "valet").length, label: "발렛" },
+            { num: exitedTickets.filter(t => t.is_monthly).length, label: "월주차" },
+            { num: exitedTickets.reduce((s, t) => s + (t.paid_amount || 0), 0).toLocaleString() + "원", label: "매출", isText: true },
+          ] : [
             { num: stats.total,   label: "주차 중" },
             { num: stats.valet,   label: "발렛" },
             { num: stats.monthly, label: "월주차" },
             { num: stats.exitReq, label: "출차요청", color: stats.exitReq > 0 ? "#EA580C" : undefined },
-          ].map((s, i) => (
+          ]).map((s, i) => (
             <div key={i} className="plist-stat-item">
-              <div className="plist-stat-num" style={s.color ? { color: s.color } : {}}>
+              <div className="plist-stat-num" style={{ ...(s.color ? { color: s.color } : {}), ...(s.isText ? { fontSize: 14 } : {}) }}>
                 {s.num}
               </div>
               <div className="plist-stat-label">{s.label}</div>
@@ -490,7 +534,66 @@ export default function CrewParkingListPage() {
 
         {/* 목록 */}
         <div className="plist-list">
-          {loading ? (
+          {activeTab === "exited" ? (
+            /* ─── 출차 차량 목록 ─── */
+            exitedLoading ? (
+              [1,2,3,4].map(i => <div key={i} className="loading-card" />)
+            ) : exitedTickets.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">🚗</div>
+                <div className="empty-title">출차 기록 없음</div>
+                <div className="empty-desc">{selectedDate} 출차 차량이 없습니다</div>
+              </div>
+            ) : (
+              exitedTickets.filter(t => !search || t.plate_number.includes(search.toUpperCase()) || t.plate_last4.includes(search)).map(ticket => {
+                const entryTime = new Date(ticket.entry_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+                const exitTime = ticket.exit_at ? new Date(ticket.exit_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "-";
+                const durationMins = ticket.exit_at ? Math.floor((new Date(ticket.exit_at).getTime() - new Date(ticket.entry_at).getTime()) / 60000) : 0;
+                const durationStr = durationMins < 60 ? `${durationMins}분` : `${Math.floor(durationMins / 60)}시간 ${durationMins % 60 > 0 ? (durationMins % 60) + "분" : ""}`;
+
+                return (
+                  <div key={ticket.id} className="vehicle-card" style={{ borderColor: "#E2E8F0", opacity: 0.95 }}
+                    onClick={() => router.push(`/crew/parking-list/${ticket.id}`)}
+                  >
+                    <div className="vehicle-card-top" style={{ borderBottom: "1px solid #F1F5F9" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+                        <div className="vehicle-plate" style={{ color: "#64748B" }}>
+                          {(() => { const [p, n] = splitPlate(ticket.plate_number); return p ? <>{p}<span style={{ marginLeft: 6 }}>{n}</span></> : ticket.plate_number; })()}
+                        </div>
+                        {ticket.entry_method && (
+                          <span style={{ fontSize: 14, opacity: 0.7 }}>{ticket.entry_method === "camera" ? "📷" : "✏️"}</span>
+                        )}
+                      </div>
+                      <div className="status-badge" style={{ background: "#F1F5F9", color: "#94A3B8" }}>출차완료</div>
+                    </div>
+                    <div className="vehicle-card-body">
+                      <div className={`vehicle-type-badge ${ticket.is_monthly ? "monthly" : ticket.parking_type}`}>
+                        {ticket.is_monthly ? "📅 월주차" : ticket.parking_type === "valet" ? "🔑 발렛" : "🏢 자주식"}
+                      </div>
+                      {ticket.visit_places?.name && (
+                        <div className="vehicle-info-row"><span>🏥</span><span>{ticket.visit_places.name}</span></div>
+                      )}
+                      <div style={{ marginLeft: "auto", fontSize: 13, fontWeight: 600, color: "#64748B" }}>{durationStr}</div>
+                    </div>
+                    <div className="vehicle-card-footer">
+                      <div className="vehicle-location" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ color: "#1428A0" }}>🕐 {entryTime}</span>
+                        <span style={{ color: "#94A3B8" }}>→</span>
+                        <span style={{ color: "#16A34A" }}>{exitTime}</span>
+                      </div>
+                      {ticket.is_monthly ? (
+                        <div className="vehicle-fee" style={{ color: "#16A34A" }}>무료</div>
+                      ) : ticket.paid_amount ? (
+                        <div className="vehicle-fee">{ticket.paid_amount.toLocaleString()}원</div>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })
+            )
+          ) : (
+            /* ─── 주차 중 차량 목록 (기존) ─── */
+            loading ? (
             [1,2,3,4].map(i => <div key={i} className="loading-card" />)
           ) : filtered.length === 0 ? (
             <div className="empty-state">
@@ -571,6 +674,7 @@ export default function CrewParkingListPage() {
                 </div>
               );
             })
+          )
           )}
         </div>
 
