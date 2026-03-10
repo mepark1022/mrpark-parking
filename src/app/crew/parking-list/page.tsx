@@ -276,6 +276,8 @@ export default function CrewParkingListPage() {
   const [editPlateValue, setEditPlateValue] = useState("");
   const [plateEditLoading, setPlateEditLoading] = useState(false);
   const [exitToast, setExitToast] = useState(null); // { plate, id }
+  const [typeChangeTarget, setTypeChangeTarget] = useState(null); // { id, plate, currentType, newType }
+  const [typeChangeLoading, setTypeChangeLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [exitedTickets, setExitedTickets] = useState([]);
   const [exitedLoading, setExitedLoading] = useState(false);
@@ -389,6 +391,30 @@ export default function CrewParkingListPage() {
     else { setTickets(prev => prev.map(t => t.id === plateEditTarget.id ? { ...t, plate_number: cleaned, plate_last4: last4 } : t)); }
     setPlateEditLoading(false);
     setPlateEditTarget(null);
+  };
+
+  const openTypeChange = (e, ticketId, plate, currentType) => {
+    e.stopPropagation();
+    const newType = currentType === "valet" ? "self" : "valet";
+    setTypeChangeTarget({ id: ticketId, plate, currentType, newType });
+  };
+
+  const handleTypeChange = async () => {
+    if (!typeChangeTarget) return;
+    setTypeChangeLoading(true);
+    const { error } = await supabase.from("mepark_tickets").update({
+      parking_type: typeChangeTarget.newType,
+      updated_at: new Date().toISOString(),
+    }).eq("id", typeChangeTarget.id);
+    if (error) {
+      alert("변경 실패: " + error.message);
+    } else {
+      setTickets(prev => prev.map(t =>
+        t.id === typeChangeTarget.id ? { ...t, parking_type: typeChangeTarget.newType } : t
+      ));
+    }
+    setTypeChangeLoading(false);
+    setTypeChangeTarget(null);
   };
 
   const filtered = tickets.filter(t => {
@@ -643,7 +669,22 @@ export default function CrewParkingListPage() {
                     <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: 1, color: "#1A1D2B", flex: 1 }}>
                       {(() => { const [p, n] = splitPlate(ticket.plate_number); return p ? `${p} ${n}` : ticket.plate_number; })()}
                     </span>
-                    <span style={{ padding: "2px 8px", borderRadius: 5, fontSize: 10, fontWeight: 700, background: typeBadge.bg, color: typeBadge.color }}>{typeBadge.label}</span>
+                    {ticket.is_monthly ? (
+                      <span style={{ padding: "2px 8px", borderRadius: 5, fontSize: 10, fontWeight: 700, background: typeBadge.bg, color: typeBadge.color }}>{typeBadge.label}</span>
+                    ) : (
+                      <span
+                        onClick={(e) => openTypeChange(e, ticket.id, ticket.plate_number, ticket.parking_type)}
+                        style={{
+                          padding: "2px 8px", borderRadius: 5, fontSize: 10, fontWeight: 700,
+                          background: typeBadge.bg, color: typeBadge.color,
+                          cursor: "pointer", border: `1.5px dashed ${typeBadge.color}40`,
+                          display: "inline-flex", alignItems: "center", gap: 3,
+                        }}
+                      >
+                        {typeBadge.label}
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      </span>
+                    )}
                     <span style={{ fontSize: 13, fontWeight: 700, color: elapsedColor }}>{elapsed}</span>
                     <button
                       className={`btn-checkout-inline ${ticket.status}`}
@@ -740,6 +781,75 @@ export default function CrewParkingListPage() {
                 border: "none", background: "#F1F5F9", color: "#475569",
                 fontSize: 14, fontWeight: 600, cursor: "pointer",
               }}>취소</button>
+            </div>
+          </div>
+        )}
+
+        {/* 주차유형 변경 확인 모달 */}
+        {typeChangeTarget && (
+          <div onClick={() => setTypeChangeTarget(null)} style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 200, padding: 20,
+          }}>
+            <div onClick={(e) => e.stopPropagation()} style={{
+              background: "#fff", width: "100%", maxWidth: 340,
+              borderRadius: 20, padding: "28px 24px", textAlign: "center",
+            }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🔄</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1D2B", marginBottom: 6 }}>
+                주차유형 변경
+              </div>
+              <div style={{ fontSize: 14, color: "#64748B", marginBottom: 20, lineHeight: 1.5 }}>
+                <span style={{ fontWeight: 700, letterSpacing: 1 }}>{typeChangeTarget.plate}</span>
+                <br />차량의 주차유형을 변경합니다.
+              </div>
+
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
+                marginBottom: 24,
+              }}>
+                <div style={{
+                  padding: "8px 16px", borderRadius: 10, fontWeight: 700, fontSize: 15,
+                  background: typeChangeTarget.currentType === "valet" ? "#FFF7ED" : "#EEF2FF",
+                  color: typeChangeTarget.currentType === "valet" ? "#EA580C" : "#1428A0",
+                  border: `2px solid ${typeChangeTarget.currentType === "valet" ? "#EA580C" : "#1428A0"}20`,
+                }}>
+                  {typeChangeTarget.currentType === "valet" ? "발렛" : "일반"}
+                </div>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                </svg>
+                <div style={{
+                  padding: "8px 16px", borderRadius: 10, fontWeight: 700, fontSize: 15,
+                  background: typeChangeTarget.newType === "valet" ? "#FFF7ED" : "#EEF2FF",
+                  color: typeChangeTarget.newType === "valet" ? "#EA580C" : "#1428A0",
+                  border: `2px solid ${typeChangeTarget.newType === "valet" ? "#EA580C" : "#1428A0"}`,
+                }}>
+                  {typeChangeTarget.newType === "valet" ? "발렛" : "일반"}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => setTypeChangeTarget(null)}
+                  style={{
+                    flex: 1, height: 48, borderRadius: 12, border: "none",
+                    background: "#F1F5F9", color: "#475569",
+                    fontSize: 15, fontWeight: 600, cursor: "pointer",
+                  }}
+                >취소</button>
+                <button
+                  onClick={handleTypeChange}
+                  disabled={typeChangeLoading}
+                  style={{
+                    flex: 1, height: 48, borderRadius: 12, border: "none",
+                    background: "#1428A0", color: "#fff",
+                    fontSize: 15, fontWeight: 700, cursor: "pointer",
+                    opacity: typeChangeLoading ? 0.6 : 1,
+                  }}
+                >{typeChangeLoading ? "변경 중..." : "변경하기"}</button>
+              </div>
             </div>
           </div>
         )}
