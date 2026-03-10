@@ -1,6 +1,6 @@
 # OCR 번호판 인식 스킬
 
-> 최초 작성: 2026.03.05 | 최종 업데이트: 2026.03.10 (BBox 우선파싱 + 멀티프레임 + 뒤4자리 고정 + 한글 38자)
+> 최초 작성: 2026.03.05 | 최종 업데이트: 2026.03.10 (인접블록병합 + confidence + 자동스캔 + 진동 + JPEG최적화)
 > 관련 파일: `src/app/api/ocr/plate/route.ts`, `src/components/crew/CameraOcr.tsx`
 
 ---
@@ -9,16 +9,26 @@
 
 CREW앱 입차 등록 시 카메라로 번호판을 자동 인식하는 기능.
 Google Cloud Vision API를 서버에서 호출해 한국 번호판 패턴을 파싱한다.
-**멀티프레임 캡처**: 3장 연속 촬영 → 병렬 API 호출 → 다수결 최적 결과 선택
+**2가지 스캔 모드:** 자동 연속 스캔(기본) + 수동 3장 촬영
 
-**플로우:**
+**자동 스캔 플로우 (기본):**
 ```
-IDLE → SCANNING(카메라 ON, 1.5초 안정화)
+IDLE → ⚡자동 스캔 시작 → SCANNING(카메라 ON, 1초 안정화)
+     → 1.5초 인터벌: 1프레임 캡처 → API 호출
+          ├─ 감지 성공 → CONFIRMING + 성공 진동(100,50,100)
+          └─ 미감지 → 다음 시도 (최대 10회=15초)
+     → 10회 실패 → 에러 안내 + IDLE
+```
+
+**수동 3장 촬영 플로우:**
+```
+IDLE → 📷수동 스캔 → SCANNING(카메라 ON, 1.5초 안정화)
      → DETECTING(3장 캡처 300ms 간격 → 3장 병렬 Vision API 호출)
      → selectBestResult(한글 완전 인식 우선 → 다수결 → 첫 성공)
-     → CONFIRMING(결과 확인)
+     → CONFIRMING(결과 확인) + 성공 진동
           ├─ 한글 인식 성공 → ✅ 맞습니다 → 입차 완료
           └─ 한글 인식 실패(?) → 한글 수정 팝업 자동 오픈 → 수정 후 → 입차 완료
+     → 실패 시 → 실패 진동(300) + 에러 안내
 ```
 
 ---
@@ -136,12 +146,31 @@ Vision API `textAnnotations`의 각 블록에는 `boundingPoly.vertices`(4꼭짓
 
 **파싱 흐름:**
 ```
-callGoogleVision → { texts, prioritized }
+callGoogleVision → mergeAdjacentBlocks (인접 블록 병합)
+                 → analyzeTextBlocks (개별 + 병합 블록 점수)
+                 → { texts, prioritized }
                         ↓
 1차: prioritized에서 parsePlates (score ≥ 20인 블록만)
                         ↓ 실패 시
-2차: texts 전체에서 parsePlates (기존 동작)
+2차: texts 전체에서 parsePlates (기존 동작, 병합 줄 포함)
 ```
+
+### 인접 블록 병합 (2026.03.10 추가)
+
+Vision API가 번호판을 여러 블록으로 쪼개는 경우 대응 ("123" + "가" + "4567").
+
+**`mergeAdjacentBlocks` 로직:**
+1. 각 블록의 midY(중심 Y좌표), minX(좌측 X), height 추출
+2. confidence 0.3 미만 블록 제거
+3. midY 차이가 평균 높이의 50% 이내 → 같은 줄로 그룹핑
+4. 각 줄 내 x좌표 순서로 정렬 → 텍스트 합침
+5. 병합 줄에 +5 보너스 점수 부여
+
+### Confidence Score 필터링 (2026.03.10 추가)
+
+`enableTextDetectionConfidenceScore: true` 설정으로 Vision API가 반환하는 confidence 값을 활용.
+- `ann.confidence` 0.3 미만 → `mergeAdjacentBlocks`, `analyzeTextBlocks` 모두에서 제거
+- 노이즈 텍스트(배경 글자, 반사 등) 제거 효과
 
 ---
 
@@ -222,11 +251,23 @@ if (result.plate.includes("?")) {
 - 선택 즉시 번호판 미리보기 반영 (`158? 2953` → `158나 2953`)
 - `?` 상태에서 "맞습니다" 버튼 비활성화 (잘못 등록 방지)
 
-### 스캔 타이밍 (멀티프레임)
+### 자동 연속 스캔 모드 (기본, 2026.03.10 추가)
+- 카메라 ON → **1초** 안정화 → **1.5초** 간격으로 자동 캡처
+- 1프레임씩 API 호출 (API 중복 호출 방지: `autoScanningRef`)
+- 감지 성공 → 자동 정지 + CONFIRMING 전환
+- 최대 **10회(15초)** 시도 후 자동 정지 + 에러 안내
+- 토글 UI: ⚡자동 스캔 / 📷수동 3장
+
+### 수동 스캔 타이밍 (멀티프레임)
 - 카메라 안정화 대기: **1.5초** (기존 2.5초 → 단축)
 - 연속 캡처: **3장** (300ms 간격)
 - API 호출: **3장 병렬** (Promise.all)
-- JPEG 품질: **0.95**
+
+### JPEG & 진동 최적화 (2026.03.10 추가)
+- JPEG 품질: **0.8** (0.95에서 하향, base64 크기 30~40% 감소)
+- 성공 진동: `navigator.vibrate([100, 50, 100])` — 짧은 2회 톡톡
+- 실패 진동: `navigator.vibrate([300])` — 긴 1회 부르르
+- optional chaining `?.` 사용 (vibrate 미지원 기기 안전)
 
 ### 멀티프레임 최적 결과 선택 (`selectBestResult`)
 ```
