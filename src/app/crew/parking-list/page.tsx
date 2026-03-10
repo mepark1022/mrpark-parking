@@ -26,7 +26,7 @@ const CSS = `
     padding: 12px 16px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
     position: sticky;
     top: 56px;
     z-index: 30;
@@ -238,7 +238,6 @@ const STATUS_CONFIG = {
 };
 
 const TABS = [
-  { key: "all",     label: "전체" },
   { key: "valet",   label: "🔑 발렛" },
   { key: "self",    label: "🏢 자주식" },
   { key: "monthly", label: "📅 월주차" },
@@ -271,7 +270,7 @@ export default function CrewParkingListPage() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("valet");
   const [storeId, setStoreId] = useState(null);
   const [plateEditTarget, setPlateEditTarget] = useState(null);
   const [editPlateValue, setEditPlateValue] = useState("");
@@ -396,7 +395,6 @@ export default function CrewParkingListPage() {
     const searchMatch = !search || t.plate_number.includes(search.toUpperCase()) ||
       t.plate_last4.includes(search);
     const tabMatch =
-      activeTab === "all" ? true :
       activeTab === "monthly" ? t.is_monthly :
       activeTab === t.parking_type;
     return searchMatch && tabMatch;
@@ -421,7 +419,7 @@ export default function CrewParkingListPage() {
         {/* ─── 출차요청 고정 배너 ─── */}
         {exitReqCount > 0 && (
           <div
-            onClick={() => setActiveTab("all")}
+            onClick={() => setActiveTab("valet")}
             style={{
               position: "sticky", top: 56, zIndex: 50,
               background: "#EA580C", color: "#fff",
@@ -495,18 +493,7 @@ export default function CrewParkingListPage() {
             )}
           </div>
           <div className="plist-tabs">
-            {TABS.slice(0, 3).map(tab => (
-              <div
-                key={tab.key}
-                className={`plist-tab${activeTab === tab.key ? (tab.key === "exited" ? " active-exit" : " active") : ""}`}
-                onClick={() => setActiveTab(tab.key)}
-              >
-                {tab.label}
-              </div>
-            ))}
-          </div>
-          <div className="plist-tabs">
-            {TABS.slice(3).map(tab => (
+            {TABS.map(tab => (
               <div
                 key={tab.key}
                 className={`plist-tab${activeTab === tab.key ? (tab.key === "exited" ? " active-exit" : " active") : ""}`}
