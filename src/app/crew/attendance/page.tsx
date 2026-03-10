@@ -385,7 +385,7 @@ export default function CrewAttendancePage() {
         worker_id: attendance.workerId, store_id: selectedMissing.store_id || storeId,
         request_date: selectedMissing.date,
         requested_checkout_time: "18:00",
-        request_reason: checkoutMemo || "퇴근 미처리 수정 요청",
+        request_reason: checkoutMemo.trim(),
         status: "pending",
       });
       if (error) throw error;
@@ -783,19 +783,20 @@ export default function CrewAttendancePage() {
                 )}
               </div>
 
-              {/* Step 2: 사유 입력 */}
+              {/* Step 2: 사유 입력 (필수) */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 8 }}>② 사유 입력</div>
-                <textarea className="modal-ta" placeholder="예: 퇴근 처리를 깜빡했습니다" rows={2}
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 8 }}>② 사유 입력 <span style={{ color: "#DC2626" }}>*</span></div>
+                <textarea className="modal-ta" placeholder="예: 퇴근 처리를 깜빡했습니다 (필수)" rows={2}
                   value={checkoutMemo} onChange={e => setCheckoutMemo(e.target.value)}
-                  style={{ marginBottom: 0 }} />
+                  style={{ marginBottom: 0, border: !checkoutMemo.trim() ? "1.5px solid #FCA5A5" : undefined }} />
+                {!checkoutMemo.trim() && <div style={{ fontSize: 11, color: "#DC2626", marginTop: 4 }}>사유를 입력해야 요청할 수 있습니다</div>}
               </div>
 
               {/* Step 3: 요청 버튼 */}
               <div className="modal-btns">
                 <button className="modal-b cc" onClick={() => setShowCorrectionModal(false)}>취소</button>
                 <button className="modal-b sb" onClick={handleCorrectionRequest}
-                  disabled={actionLoading || !selectedMissing}>
+                  disabled={actionLoading || !selectedMissing || !checkoutMemo.trim()}>
                   {actionLoading ? "처리 중..." : "요청하기"}
                 </button>
               </div>
