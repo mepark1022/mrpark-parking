@@ -1596,37 +1596,32 @@ export default function WorkersPage() {
             const email = prof?.email || "";
             const isAdmin = role === "admin";
             return (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderBottom: "1px solid #f1f5f9" }}>
-                {/* 아이콘 */}
-                <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: rb.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>{rb.icon}</div>
-                {/* 이름 + 배지 + 이메일 */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: "#1a1d2b" }}>{w.name}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 4, background: rb.bg, color: rb.color }}>{rb.label}</span>
-                    {w.status !== "active" && <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4, background: "#f1f5f9", color: "#94a3b8" }}>비활성</span>}
-                  </div>
-                  {email && (
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{email}</div>
-                  )}
+              <div style={{ padding: "8px 12px", borderBottom: "1px solid #f1f5f9" }}>
+                {/* 1줄: 아이콘 + 이름/배지 + 이메일 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0, background: rb.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>{rb.icon}</div>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#1a1d2b" }}>{w.name}</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: rb.bg, color: rb.color }}>{rb.label}</span>
+                  {w.status !== "active" && <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 4, background: "#f1f5f9", color: "#94a3b8" }}>비활성</span>}
+                  {email && <span style={{ fontSize: 10, color: "#94a3b8", marginLeft: "auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>{email}</span>}
                 </div>
-                {/* 액션 버튼들 */}
-                <div style={{ display: "flex", gap: 3, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                {/* 2줄: 버튼들 */}
+                <div style={{ display: "flex", gap: 4, marginTop: 6, paddingLeft: 36 }}>
                   <button onClick={() => { setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", hire_date: w.hire_date || "" }); setRosterPopup({ type: "edit_form", worker: w }); }}
-                    style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", fontSize: 11, fontWeight: 600, color: "#1428A0", cursor: "pointer" }}>수정</button>
+                    style={{ padding: "3px 8px", border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", fontSize: 11, fontWeight: 600, color: "#1428A0", cursor: "pointer" }}>수정</button>
                   {email && (
                     <button onClick={() => { setPwResetTarget(w); setNewPassword(""); }}
-                      style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", fontSize: 11, fontWeight: 600, color: "#7C3AED", cursor: "pointer" }}>🔐</button>
+                      style={{ padding: "3px 8px", border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", fontSize: 11, fontWeight: 600, color: "#7C3AED", cursor: "pointer" }}>🔐</button>
                   )}
                   {isAdmin && (
                     <button onClick={() => changeRole(w, "crew")}
-                      style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", fontSize: 11, fontWeight: 600, color: "#0F9ED5", cursor: "pointer" }}>크루전환</button>
+                      style={{ padding: "3px 8px", border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", fontSize: 11, fontWeight: 600, color: "#0F9ED5", cursor: "pointer" }}>크루전환</button>
                   )}
                   <button onClick={() => toggleStatus(w)}
-                    style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer", color: w.status === "active" ? "#DC2626" : "#16A34A" }}>
+                    style={{ padding: "3px 8px", border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer", color: w.status === "active" ? "#DC2626" : "#16A34A" }}>
                     {w.status === "active" ? "비활성" : "활성화"}</button>
                   <button onClick={async () => { if (!confirm(`${w.name} 근무자를 삭제하시겠습니까?`)) return; const supabase = createClient(); await supabase.from("workers").delete().eq("id", w.id); setWorkers((prev: any[]) => prev.filter((x: any) => x.id !== w.id)); showToast("🗑️ 근무자가 삭제되었습니다"); }}
-                    style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", fontSize: 11, fontWeight: 600, color: "#DC2626", cursor: "pointer" }}>삭제</button>
+                    style={{ padding: "3px 8px", border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", fontSize: 11, fontWeight: 600, color: "#DC2626", cursor: "pointer" }}>삭제</button>
                 </div>
               </div>
             );
