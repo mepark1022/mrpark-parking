@@ -57,6 +57,8 @@ export default function CrewAttendancePage() {
   const [locationStatus, setLocationStatus] = useState<"checking" | "ok" | "far" | "error">("checking");
   const [currentAddress, setCurrentAddress] = useState<string>("");
   const [currentCoords, setCurrentCoords] = useState<{lat: number; lng: number} | null>(null);
+  const [userRole, setUserRole] = useState<string>("crew");
+  const [distanceToStore, setDistanceToStore] = useState<number | null>(null);
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const [checkoutMemo, setCheckoutMemo] = useState("");
   const [missingCheckouts, setMissingCheckouts] = useState<any[]>([]);
@@ -109,6 +111,10 @@ export default function CrewAttendancePage() {
           gpsRadius: storeData.gps_radius_meters ?? 150,
         });
       }
+
+      // 사용자 역할 로드 (GPS 반경 제한에 사용)
+      const { data: roleData } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+      if (roleData?.role) setUserRole(roleData.role);
 
       let { data: worker } = await supabase
         .from("workers").select("id").eq("user_id", user.id).limit(1).maybeSingle();
@@ -233,12 +239,27 @@ export default function CrewAttendancePage() {
   const checkLocation = () => {
     setLocationStatus("checking");
     setCurrentAddress("");
+    setDistanceToStore(null);
     if (!navigator.geolocation) { setLocationStatus("error"); return; }
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         setCurrentCoords({ lat: latitude, lng: longitude });
-        setLocationStatus("ok");
+
+        // 매장 거리 계산 + 크루 반경 제한
+        if (storeInfo?.lat && storeInfo?.lng) {
+          const dist = getDistanceM(latitude, longitude, storeInfo.lat, storeInfo.lng);
+          setDistanceToStore(dist);
+          const allowedRadius = Math.round(storeInfo.gpsRadius * 1.2); // 20% 여유
+          const isAdmin = ["admin", "super_admin", "owner"].includes(userRole);
+          if (!isAdmin && dist > allowedRadius) {
+            setLocationStatus("far");
+          } else {
+            setLocationStatus("ok");
+          }
+        } else {
+          setLocationStatus("ok"); // 매장 좌표 미등록 시 제한 없음
+        }
         
         // 역지오코딩 — 카카오 API (좌표 → 주소)
         try {
@@ -465,6 +486,7 @@ export default function CrewAttendancePage() {
         .att-content { padding: 20px 16px; }
         .loc-box { background: #fff; border-radius: 14px; border: 1.5px solid #E2E8F0; padding: 14px 16px; margin-bottom: 20px; }
         .loc-box.ok { background: #F0FDF4; border-color: #86EFAC; }
+        .loc-box.far { background: #FEF2F2; border-color: #FCA5A5; }
         .loc-box.error { background: #FEE2E2; border-color: #FECACA; }
         .loc-box.checking { background: #F8FAFC; }
         .loc-row { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #1A1D2B; }
@@ -546,6 +568,22 @@ export default function CrewAttendancePage() {
                   <span>❌</span>
                   <span>위치 확인 불가</span>
                   <button onClick={checkLocation} className="loc-retry-btn">재시도</button>
+                </div>
+              )}
+              {locationStatus === "far" && (
+                <div>
+                  <div className="loc-row" style={{ marginBottom: 8 }}>
+                    <span>⚠️</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#DC2626" }}>매장 반경 밖입니다</span>
+                    <button onClick={checkLocation} className="loc-retry-btn">위치 재확인</button>
+                  </div>
+                  <div style={{ background: "#fef2f2", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "#991b1b", lineHeight: 1.6 }}>
+                    현재 매장에서 <strong>{distanceToStore ? `${distanceToStore.toLocaleString()}m` : ""}</strong> 떨어져 있습니다.<br/>
+                    <strong>{storeInfo?.gpsRadius || 150}m 이내</strong>로 이동 후 위치를 재확인해주세요.
+                  </div>
+                  {currentAddress && (
+                    <div className="loc-addr" style={{ marginTop: 6 }}>{currentAddress}</div>
+                  )}
                 </div>
               )}
             </div>
