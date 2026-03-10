@@ -17,10 +17,10 @@ function getAdminClient() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password, name, role, orgId, storeIds } = body;
+    const { email, password, name, phone, role, orgId, storeIds } = body;
 
     // 유효성 검사
-    if (!email || !password || !name || !role || !orgId) {
+    if (!email || !password || !name || !phone || !role || !orgId) {
       return NextResponse.json({ error: "필수 항목이 누락되었습니다." }, { status: 400 });
     }
     if (password.length < 6) {
@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
       id: userId,
       email,
       name,
+      display_name: name,
       role,
       status: "active",
       org_id: orgId,
@@ -63,11 +64,29 @@ export async function POST(req: NextRequest) {
 
     if (profileError) {
       console.error("[create-account] profile error:", profileError.message);
-      // auth 사용자는 생성됨, profile만 실패 → 알림
       return NextResponse.json({ error: "계정은 생성되었으나 프로필 등록에 실패했습니다." }, { status: 500 });
     }
 
-    // 3. store_members 등록
+    // 3. workers 테이블에 레코드 생성 (근무자 명부 동기화)
+    try {
+      const { data: existingWorker } = await admin.from("workers")
+        .select("id").eq("user_id", userId).maybeSingle();
+      if (existingWorker) {
+        await admin.from("workers").update({ name, phone }).eq("id", existingWorker.id);
+      } else {
+        await admin.from("workers").insert({
+          org_id: orgId,
+          user_id: userId,
+          name,
+          phone,
+          status: "active",
+        });
+      }
+    } catch (e) {
+      console.error("[create-account] workers sync error:", e);
+    }
+
+    // 4. store_members 등록
     const targetStoreIds: string[] = storeIds || [];
     for (const sid of targetStoreIds) {
       try {

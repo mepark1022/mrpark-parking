@@ -186,6 +186,7 @@ export default function TeamPage() {
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
+  const [invitePhone, setInvitePhone] = useState("");
   const [invitePassword, setInvitePassword] = useState("");
   const [inviteRole, setInviteRole] = useState("admin");
   const [inviteStoreIds, setInviteStoreIds] = useState<string[]>([]);
@@ -294,13 +295,17 @@ export default function TeamPage() {
 
   // --- 계정 직접 생성 ---
   async function handleDirectCreate() {
-    if (!inviteEmail || !inviteName || !invitePassword) return;
+    if (!inviteEmail || !inviteName || !invitePhone || !invitePassword) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) {
       setMessage({ text: "올바른 이메일 형식을 입력해주세요. (예: example@email.com)", type: "error" });
       return;
     }
     if (!/^[가-힣]{2,}$/.test(inviteName.trim())) {
       setMessage({ text: "이름은 한글 2자 이상 입력해주세요.", type: "error" });
+      return;
+    }
+    if (!/^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/.test(invitePhone.replace(/-/g, ""))) {
+      setMessage({ text: "올바른 연락처를 입력해주세요. (예: 010-0000-0000)", type: "error" });
       return;
     }
     if (invitePassword.length < 6) {
@@ -321,6 +326,7 @@ export default function TeamPage() {
           email: inviteEmail,
           password: invitePassword,
           name: inviteName,
+          phone: invitePhone,
           role: inviteRole,
           orgId: orgId,
           storeIds: inviteStoreIds,
@@ -331,7 +337,7 @@ export default function TeamPage() {
         setMessage({ text: data.error || "계정 생성 실패", type: "error" });
       } else {
         setCreatedAccount({ name: inviteName, email: inviteEmail, password: invitePassword });
-        setInviteEmail(""); setInviteName(""); setInvitePassword(""); setInviteRole("admin"); setInviteStoreIds([]); setShowInvite(false);
+        setInviteEmail(""); setInviteName(""); setInvitePhone(""); setInvitePassword(""); setInviteRole("admin"); setInviteStoreIds([]); setShowInvite(false);
         loadData();
       }
     } catch (e: any) { setMessage({ text: `계정 생성 실패: ${e?.message || "서버 오류"}`, type: "error" }); }
@@ -687,6 +693,15 @@ export default function TeamPage() {
                   <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-[15px] text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="example@email.com" />
                 </div>
 
+                {/* 연락처 */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1.5">연락처 *</label>
+                  <input type="tel" value={invitePhone} onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9-]/g, "");
+                    setInvitePhone(val);
+                  }} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-[15px] text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="010-0000-0000" maxLength={13} />
+                </div>
+
                 {/* 비밀번호 */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">비밀번호 *</label>
@@ -748,17 +763,18 @@ export default function TeamPage() {
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-7">
-                <button onClick={() => { setShowInvite(false); setInviteEmail(""); setInviteName(""); setInvitePassword(""); setInviteRole("admin"); setInviteStoreIds([]); }} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg">취소</button>
+                <button onClick={() => { setShowInvite(false); setInviteEmail(""); setInviteName(""); setInvitePhone(""); setInvitePassword(""); setInviteRole("admin"); setInviteStoreIds([]); }} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg">취소</button>
                 <button onClick={() => {
                   if (!inviteName || !/^[가-힣]{2,}$/.test(inviteName.trim())) {
                     setMessage({ text: "이름은 한글 2자 이상 입력해주세요.", type: "error" }); return;
                   }
                   if (!inviteEmail) { setMessage({ text: "이메일을 입력해주세요.", type: "error" }); return; }
                   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) { setMessage({ text: "올바른 이메일 형식을 입력해주세요. (예: example@email.com)", type: "error" }); return; }
+                  if (!invitePhone || !/^01[0-9]{8,9}$/.test(invitePhone.replace(/-/g, ""))) { setMessage({ text: "올바른 연락처를 입력해주세요. (예: 010-0000-0000)", type: "error" }); return; }
                   if (!invitePassword || invitePassword.length < 6) { setMessage({ text: "비밀번호는 6자 이상이어야 합니다.", type: "error" }); return; }
                   if (inviteRole === "crew" && inviteStoreIds.length === 0) { setMessage({ text: "CREW는 배정 매장을 선택해주세요.", type: "error" }); return; }
                   setShowConfirmCreate(true);
-                }} disabled={!inviteEmail || !inviteName || !invitePassword || invitePassword.length < 6 || sending || (inviteRole === "crew" && inviteStoreIds.length === 0)} className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-dark disabled:opacity-50 shadow-sm">{sending ? "생성 중..." : "계정 생성"}</button>
+                }} disabled={!inviteEmail || !inviteName || !invitePhone || !invitePassword || invitePassword.length < 6 || sending || (inviteRole === "crew" && inviteStoreIds.length === 0)} className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-dark disabled:opacity-50 shadow-sm">{sending ? "생성 중..." : "계정 생성"}</button>
               </div>
             </div>
           </div>
@@ -777,6 +793,7 @@ export default function TeamPage() {
                 <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 6 }}>생성 정보</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1D2B" }}>{inviteName}</div>
                 <div style={{ fontSize: 12, color: "#64748b" }}>{inviteEmail}</div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>{invitePhone}</div>
                 <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>비밀번호: {invitePassword}</div>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
