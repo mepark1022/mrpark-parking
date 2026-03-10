@@ -48,6 +48,13 @@ export async function POST(req: NextRequest) {
       .delete()
       .eq("user_id", userId);
 
+    // 1-1. 연결된 workers도 비활성 처리 (근태 데이터 보존)
+    await supabaseAdmin
+      .from("workers")
+      .update({ status: "inactive" })
+      .eq("user_id", userId)
+      .eq("org_id", orgId);
+
     // 2. profile에서 org_id 제거 + disabled
     await supabaseAdmin
       .from("profiles")

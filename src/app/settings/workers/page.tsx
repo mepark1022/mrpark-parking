@@ -81,16 +81,9 @@ export default function WorkersPage() {
   };
 
   const deleteWorker = async (worker) => {
-    if (!confirm(`"${worker.name}" 근무자를 삭제하시겠습니까?\n\n관련된 출퇴근/연차/리뷰 데이터도 함께 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.`)) return;
+    if (!confirm(`"${worker.name}" 근무자를 비활성 처리하시겠습니까?\n\n기존 출퇴근·연차·리뷰 데이터는 보존됩니다.`)) return;
     const supabase = createClient();
-    await supabase.from("worker_attendance").delete().eq("worker_id", worker.id);
-    await supabase.from("worker_leave_records").delete().eq("worker_id", worker.id);
-    await supabase.from("worker_leaves").delete().eq("worker_id", worker.id);
-    await supabase.from("worker_reviews").delete().eq("worker_id", worker.id);
-    await supabase.from("worker_reports").delete().eq("worker_id", worker.id);
-    await supabase.from("worker_assignments").delete().eq("worker_id", worker.id);
-    await supabase.from("store_default_workers").delete().eq("worker_id", worker.id);
-    await supabase.from("workers").delete().eq("id", worker.id);
+    await supabase.from("workers").update({ status: "inactive" }).eq("id", worker.id);
     loadWorkers();
   };
 

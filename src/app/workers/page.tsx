@@ -1516,7 +1516,7 @@ export default function WorkersPage() {
                   <button onClick={() => toggleStatus(w)}
                     style={{ padding: "3px 8px", border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer", color: w.status === "active" ? "#DC2626" : "#16A34A" }}>
                     {w.status === "active" ? "비활성" : "활성화"}</button>
-                  <button onClick={async () => { if (!confirm(`${w.name} 근무자를 삭제하시겠습니까?`)) return; const supabase = createClient(); await supabase.from("workers").delete().eq("id", w.id); setWorkers((prev: any[]) => prev.filter((x: any) => x.id !== w.id)); showToast("🗑️ 근무자가 삭제되었습니다"); }}
+                  <button onClick={async () => { if (!confirm(`${w.name} 근무자를 비활성 처리하시겠습니까?\n(근태·연차 등 데이터는 보존됩니다)`)) return; const supabase = createClient(); await supabase.from("workers").update({ status: "inactive" }).eq("id", w.id); loadAll(); showToast("⏸️ 근무자가 비활성 처리되었습니다"); }}
                     style={{ padding: "3px 8px", border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", fontSize: 11, fontWeight: 600, color: "#DC2626", cursor: "pointer" }}>삭제</button>
                 </div>
               </div>
@@ -1755,27 +1755,24 @@ export default function WorkersPage() {
                     {/* 삭제 팝업 */}
                     {rosterPopup.type === "del" && (
                       <>
-                        <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>🗑️</div>
-                        <div style={{ fontSize: 17, fontWeight: 800, textAlign: "center", color: "#DC2626", marginBottom: 6 }}>근무자 영구 삭제</div>
+                        <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>⏸️</div>
+                        <div style={{ fontSize: 17, fontWeight: 800, textAlign: "center", color: "#DC2626", marginBottom: 6 }}>근무자 비활성 처리</div>
                         <div style={{ fontSize: 13, color: "#64748b", textAlign: "center", lineHeight: 1.65, padding: "0 24px", marginBottom: 14 }}>
-                          {rosterPopup.worker.name} 근무자의 모든 데이터를<br/>영구적으로 삭제합니다.
+                          {rosterPopup.worker.name} 근무자를<br/>비활성 처리합니다.
                         </div>
-                        <div style={{ margin: "0 18px 12px", background: "#fef2f2", border: "1.5px solid #fecaca", borderRadius: 12, padding: "12px 14px" }}>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: "#DC2626", marginBottom: 7 }}>🚨 삭제되는 데이터 (복구 불가)</div>
+                        <div style={{ margin: "0 18px 12px", background: "#f0f9ff", border: "1.5px solid #bae6fd", borderRadius: 12, padding: "12px 14px" }}>
+                          <div style={{ fontSize: 12, fontWeight: 800, color: "#0369a1", marginBottom: 7 }}>ℹ️ 비활성 처리 안내</div>
                           <ul style={{ paddingLeft: 16 }}>
-                            {["근무자 기본 정보 (이름·연락처·지역)", "전체 출퇴근 기록", "근태 이력 (출근·지각·결근·연차)", "근무 리뷰 및 평가 내역", "시말서 전체 기록"].map((t, i) => (
-                              <li key={i} style={{ fontSize: 12, color: "#991b1b", marginBottom: 3, lineHeight: 1.5 }}>{t}</li>
+                            {["명부에서 숨김 처리 (활성화로 복원 가능)", "기존 출퇴근·근태·연차 데이터 보존", "근무 리뷰 및 시말서 기록 보존", "매장 배정은 유지 (비활성 동안 미표시)"].map((t, i) => (
+                              <li key={i} style={{ fontSize: 12, color: "#0c4a6e", marginBottom: 3, lineHeight: 1.5 }}>{t}</li>
                             ))}
                           </ul>
-                        </div>
-                        <div style={{ margin: "0 18px 18px", background: "#fffbeb", border: "1.5px solid #fde68a", borderRadius: 12, padding: "11px 14px", fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
-                          💡 데이터 보존이 필요하면 <strong style={{ color: "#EA580C" }}>삭제 대신 비활성</strong> 처리를 권장합니다.
                         </div>
                         <div style={{ display: "flex", gap: 10, padding: "0 18px" }}>
                           <button onClick={() => setRosterPopup({ type: null, worker: null })}
                             style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#f1f5f9", color: "#64748b", border: "none", fontFamily: "inherit" }}>취소</button>
-                          <button onClick={async () => { setRosterPopup({ type: null, worker: null }); const supabase = createClient(); await supabase.from("workers").delete().eq("id", rosterPopup.worker.id); setWorkers(prev => prev.filter(x => x.id !== rosterPopup.worker.id)); showToast("🗑️ 근무자가 삭제되었습니다"); }}
-                            style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#DC2626", color: "#fff", border: "none", fontFamily: "inherit" }}>영구 삭제</button>
+                          <button onClick={async () => { setRosterPopup({ type: null, worker: null }); const supabase = createClient(); await supabase.from("workers").update({ status: "inactive" }).eq("id", rosterPopup.worker.id); loadAll(); showToast("⏸️ 근무자가 비활성 처리되었습니다"); }}
+                            style={{ flex: 1, padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#DC2626", color: "#fff", border: "none", fontFamily: "inherit" }}>비활성 처리</button>
                         </div>
                       </>
                     )}
