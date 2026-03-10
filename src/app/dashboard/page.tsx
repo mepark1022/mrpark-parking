@@ -321,7 +321,8 @@ export default function DashboardPage() {
   const [records, setRecords] = useState([]);
   const [hourlyData, setHourlyData] = useState([]);
   const [assignments, setAssignments] = useState([]);
-  const [attendanceCount, setAttendanceCount] = useState(0);
+  const [totalWorkers, setTotalWorkers] = useState(0);
+  const [todayAttendance, setTodayAttendance] = useState(0);
   const [monthlyContracts, setMonthlyContracts] = useState([]);
   const [ticketData, setTicketData] = useState([]); // mepark_tickets 연동
   const [loading, setLoading] = useState(true);
@@ -431,17 +432,21 @@ export default function DashboardPage() {
 
     const [{ data: tData }, { data: mpData }, { data: rData }] = await Promise.all([tQ, mpQ, recQ]);
 
-    // worker_attendance: 기간 내 실제 출근 인원 (CREW앱 출퇴근 연동)
+    // 등록 총인원 (active 근무자) + 금일 출근인원
+    const today = new Date().toISOString().split("T")[0];
+    let wkQ = supabase.from("workers").select("id", { count: "exact", head: true }).eq("status", "active");
+    if (orgId) wkQ = wkQ.eq("org_id", orgId);
     let attQ = supabase.from("worker_attendance")
       .select("worker_id")
-      .gte("date", start).lte("date", end)
+      .eq("date", today)
       .not("check_in", "is", null)
       .in("status", ["present", "late"]);
     if (orgId) attQ = attQ.eq("org_id", orgId);
     if (selectedStore) attQ = attQ.eq("store_id", selectedStore);
-    const { data: attData } = await attQ;
+    const [{ count: wkCount }, { data: attData }] = await Promise.all([wkQ, attQ]);
+    setTotalWorkers(wkCount || 0);
     const attWorkerIds = new Set((attData || []).map(a => a.worker_id));
-    setAttendanceCount(attWorkerIds.size);
+    setTodayAttendance(attWorkerIds.size);
 
     const tickets = tData || [];
     setTicketData(tickets);
@@ -474,8 +479,6 @@ export default function DashboardPage() {
       .filter(t => t.parking_type === "valet")
       .reduce((s, t) => s + (t.paid_amount || 0), 0);
     const totalParking = Math.max(totalRevenue - totalValet, 0);
-    const workerIds = new Set(assignments.map(a => a.worker_id));
-    const workerCount = attendanceCount > 0 ? attendanceCount : workerIds.size;
     const activeContracts = monthlyContracts.filter(c => c.contract_status === "active").length;
     // mepark_tickets 데이터 없으면 daily_records 폴백
     const useFallback = ticketData.length === 0 && records.length > 0;
@@ -483,10 +486,10 @@ export default function DashboardPage() {
       const fbCars = records.reduce((s, r) => s + r.total_cars, 0);
       const fbValet = records.reduce((s, r) => s + r.valet_revenue, 0);
       const fbRev = records.reduce((s, r) => s + (r.valet_revenue || 0), 0);
-      return { totalCars: fbCars, totalValet: fbValet, totalParking: Math.max(fbRev - fbValet, 0), workerCount, activeContracts, totalRevenue: fbRev };
+      return { totalCars: fbCars, totalValet: fbValet, totalParking: Math.max(fbRev - fbValet, 0), activeContracts, totalRevenue: fbRev };
     }
-    return { totalCars, totalValet, totalParking, workerCount, activeContracts, totalRevenue };
-  }, [ticketData, records, assignments, monthlyContracts, attendanceCount]);
+    return { totalCars, totalValet, totalParking, activeContracts, totalRevenue };
+  }, [ticketData, records, assignments, monthlyContracts]);
 
   const hourlyChartData = useMemo(() => {
     const hourMap = {}; for (let h = 7; h <= 22; h++) hourMap[h] = 0;
@@ -645,7 +648,7 @@ export default function DashboardPage() {
             {[
               { cls: "c-navy", icon: "🚗", val: kpi.totalCars.toLocaleString(), label: "총 입차" },
               { cls: "c-gold", icon: "💰", val: fmtMoney(kpi.totalRevenue), label: "총 매출" },
-              { cls: "c-green", icon: "👥", val: `${kpi.workerCount}명`, label: "근무 인원" },
+              { cls: "c-green", icon: "👥", val: `${todayAttendance}/${totalWorkers}`, label: "출근/총인원" },
               { cls: "c-purple", icon: "📅", val: `${kpi.activeContracts}건`, label: "월주차 계약" },
             ].map(k => (
               <div key={k.label} className={`dash-kpi-card ${k.cls}`}>
