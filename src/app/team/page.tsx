@@ -184,12 +184,12 @@ export default function TeamPage() {
 
   // 초대 모달
   const [showInvite, setShowInvite] = useState(false);
-  const [inviteMode, setInviteMode] = useState<"email" | "direct">("email"); // 이메일 초대 vs 직접 생성
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [invitePassword, setInvitePassword] = useState("");
   const [inviteRole, setInviteRole] = useState("admin");
   const [inviteStoreIds, setInviteStoreIds] = useState<string[]>([]);
+  const [showConfirmCreate, setShowConfirmCreate] = useState(false);
 
   // 매장 배정 모달
   const [showAssign, setShowAssign] = useState(false);
@@ -295,6 +295,10 @@ export default function TeamPage() {
   // --- 계정 직접 생성 ---
   async function handleDirectCreate() {
     if (!inviteEmail || !inviteName || !invitePassword) return;
+    if (!/^[가-힣]{2,}$/.test(inviteName.trim())) {
+      setMessage({ text: "이름은 한글 2자 이상 입력해주세요.", type: "error" });
+      return;
+    }
     if (invitePassword.length < 6) {
       setMessage({ text: "비밀번호는 6자 이상이어야 합니다.", type: "error" });
       return;
@@ -644,45 +648,6 @@ export default function TeamPage() {
                 )}
               </div>
 
-              {/* ===== 초대 내역 ===== */}
-              <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
-                <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)", display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 4, height: 20, borderRadius: 2, background: "#94a3b8" }} />
-                  <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>초대 내역</h4>
-                  <span style={{ padding: "2px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "#f1f5f9", color: "#64748b" }}>{pendingInvitations.length}건</span>
-                </div>
-                {pendingInvitations.length === 0 ? (
-                  <div className="text-center py-8 text-sm text-gray-400">초대 내역이 없습니다</div>
-                ) : (
-                  pendingInvitations.map((inv) => {
-                    const rb = roleBadge(inv.role);
-                    const sb = statusBadge(inv.status);
-                    return (
-                      <div key={inv.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid var(--border-light)" }} className="last:border-b-0">
-                        <div style={{ width: 38, height: 38, borderRadius: 10, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>📧</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{inv.email}</div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
-                            <span style={{ padding: "1px 7px", borderRadius: 5, fontSize: 10, fontWeight: 700, background: rb.bg, color: rb.color }}>{rb.label}</span>
-                            <span style={{ padding: "1px 7px", borderRadius: 5, fontSize: 10, fontWeight: 700, background: sb.bg, color: sb.color }}>{sb.label}</span>
-                            {inv.stores?.name && <span style={{ fontSize: 10, color: "#94a3b8" }}>📍{inv.stores.name}</span>}
-                            <span style={{ fontSize: 10, color: "#cbd5e1" }}>{fmtDate(inv.created_at)}</span>
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                          {inv.status === "pending" && (
-                            <>
-                              <button onClick={() => resendInvitation(inv)} disabled={sending} style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", background: "none", border: "none", cursor: "pointer" }}>재발송</button>
-                              <button onClick={() => cancelInvitation(inv.id)} style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}>취소</button>
-                            </>
-                          )}
-                          <button onClick={() => deleteInvitation(inv.id)} style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", background: "none", border: "none", cursor: "pointer" }}>삭제</button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
             </>
           );
         })()}
@@ -693,20 +658,24 @@ export default function TeamPage() {
             <div className="bg-white rounded-t-2xl sm:rounded-2xl p-6 sm:p-7 w-full sm:max-w-md shadow-2xl max-h-[85vh] overflow-y-auto" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
               <h3 className="text-xl font-bold text-gray-900 mb-5">팀원 추가</h3>
 
-              {/* 모드 토글 */}
-              <div style={{ display: "flex", gap: 6, marginBottom: 20, background: "#f1f5f9", borderRadius: 10, padding: 4 }}>
-                <button onClick={() => setInviteMode("direct")} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: inviteMode === "direct" ? "#1428A0" : "transparent", color: inviteMode === "direct" ? "#fff" : "#64748b", transition: "all 0.15s" }}>🔑 계정 직접 생성</button>
-                <button onClick={() => setInviteMode("email")} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: inviteMode === "email" ? "#1428A0" : "transparent", color: inviteMode === "email" ? "#fff" : "#64748b", transition: "all 0.15s" }}>📧 이메일 초대</button>
+              {/* 안내 배너 */}
+              <div style={{ background: "#EEF2FF", borderRadius: 10, padding: "10px 14px", marginBottom: 20 }}>
+                <p style={{ fontSize: 12, color: "#1428A0", margin: 0, fontWeight: 600 }}>🔑 관리자가 직접 계정을 생성하고, ID/비밀번호를 전달합니다.</p>
               </div>
 
               <div className="space-y-4">
-                {/* 이름 (직접 생성만) */}
-                {inviteMode === "direct" && (
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1.5">이름 *</label>
-                    <input type="text" value={inviteName} onChange={(e) => setInviteName(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-[15px] text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="홍길동" />
-                  </div>
-                )}
+                {/* 이름 */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1.5">이름 * <span style={{ fontSize: 11, fontWeight: 500, color: "#94a3b8" }}>(한글만 입력 가능)</span></label>
+                  <input type="text" value={inviteName} onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || /^[가-힣ㄱ-ㅎㅏ-ㅣ\s]*$/.test(val)) {
+                      setInviteName(val);
+                    } else {
+                      setMessage({ text: "이름은 한글만 입력할 수 있습니다.", type: "error" });
+                    }
+                  }} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-[15px] text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="홍길동" />
+                </div>
 
                 {/* 이메일 */}
                 <div>
@@ -714,14 +683,12 @@ export default function TeamPage() {
                   <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-[15px] text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="example@email.com" />
                 </div>
 
-                {/* 비밀번호 (직접 생성만) */}
-                {inviteMode === "direct" && (
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1.5">비밀번호 *</label>
-                    <input type="text" value={invitePassword} onChange={(e) => setInvitePassword(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-[15px] text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="6자 이상 (본인에게 전달)" />
-                    <p className="text-xs text-orange-500 mt-1.5 font-medium">⚠️ 생성 후 본인에게 비밀번호를 전달해주세요</p>
-                  </div>
-                )}
+                {/* 비밀번호 */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1.5">비밀번호 *</label>
+                  <input type="text" value={invitePassword} onChange={(e) => setInvitePassword(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-[15px] text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="6자 이상 (본인에게 전달)" />
+                  <p className="text-xs text-orange-500 mt-1.5 font-medium">⚠️ 생성 후 본인에게 비밀번호를 전달해주세요</p>
+                </div>
 
                 {/* 역할 */}
                 <div>
@@ -777,12 +744,41 @@ export default function TeamPage() {
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-7">
-                <button onClick={() => { setShowInvite(false); setInviteEmail(""); setInviteName(""); setInvitePassword(""); setInviteRole("admin"); setInviteStoreIds([]); setInviteMode("direct"); }} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg">취소</button>
-                {inviteMode === "email" ? (
-                  <button onClick={handleInvite} disabled={!inviteEmail || sending || (inviteRole === "crew" && inviteStoreIds.length === 0)} className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-dark disabled:opacity-50 shadow-sm">{sending ? "발송 중..." : "초대 발송"}</button>
-                ) : (
-                  <button onClick={handleDirectCreate} disabled={!inviteEmail || !inviteName || !invitePassword || invitePassword.length < 6 || sending || (inviteRole === "crew" && inviteStoreIds.length === 0)} className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-dark disabled:opacity-50 shadow-sm">{sending ? "생성 중..." : "계정 생성"}</button>
-                )}
+                <button onClick={() => { setShowInvite(false); setInviteEmail(""); setInviteName(""); setInvitePassword(""); setInviteRole("admin"); setInviteStoreIds([]); }} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg">취소</button>
+                <button onClick={() => {
+                  if (!inviteName || !/^[가-힣]{2,}$/.test(inviteName.trim())) {
+                    setMessage({ text: "이름은 한글 2자 이상 입력해주세요.", type: "error" }); return;
+                  }
+                  if (!inviteEmail) { setMessage({ text: "이메일을 입력해주세요.", type: "error" }); return; }
+                  if (!invitePassword || invitePassword.length < 6) { setMessage({ text: "비밀번호는 6자 이상이어야 합니다.", type: "error" }); return; }
+                  if (inviteRole === "crew" && inviteStoreIds.length === 0) { setMessage({ text: "CREW는 배정 매장을 선택해주세요.", type: "error" }); return; }
+                  setShowConfirmCreate(true);
+                }} disabled={!inviteEmail || !inviteName || !invitePassword || invitePassword.length < 6 || sending || (inviteRole === "crew" && inviteStoreIds.length === 0)} className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-dark disabled:opacity-50 shadow-sm">{sending ? "생성 중..." : "계정 생성"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== 계정 생성 확인 팝업 ===== */}
+        {showConfirmCreate && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+            <div style={{ background: "#fff", borderRadius: 20, padding: 28, width: "100%", maxWidth: 380, textAlign: "center" }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "#1A1D2B", marginBottom: 8 }}>아이디와 비밀번호를<br/>메모하셨나요?</div>
+              <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6, lineHeight: 1.6 }}>
+                생성 후에는 비밀번호를 확인할 수 없습니다.
+              </div>
+              <div style={{ background: "#f8fafc", borderRadius: 12, padding: "12px 16px", marginBottom: 20, textAlign: "left" }}>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 6 }}>생성 정보</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1D2B" }}>{inviteName}</div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>{inviteEmail}</div>
+                <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>비밀번호: {invitePassword}</div>
+              </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => setShowConfirmCreate(false)}
+                  style={{ flex: 1, padding: 14, borderRadius: 12, border: "none", background: "#f1f5f9", color: "#64748b", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>돌아가기</button>
+                <button onClick={() => { setShowConfirmCreate(false); handleDirectCreate(); }}
+                  style={{ flex: 1, padding: 14, borderRadius: 12, border: "none", background: "#1428A0", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>네, 생성합니다</button>
               </div>
             </div>
           </div>
