@@ -54,14 +54,8 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // 자동 스캔 인터벌
-  const autoIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const autoScanningRef = useRef(false); // API 중복 호출 방지
 
-  // 자동/수동 모드 토글
-  const [autoMode, setAutoMode] = useState(true);
-  // 자동 스캔 시도 횟수
-  const [autoAttempt, setAutoAttempt] = useState(0);
+  // (autoMode 제거 — 3장 연속 단일 모드로 통합)
 
   // ── 카메라 시작 ──────────────────────────────
   const startCamera = useCallback(async () => {
@@ -170,96 +164,8 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     };
   }, []);
 
-  // ── 자동 스캔 정지 ─────────────────────────────
-  const stopAutoScan = useCallback(() => {
-    if (autoIntervalRef.current) {
-      clearInterval(autoIntervalRef.current);
-      autoIntervalRef.current = null;
-    }
-    autoScanningRef.current = false;
-    setAutoAttempt(0);
-  }, []);
-
-  // ── 자동 연속 스캔 시작 ──────────────────────────
-  // 카메라 ON → 1초 대기 → 1.5초마다 1프레임 자동 분석
-  // 감지 시 자동 정지, 최대 10회 시도 후 정지
-  const startAutoScan = useCallback(async () => {
-    setPhase(STATES.SCANNING);
-    setDetected(null);
-    setConfirmed(null);
-    setErrorMsg(null);
-    setManualInput(false);
-    setManualVal("");
-    setMultiProgress(0);
-    setAutoAttempt(0);
-
-    await startCamera();
-
-    // 1초 대기 후 자동 스캔 시작
-    timerRef.current = setTimeout(() => {
-      const video = videoRef.current;
-      if (!video || video.videoWidth === 0 || video.readyState < 2) {
-        setErrorMsg("카메라가 준비되지 않았습니다. 다시 시도해주세요.");
-        setPhase(STATES.IDLE);
-        stopCamera();
-        return;
-      }
-
-      let attemptCount = 0;
-
-      autoIntervalRef.current = setInterval(async () => {
-        // API 호출 중이면 건너뛰기
-        if (autoScanningRef.current) return;
-
-        attemptCount++;
-        setAutoAttempt(attemptCount);
-
-        // 최대 10회 시도 후 자동 정지
-        if (attemptCount > 10) {
-          stopAutoScan();
-          stopCamera();
-          setErrorMsg("자동 인식에 실패했습니다. 수동 스캔 또는 직접 입력해주세요.");
-          setPhase(STATES.IDLE);
-          return;
-        }
-
-        autoScanningRef.current = true;
-
-        try {
-          const frame = captureFrame();
-          if (!frame) {
-            autoScanningRef.current = false;
-            return;
-          }
-
-          const result = await callOcrApi(frame);
-          console.log(`[OCR] 자동스캔 #${attemptCount}:`, result.plate ?? "미감지");
-
-          if (result.success && result.plate) {
-            // 감지 성공 → 자동 정지
-            stopAutoScan();
-            setDetected(result.plate);
-            setCandidates(result.candidates ?? []);
-            setPhase(STATES.CONFIRMING);
-            stopCamera();
-            // 성공 진동
-            navigator.vibrate?.([100, 50, 100]);
-            // ? 포함 시 한글 수정 팝업
-            if (result.plate.includes("?")) {
-              setKoreanVal("");
-              setKoreanEdit(true);
-            }
-          }
-        } catch {
-          // API 오류 시 다음 시도로 넘어감
-        } finally {
-          autoScanningRef.current = false;
-        }
-      }, 1500);
-    }, 1000);
-  }, [startCamera, stopCamera, stopAutoScan, captureFrame, callOcrApi]);
-
-  // ── 스캔 시작 (멀티프레임 3장 — 수동 모드) ─────────
+  // ── 스캔 시작 (3장 연속 촬영 — 단일 모드) ────────────
+  // 크루가 박스에 번호판 맞춤 → 버튼 → 3장 연속 → 최적 결과
   const startScan = useCallback(async () => {
     setPhase(STATES.SCANNING);
     setDetected(null);
@@ -273,7 +179,6 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
 
     // 1.5초 대기 (카메라 안정화) → 3장 연속 캡처
     timerRef.current = setTimeout(async () => {
-      // video 실제 재생 확인
       const video = videoRef.current;
       if (!video || video.videoWidth === 0 || video.readyState < 2) {
         setErrorMsg("카메라가 준비되지 않았습니다. 다시 시도해주세요.");
@@ -308,7 +213,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         frames.map((f) => callOcrApi(f).catch(() => ({ success: false } as OcrResult)))
       );
 
-      console.log("[OCR] 멀티프레임 결과:", results.map((r) => r.plate ?? "실패"));
+      console.log("[OCR] 3장 결과:", results.map((r) => r.plate ?? "실패"));
 
       // 최적 결과 선택
       const best = selectBestResult(results);
@@ -318,17 +223,14 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         setCandidates(best.candidates);
         setPhase(STATES.CONFIRMING);
         stopCamera();
-        // 성공 진동: 짧은 2회 (톡톡)
         navigator.vibrate?.([100, 50, 100]);
-        // ? 포함 시 한글 수정 팝업 자동 표시
         if (best.plate.includes("?")) {
           setKoreanVal("");
           setKoreanEdit(true);
         }
       } else {
-        // 실패 진동: 긴 1회 (부르르)
         navigator.vibrate?.([300]);
-        setErrorMsg("번호판을 인식하지 못했습니다. 다시 시도해주세요.");
+        setErrorMsg("번호판을 인식하지 못했습니다. 다시 시도하거나 직접 입력해주세요.");
         setPhase(STATES.IDLE);
         stopCamera();
       }
@@ -349,7 +251,6 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
   // ── 리셋 ─────────────────────────────────────
   const reset = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    stopAutoScan();
     stopCamera();
     setPhase(STATES.IDLE);
     setScanLine(0);
@@ -358,8 +259,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     setKoreanEdit(false);
     setKoreanVal("");
     setMultiProgress(0);
-    setAutoAttempt(0);
-  }, [stopCamera, stopAutoScan]);
+  }, [stopCamera]);
 
   // ── 입차 완료 → 상위 컴포넌트 전달 ──────────
   const handleComplete = useCallback(() => {
@@ -384,10 +284,9 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
-      stopAutoScan();
       stopCamera();
     };
-  }, [stopCamera, stopAutoScan]);
+  }, [stopCamera]);
 
   // ─────────────────────────────────────────────
   // 스타일 계산
@@ -395,9 +294,9 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
   const dots = "·".repeat(dotCount);
 
   const phaseLabel: Record<Phase, string> = {
-    idle: "카메라를 번호판에 맞춰주세요",
-    scanning: autoMode ? `자동 스캔 중${dots} ${autoAttempt > 0 ? `(${autoAttempt}/10)` : ""}` : `번호판 스캔 중${dots}`,
-    detecting: multiProgress <= 3 ? `📸 ${multiProgress}/3 캡처${dots}` : `3장 비교 분석${dots}`,
+    idle: "번호판을 박스 안에 맞춰주세요",
+    scanning: `카메라 준비 중${dots}`,
+    detecting: multiProgress <= 3 ? `📸 ${multiProgress}/3 촬영 중${dots}` : `3장 비교 분석 중${dots}`,
     confirming: "인식 완료 — 확인해주세요",
     confirmed: "입차 등록 완료",
   };
@@ -509,9 +408,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         <div style={{ background: "rgba(245,183,49,0.12)", border: "1px solid rgba(245,183,49,0.35)", borderRadius: 10, padding: "8px 16px", display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 14 }}>⚠️</span>
           <span style={{ color: "#F5B731", fontSize: 12, fontWeight: 600, lineHeight: 1.5 }}>
-            {autoMode
-              ? <>번호판에 카메라를 갖다 대면 자동 인식<br />한글은 수동 입력을 권장합니다</>
-              : <>3장 연속 촬영으로 정확도를 높입니다<br />한글은 수동 입력을 권장합니다</>}
+            번호판을 박스 안에 맞추고 스캔하세요<br />한글 인식 실패 시 직접 입력 가능합니다
           </span>
         </div>
       </div>
@@ -529,22 +426,11 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         {/* IDLE */}
         {phase === STATES.IDLE && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-            {/* 자동/수동 모드 토글 */}
-            <div style={{ display: "flex", background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: 3, width: "100%", gap: 3 }}>
-              <button onClick={() => setAutoMode(true)} style={{ flex: 1, padding: "9px 0", background: autoMode ? "#F5B731" : "transparent", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, color: autoMode ? "#1A1D2B" : "rgba(255,255,255,0.5)", cursor: "pointer", transition: "all 0.2s" }}>
-                ⚡ 자동 스캔
-              </button>
-              <button onClick={() => setAutoMode(false)} style={{ flex: 1, padding: "9px 0", background: !autoMode ? "#F5B731" : "transparent", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, color: !autoMode ? "#1A1D2B" : "rgba(255,255,255,0.5)", cursor: "pointer", transition: "all 0.2s" }}>
-                📷 수동 3장
-              </button>
-            </div>
             <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, margin: 0, textAlign: "center" }}>
-              {autoMode
-                ? "카메라를 번호판에 대면 자동 인식합니다 (최대 15초)"
-                : "번호판을 중앙 박스에 맞추고 스캔하세요 (3장 자동 촬영)"}
+              번호판을 박스 안에 맞추면 3장 자동 촬영 후 최적 결과를 선택합니다
             </p>
-            <button onClick={autoMode ? startAutoScan : startScan} style={{ width: "100%", padding: "16px 0", background: "#F5B731", border: "none", borderRadius: 12, fontSize: 17, fontWeight: 800, color: "#1A1D2B", cursor: "pointer" }}>
-              {autoMode ? "⚡ 자동 스캔 시작" : "📷 번호판 스캔 (3장 연속)"}
+            <button onClick={startScan} style={{ width: "100%", padding: "16px 0", background: "#F5B731", border: "none", borderRadius: 12, fontSize: 17, fontWeight: 800, color: "#1A1D2B", cursor: "pointer" }}>
+              📷 번호판 스캔
             </button>
             <button onClick={() => setManualInput(true)} style={{ background: "none", border: "1.5px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "11px 0", width: "100%", color: "rgba(255,255,255,0.65)", fontSize: 14, cursor: "pointer" }}>
               직접 입력
@@ -556,17 +442,16 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         {(phase === STATES.SCANNING || phase === STATES.DETECTING) && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
             <div style={{ width: "100%", height: 4, background: "rgba(255,255,255,0.15)", borderRadius: 2 }}>
-              <div style={{ height: "100%", borderRadius: 2, background: "#F5B731", width: autoMode
-                ? `${Math.min(autoAttempt * 10, 100)}%`
-                : (phase === STATES.DETECTING ? (multiProgress <= 3 ? `${multiProgress * 25}%` : "95%") : `${Math.min(scanLine * 0.6, 55)}%`),
+              <div style={{ height: "100%", borderRadius: 2, background: "#F5B731",
+                width: phase === STATES.DETECTING
+                  ? (multiProgress <= 3 ? `${multiProgress * 25}%` : "95%")
+                  : `${Math.min(scanLine * 0.6, 55)}%`,
                 transition: "width 0.5s ease" }} />
             </div>
             <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, margin: 0 }}>
-              {autoMode
-                ? `🔍 자동 감지 중... (${autoAttempt}/10)`
-                : (phase === STATES.DETECTING
-                  ? (multiProgress <= 3 ? `📸 프레임 캡처 중 (${multiProgress}/3)` : "🔍 3장 비교 분석 중...")
-                  : "화면을 움직이지 마세요")}
+              {phase === STATES.DETECTING
+                ? (multiProgress <= 3 ? `📸 프레임 캡처 중 (${multiProgress}/3)` : "🔍 3장 비교 분석 중...")
+                : "카메라 준비 중... 움직이지 마세요"}
             </p>
             <button onClick={reset} style={{ background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 10, padding: "12px 0", width: "100%", color: "rgba(255,255,255,0.55)", fontSize: 14, cursor: "pointer" }}>
               취소
@@ -598,7 +483,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
               </div>
             )}
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={autoMode ? startAutoScan : startScan} style={{ flex: 1, padding: "11px 0", background: "rgba(245,183,49,0.15)", border: "1.5px solid #F5B731", borderRadius: 10, color: "#F5B731", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              <button onClick={startScan} style={{ flex: 1, padding: "11px 0", background: "rgba(245,183,49,0.15)", border: "1.5px solid #F5B731", borderRadius: 10, color: "#F5B731", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                 🔄 재스캔
               </button>
               <button onClick={() => { setManualInput(true); setPhase(STATES.IDLE); }} style={{ flex: 1, padding: "11px 0", background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 10, color: "rgba(255,255,255,0.55)", fontSize: 13, cursor: "pointer" }}>
