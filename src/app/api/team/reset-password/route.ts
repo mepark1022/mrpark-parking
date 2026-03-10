@@ -5,7 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 function getAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
   );
 }
 
@@ -26,6 +27,12 @@ export async function POST(req: NextRequest) {
 
     const admin = getAdminClient();
 
+    // 유저 존재 확인
+    const { data: userData, error: getUserErr } = await admin.auth.admin.getUserById(userId);
+    if (getUserErr || !userData?.user) {
+      return NextResponse.json({ error: `사용자를 찾을 수 없습니다: ${getUserErr?.message || "user not found"}` }, { status: 404 });
+    }
+
     const { error } = await admin.auth.admin.updateUser(userId, {
       password: newPassword,
     });
@@ -36,8 +43,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (e) {
+  } catch (e: any) {
     console.error("[reset-password] unexpected error:", e);
-    return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 });
+    return NextResponse.json({ error: e?.message || "서버 오류가 발생했습니다." }, { status: 500 });
   }
 }
