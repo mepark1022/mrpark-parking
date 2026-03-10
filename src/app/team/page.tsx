@@ -295,6 +295,10 @@ export default function TeamPage() {
   // --- 계정 직접 생성 ---
   async function handleDirectCreate() {
     if (!inviteEmail || !inviteName || !invitePassword) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) {
+      setMessage({ text: "올바른 이메일 형식을 입력해주세요. (예: example@email.com)", type: "error" });
+      return;
+    }
     if (!/^[가-힣]{2,}$/.test(inviteName.trim())) {
       setMessage({ text: "이름은 한글 2자 이상 입력해주세요.", type: "error" });
       return;
@@ -750,6 +754,7 @@ export default function TeamPage() {
                     setMessage({ text: "이름은 한글 2자 이상 입력해주세요.", type: "error" }); return;
                   }
                   if (!inviteEmail) { setMessage({ text: "이메일을 입력해주세요.", type: "error" }); return; }
+                  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) { setMessage({ text: "올바른 이메일 형식을 입력해주세요. (예: example@email.com)", type: "error" }); return; }
                   if (!invitePassword || invitePassword.length < 6) { setMessage({ text: "비밀번호는 6자 이상이어야 합니다.", type: "error" }); return; }
                   if (inviteRole === "crew" && inviteStoreIds.length === 0) { setMessage({ text: "CREW는 배정 매장을 선택해주세요.", type: "error" }); return; }
                   setShowConfirmCreate(true);
