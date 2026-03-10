@@ -72,7 +72,11 @@ function LoginContent() {
       }
       const result = await login(formData);
       if (result?.error) setError(result.error);
-    } catch { setError("오류가 발생했습니다. 다시 시도해주세요."); }
+    } catch (e: any) {
+      // Next.js redirect()는 특수 에러를 throw → 그대로 전파
+      if (e?.digest?.startsWith("NEXT_REDIRECT")) throw e;
+      setError("오류가 발생했습니다. 다시 시도해주세요.");
+    }
     finally  { setLoading(false); }
   }
 
