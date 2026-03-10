@@ -124,9 +124,84 @@ function formatPlate(raw: string): string {
 }
 
 // ─────────────────────────────────────────────
-// Google Vision API 호출
+// Bounding Box 기반 번호판 영역 분석
+// 한국 번호판: 가로세로 비율 약 2:1 ~ 6:1 (가로로 긴 직사각형)
 // ─────────────────────────────────────────────
-async function callGoogleVision(base64Image: string): Promise<string[]> {
+interface TextBlock {
+  text: string;
+  score: number; // 번호판 가능성 점수 (높을수록 유력)
+}
+
+function analyzeTextBlocks(annotations: any[]): TextBlock[] {
+  if (!annotations || annotations.length === 0) return [];
+
+  const blocks: TextBlock[] = [];
+
+  // 첫 번째 항목은 전체 텍스트 (건너뜀 — 개별 블록만 분석)
+  for (let i = 1; i < annotations.length; i++) {
+    const ann = annotations[i];
+    if (!ann.description || !ann.boundingPoly?.vertices) continue;
+
+    const verts = ann.boundingPoly.vertices;
+    // bounding box 크기 계산 (4꼭짓점에서 width/height 추출)
+    const xs = verts.map((v: any) => v.x ?? 0);
+    const ys = verts.map((v: any) => v.y ?? 0);
+    const w = Math.max(...xs) - Math.min(...xs);
+    const h = Math.max(...ys) - Math.min(...ys);
+
+    if (w <= 0 || h <= 0) {
+      blocks.push({ text: ann.description, score: 0 });
+      continue;
+    }
+
+    const aspect = w / h;
+    let score = 0;
+
+    // ── 점수 기준 ──
+    // 1) 가로세로 비율: 번호판 비율(2.5~6.0)에 가까울수록 높은 점수
+    if (aspect >= 2.5 && aspect <= 6.0) {
+      score += 30; // 번호판 비율 적합
+      // 3.0~5.0이면 추가 보너스 (최적 구간)
+      if (aspect >= 3.0 && aspect <= 5.0) score += 15;
+    } else if (aspect >= 1.5 && aspect < 2.5) {
+      score += 10; // 약간 정사각에 가까움 — 부분 인식 가능
+    }
+
+    // 2) 숫자 포함 비율: 번호판은 숫자가 대부분
+    const text = ann.description;
+    const digitRatio = (text.match(/\d/g)?.length ?? 0) / text.length;
+    score += Math.round(digitRatio * 25); // 최대 25점
+
+    // 3) 한글 포함: 번호판에 한글 1~2자 포함
+    const koreanCount = (text.match(/[가-힣]/g) || []).length;
+    if (koreanCount >= 1 && koreanCount <= 2) score += 15;
+
+    // 4) 텍스트 길이: 번호판은 보통 7~9자 (공백 제외)
+    const cleanLen = text.replace(/\s/g, "").length;
+    if (cleanLen >= 6 && cleanLen <= 10) score += 15;
+    else if (cleanLen >= 4 && cleanLen <= 12) score += 5;
+
+    // 5) 번호판 정규식 직접 매칭: 확실한 패턴이면 최고 점수
+    const cleanText = text.replace(/\s+/g, "");
+    for (const pattern of PLATE_PATTERNS) {
+      if (pattern.test(cleanText)) {
+        score += 50; // 정규식 매칭 → 확정
+        break;
+      }
+    }
+
+    blocks.push({ text: ann.description, score });
+  }
+
+  // 점수 내림차순 정렬
+  blocks.sort((a, b) => b.score - a.score);
+  return blocks;
+}
+
+// ─────────────────────────────────────────────
+// Google Vision API 호출 (bounding box 포함)
+// ─────────────────────────────────────────────
+async function callGoogleVision(base64Image: string): Promise<{ texts: string[]; prioritized: string[] }> {
   const apiKey = process.env.GOOGLE_VISION_API_KEY;
 
   if (!apiKey) {
@@ -170,22 +245,28 @@ async function callGoogleVision(base64Image: string): Promise<string[]> {
     throw new Error(`Vision API 응답 오류: ${annotations.error.message}`);
   }
 
-  // fullTextAnnotation + textAnnotations 둘 다 수집
+  // 기존 방식: fullText + 개별 텍스트 블록 수집
   const texts: string[] = [];
 
-  // 전체 텍스트 (DOCUMENT_TEXT_DETECTION)
   if (annotations?.fullTextAnnotation?.text) {
     texts.push(annotations.fullTextAnnotation.text);
   }
 
-  // 개별 텍스트 블록 (TEXT_DETECTION)
   if (annotations?.textAnnotations) {
     for (const ann of annotations.textAnnotations) {
       if (ann.description) texts.push(ann.description);
     }
   }
 
-  return texts;
+  // Bounding box 분석: 번호판 영역 우선순위 텍스트
+  const blocks = analyzeTextBlocks(annotations?.textAnnotations ?? []);
+  const prioritized = blocks
+    .filter((b) => b.score >= 20) // 최소 점수 20 이상만
+    .map((b) => b.text);
+
+  console.log("[OCR] BBox 분석:", blocks.slice(0, 5).map((b) => `${b.text}(${b.score}점)`));
+
+  return { texts, prioritized };
 }
 
 // ─────────────────────────────────────────────
@@ -215,14 +296,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Google Vision 호출
-    const texts = await callGoogleVision(base64);
+    // Google Vision 호출 (bounding box 분석 포함)
+    const { texts, prioritized } = await callGoogleVision(base64);
 
-    // 번호판 후보 파싱
-    const plates = parsePlates(texts);
+    // 1차: bounding box 기반 우선순위 텍스트에서 파싱
+    let plates = parsePlates(prioritized.length > 0 ? prioritized : texts);
+
+    // 2차: 우선순위에서 못 찾았으면 전체 텍스트로 폴백
+    if (plates.length === 0 && prioritized.length > 0) {
+      console.log("[OCR] BBox 우선순위 파싱 실패 → 전체 텍스트 폴백");
+      plates = parsePlates(texts);
+    }
 
     // 디버그 로그 (Vercel Function Logs에서 확인)
     console.log("[OCR] Vision API 인식 텍스트:", JSON.stringify(texts.slice(0, 5)));
+    console.log("[OCR] BBox 우선순위 텍스트:", JSON.stringify(prioritized.slice(0, 5)));
     console.log("[OCR] 파싱된 번호판:", JSON.stringify(plates));
 
     if (plates.length === 0) {
