@@ -848,6 +848,9 @@ export default function WorkersPage() {
   const [regions, setRegions] = useState([]);
   // 명부 팝업 state
   const [rosterPopup, setRosterPopup] = useState<{ type: "edit"|"edit_form"|"deact"|"del"|null; worker: any }>({ type: null, worker: null });
+  const [pwResetTarget, setPwResetTarget] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [pwResetLoading, setPwResetLoading] = useState(false);
   // 근무자별 배정 매장 map
   const [workerStoreMap, setWorkerStoreMap] = useState<Record<string, string[]>>({});
   // 근무자별 stores map (store_id 기준)
@@ -1126,6 +1129,24 @@ export default function WorkersPage() {
     if (error) { showToast(`역할 변경 실패: ${error.message}`, "error"); return; }
     loadAll();
     showToast(`✅ ${worker.name}님이 ${label}(으)로 변경되었습니다`);
+  };
+
+  const handleResetPassword = async () => {
+    if (!pwResetTarget?.user_id || !newPassword) return;
+    setPwResetLoading(true);
+    try {
+      const res = await fetch("/api/team/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: pwResetTarget.user_id, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "실패");
+      setPwResetTarget(null);
+      setNewPassword("");
+      showToast(`✅ ${pwResetTarget.name}님의 비밀번호가 변경되었습니다`);
+    } catch (e: any) { showToast(`비밀번호 변경 실패: ${e?.message}`, "error"); }
+    finally { setPwResetLoading(false); }
   };
 
   const activeWorkers = workers.filter(w => w.status === "active");
@@ -1584,10 +1605,16 @@ export default function WorkersPage() {
                       <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: rb.bg, color: rb.color }}>{rb.label}</span>
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: w.status === "active" ? "#dcfce7" : "#f1f5f9", color: w.status === "active" ? "#16A34A" : "#94a3b8" }}>{w.status === "active" ? "활성" : "비활성"}</span>
                     </div>
-                    {/* 로그인 ID (이메일) */}
+                    {/* 로그인 ID (이메일) + 비번 재설정 */}
                     {email && (
-                      <div style={{ fontSize: 11, color: "#1D4ED8", background: "#EFF6FF", padding: "3px 8px", borderRadius: 6, marginBottom: 4, display: "inline-block" }}>
-                        🔑 {email}
+                      <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11, color: "#1D4ED8", background: "#EFF6FF", padding: "3px 8px", borderRadius: 6 }}>
+                          🔑 {email}
+                        </span>
+                        <button onClick={() => { setPwResetTarget(w); setNewPassword(""); }}
+                          style={{ fontSize: 10, fontWeight: 700, color: "#7C3AED", background: "#EDE9FE", padding: "3px 8px", borderRadius: 6, border: "none", cursor: "pointer" }}>
+                          🔐 비번변경
+                        </button>
                       </div>
                     )}
                     {/* 연락처/지역 */}
@@ -1677,6 +1704,37 @@ export default function WorkersPage() {
               {workers.length === 0 && <div style={{ textAlign: "center" as const, padding: "48px 0", color: "var(--text-muted)", fontSize: 14 }}>등록된 근무자가 없습니다</div>}
 
               {/* ── 명부 팝업 ── */}
+              {/* 비밀번호 재설정 모달 */}
+              {pwResetTarget && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 16 }}
+                  onClick={() => setPwResetTarget(null)}>
+                  <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 400 }}
+                    onClick={e => e.stopPropagation()}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1D2B", marginBottom: 4 }}>🔐 비밀번호 재설정</div>
+                    <div style={{ fontSize: 13, color: "#64748B", marginBottom: 20 }}>
+                      <strong>{pwResetTarget.name}</strong>님의 새 비밀번호를 입력하세요.
+                    </div>
+                    {workerProfileMap[pwResetTarget.user_id]?.email && (
+                      <div style={{ fontSize: 12, color: "#1D4ED8", background: "#EFF6FF", padding: "8px 12px", borderRadius: 8, marginBottom: 16 }}>
+                        🔑 계정: {workerProfileMap[pwResetTarget.user_id].email}
+                      </div>
+                    )}
+                    <input type="text" placeholder="새 비밀번호 (6자 이상)"
+                      value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                      style={{ width: "100%", padding: "12px 14px", border: "1.5px solid #E2E8F0", borderRadius: 10, fontSize: 15, marginBottom: 16, boxSizing: "border-box" }} />
+                    <div style={{ display: "flex", gap: 12 }}>
+                      <button onClick={() => setPwResetTarget(null)}
+                        style={{ flex: 1, padding: 12, borderRadius: 10, border: "none", background: "#F1F5F9", color: "#475569", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>취소</button>
+                      <button onClick={handleResetPassword}
+                        disabled={pwResetLoading || newPassword.length < 6}
+                        style={{ flex: 1, padding: 12, borderRadius: 10, border: "none", background: newPassword.length >= 6 ? "#1428A0" : "#CBD5E1", color: "#fff", fontSize: 14, fontWeight: 700, cursor: newPassword.length >= 6 ? "pointer" : "not-allowed" }}>
+                        {pwResetLoading ? "변경 중..." : "비밀번호 변경"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {rosterPopup.type && rosterPopup.worker && (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(20,28,60,0.55)", backdropFilter: "blur(3px)", zIndex: 1000, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
                   onClick={e => { if (e.target === e.currentTarget) setRosterPopup({ type: null, worker: null }); }}>
