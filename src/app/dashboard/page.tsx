@@ -586,69 +586,45 @@ export default function DashboardPage() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-          {/* 1. 주차 현황 + 순위 */}
-          <div className="dash-pc-2col">
-            <div className="dash-card">
-              <div className="dash-sec-label">
-                <span className="dash-sec-title">🅿️ 실시간 주차 현황</span>
-                <span className="dash-sec-badge">{selectedStore ? stores.find(s => s.id === selectedStore)?.name || "매장" : `전체 ${stores.length}개 매장`}</span>
-              </div>
-              <div className="dash-occ-grid">
-                <OccRing pct={curOcc} color={occColor.bar} />
-                <div className="dash-occ-stats">
-                  <div className="dash-occ-row">
-                    <span className="dash-occ-label">총 면수</span>
-                    <span className="dash-occ-val" style={{ color: "#1428A0" }}>{curTotal}</span>
-                  </div>
-                  <div className="dash-occ-row">
-                    <span className="dash-occ-label">현재 주차</span>
-                    <span className="dash-occ-val" style={{ color: "#EA580C" }}>{curCars}</span>
-                  </div>
-                  <div className="dash-occ-row">
-                    <span className="dash-occ-label">잔여 면수</span>
-                    <span className="dash-occ-val" style={{ color: "#16A34A" }}>{curRemain}</span>
-                  </div>
-                </div>
-              </div>
-              {parkingStatus.length > 0 && (
-                <div style={{ paddingTop: 12, borderTop: "1px solid #f0f2f7" }}>
-                  {(selectedStore ? (ps ? [ps] : []) : parkingStatus).map(p => {
-                    const occ = p.totalSpaces > 0 ? Math.round((p.currentCars / p.totalSpaces) * 100) : 0;
-                    const oc = getOccColor(occ);
-                    return (
-                      <div key={p.storeId} className="dash-bar-row">
-                        <span className="dash-bar-name">{p.storeName}</span>
-                        <div className="dash-bar-wrap"><div className="dash-bar-fill" style={{ width: `${Math.min(occ, 100)}%`, background: oc.bar }} /></div>
-                        <span className="dash-bar-pct" style={{ color: oc.text }}>{occ}%</span>
-                        <span className="dash-bar-badge" style={{ background: oc.bg, color: oc.text }}>{oc.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+          {/* 1. 주차 현황 */}
+          <div className="dash-card">
+            <div className="dash-sec-label">
+              <span className="dash-sec-title">🅿️ 실시간 주차 현황</span>
+              <span className="dash-sec-badge">{selectedStore ? stores.find(s => s.id === selectedStore)?.name || "매장" : `전체 ${stores.length}개 매장`}</span>
             </div>
-
-            <div className="dash-card">
-              <div className="dash-sec-label">
-                <span className="dash-sec-title">🏆 매장 순위</span>
-                <span className="dash-sec-badge">입차량 기준</span>
-              </div>
-              {storeRankData.length > 0 ? storeRankData.map((s, i) => {
-                const maxCars = storeRankData[0].cars;
-                return (
-                  <div key={i} className="dash-rank-item">
-                    <span className="dash-rank-num" style={{ color: RANK_COLORS[i] }}>{i + 1}</span>
-                    <span style={{ flex: 1, fontSize: 14, fontWeight: 700 }}>{s.name}</span>
-                    <div className="dash-rank-bar"><div className="dash-rank-bar-fill" style={{ width: `${maxCars > 0 ? (s.cars / maxCars) * 100 : 0}%`, background: RANK_COLORS[i] }} /></div>
-                    <span className="dash-rank-val">{s.cars.toLocaleString()}</span>
-                  </div>
-                );
-              }) : (
-                <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center", color: "#8b90a0", fontSize: 13 }}>
-                  {selectedStore ? "전사 현황에서 확인하세요" : "데이터가 없습니다"}
+            <div className="dash-occ-grid">
+              <OccRing pct={curOcc} color={occColor.bar} />
+              <div className="dash-occ-stats">
+                <div className="dash-occ-row">
+                  <span className="dash-occ-label">총 면수</span>
+                  <span className="dash-occ-val" style={{ color: "#1428A0" }}>{curTotal}</span>
                 </div>
-              )}
+                <div className="dash-occ-row">
+                  <span className="dash-occ-label">현재 주차</span>
+                  <span className="dash-occ-val" style={{ color: "#EA580C" }}>{curCars}</span>
+                </div>
+                <div className="dash-occ-row">
+                  <span className="dash-occ-label">잔여 면수</span>
+                  <span className="dash-occ-val" style={{ color: "#16A34A" }}>{curRemain}</span>
+                </div>
+              </div>
             </div>
+            {parkingStatus.length > 0 && (
+              <div style={{ paddingTop: 12, borderTop: "1px solid #f0f2f7" }}>
+                {(selectedStore ? (ps ? [ps] : []) : parkingStatus).map(p => {
+                  const occ = p.totalSpaces > 0 ? Math.round((p.currentCars / p.totalSpaces) * 100) : 0;
+                  const oc = getOccColor(occ);
+                  return (
+                    <div key={p.storeId} className="dash-bar-row">
+                      <span className="dash-bar-name">{p.storeName}</span>
+                      <div className="dash-bar-wrap"><div className="dash-bar-fill" style={{ width: `${Math.min(occ, 100)}%`, background: oc.bar }} /></div>
+                      <span className="dash-bar-pct" style={{ color: oc.text }}>{occ}%</span>
+                      <span className="dash-bar-badge" style={{ background: oc.bg, color: oc.text }}>{oc.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* 2. KPI — 히어로 바 (시안A) */}
@@ -717,6 +693,29 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* 4. 매장 순위 */}
+          <div className="dash-card">
+            <div className="dash-sec-label">
+              <span className="dash-sec-title">🏆 매장 순위</span>
+              <span className="dash-sec-badge">입차량 기준</span>
+            </div>
+            {storeRankData.length > 0 ? storeRankData.map((s, i) => {
+              const maxCars = storeRankData[0].cars;
+              return (
+                <div key={i} className="dash-rank-item">
+                  <span className="dash-rank-num" style={{ color: RANK_COLORS[i] }}>{i + 1}</span>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 700 }}>{s.name}</span>
+                  <div className="dash-rank-bar"><div className="dash-rank-bar-fill" style={{ width: `${maxCars > 0 ? (s.cars / maxCars) * 100 : 0}%`, background: RANK_COLORS[i] }} /></div>
+                  <span className="dash-rank-val">{s.cars.toLocaleString()}</span>
+                </div>
+              );
+            }) : (
+              <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: "#8b90a0", fontSize: 13 }}>
+                {selectedStore ? "전사 현황에서 확인하세요" : "데이터가 없습니다"}
+              </div>
+            )}
           </div>
 
           {/* 5. 미정산 + 월주차 만료 */}
