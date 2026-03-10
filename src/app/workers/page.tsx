@@ -1111,6 +1111,10 @@ export default function WorkersPage() {
     if (editItem) {
       const { error } = await supabase.from("workers").update({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, hire_date: formData.hire_date || null }).eq("id", editItem.id);
       if (error) { setMessage(`수정 실패: ${error.message}`); return; }
+      // profiles.display_name 동기화 (네이티브 앱 전환 대비)
+      if (editItem.user_id) {
+        await supabase.from("profiles").update({ display_name: formData.name }).eq("id", editItem.user_id);
+      }
     } else {
       // 중복 근무자 체크 (동일 이름 + 동일 org)
       let dupQuery = supabase.from("workers").select("id, name, status").eq("org_id", oid).eq("name", formData.name);
@@ -1712,6 +1716,10 @@ export default function WorkersPage() {
                                   region_id: formData.region_id || null, district: formData.district || null
                                 }).eq("id", w.id);
                                 if (error) { setMessage(`수정 실패: ${error.message}`); return; }
+                                // profiles.display_name 동기화
+                                if (w.user_id) {
+                                  await supabase.from("profiles").update({ display_name: formData.name }).eq("id", w.user_id);
+                                }
                                 setRosterPopup({ type: null, worker: null });
                                 setMessage("");
                                 loadAll();

@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 
-type Profile = { id: string; email: string; name: string; role: string; status: string; created_at: string };
+type Profile = { id: string; email: string; name: string; display_name: string | null; role: string; status: string; created_at: string };
 
 const ROLE_CONFIG: Record<string, { bg: string; color: string; border: string; label: string; desc: string; icon: string }> = {
   super_admin: { bg: "#fef3c7", color: "#b45309", border: "#fcd34d", label: "최고관리자", desc: "모든 기능 접근 + 팀원 관리", icon: "👑" },
@@ -145,7 +145,7 @@ function RoleDropdown({ profile, currentUserRole, currentUserId, onRoleChange }:
                 </span>
               </div>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 12, lineHeight: 1.5 }}>
-                <strong>{profile.name || profile.email}</strong>님의<br/>권한을 변경하시겠습니까?
+                <strong>{profile.display_name || profile.name || profile.email}</strong>님의<br/>권한을 변경하시겠습니까?
               </div>
               <div style={{ display: "flex", gap: 6 }}>
                 <button
@@ -352,7 +352,7 @@ export default function TeamPage() {
       if (!res.ok || data.error) {
         setMessage({ text: data.error || "비밀번호 재설정 실패", type: "error" });
       } else {
-        setCreatedAccount({ name: resetTarget.name, email: resetTarget.email, password: resetPassword });
+        setCreatedAccount({ name: resetTarget.display_name || resetTarget.name, email: resetTarget.email, password: resetPassword });
         setResetTarget(null);
         setResetPassword("");
       }
@@ -411,7 +411,7 @@ export default function TeamPage() {
     for (const storeId of toRemove) {
       await supabase.from("store_members").delete().eq("user_id", userId).eq("store_id", storeId);
     }
-    setMessage({ text: `${assignProfile.name}님의 매장 배정이 업데이트되었습니다.`, type: "success" });
+    setMessage({ text: `${assignProfile.display_name || assignProfile.name}님의 매장 배정이 업데이트되었습니다.`, type: "success" });
     setShowAssign(false);
     setAssignProfile(null);
     setSending(false);
@@ -453,7 +453,7 @@ export default function TeamPage() {
   async function toggleStatus(profile: Profile) {
     const newStatus = profile.status === "active" ? "disabled" : "active";
     await supabase.from("profiles").update({ status: newStatus }).eq("id", profile.id);
-    setMessage({ text: `${profile.name}님이 ${newStatus === "active" ? "활성화" : "비활성화"}되었습니다.`, type: newStatus === "active" ? "success" : "" });
+    setMessage({ text: `${profile.display_name || profile.name}님이 ${newStatus === "active" ? "활성화" : "비활성화"}되었습니다.`, type: newStatus === "active" ? "success" : "" });
     loadData();
   }
 
@@ -475,7 +475,7 @@ export default function TeamPage() {
       if (!res.ok) {
         setMessage({ text: data.error || "제거 실패", type: "error" });
       } else {
-        setMessage({ text: `${profile.name || profile.email}님이 조직에서 제거되었습니다. 재초대 시 새 초대 이메일을 발송하세요.`, type: "success" });
+        setMessage({ text: `${profile.display_name || profile.name || profile.email}님이 조직에서 제거되었습니다. 재초대 시 새 초대 이메일을 발송하세요.`, type: "success" });
         setRemoveTarget(null);
         loadData();
       }
@@ -536,7 +536,7 @@ export default function TeamPage() {
                 {/* 정보 */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{p.name || "-"}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{p.display_name || p.name || "-"}</span>
                     <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: sb.bg, color: sb.color }}>{sb.label}</span>
                     {p.status === "disabled" && <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 600 }}>접근 차단</span>}
                   </div>
@@ -794,7 +794,7 @@ export default function TeamPage() {
             <div className="bg-white rounded-t-2xl sm:rounded-2xl p-6 sm:p-7 w-full sm:max-w-md shadow-2xl max-h-[85vh] overflow-y-auto" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
               <h3 className="text-xl font-bold text-gray-900 mb-2">매장 배정</h3>
               <p className="text-sm text-gray-500 mb-5">
-                <strong>{assignProfile.name}</strong> ({assignProfile.email})
+                <strong>{assignProfile.display_name || assignProfile.name}</strong> ({assignProfile.email})
               </p>
               <div className="space-y-4">
                 <div>
@@ -845,7 +845,7 @@ export default function TeamPage() {
               <div style={{ width: 48, height: 48, borderRadius: 14, background: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>🗑️</div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">팀원 제거</h3>
               <p className="text-sm text-gray-500 mb-4" style={{ lineHeight: 1.6 }}>
-                <strong>{removeTarget.name || removeTarget.email}</strong>님을 조직에서 제거합니다.<br/>
+                <strong>{removeTarget.display_name || removeTarget.name || removeTarget.email}</strong>님을 조직에서 제거합니다.<br/>
                 <span style={{ color: "#ef4444", fontSize: 12, marginTop: 6, display: "block" }}>
                   ⚠️ 모든 매장 배정이 삭제되고 초대 기록도 지워집니다.<br/>
                   재초대 시 새 초대 이메일을 발송해야 합니다.
@@ -923,7 +923,7 @@ export default function TeamPage() {
               <div style={{ width: 48, height: 48, borderRadius: 14, background: "#fff7ed", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>🔑</div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">비밀번호 재설정</h3>
               <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
-                <strong>{resetTarget.name}</strong> ({resetTarget.email})
+                <strong>{resetTarget.display_name || resetTarget.name}</strong> ({resetTarget.email})
               </p>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#1A1D2B", marginBottom: 6 }}>새 비밀번호 *</label>
               <input

@@ -50,6 +50,10 @@ export default function WorkersPage() {
         name: formData.name, phone: formData.phone || null,
         region_id: formData.region_id || null,
       }).eq("id", editItem.id);
+      // profiles.display_name 동기화
+      if (editItem.user_id) {
+        await supabase.from("profiles").update({ display_name: formData.name }).eq("id", editItem.user_id);
+      }
     } else {
       // 중복 근무자 체크
       let dupQuery = supabase.from("workers").select("id, name, status").eq("org_id", oid).eq("name", formData.name);
