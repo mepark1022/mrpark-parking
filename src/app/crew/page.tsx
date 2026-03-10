@@ -336,15 +336,17 @@ export default function CrewHomePage() {
           background: rgba(255,255,255,0.15);
           border-radius: 20px;
           font-size: 13px;
-          font-weight: 500;
+          font-weight: 700;
         }
         
         .crew-status-badge.checked-in {
-          background: rgba(22, 163, 74, 0.3);
+          background: #F5B731;
+          color: #1A1D2B;
         }
         
         .crew-status-badge.not-checked {
-          background: rgba(234, 88, 12, 0.3);
+          background: #475569;
+          color: #CBD5E1;
         }
         
         .crew-status-badge.checked-out {
@@ -554,8 +556,8 @@ export default function CrewHomePage() {
                 {attendance.isCheckedOut
                   ? `✅ 퇴근 (${attendance.checkInTime}~${attendance.checkOutTime})`
                   : attendance.isCheckedIn
-                    ? `🟢 출근 중 (${attendance.checkInTime}~)`
-                    : "⚪ 미출근"}
+                    ? `● 출근 중 (${attendance.checkInTime}~)`
+                    : "● 미출근"}
               </div>
               {(attendance.isCheckedIn || attendance.isCheckedOut) && (
                 <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>
