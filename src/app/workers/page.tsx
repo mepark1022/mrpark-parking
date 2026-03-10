@@ -1498,9 +1498,11 @@ export default function WorkersPage() {
                   <span style={{ fontSize: 13, fontWeight: 800, color: "#1a1d2b" }}>{w.name}</span>
                   <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: rb.bg, color: rb.color }}>{rb.label}</span>
                   {w.status !== "active" && <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 4, background: "#f1f5f9", color: "#94a3b8" }}>비활성</span>}
+                  {!w.user_id && <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 4, background: "#fff7ed", color: "#EA580C", border: "1px solid #fed7aa" }}>계정 미연결</span>}
                 </div>
-                {/* 2줄: 이메일 */}
+                {/* 2줄: 이메일 또는 계정 미연결 안내 */}
                 {email && <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 3, paddingLeft: 36 }}>{email}</div>}
+                {!w.user_id && <div style={{ fontSize: 10, color: "#EA580C", marginTop: 3, paddingLeft: 36 }}>팀원 초대 후 매장 배정이 가능합니다</div>}
                 {/* 3줄: 버튼들 */}
                 <div style={{ display: "flex", gap: 4, marginTop: 5, paddingLeft: 36 }}>
                   <button onClick={() => { setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", hire_date: w.hire_date || "" }); setRosterPopup({ type: "edit_form", worker: w }); }}
@@ -1523,13 +1525,14 @@ export default function WorkersPage() {
             );
           };
 
-          const GroupSection = ({ title, accentColor, workers: gWorkers, isHq }: any) => (
+          const GroupSection = ({ title, accentColor, workers: gWorkers, isHq, unlinkedCount }: any) => (
             <div style={{ background: "#fff", borderRadius: 12, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
               <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border-light)", background: accentColor + "10", display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 3, height: 16, background: accentColor, borderRadius: 2 }} />
                 <span style={{ fontSize: 14, fontWeight: 700, color: accentColor }}>{title}</span>
                 <span style={{ fontSize: 11, fontWeight: 600, padding: "1px 8px", borderRadius: 12, background: accentColor + "20", color: accentColor }}>{gWorkers.length}명</span>
                 {isHq && <span style={{ fontSize: 10, color: "var(--text-muted)" }}>매장 미배정</span>}
+                {isHq && unlinkedCount > 0 && <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 6px", borderRadius: 4, background: "#fff7ed", color: "#EA580C", border: "1px solid #fed7aa" }}>계정 미연결 {unlinkedCount}명</span>}
               </div>
               <div>
                 {gWorkers.length === 0
@@ -1568,7 +1571,7 @@ export default function WorkersPage() {
               )}
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: 12, alignItems: "start" }}>
-                {hqWorkers.length > 0 && <GroupSection title="🏢 본사 / 미배정" accentColor="#1428A0" workers={hqWorkers} isHq />}
+                {hqWorkers.length > 0 && <GroupSection title="🏢 본사 / 미배정" accentColor="#1428A0" workers={hqWorkers} isHq unlinkedCount={hqWorkers.filter(w => !w.user_id).length} />}
                 {storeGroups.map((g, idx) => <GroupSection key={g.store.id} title={`🏪 ${g.store.name}`} accentColor={STORE_COLORS[idx % STORE_COLORS.length]} workers={g.workers} isHq={false} />)}
               </div>
               {workers.length === 0 && <div style={{ textAlign: "center" as const, padding: "48px 0", color: "var(--text-muted)", fontSize: 14 }}>등록된 근무자가 없습니다</div>}
