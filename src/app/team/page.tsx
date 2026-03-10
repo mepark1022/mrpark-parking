@@ -504,7 +504,7 @@ export default function TeamPage() {
       <div className="max-w-5xl">
         <div className="flex items-center justify-between mb-6">
           <h3 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>팀원 관리</h3>
-          <button onClick={() => setShowInvite(true)} style={{ padding: "10px 20px", borderRadius: 10, background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer" }}>+ 팀원 추가</button>
+          <button onClick={() => { setMessage({ text: "", type: "" }); setShowInvite(true); }} style={{ padding: "10px 20px", borderRadius: 10, background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer" }}>+ 팀원 추가</button>
         </div>
 
         {message.text && (
@@ -762,8 +762,14 @@ export default function TeamPage() {
                   </p>
                 </div>
               </div>
+              {/* 모달 내 에러 메시지 */}
+              {message.text && message.type === "error" && (
+                <div style={{ margin: "12px 0 0", padding: "10px 14px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#dc2626" }}>
+                  {message.text}
+                </div>
+              )}
               <div className="flex justify-end gap-3 mt-7">
-                <button onClick={() => { setShowInvite(false); setInviteEmail(""); setInviteName(""); setInvitePhone(""); setInvitePassword(""); setInviteRole("admin"); setInviteStoreIds([]); }} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg">취소</button>
+                <button onClick={() => { setShowInvite(false); setInviteEmail(""); setInviteName(""); setInvitePhone(""); setInvitePassword(""); setInviteRole("admin"); setInviteStoreIds([]); setMessage({ text: "", type: "" }); }} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg">취소</button>
                 <button onClick={() => {
                   if (!inviteName || !/^[가-힣]{2,}$/.test(inviteName.trim())) {
                     setMessage({ text: "이름은 한글 2자 이상 입력해주세요.", type: "error" }); return;
