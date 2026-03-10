@@ -1112,6 +1112,15 @@ export default function WorkersPage() {
       const { error } = await supabase.from("workers").update({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, hire_date: formData.hire_date || null }).eq("id", editItem.id);
       if (error) { setMessage(`수정 실패: ${error.message}`); return; }
     } else {
+      // 중복 근무자 체크 (동일 이름 + 동일 org)
+      let dupQuery = supabase.from("workers").select("id, name, status").eq("org_id", oid).eq("name", formData.name);
+      if (formData.phone) dupQuery = dupQuery.eq("phone", formData.phone);
+      const { data: dups } = await dupQuery;
+      if (dups && dups.length > 0) {
+        const dup = dups[0];
+        const statusLabel = dup.status === "inactive" ? " (비활성)" : "";
+        if (!confirm(`이미 동일한 이름의 근무자 "${dup.name}"${statusLabel}이(가) 있습니다.\n그래도 추가하시겠습니까?`)) return;
+      }
       const { error } = await supabase.from("workers").insert({ name: formData.name, phone: formData.phone || null, region_id: formData.region_id || null, district: formData.district || null, hire_date: formData.hire_date || null, status: "active", org_id: oid });
       if (error) { setMessage(`추가 실패: ${error.message}`); return; }
     }

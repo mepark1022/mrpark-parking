@@ -44,12 +44,22 @@ export default function WorkersPage() {
   const handleSave = async () => {
     if (!formData.name) { setMessage("이름을 입력하세요"); return; }
     const supabase = createClient();
+    const oid = await getOrgId();
     if (editItem) {
       await supabase.from("workers").update({
         name: formData.name, phone: formData.phone || null,
         region_id: formData.region_id || null,
       }).eq("id", editItem.id);
     } else {
+      // 중복 근무자 체크
+      let dupQuery = supabase.from("workers").select("id, name, status").eq("org_id", oid).eq("name", formData.name);
+      if (formData.phone) dupQuery = dupQuery.eq("phone", formData.phone);
+      const { data: dups } = await dupQuery;
+      if (dups && dups.length > 0) {
+        const dup = dups[0];
+        const statusLabel = dup.status === "inactive" ? " (비활성)" : "";
+        if (!confirm(`이미 동일한 이름의 근무자 "${dup.name}"${statusLabel}이(가) 있습니다.\n그래도 추가하시겠습니까?`)) return;
+      }
       await supabase.from("workers").insert({ org_id: oid,
         name: formData.name, phone: formData.phone || null,
         region_id: formData.region_id || null, status: "active",

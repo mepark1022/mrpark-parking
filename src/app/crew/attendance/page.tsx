@@ -113,7 +113,7 @@ export default function CrewAttendancePage() {
       let { data: worker } = await supabase
         .from("workers").select("id").eq("user_id", user.id).limit(1).maybeSingle();
       
-      // worker 레코드가 없는 admin/super_admin → 자동 생성
+      // worker 레코드가 없는 admin/super_admin → 자동 생성 (중복 방지)
       if (!worker) {
         const { data: prof } = await supabase.from("profiles").select("name, role, org_id").eq("id", user.id).single();
         if (prof && (prof.role === "super_admin" || prof.role === "admin" || prof.role === "owner")) {
@@ -132,6 +132,11 @@ export default function CrewAttendancePage() {
                 user_id: user.id, store_id: savedStoreId, org_id: prof.org_id,
               }, { onConflict: "user_id,store_id" }).catch(() => {});
             }
+          } else if (insertErr?.code === "23505") {
+            // unique 제약 충돌 → 기존 레코드 조회
+            const { data: existing } = await supabase
+              .from("workers").select("id").eq("user_id", user.id).limit(1).maybeSingle();
+            if (existing) worker = existing;
           }
         }
         if (!worker) { setLoading(false); checkLocation(); return; }
