@@ -26,7 +26,7 @@ const CSS = `
     padding: 12px 16px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
     position: sticky;
     top: 56px;
     z-index: 30;
@@ -242,7 +242,7 @@ const TABS = [
   { key: "valet",   label: "🔑 발렛" },
   { key: "self",    label: "🏢 자주식" },
   { key: "monthly", label: "📅 월주차" },
-  { key: "exited",  label: "🚗 출차" },
+  { key: "exited",  label: "🚗 출차완료" },
 ];
 
 function elapsedString(entryAt) {
@@ -495,7 +495,18 @@ export default function CrewParkingListPage() {
             )}
           </div>
           <div className="plist-tabs">
-            {TABS.map(tab => (
+            {TABS.slice(0, 3).map(tab => (
+              <div
+                key={tab.key}
+                className={`plist-tab${activeTab === tab.key ? (tab.key === "exited" ? " active-exit" : " active") : ""}`}
+                onClick={() => setActiveTab(tab.key)}
+              >
+                {tab.label}
+              </div>
+            ))}
+          </div>
+          <div className="plist-tabs">
+            {TABS.slice(3).map(tab => (
               <div
                 key={tab.key}
                 className={`plist-tab${activeTab === tab.key ? (tab.key === "exited" ? " active-exit" : " active") : ""}`}
@@ -550,42 +561,45 @@ export default function CrewParkingListPage() {
                 const exitTime = ticket.exit_at ? new Date(ticket.exit_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "-";
                 const durationMins = ticket.exit_at ? Math.floor((new Date(ticket.exit_at).getTime() - new Date(ticket.entry_at).getTime()) / 60000) : 0;
                 const durationStr = durationMins < 60 ? `${durationMins}분` : `${Math.floor(durationMins / 60)}시간 ${durationMins % 60 > 0 ? (durationMins % 60) + "분" : ""}`;
+                const typeBadge = ticket.is_monthly ? { label: "월주차", bg: "#F0FDF4", color: "#16A34A" }
+                  : ticket.parking_type === "valet" ? { label: "발렛", bg: "#FFF7ED", color: "#EA580C" }
+                  : { label: "자주식", bg: "#EEF2FF", color: "#1428A0" };
 
                 return (
-                  <div key={ticket.id} className="vehicle-card" style={{ borderColor: "#E2E8F0", opacity: 0.95 }}
+                  <div key={ticket.id}
                     onClick={() => router.push(`/crew/parking-list/${ticket.id}`)}
+                    style={{
+                      background: "#fff", borderRadius: 12,
+                      border: "1px solid #E2E8F0", padding: "10px 12px",
+                      display: "flex", flexDirection: "column", gap: 6,
+                      cursor: "pointer",
+                    }}
                   >
-                    <div className="vehicle-card-top" style={{ borderBottom: "1px solid #F1F5F9" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
-                        <div className="vehicle-plate" style={{ color: "#64748B" }}>
-                          {(() => { const [p, n] = splitPlate(ticket.plate_number); return p ? <>{p}<span style={{ marginLeft: 6 }}>{n}</span></> : ticket.plate_number; })()}
-                        </div>
-                        {ticket.entry_method && (
-                          <span style={{ fontSize: 14, opacity: 0.7 }}>{ticket.entry_method === "camera" ? "📷" : "✏️"}</span>
-                        )}
-                      </div>
-                      <div className="status-badge" style={{ background: "#F1F5F9", color: "#94A3B8" }}>출차완료</div>
-                    </div>
-                    <div className="vehicle-card-body">
-                      <div className={`vehicle-type-badge ${ticket.is_monthly ? "monthly" : ticket.parking_type}`}>
-                        {ticket.is_monthly ? "📅 월주차" : ticket.parking_type === "valet" ? "🔑 발렛" : "🏢 자주식"}
-                      </div>
-                      {ticket.visit_places?.name && (
-                        <div className="vehicle-info-row"><span>🏥</span><span>{ticket.visit_places.name}</span></div>
-                      )}
-                      <div style={{ marginLeft: "auto", fontSize: 13, fontWeight: 600, color: "#64748B" }}>{durationStr}</div>
-                    </div>
-                    <div className="vehicle-card-footer">
-                      <div className="vehicle-location" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <span style={{ color: "#1428A0" }}>🕐 {entryTime}</span>
-                        <span style={{ color: "#94A3B8" }}>→</span>
-                        <span style={{ color: "#16A34A" }}>{exitTime}</span>
-                      </div>
+                    {/* 1줄: 번호판 + 유형 + 금액 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: 1, color: "#64748B", flex: 1 }}>
+                        {(() => { const [p, n] = splitPlate(ticket.plate_number); return p ? `${p} ${n}` : ticket.plate_number; })()}
+                      </span>
+                      <span style={{ padding: "2px 8px", borderRadius: 5, fontSize: 10, fontWeight: 700, background: typeBadge.bg, color: typeBadge.color }}>{typeBadge.label}</span>
                       {ticket.is_monthly ? (
-                        <div className="vehicle-fee" style={{ color: "#16A34A" }}>무료</div>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#16A34A" }}>무료</span>
                       ) : ticket.paid_amount ? (
-                        <div className="vehicle-fee">{ticket.paid_amount.toLocaleString()}원</div>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#1A1D2B" }}>{ticket.paid_amount.toLocaleString()}원</span>
                       ) : null}
+                    </div>
+                    {/* 2줄: 장소 + 시간 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#64748B" }}>
+                      {ticket.visit_places?.name && (
+                        <><span>🏢 {ticket.visit_places.name}</span><span style={{ color: "#D0D2DA" }}>·</span></>
+                      )}
+                      {ticket.parking_location && <span>{ticket.parking_location}</span>}
+                      <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 3 }}>
+                        <span style={{ color: "#1428A0" }}>🕐{entryTime}</span>
+                        <span style={{ color: "#D0D2DA" }}>→</span>
+                        <span style={{ color: "#16A34A" }}>{exitTime}</span>
+                        <span style={{ color: "#D0D2DA" }}>·</span>
+                        <span style={{ fontWeight: 600, color: "#64748B" }}>{durationStr}</span>
+                      </span>
                     </div>
                   </div>
                 );
