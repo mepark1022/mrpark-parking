@@ -90,23 +90,31 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
   }, []);
 
   // ── 현재 프레임 캡처 → base64 ────────────────
+  // 가이드 프레임 영역만 크롭하여 전송
+  // 프레임: 화면 상단 30%~54% 구간, 좌우 10% 마진 (뷰파인더 오버레이와 동일)
   const captureFrame = useCallback((): string | null => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return null;
 
-    // 전체 이미지 전송 (크롭 없음)
-    // 크롭 시 번호판 외 영역 포함되어 숫자 오인식 발생 → Vision API가 전체에서 패턴 검출
     const vw = video.videoWidth;
     const vh = video.videoHeight;
 
-    canvas.width = vw;
-    canvas.height = vh;
+    // 가이드 프레임 좌표 계산 (뷰파인더 오버레이 비율과 동기화)
+    // 오버레이: 상단 30% 여백, 높이 24%, 좌우 각 10% 여백
+    const cropX = Math.floor(vw * 0.10);
+    const cropY = Math.floor(vh * 0.30);
+    const cropW = Math.floor(vw * 0.80);
+    const cropH = Math.floor(vh * 0.24);
+
+    // 크롭 영역을 캔버스에 그리기 (번호판 영역만 Vision API로 전송)
+    canvas.width = cropW;
+    canvas.height = cropH;
 
     const ctx = canvas.getContext("2d");
-    ctx?.drawImage(video, 0, 0, vw, vh);
+    ctx?.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-    return canvas.toDataURL("image/jpeg", 0.8);
+    return canvas.toDataURL("image/jpeg", 0.9); // 크롭 후 화질 올림
   }, []);
 
   // ── Google Vision API 호출 ───────────────────
@@ -446,12 +454,19 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         <div style={{ position: "absolute", inset: 0, opacity: 0.04, backgroundImage: "linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)", backgroundSize: "40px 40px" }} />
       </div>
 
-      {/* 뷰파인더 오버레이 */}
+      {/* 뷰파인더 오버레이 — captureFrame 크롭 좌표와 동기화 (상단30%, 높이24%, 좌우10%) */}
       <div style={{ position: "absolute", inset: 0, zIndex: 5, display: "flex", flexDirection: "column" }}>
         <div style={{ flex: "0 0 30%", background: "rgba(0,0,0,0.6)" }} />
         <div style={{ flex: "0 0 24%", display: "flex" }}>
           <div style={{ flex: 1, background: "rgba(0,0,0,0.6)" }} />
-          <div style={{ flex: "0 0 80%" }} />
+          {/* 가이드 프레임 영역 — 번호판을 이 안에 맞춰주세요 */}
+          <div style={{ flex: "0 0 80%", position: "relative" }}>
+            {phase === STATES.IDLE || phase === STATES.SCANNING ? (
+              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", letterSpacing: 0.5, pointerEvents: "none" }}>
+                번호판을 이 안에 맞춰주세요
+              </div>
+            ) : null}
+          </div>
           <div style={{ flex: 1, background: "rgba(0,0,0,0.6)" }} />
         </div>
         <div style={{ flex: 1, background: "rgba(0,0,0,0.6)" }} />
