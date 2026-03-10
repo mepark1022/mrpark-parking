@@ -90,17 +90,21 @@ export default function Sidebar() {
       .gte("entry_at", todayStart.toISOString());
     setParkingCount(pCount ?? 0);
     // 사고보고: 미처리(pending) 건수
-    const { count: aCount } = await supabase.from("accident_reports")
-      .select("*", { count: "exact", head: true })
-      .eq("org_id", prof.org_id)
-      .eq("status", "pending");
-    setAccidentCount(aCount ?? 0);
+    try {
+      const { count: aCount } = await supabase.from("accident_reports")
+        .select("*", { count: "exact", head: true })
+        .eq("org_id", prof.org_id)
+        .eq("status", "pending");
+      setAccidentCount(aCount ?? 0);
+    } catch { setAccidentCount(0); }
     // 퇴근수정 요청: pending 건수
-    const { count: cCount } = await supabase.from("checkout_requests")
-      .select("*", { count: "exact", head: true })
-      .eq("org_id", prof.org_id)
-      .eq("status", "pending");
-    setCheckoutReqCount(cCount ?? 0);
+    try {
+      const { count: cCount } = await supabase.from("checkout_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("org_id", prof.org_id)
+        .eq("status", "pending");
+      setCheckoutReqCount(cCount ?? 0);
+    } catch { setCheckoutReqCount(0); }
   }
 
   async function loadMenuOrder() {
