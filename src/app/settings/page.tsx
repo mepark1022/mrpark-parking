@@ -668,16 +668,6 @@ export default function SettingsPage() {
               </div>
             </NotifRow>
 
-            <NotifRow icon="⚠️" iconBg="#fff7ed" title="미정산 경고" badge="데이터 입력" badgeColor={BADGE.orange} sub="전일 미입력 매장 발생 시" keyName="admin_unsettled">
-              <div className="sp-extra-label">⏰ 알림 발송 시간</div>
-              <input
-                type="time"
-                className="sp-time-input"
-                value={s.admin_unsettled_time}
-                onChange={e => setS(p => ({ ...p, admin_unsettled_time: e.target.value }))}
-              />
-            </NotifRow>
-
             <NotifRow icon="🚨" iconBg="#fef2f2" title="사고 보고 접수" badge="사고 보고" badgeColor={BADGE.red} sub="새 보고서 등록 시 즉시 발송" keyName="admin_accident" />
 
             <NotifRow icon="🕐" iconBg="#fff7ed" title="지각 / 결근 발생" badge="근무자 관리" badgeColor={BADGE.orange} sub="정상 출근 체크 위반 시" keyName="admin_lateness" />

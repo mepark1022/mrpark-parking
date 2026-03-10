@@ -718,27 +718,8 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* 5. 미정산 + 월주차 만료 */}
+          {/* 5. 월주차 만료 예정 */}
           <div className="dash-bottom-row">
-            <div className="dash-card dash-compact-card">
-              <div className="dash-sec-label" style={{ marginBottom: 0 }}>
-                <span className="dash-sec-title">⚠️ 마감 미정산</span>
-              </div>
-              {records.length === 0 ? (
-                <div style={{ color: "#8b90a0", fontSize: 13, textAlign: "center", padding: "10px 0" }}>선택 기간 데이터 없음</div>
-              ) : stores.filter(s => !records.some(r => r.store_id === s.id)).length === 0 ? (
-                <div style={{ color: "#16A34A", fontSize: 13, fontWeight: 700, textAlign: "center", padding: "10px 0" }}>✅ 모든 매장 입력 완료!</div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
-                  {stores.filter(s => !records.some(r => r.store_id === s.id)).map(s => (
-                    <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "#fee2e2", borderRadius: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#DC2626" }}>미정산</span>
-                      <span style={{ fontSize: 13, fontWeight: 600 }}>{s.name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
             <div className="dash-card dash-compact-card">
               <div className="dash-sec-label" style={{ marginBottom: 0 }}>
                 <span className="dash-sec-title">📅 월주차 만료 예정</span>
