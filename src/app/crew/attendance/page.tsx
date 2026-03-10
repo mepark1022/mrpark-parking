@@ -360,7 +360,7 @@ export default function CrewAttendancePage() {
         org_id: prof?.org_id,
         worker_id: attendance.workerId, store_id: selectedMissing.store_id || storeId,
         request_date: selectedMissing.date,
-        requested_checkout_time: null,
+        requested_checkout_time: "18:00",
         request_reason: checkoutMemo || "퇴근 미처리 수정 요청",
         status: "pending",
       });
@@ -370,7 +370,7 @@ export default function CrewAttendancePage() {
       setCheckoutMemo("");
       setSelectedMissing(null);
       showToast("퇴근수정 요청이 전송되었습니다 📋", "info");
-    } catch { showToast("요청에 실패했습니다", "error"); }
+    } catch (e: any) { showToast(`요청 실패: ${e?.message || "알 수 없는 오류"}`, "error"); }
     finally { setActionLoading(false); }
   };
 
