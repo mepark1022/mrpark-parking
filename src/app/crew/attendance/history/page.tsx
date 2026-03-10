@@ -25,8 +25,21 @@ export default function CrewAttendanceHistoryPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [workerId, setWorkerId] = useState<string | null>(null);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const router = useRouter();
   const { showToast } = useCrewToast();
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const supabase = createClient();
+    await supabase.from("checkout_requests").delete().eq("id", deleteTarget);
+    setRequests(prev => prev.filter(r => r.id !== deleteTarget));
+    setDeleteTarget(null);
+    setDeleting(false);
+    showToast("삭제되었습니다", "info");
+  };
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -162,14 +175,8 @@ export default function CrewAttendanceHistoryPage() {
                     {req.status === "approved" && req.approved_at && (
                       <span style={{ fontSize: 10, color: "#166534" }}>✓{formatTime(req.approved_at)}</span>
                     )}
-                    <button onClick={async (e) => {
-                      e.stopPropagation();
-                      if (!confirm("이 요청을 삭제하시겠습니까?")) return;
-                      const supabase = createClient();
-                      await supabase.from("checkout_requests").delete().eq("id", req.id);
-                      setRequests(prev => prev.filter(r => r.id !== req.id));
-                      showToast("삭제되었습니다", "info");
-                    }} style={{ marginLeft: "auto", background: "none", border: "none", fontSize: 14, cursor: "pointer", color: "#94A3B8", padding: "2px 4px", flexShrink: 0 }}>✕</button>
+                    <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(req.id); }}
+                      style={{ marginLeft: "auto", background: "none", border: "none", fontSize: 14, cursor: "pointer", color: "#94A3B8", padding: "2px 4px", flexShrink: 0 }}>✕</button>
                   </div>
                   {/* 2줄: 사유 + 반려사유/재요청 */}
                   {req.request_reason && (
@@ -194,6 +201,31 @@ export default function CrewAttendanceHistoryPage() {
             })
           )}
         </div>
+        {/* 삭제 확인 모달 */}
+        {deleteTarget && (
+          <div onClick={() => setDeleteTarget(null)} style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+            zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+          }}>
+            <div onClick={e => e.stopPropagation()} style={{
+              background: "#fff", borderRadius: 18, padding: "24px 20px", width: "100%", maxWidth: 320,
+              boxShadow: "0 8px 40px rgba(20,40,160,0.2)", textAlign: "center",
+            }}>
+              <div style={{ fontSize: 36, marginBottom: 8 }}>🗑️</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#1A1D2B", marginBottom: 6 }}>요청 삭제</div>
+              <div style={{ fontSize: 13, color: "#64748B", marginBottom: 20, lineHeight: 1.5 }}>이 퇴근수정 요청을 삭제하시겠습니까?<br/>삭제 후 복구할 수 없습니다.</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setDeleteTarget(null)}
+                  style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1px solid #E2E8F0", background: "#fff", color: "#64748B", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>취소</button>
+                <button onClick={handleDelete} disabled={deleting}
+                  style={{ flex: 1, padding: "11px", borderRadius: 10, border: "none", background: "#DC2626", color: "#fff", fontSize: 14, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.6 : 1 }}>
+                  {deleting ? "삭제 중..." : "삭제"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <CrewNavSpacer />
         <CrewBottomNav />
       </div>
