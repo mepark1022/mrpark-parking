@@ -98,7 +98,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     const ctx = canvas.getContext("2d");
     ctx?.drawImage(video, 0, 0, vw, vh);
 
-    return canvas.toDataURL("image/jpeg", 0.95);
+    return canvas.toDataURL("image/jpeg", 0.8);
   }, []);
 
   // ── Google Vision API 호출 ───────────────────
@@ -213,12 +213,16 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         setCandidates(best.candidates);
         setPhase(STATES.CONFIRMING);
         stopCamera();
+        // 성공 진동: 짧은 2회 (톡톡)
+        navigator.vibrate?.([100, 50, 100]);
         // ? 포함 시 한글 수정 팝업 자동 표시
         if (best.plate.includes("?")) {
           setKoreanVal("");
           setKoreanEdit(true);
         }
       } else {
+        // 실패 진동: 긴 1회 (부르르)
+        navigator.vibrate?.([300]);
         setErrorMsg("번호판을 인식하지 못했습니다. 다시 시도해주세요.");
         setPhase(STATES.IDLE);
         stopCamera();
