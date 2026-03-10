@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
       .eq("id", userId)
       .single();
 
-    // profile 업데이트 (name은 기존 값 우선, 없으면 신규 name 사용)
-    const finalName = existingProfile?.name || name || email.split("@")[0];
+    // profile 업데이트 (새로 입력한 이름 우선, 없으면 기존 값)
+    const finalName = name || existingProfile?.name || email.split("@")[0];
 
     await supabaseAdmin.from("profiles").upsert({
       id: userId,

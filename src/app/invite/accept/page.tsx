@@ -131,8 +131,12 @@ function InviteAcceptContent() {
     }
   }
 
+  // 실명 검증: 한글 2자 이상
+  const isValidName = (n: string) => /^[가-힣]{2,}$/.test(n.trim());
+
   async function handleSignUp() {
     if (!name || !password) return;
+    if (!isValidName(name)) { setError("실명을 한글로 입력해주세요 (예: 홍길동)"); return; }
     setFormLoading(true);
     setError("");
 
@@ -164,7 +168,8 @@ function InviteAcceptContent() {
   }
 
   async function handleLogin() {
-    if (!password) return;
+    if (!password || !name) return;
+    if (!isValidName(name)) { setError("실명을 한글로 입력해주세요 (예: 홍길동)"); return; }
     setFormLoading(true);
     setError("");
 
@@ -177,8 +182,7 @@ function InviteAcceptContent() {
       if (loginErr) throw loginErr;
 
       if (data.user) {
-        // 기존 로그인 유저: name은 API에서 기존 profile name 유지
-        await callAcceptApi(data.user.id, invitation);
+        await callAcceptApi(data.user.id, invitation, name.trim());
         setStep("done");
       }
     } catch (err) {
@@ -360,13 +364,16 @@ function InviteAcceptContent() {
         {step === "signup" && (
           <div style={{ marginTop: 20 }}>
             <button onClick={() => setStep("social")} style={styles.backBtn}>← 돌아가기</button>
-            <label style={styles.label}>이름 *</label>
-            <input style={styles.input} placeholder="이름을 입력하세요" value={name} onChange={(e) => setName(e.target.value)} />
+            <label style={styles.label}>이름 (실명) *</label>
+            <input style={styles.input} placeholder="한글 실명 입력 (예: 홍길동)" value={name} onChange={(e) => setName(e.target.value)} />
+            {name && !isValidName(name) && (
+              <p style={{ fontSize: 12, color: "#DC2626", marginTop: -8, marginBottom: 12 }}>한글 실명 2자 이상 입력해주세요</p>
+            )}
             <label style={styles.label}>이메일</label>
             <input style={{ ...styles.input, background: "#f8fafc", color: "#8B90A0" }} value={email} readOnly />
             <label style={styles.label}>비밀번호 *</label>
             <input style={styles.input} type="password" placeholder="6자 이상 입력하세요" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSignUp()} />
-            <button style={{ ...styles.btnPrimary, opacity: formLoading || !name || !password || password.length < 6 ? 0.5 : 1 }} onClick={handleSignUp} disabled={formLoading || !name || !password || password.length < 6}>
+            <button style={{ ...styles.btnPrimary, opacity: formLoading || !isValidName(name) || !password || password.length < 6 ? 0.5 : 1 }} onClick={handleSignUp} disabled={formLoading || !isValidName(name) || !password || password.length < 6}>
               {formLoading ? "처리 중..." : "가입하고 초대 수락"}
             </button>
           </div>
@@ -375,11 +382,16 @@ function InviteAcceptContent() {
         {step === "login" && (
           <div style={{ marginTop: 20 }}>
             <button onClick={() => setStep("social")} style={styles.backBtn}>← 돌아가기</button>
+            <label style={styles.label}>이름 (실명) *</label>
+            <input style={styles.input} placeholder="한글 실명 입력 (예: 홍길동)" value={name} onChange={(e) => setName(e.target.value)} />
+            {name && !isValidName(name) && (
+              <p style={{ fontSize: 12, color: "#DC2626", marginTop: -8, marginBottom: 12 }}>한글 실명 2자 이상 입력해주세요</p>
+            )}
             <label style={styles.label}>이메일</label>
             <input style={{ ...styles.input, background: "#f8fafc", color: "#8B90A0" }} value={email} readOnly />
             <label style={styles.label}>비밀번호 *</label>
             <input style={styles.input} type="password" placeholder="비밀번호를 입력하세요" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
-            <button style={{ ...styles.btnPrimary, opacity: formLoading || !password ? 0.5 : 1 }} onClick={handleLogin} disabled={formLoading || !password}>
+            <button style={{ ...styles.btnPrimary, opacity: formLoading || !isValidName(name) || !password ? 0.5 : 1 }} onClick={handleLogin} disabled={formLoading || !isValidName(name) || !password}>
               {formLoading ? "처리 중..." : "로그인하고 초대 수락"}
             </button>
           </div>
