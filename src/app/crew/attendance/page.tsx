@@ -746,7 +746,7 @@ export default function CrewAttendancePage() {
               <div className="modal-btns">
                 <button className="modal-b cc" onClick={() => setShowCorrectionModal(false)}>취소</button>
                 <button className="modal-b sb" onClick={handleCorrectionRequest}
-                  disabled={actionLoading || !selectedMissing || !checkoutMemo.trim()}>
+                  disabled={actionLoading || !selectedMissing}>
                   {actionLoading ? "처리 중..." : "요청하기"}
                 </button>
               </div>
