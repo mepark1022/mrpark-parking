@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getUserContext } from "@/lib/utils/org";
 import { fmtPlate, splitPlate } from "@/lib/utils/format";
 import AppLayout from "@/components/layout/AppLayout";
+import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 
 const C = {
   navy: "#1428A0", navyLight: "#2d3a8c", gold: "#F5B731", goldLight: "#fef9e7",
@@ -485,8 +486,7 @@ export default function ParkingStatusPage() {
                 <option value="">전체 매장</option>
                 {stores.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
-              <input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)}
-                style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${C.border}`,fontSize:14,background:"#fff",flex:1}} />
+              <MeParkDatePicker value={selectedDate} onChange={setSelectedDate} style={{flex:1}} />
               <select value={workerFilter} onChange={e=>setWorkerFilter(e.target.value)}
                 style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${C.border}`,fontSize:14,background:"#fff",minWidth:120}}>
                 <option value="">전체 등록자</option>
@@ -684,8 +684,7 @@ export default function ParkingStatusPage() {
             <option value="">전체 매장</option>
             {stores.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
-          <input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)}
-            style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:13,background:"#fff",fontFamily:"inherit",color:C.textPrimary}} />
+          <MeParkDatePicker value={selectedDate} onChange={setSelectedDate} compact style={{flex:1}} />
         </div>
 
         {/* 필터 칩 */}
