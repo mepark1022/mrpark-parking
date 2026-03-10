@@ -1114,6 +1114,8 @@ export default function WorkersPage() {
   };
 
   const toggleStatus = async (worker) => {
+    const action = worker.status === "active" ? "비활성" : "활성화";
+    if (!confirm(`${worker.name}님을 ${action} 처리하시겠습니까?`)) return;
     const supabase = createClient();
     await supabase.from("workers").update({ status: worker.status === "active" ? "inactive" : "active" }).eq("id", worker.id);
     loadAll();
