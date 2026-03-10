@@ -149,37 +149,45 @@ export default function CrewAttendanceHistoryPage() {
             requests.map(req => {
               const b = badge(req.status);
               return (
-                <div key={req.id} className={`hk ${req.status === "rejected" ? "rej" : ""}`}>
-                  <div className="hk-hd">
-                    <span className="hk-dt">{req.request_date || formatDate(req.created_at)}</span>
-                    <span className="hk-st" style={{ background: b.bg, color: b.color }}>
-                      {b.emoji} {b.text}
-                    </span>
+                <div key={req.id} style={{
+                  background: req.status === "rejected" ? "#FFFBEB" : "#fff",
+                  borderRadius: 10, border: `1px solid ${req.status === "rejected" ? "#FECACA" : "#E2E8F0"}`,
+                  padding: "10px 12px", marginBottom: 6,
+                }}>
+                  {/* 1줄: 날짜 + 시간 + 상태 + 삭제 */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#1A1D2B" }}>{req.request_date}</span>
+                    <span style={{ fontSize: 12, color: "#1428A0", fontWeight: 600 }}>🕐{req.requested_checkout_time || "-"}</span>
+                    <span style={{ padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 700, background: b.bg, color: b.color }}>{b.emoji} {b.text}</span>
+                    {req.status === "approved" && req.approved_at && (
+                      <span style={{ fontSize: 10, color: "#166534" }}>✓{formatTime(req.approved_at)}</span>
+                    )}
+                    <button onClick={async (e) => {
+                      e.stopPropagation();
+                      if (!confirm("이 요청을 삭제하시겠습니까?")) return;
+                      const supabase = createClient();
+                      await supabase.from("checkout_requests").delete().eq("id", req.id);
+                      setRequests(prev => prev.filter(r => r.id !== req.id));
+                      showToast("삭제되었습니다", "info");
+                    }} style={{ marginLeft: "auto", background: "none", border: "none", fontSize: 14, cursor: "pointer", color: "#94A3B8", padding: "2px 4px", flexShrink: 0 }}>✕</button>
                   </div>
-                  <div className="hk-tm">퇴근 요청: {req.requested_checkout_time || formatTime(req.created_at)}</div>
-
-                  {req.status === "approved" && req.approved_at && (
-                    <div className="hk-ap">✓ 승인됨: {formatTime(req.approved_at)}</div>
+                  {/* 2줄: 사유 + 반려사유/재요청 */}
+                  {req.request_reason && (
+                    <div style={{ fontSize: 11, color: "#64748B", marginTop: 4 }}>💬 {req.request_reason}</div>
                   )}
-
                   {req.status === "rejected" && (
-                    <>
-                      <div className="hk-dv" />
-                      <div className="hk-rl">반려 사유</div>
-                      <div className="hk-rs">{req.reject_reason || "사유가 기록되지 않았습니다."}</div>
-                      <div className="hk-act">
-                        <button className="hk-btn" onClick={() => handleReRequest(req)}
-                          disabled={actionLoading === req.id}>
-                          {actionLoading === req.id ? "처리 중..." : "🔄 재요청하기"}
-                        </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+                      <div style={{ fontSize: 11, color: "#991B1B", background: "#FEE2E2", padding: "3px 8px", borderRadius: 6, flex: 1 }}>
+                        ❌ {req.reject_reason || "사유 없음"}
                       </div>
-                    </>
-                  )}
-
-                  {req.status === "pending" && (
-                    <div style={{ fontSize: 13, color: "#92400E", marginTop: 8 }}>
-                      ⏳ 관리자 승인 대기 중...
+                      <button onClick={() => handleReRequest(req)} disabled={actionLoading === req.id}
+                        style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "#1428A0", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                        {actionLoading === req.id ? "..." : "🔄 재요청"}
+                      </button>
                     </div>
+                  )}
+                  {req.status === "pending" && (
+                    <div style={{ fontSize: 11, color: "#92400E", marginTop: 4 }}>⏳ 관리자 승인 대기 중</div>
                   )}
                 </div>
               );
