@@ -499,215 +499,193 @@ export default function TeamPage() {
           </div>
         )}
 
-        {loading ? <div className="text-center py-10 text-gray-500">로딩 중...</div> : (
-          <>
-            {/* ===== 등록된 팀원 ===== */}
-            <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden", marginBottom: 20 }}>
-              <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)" }}>
-                <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>등록된 팀원 ({profiles.length}명)</h4>
-              </div>
-              {/* PC */}
-              <div className="hidden md:block">
-                <table className="w-full">
-                  <thead style={{ background: "var(--bg-card)", borderBottom: "1px solid var(--border-light)" }}>
-                    <tr>
-                      {["이름","이메일","배정매장","초대일","수락일","권한","상태","관리"].map(h => (
-                        <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>{h}</th>
+        {loading ? <div className="text-center py-10 text-gray-500">로딩 중...</div> : (() => {
+          // 역할별 분류
+          const superAdmins = profiles.filter(p => p.role === "super_admin");
+          const admins = profiles.filter(p => p.role === "admin");
+          const crews = profiles.filter(p => p.role === "crew");
+          const adminGroup = [...superAdmins, ...admins];
+
+          // 매장별 CREW 그룹핑
+          const storeCrewMap: Record<string, { store: Store; members: Profile[] }> = {};
+          stores.forEach(s => { storeCrewMap[s.id] = { store: s, members: [] }; });
+          const unassignedCrews: Profile[] = [];
+
+          crews.forEach(crew => {
+            const memberStoreIds = storeMembers.filter(m => m.user_id === crew.id).map(m => m.store_id);
+            if (memberStoreIds.length === 0) {
+              unassignedCrews.push(crew);
+            } else {
+              memberStoreIds.forEach(sid => {
+                if (storeCrewMap[sid]) storeCrewMap[sid].members.push(crew);
+              });
+            }
+          });
+
+          // 멤버 카드 렌더 헬퍼
+          const renderMemberCard = (p: Profile, compact?: boolean) => {
+            const sb = statusBadge(p.status);
+            const memberStores = getMemberStores(p.id);
+            const inv = inviteMap[p.email];
+            return (
+              <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid var(--border-light)", transition: "background 0.1s" }} className="hover:bg-[var(--bg-card)] last:border-b-0">
+                {/* 아바타 */}
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: ROLE_CONFIG[p.role]?.bg || "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
+                  {ROLE_CONFIG[p.role]?.icon || "👤"}
+                </div>
+                {/* 정보 */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{p.name || "-"}</span>
+                    <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: sb.bg, color: sb.color }}>{sb.label}</span>
+                    {p.status === "disabled" && <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 600 }}>접근 차단</span>}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.email}</div>
+                  {!compact && memberStores.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                      {memberStores.map((name, i) => (
+                        <span key={i} style={{ padding: "1px 7px", borderRadius: 5, fontSize: 10, fontWeight: 600, background: "#EEF2FF", color: "#4338ca" }}>{name}</span>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {profiles.map((p) => {
-                      const sb = statusBadge(p.status);
-                      const inv = inviteMap[p.email];
-                      const memberStores = getMemberStores(p.id);
-                      return (
-                        <tr key={p.id} style={{ borderBottom: "1px solid var(--border-light)" }} className="hover:bg-[var(--bg-card)]">
-                          <td style={{ padding: "13px 16px", fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{p.name || "-"}</td>
-                          <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--text-secondary)" }}>{p.email}</td>
-                          <td className="px-5 py-3.5 text-sm">
-                            {memberStores.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {memberStores.map((name, i) => (
-                                  <span key={i} style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "#EEF2FF", color: "#4338ca" }}>{name}</span>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-xs text-gray-400">{p.role === "admin" ? "전체" : "-"}</span>
-                            )}
-                          </td>
-                          <td style={{ padding: "13px 16px", fontSize: 12, color: "var(--text-muted)" }}>{inv ? fmtDate(inv.invited) : "-"}</td>
-                          <td style={{ padding: "13px 16px", fontSize: 12, color: "var(--text-muted)" }}>{inv ? fmtDate(inv.accepted) : "-"}</td>
-                          <td className="px-5 py-3.5 text-sm">
-                            <RoleDropdown
-                              profile={p}
-                              currentUserRole={currentUserRole}
-                              currentUserId={currentUserId}
-                              onRoleChange={changeRole}
-                            />
-                          </td>
-                          <td className="px-5 py-3.5 text-sm">
-                            <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: sb.bg, color: sb.color }}>{sb.label}</span>
-                          </td>
-                          <td className="px-5 py-3.5 text-sm">
-                            <div className="flex gap-2 items-center">
-                              {canManageRole(p) && (
-                                <>
-                                  <button onClick={() => openAssignModal(p)} style={{ fontSize: 12, fontWeight: 600, color: "#1428A0", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>매장배정</button>
-                                  <span style={{ color: "#e2e8f0" }}>|</span>
-                                  <button onClick={() => { setResetTarget(p); setResetPassword(""); }} style={{ fontSize: 12, fontWeight: 600, color: "#ea580c", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>비번재설정</button>
-                                  <span style={{ color: "#e2e8f0" }}>|</span>
-                                  <button
-                                    onClick={() => toggleStatus(p)}
-                                    style={{ fontSize: 12, fontWeight: 600, color: p.status === "active" ? "#94a3b8" : "#16a34a", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}
-                                  >
-                                    {p.status === "active" ? "비활성" : "활성화"}
-                                  </button>
-                                  <span style={{ color: "#e2e8f0" }}>|</span>
-                                </>
-                              )}
-                              {canRemoveMember(p) && (
-                                <button
-                                  onClick={() => setRemoveTarget(p)}
-                                  style={{ fontSize: 12, fontWeight: 600, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}
-                                >제거</button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {/* 모바일 */}
-              <div className="md:hidden">
-                {profiles.map((p) => {
-                  return (
-                    <div key={p.id} className="px-4 py-3 border-b border-gray-100 last:border-0">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div>
-                          <span className="font-bold text-sm text-gray-900">{p.name || "-"}</span>
-                          <span style={{ marginLeft: 6, padding: "2px 6px", borderRadius: 4, fontSize: 9, fontWeight: 700, background: statusBadge(p.status).bg, color: statusBadge(p.status).color }}>{statusBadge(p.status).label}</span>
-                        </div>
-                        <RoleDropdown
-                          profile={p}
-                          currentUserRole={currentUserRole}
-                          currentUserId={currentUserId}
-                          onRoleChange={changeRole}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500 mb-1">{p.email}</p>
-                      {getMemberStores(p.id).length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-1.5">
-                          {getMemberStores(p.id).map((name, i) => (
-                            <span key={i} style={{ padding: "1px 6px", borderRadius: 4, fontSize: 9, fontWeight: 600, background: "#EEF2FF", color: "#4338ca" }}>{name}</span>
-                          ))}
-                        </div>
-                      )}
+                    </div>
+                  )}
+                  {!compact && memberStores.length === 0 && p.role === "admin" && (
+                    <span style={{ fontSize: 10, color: "#94a3b8", marginTop: 2, display: "inline-block" }}>전체 매장 접근</span>
+                  )}
+                </div>
+                {/* 권한 + 액션 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                  <RoleDropdown profile={p} currentUserRole={currentUserRole} currentUserId={currentUserId} onRoleChange={changeRole} />
+                  {/* 더보기 메뉴 - PC */}
+                  <div className="hidden sm:flex gap-1.5 items-center">
+                    {canManageRole(p) && (
+                      <>
+                        <button onClick={() => openAssignModal(p)} title="매장배정" style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>📍</button>
+                        <button onClick={() => { setResetTarget(p); setResetPassword(""); }} title="비번재설정" style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>🔑</button>
+                        <button onClick={() => toggleStatus(p)} title={p.status === "active" ? "비활성화" : "활성화"} style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>{p.status === "active" ? "🚫" : "✅"}</button>
+                      </>
+                    )}
+                    {canRemoveMember(p) && (
+                      <button onClick={() => setRemoveTarget(p)} title="제거" style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #fee2e2", background: "#fff", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>🗑️</button>
+                    )}
+                  </div>
+                  {/* 더보기 메뉴 - 모바일 */}
+                  {(canManageRole(p) || canRemoveMember(p)) && (
+                    <div className="sm:hidden flex gap-1 items-center">
                       {canManageRole(p) && (
-                        <div className="flex gap-3 mt-1">
-                          <button onClick={() => openAssignModal(p)} style={{ fontSize: 11, fontWeight: 700, color: "#1428A0", background: "none", border: "none", cursor: "pointer", padding: 0 }}>매장배정</button>
-                          <button onClick={() => { setResetTarget(p); setResetPassword(""); }} style={{ fontSize: 11, fontWeight: 600, color: "#ea580c", background: "none", border: "none", cursor: "pointer", padding: 0 }}>비번재설정</button>
-                          <button onClick={() => toggleStatus(p)} style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                            {p.status === "active" ? "비활성" : "활성화"}
-                          </button>
-                          {canRemoveMember(p) && (
-                            <button onClick={() => setRemoveTarget(p)} style={{ fontSize: 11, fontWeight: 600, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: 0 }}>제거</button>
-                          )}
-                        </div>
+                        <>
+                          <button onClick={() => openAssignModal(p)} style={{ fontSize: 10, fontWeight: 700, color: "#1428A0", background: "none", border: "none", cursor: "pointer", padding: "4px 2px" }}>배정</button>
+                          <button onClick={() => { setResetTarget(p); setResetPassword(""); }} style={{ fontSize: 10, fontWeight: 600, color: "#ea580c", background: "none", border: "none", cursor: "pointer", padding: "4px 2px" }}>비번</button>
+                        </>
                       )}
-                      {!canManageRole(p) && canRemoveMember(p) && (
-                        <div className="flex gap-3 mt-1">
-                          <button onClick={() => setRemoveTarget(p)} style={{ fontSize: 11, fontWeight: 600, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: 0 }}>제거</button>
-                        </div>
+                      {canRemoveMember(p) && (
+                        <button onClick={() => setRemoveTarget(p)} style={{ fontSize: 10, fontWeight: 600, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: "4px 2px" }}>제거</button>
                       )}
                     </div>
-                  );
-                })}
+                  )}
+                </div>
               </div>
-            </div>
+            );
+          };
 
-            {/* ===== 초대 내역 ===== */}
-            <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
-              <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)" }}>
-                <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>초대 내역 ({pendingInvitations.length}건)</h4>
+          return (
+            <>
+              {/* ===== 관리자 섹션 ===== */}
+              <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden", marginBottom: 20 }}>
+                <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)", display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 4, height: 20, borderRadius: 2, background: "#1428A0" }} />
+                  <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>관리자</h4>
+                  <span style={{ padding: "2px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "#EEF2FF", color: "#1428A0" }}>{adminGroup.length}명</span>
+                </div>
+                {adminGroup.length === 0 ? (
+                  <div className="text-center py-8 text-sm text-gray-400">등록된 관리자가 없습니다</div>
+                ) : (
+                  adminGroup.map(p => renderMemberCard(p))
+                )}
               </div>
-              {pendingInvitations.length === 0 ? (
-                <div className="text-center py-8 text-sm text-gray-400">초대 내역이 없습니다</div>
-              ) : (
-                <>
-                  <div className="hidden md:block">
-                    <table className="w-full">
-                      <thead style={{ background: "var(--bg-card)", borderBottom: "1px solid var(--border-light)" }}>
-                        <tr>
-                          {["이메일","역할","배정매장","상태","초대일","관리"].map(h => (
-                            <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pendingInvitations.map((inv) => {
-                          const rb = roleBadge(inv.role);
-                          const sb = statusBadge(inv.status);
-                          return (
-                            <tr key={inv.id} style={{ borderBottom: "1px solid var(--border-light)" }} className="hover:bg-[var(--bg-card)]">
-                              <td style={{ padding: "13px 16px", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{inv.email}</td>
-                              <td style={{ padding: "13px 16px" }}><span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: rb.bg, color: rb.color }}>{rb.label}</span></td>
-                              <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--text-secondary)" }}>{inv.stores?.name || "-"}</td>
-                              <td style={{ padding: "13px 16px" }}><span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: sb.bg, color: sb.color }}>{sb.label}</span></td>
-                              <td style={{ padding: "13px 16px", fontSize: 12, color: "var(--text-muted)" }}>{fmtDate(inv.created_at)}</td>
-                              <td className="px-5 py-3.5 text-sm">
-                                <div className="flex gap-2">
-                                  {inv.status === "pending" && (
-                                    <>
-                                      <button onClick={() => resendInvitation(inv)} disabled={sending} className="text-xs font-bold text-blue-600 hover:text-blue-800">재발송</button>
-                                      <button onClick={() => cancelInvitation(inv.id)} className="text-xs font-bold text-red-500 hover:text-red-700">취소</button>
-                                    </>
-                                  )}
-                                  <button onClick={() => deleteInvitation(inv.id)} className="text-xs font-bold text-gray-400 hover:text-red-500">삭제</button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+
+              {/* ===== 매장별 CREW 섹션 ===== */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                  <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>매장별 CREW</h4>
+                  <span style={{ padding: "2px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "#dcfce7", color: "#15803d" }}>총 {crews.length}명</span>
+                </div>
+
+                {crews.length === 0 ? (
+                  <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", padding: "32px 20px", textAlign: "center" }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>👤</div>
+                    <p style={{ fontSize: 14, color: "#94a3b8", margin: 0 }}>등록된 CREW가 없습니다</p>
+                    <p style={{ fontSize: 12, color: "#cbd5e1", margin: "4px 0 0" }}>팀원 추가에서 CREW를 등록하세요</p>
                   </div>
-                  <div className="md:hidden">
-                    {pendingInvitations.map((inv) => {
-                      const rb = roleBadge(inv.role);
-                      const sb = statusBadge(inv.status);
-                      return (
-                        <div key={inv.id} className="px-4 py-3 border-b border-gray-100 last:border-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-sm text-gray-900" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "55%" }}>{inv.email}</span>
-                            <div className="flex gap-1.5">
-                              <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: rb.bg, color: rb.color }}>{rb.label}</span>
-                              <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: sb.bg, color: sb.color }}>{sb.label}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-500">{inv.stores?.name ? `📍${inv.stores.name} · ` : ""}{fmtDate(inv.created_at)}</span>
-                            <div className="flex gap-2">
-                              {inv.status === "pending" && (
-                                <>
-                                  <button onClick={() => resendInvitation(inv)} disabled={sending} className="text-xs font-bold text-blue-600">재발송</button>
-                                  <button onClick={() => cancelInvitation(inv.id)} className="text-xs font-bold text-red-500">취소</button>
-                                </>
-                              )}
-                              <button onClick={() => deleteInvitation(inv.id)} className="text-xs font-bold text-gray-400">삭제</button>
-                            </div>
+                ) : (
+                  <div style={{ display: "grid", gap: 16 }} className="grid-cols-1 md:grid-cols-2">
+                    {Object.values(storeCrewMap).filter(g => g.members.length > 0).map(({ store, members }) => (
+                      <div key={store.id} style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+                        <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)", display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 4, height: 18, borderRadius: 2, background: "#F5B731" }} />
+                          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>🏢 {store.name}</span>
+                          <span style={{ marginLeft: "auto", padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: "#dcfce7", color: "#15803d" }}>{members.length}명</span>
+                        </div>
+                        {members.map(p => renderMemberCard(p, true))}
+                      </div>
+                    ))}
+
+                    {/* 미배정 CREW */}
+                    {unassignedCrews.length > 0 && (
+                      <div style={{ background: "#fff", borderRadius: 16, border: "1px dashed #e2e8f0", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+                        <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-light)", background: "#fefce8", display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 4, height: 18, borderRadius: 2, background: "#ea580c" }} />
+                          <span style={{ fontSize: 14, fontWeight: 700, color: "#92400e" }}>⚠️ 미배정</span>
+                          <span style={{ marginLeft: "auto", padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: "#fff7ed", color: "#ea580c" }}>{unassignedCrews.length}명</span>
+                        </div>
+                        {unassignedCrews.map(p => renderMemberCard(p, false))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* ===== 초대 내역 ===== */}
+              <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+                <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)", display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 4, height: 20, borderRadius: 2, background: "#94a3b8" }} />
+                  <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>초대 내역</h4>
+                  <span style={{ padding: "2px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "#f1f5f9", color: "#64748b" }}>{pendingInvitations.length}건</span>
+                </div>
+                {pendingInvitations.length === 0 ? (
+                  <div className="text-center py-8 text-sm text-gray-400">초대 내역이 없습니다</div>
+                ) : (
+                  pendingInvitations.map((inv) => {
+                    const rb = roleBadge(inv.role);
+                    const sb = statusBadge(inv.status);
+                    return (
+                      <div key={inv.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid var(--border-light)" }} className="last:border-b-0">
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>📧</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{inv.email}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+                            <span style={{ padding: "1px 7px", borderRadius: 5, fontSize: 10, fontWeight: 700, background: rb.bg, color: rb.color }}>{rb.label}</span>
+                            <span style={{ padding: "1px 7px", borderRadius: 5, fontSize: 10, fontWeight: 700, background: sb.bg, color: sb.color }}>{sb.label}</span>
+                            {inv.stores?.name && <span style={{ fontSize: 10, color: "#94a3b8" }}>📍{inv.stores.name}</span>}
+                            <span style={{ fontSize: 10, color: "#cbd5e1" }}>{fmtDate(inv.created_at)}</span>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-          </>
-        )}
+                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                          {inv.status === "pending" && (
+                            <>
+                              <button onClick={() => resendInvitation(inv)} disabled={sending} style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", background: "none", border: "none", cursor: "pointer" }}>재발송</button>
+                              <button onClick={() => cancelInvitation(inv.id)} style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}>취소</button>
+                            </>
+                          )}
+                          <button onClick={() => deleteInvitation(inv.id)} style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", background: "none", border: "none", cursor: "pointer" }}>삭제</button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          );
+        })()}
 
         {/* ===== 초대 모달 ===== */}
         {showInvite && (
