@@ -1597,16 +1597,17 @@ export default function WorkersPage() {
             const isAdmin = role === "admin";
             return (
               <div style={{ padding: "8px 12px", borderBottom: "1px solid #f1f5f9" }}>
-                {/* 1줄: 아이콘 + 이름/배지 + 이메일 */}
+                {/* 1줄: 아이콘 + 이름 + 배지 */}
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0, background: rb.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>{rb.icon}</div>
                   <span style={{ fontSize: 13, fontWeight: 800, color: "#1a1d2b" }}>{w.name}</span>
                   <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: rb.bg, color: rb.color }}>{rb.label}</span>
                   {w.status !== "active" && <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 4, background: "#f1f5f9", color: "#94a3b8" }}>비활성</span>}
-                  {email && <span style={{ fontSize: 10, color: "#94a3b8", marginLeft: "auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>{email}</span>}
                 </div>
-                {/* 2줄: 버튼들 */}
-                <div style={{ display: "flex", gap: 4, marginTop: 6, paddingLeft: 36 }}>
+                {/* 2줄: 이메일 */}
+                {email && <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 3, paddingLeft: 36 }}>{email}</div>}
+                {/* 3줄: 버튼들 */}
+                <div style={{ display: "flex", gap: 4, marginTop: 5, paddingLeft: 36 }}>
                   <button onClick={() => { setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", hire_date: w.hire_date || "" }); setRosterPopup({ type: "edit_form", worker: w }); }}
                     style={{ padding: "3px 8px", border: "1px solid #e2e8f0", borderRadius: 5, background: "#fff", fontSize: 11, fontWeight: 600, color: "#1428A0", cursor: "pointer" }}>수정</button>
                   {email && (
