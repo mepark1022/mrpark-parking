@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
+import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip,
@@ -299,11 +300,9 @@ export default function AnalyticsPage() {
           {/* 직접설정 날짜 */}
           {period === "custom" && (
             <div style={{ background: "#fff", padding: "10px 16px", borderBottom: "1px solid #e2e8f0", display: "flex", gap: 8, alignItems: "center" }}>
-              <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)}
-                style={{ flex: 1, padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit" }} />
+              <MeParkDatePicker value={customStart} onChange={setCustomStart} compact style={{ flex: 1 }} />
               <span style={{ color: "#94a3b8", fontWeight: 700 }}>~</span>
-              <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
-                style={{ flex: 1, padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit" }} />
+              <MeParkDatePicker value={customEnd} onChange={setCustomEnd} compact style={{ flex: 1 }} />
             </div>
           )}
 
@@ -515,9 +514,9 @@ export default function AnalyticsPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             {period === "custom" && (
               <>
-                <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} style={{ padding: "10px 12px", border: "1px solid #e2e4e9", borderRadius: 8, fontSize: 14, fontFamily: "inherit" }} />
+                <MeParkDatePicker value={customStart} onChange={setCustomStart} />
                 <span style={{ color: "#8b919d" }}>~</span>
-                <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} style={{ padding: "10px 12px", border: "1px solid #e2e4e9", borderRadius: 8, fontSize: 14, fontFamily: "inherit" }} />
+                <MeParkDatePicker value={customEnd} onChange={setCustomEnd} />
               </>
             )}
             <select value={selectedStore} onChange={e => setSelectedStore(e.target.value)} style={{ padding: "10px 14px", border: "1px solid #e2e4e9", borderRadius: 8, fontSize: 14, fontWeight: 500, background: "#fff", color: "#1a1d26", minWidth: 130, fontFamily: "inherit" }}>

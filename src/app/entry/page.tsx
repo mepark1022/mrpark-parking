@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getOrgId, getUserContext } from "@/lib/utils/org";
 import { getDayType, getDayTypeLabel } from "@/utils/holidays";
 import AppLayout from "@/components/layout/AppLayout";
+import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 
 type Store = { id: string; name: string; has_valet: boolean; valet_fee: number };
 type Worker = { id: string; name: string };
@@ -616,17 +617,7 @@ export default function EntryPage() {
               {/* 날짜 + 요일 + 수정중 뱃지 */}
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, flexShrink: 0, width: 40 }}>날짜</span>
-                <input
-                  type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
-                  style={{
-                    flex: "1 1 auto", minWidth: 0, maxWidth: 180,
-                    border: `1px solid ${C.border}`, borderRadius: 10,
-                    padding: "10px 12px", fontSize: 14, fontWeight: 600,
-                    color: C.textPrimary, background: "#fff",
-                    outline: "none", fontFamily: "inherit", cursor: "pointer",
-                    boxSizing: "border-box",
-                  }}
-                />
+                <MeParkDatePicker value={selectedDate} onChange={setSelectedDate} compact style={{ flex: "1 1 auto", minWidth: 0, maxWidth: 200 }} />
                 <span style={{
                   flexShrink: 0,
                   padding: "6px 12px", borderRadius: 20,
@@ -731,7 +722,7 @@ export default function EntryPage() {
                   <div>
                     <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>날짜</label>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <Input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} style={{ width: 160 }} />
+                      <MeParkDatePicker value={selectedDate} onChange={setSelectedDate} style={{ width: 200 }} />
                       <span style={{ padding: "5px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: dayLabel.bg, color: dayLabel.color, whiteSpace: "nowrap" }}>
                         {dayLabel.label}
                       </span>

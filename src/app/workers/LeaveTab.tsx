@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
 import { calcAnnualLeaveDays, calcTotalLeaveDays, calcYearEndLeaveDays, getYearsWorkedLabel } from "@/lib/utils/leave";
+import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 
 const leaveTypeMap = {
   annual:  { label: "연차",  bg: "#ede9fe", color: "#7c3aed" },
@@ -425,11 +426,11 @@ export default function LeaveTab() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
             <div>
               <label style={V3.label}>시작일 *</label>
-              <input type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} style={V3.inp} />
+              <MeParkDatePicker value={form.start_date} onChange={v => setForm({ ...form, start_date: v })} compact style={{ width: "100%" }} />
             </div>
             <div>
               <label style={V3.label}>종료일 *</label>
-              <input type="date" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} style={V3.inp} />
+              <MeParkDatePicker value={form.end_date} onChange={v => setForm({ ...form, end_date: v })} compact style={{ width: "100%" }} />
             </div>
             <div>
               <label style={V3.label}>일수</label>

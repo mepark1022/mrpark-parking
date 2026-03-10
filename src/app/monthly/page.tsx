@@ -8,6 +8,7 @@ import { getUserContext } from "@/lib/utils/org";
 import { showToast } from "@/lib/utils/toast";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
+import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 import type { Store } from "@/lib/types/database";
 
 type MonthlyRow = {
@@ -797,11 +798,11 @@ ${alimModal.contract.stores?.name ?? ""} 월주차 계약 만료가 임박했습
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ fontSize: 13, color: "#6b7280", flexShrink: 0 }}>갱신 만료일</div>
-                  <input
-                    type="date"
+                  <MeParkDatePicker
                     value={renewModal.customEnd}
-                    onChange={e => setRenewModal(m => ({ ...m, customEnd: e.target.value, months: 0 }))}
-                    style={{ flex: 1, padding: "9px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none" }}
+                    onChange={v => setRenewModal(m => ({ ...m, customEnd: v, months: 0 }))}
+                    compact
+                    style={{ flex: 1 }}
                   />
                 </div>
               </div>

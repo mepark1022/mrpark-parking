@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
+import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 
 const severityMap = {
   minor:    { label: "경미", bg: "#fff7ed", color: "#ea580c", border: "#EA580C" },
@@ -113,7 +114,7 @@ export default function ReportTab() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
             <div>
               <label style={V3.label}>날짜 *</label>
-              <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} style={V3.inp} />
+              <MeParkDatePicker value={form.date} onChange={v => setForm({ ...form, date: v })} compact style={{ width: "100%" }} />
             </div>
             <div>
               <label style={V3.label}>심각도</label>

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
+import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 import type { Store } from "@/lib/types/database";
 
 const inputStyle = {
@@ -279,20 +280,18 @@ function RegisterForm() {
                 <div className="reg-form-2col" style={{ marginBottom: 14 }}>
                   <div>
                     <label style={labelStyle}>시작일<RequiredDot /></label>
-                    <input
-                      type="date"
+                    <MeParkDatePicker
                       value={form.start_date}
-                      onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                      style={inputStyle}
+                      onChange={(v) => setForm({ ...form, start_date: v })}
+                      style={{ width: "100%" }}
                     />
                   </div>
                   <div>
                     <label style={labelStyle}>종료일<RequiredDot /></label>
-                    <input
-                      type="date"
+                    <MeParkDatePicker
                       value={form.end_date}
-                      onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                      style={inputStyle}
+                      onChange={(v) => setForm({ ...form, end_date: v })}
+                      style={{ width: "100%" }}
                     />
                   </div>
                 </div>
