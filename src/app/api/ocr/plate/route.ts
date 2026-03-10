@@ -124,6 +124,103 @@ function formatPlate(raw: string): string {
 }
 
 // ─────────────────────────────────────────────
+// 인접 블록 병합: Vision API가 번호판을 쪼개는 경우 대응
+// "123" + "가" + "4567" → "123가4567" 로 재조합
+// y좌표가 비슷한 블록 = 같은 줄 → x좌표 순서로 합침
+// ─────────────────────────────────────────────
+interface AnnotationBlock {
+  text: string;
+  midY: number;     // 중심 Y좌표
+  minX: number;     // 좌측 X좌표 (정렬용)
+  height: number;   // 블록 높이 (줄 판별 threshold)
+  confidence: number; // Vision API confidence (0~1, 없으면 1)
+}
+
+function extractAnnotationBlocks(annotations: any[]): AnnotationBlock[] {
+  const blocks: AnnotationBlock[] = [];
+
+  // 첫 번째 항목은 전체 텍스트 → 건너뜀
+  for (let i = 1; i < annotations.length; i++) {
+    const ann = annotations[i];
+    if (!ann.description || !ann.boundingPoly?.vertices) continue;
+
+    const verts = ann.boundingPoly.vertices;
+    const xs = verts.map((v: any) => v.x ?? 0);
+    const ys = verts.map((v: any) => v.y ?? 0);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const h = maxY - minY;
+    const midY = (minY + maxY) / 2;
+
+    // confidence: Vision API가 제공하면 사용, 없으면 1.0
+    const confidence = ann.confidence ?? 1.0;
+
+    blocks.push({
+      text: ann.description,
+      midY,
+      minX,
+      height: h > 0 ? h : 20, // 높이 0 방어
+      confidence,
+    });
+  }
+
+  return blocks;
+}
+
+function mergeAdjacentBlocks(annotations: any[], minConfidence: number = 0.3): string[] {
+  const rawBlocks = extractAnnotationBlocks(annotations);
+  if (rawBlocks.length === 0) return [];
+
+  // 1) 낮은 confidence 제거
+  const blocks = rawBlocks.filter((b) => b.confidence >= minConfidence);
+  console.log(
+    "[OCR] Confidence 필터:",
+    `${rawBlocks.length}개 → ${blocks.length}개 (threshold: ${minConfidence})`,
+    rawBlocks
+      .filter((b) => b.confidence < minConfidence)
+      .map((b) => `"${b.text}"(${b.confidence.toFixed(2)})`)
+  );
+
+  if (blocks.length === 0) return [];
+
+  // 2) 같은 줄 그룹핑: midY 차이가 평균 높이의 50% 이내 → 같은 줄
+  // y좌표 기준 정렬 후 그룹핑
+  const sorted = [...blocks].sort((a, b) => a.midY - b.midY);
+  const lines: AnnotationBlock[][] = [];
+  let currentLine: AnnotationBlock[] = [sorted[0]];
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = currentLine[currentLine.length - 1];
+    const curr = sorted[i];
+    // 줄 판별: 두 블록의 midY 차이가 평균 높이의 50% 이내
+    const avgH = (prev.height + curr.height) / 2;
+    const threshold = avgH * 0.5;
+
+    if (Math.abs(curr.midY - prev.midY) <= threshold) {
+      currentLine.push(curr);
+    } else {
+      lines.push(currentLine);
+      currentLine = [curr];
+    }
+  }
+  lines.push(currentLine);
+
+  // 3) 각 줄 내에서 x좌표 순서로 정렬 후 텍스트 합침
+  const merged: string[] = [];
+  for (const line of lines) {
+    const lineBlocks = [...line].sort((a, b) => a.minX - b.minX);
+    const lineText = lineBlocks.map((b) => b.text).join("");
+    if (lineText.trim().length > 0) {
+      merged.push(lineText);
+    }
+  }
+
+  console.log("[OCR] 인접 블록 병합:", `${blocks.length}개 블록 → ${lines.length}줄`, merged);
+  return merged;
+}
+
+// ─────────────────────────────────────────────
 // Bounding Box 기반 번호판 영역 분석
 // 한국 번호판: 가로세로 비율 약 2:1 ~ 6:1 (가로로 긴 직사각형)
 // ─────────────────────────────────────────────
@@ -132,70 +229,92 @@ interface TextBlock {
   score: number; // 번호판 가능성 점수 (높을수록 유력)
 }
 
-function analyzeTextBlocks(annotations: any[]): TextBlock[] {
+function scoreTextBlock(text: string, w: number, h: number): number {
+  const aspect = w > 0 && h > 0 ? w / h : 0;
+  let score = 0;
+
+  // 1) 가로세로 비율: 번호판 비율(2.5~6.0)
+  if (aspect >= 2.5 && aspect <= 6.0) {
+    score += 30;
+    if (aspect >= 3.0 && aspect <= 5.0) score += 15;
+  } else if (aspect >= 1.5 && aspect < 2.5) {
+    score += 10;
+  }
+
+  // 2) 숫자 포함 비율
+  const digitRatio = (text.match(/\d/g)?.length ?? 0) / Math.max(text.length, 1);
+  score += Math.round(digitRatio * 25);
+
+  // 3) 한글 포함: 번호판에 한글 1~2자
+  const koreanCount = (text.match(/[가-힣]/g) || []).length;
+  if (koreanCount >= 1 && koreanCount <= 2) score += 15;
+
+  // 4) 텍스트 길이: 7~9자
+  const cleanLen = text.replace(/\s/g, "").length;
+  if (cleanLen >= 6 && cleanLen <= 10) score += 15;
+  else if (cleanLen >= 4 && cleanLen <= 12) score += 5;
+
+  // 5) 번호판 정규식 직접 매칭
+  const cleanText = text.replace(/\s+/g, "");
+  for (const pattern of PLATE_PATTERNS) {
+    if (pattern.test(cleanText)) {
+      score += 50;
+      break;
+    }
+  }
+
+  return score;
+}
+
+function analyzeTextBlocks(annotations: any[], precomputedMergedLines?: string[]): TextBlock[] {
   if (!annotations || annotations.length === 0) return [];
 
   const blocks: TextBlock[] = [];
 
-  // 첫 번째 항목은 전체 텍스트 (건너뜀 — 개별 블록만 분석)
+  // ── 개별 블록 점수 ──
   for (let i = 1; i < annotations.length; i++) {
     const ann = annotations[i];
     if (!ann.description || !ann.boundingPoly?.vertices) continue;
 
+    // 낮은 confidence 블록 스킵 (0.3 미만)
+    if ((ann.confidence ?? 1.0) < 0.3) continue;
+
     const verts = ann.boundingPoly.vertices;
-    // bounding box 크기 계산 (4꼭짓점에서 width/height 추출)
     const xs = verts.map((v: any) => v.x ?? 0);
     const ys = verts.map((v: any) => v.y ?? 0);
     const w = Math.max(...xs) - Math.min(...xs);
     const h = Math.max(...ys) - Math.min(...ys);
 
-    if (w <= 0 || h <= 0) {
-      blocks.push({ text: ann.description, score: 0 });
-      continue;
-    }
-
-    const aspect = w / h;
-    let score = 0;
-
-    // ── 점수 기준 ──
-    // 1) 가로세로 비율: 번호판 비율(2.5~6.0)에 가까울수록 높은 점수
-    if (aspect >= 2.5 && aspect <= 6.0) {
-      score += 30; // 번호판 비율 적합
-      // 3.0~5.0이면 추가 보너스 (최적 구간)
-      if (aspect >= 3.0 && aspect <= 5.0) score += 15;
-    } else if (aspect >= 1.5 && aspect < 2.5) {
-      score += 10; // 약간 정사각에 가까움 — 부분 인식 가능
-    }
-
-    // 2) 숫자 포함 비율: 번호판은 숫자가 대부분
-    const text = ann.description;
-    const digitRatio = (text.match(/\d/g)?.length ?? 0) / text.length;
-    score += Math.round(digitRatio * 25); // 최대 25점
-
-    // 3) 한글 포함: 번호판에 한글 1~2자 포함
-    const koreanCount = (text.match(/[가-힣]/g) || []).length;
-    if (koreanCount >= 1 && koreanCount <= 2) score += 15;
-
-    // 4) 텍스트 길이: 번호판은 보통 7~9자 (공백 제외)
-    const cleanLen = text.replace(/\s/g, "").length;
-    if (cleanLen >= 6 && cleanLen <= 10) score += 15;
-    else if (cleanLen >= 4 && cleanLen <= 12) score += 5;
-
-    // 5) 번호판 정규식 직접 매칭: 확실한 패턴이면 최고 점수
-    const cleanText = text.replace(/\s+/g, "");
-    for (const pattern of PLATE_PATTERNS) {
-      if (pattern.test(cleanText)) {
-        score += 50; // 정규식 매칭 → 확정
-        break;
-      }
-    }
-
+    const score = scoreTextBlock(ann.description, w, h);
     blocks.push({ text: ann.description, score });
   }
 
-  // 점수 내림차순 정렬
+  // ── 병합된 줄 텍스트도 점수 매기기 (번호판이 쪼개진 경우 대응) ──
+  const mergedLines = precomputedMergedLines ?? mergeAdjacentBlocks(annotations);
+  for (const lineText of mergedLines) {
+    // 비율은 알 수 없으므로 aspect 점수 없이 텍스트 기반 점수만
+    const score = scoreTextBlock(lineText, 0, 0);
+    // 병합 보너스: 쪼개진 블록을 합쳤으므로 약간의 가산점
+    if (score > 0) {
+      blocks.push({ text: lineText, score: score + 5 });
+    }
+  }
+
+  // 점수 내림차순 정렬 + 중복 제거
   blocks.sort((a, b) => b.score - a.score);
-  return blocks;
+
+  // 동일 텍스트 중복 제거 (원본 vs 병합 결과가 같을 수 있음)
+  const seen = new Set<string>();
+  const unique: TextBlock[] = [];
+  for (const b of blocks) {
+    const key = b.text.replace(/\s+/g, "");
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(b);
+    }
+  }
+
+  return unique;
 }
 
 // ─────────────────────────────────────────────
@@ -258,13 +377,20 @@ async function callGoogleVision(base64Image: string): Promise<{ texts: string[];
     }
   }
 
-  // Bounding box 분석: 번호판 영역 우선순위 텍스트
-  const blocks = analyzeTextBlocks(annotations?.textAnnotations ?? []);
+  // 인접 블록 병합 줄도 texts에 추가 (폴백에서 활용)
+  const mergedLines = mergeAdjacentBlocks(annotations?.textAnnotations ?? []);
+  for (const line of mergedLines) {
+    texts.push(line);
+  }
+
+  // Bounding box 분석: 번호판 영역 우선순위 텍스트 (병합 줄 재사용)
+  const blocks = analyzeTextBlocks(annotations?.textAnnotations ?? [], mergedLines);
   const prioritized = blocks
     .filter((b) => b.score >= 20) // 최소 점수 20 이상만
     .map((b) => b.text);
 
   console.log("[OCR] BBox 분석:", blocks.slice(0, 5).map((b) => `${b.text}(${b.score}점)`));
+  console.log("[OCR] 병합 줄:", mergedLines);
 
   return { texts, prioritized };
 }
