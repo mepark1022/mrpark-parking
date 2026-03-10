@@ -1,37 +1,68 @@
-# ME.PARK 네이티브 앱 — 스키마 재설계 v1.0
+# ME.PARK 네이티브 앱 — 스키마 재설계 v1.1
 
 > 작성일: 2026.03.10
-> 목적: `workers` 테이블 제거 → `profiles` 단일 진실 소스(SSOT) 전환
+> 목적: `workers` + `invitations` 테이블 제거 → `profiles` 단일 진실 소스(SSOT) 전환
 > 적용 시점: 네이티브 앱 전환 시 (Phase 2)
+> v1.1 변경: 카카오 로그인 제거, 이메일 초대 제거 반영
 
 ---
 
-## 1. 현재 구조 진단
+## 1. 운영 정책 변경 (2026.03.10 확정)
 
-### 1.1 이중 관리 문제
+### 1.1 인증 방식 변경
 
-현재 시스템은 같은 사람의 정보를 **두 테이블에 분산 저장**하고 있다.
+| 항목 | 변경 전 | 변경 후 |
+|------|---------|---------|
+| 로그인 | 카카오 OAuth | Supabase email/password |
+| 계정 생성 | 이메일 초대 → 크루 수락 | **어드민이 직접 ID/비번 부여** |
+| 이름 입력 | 카카오 닉네임 자동 | **어드민이 실명 직접 입력** |
+| 초대 방식 | Resend 이메일 발송 | **비밀번호 전달 (구두/메신저)** |
+
+### 1.2 제거 대상
+
+| 항목 | 이유 |
+|------|------|
+| 카카오 OAuth 전체 | 어드민 ID/비번 부여로 대체 |
+| `invitations` 테이블 | 이메일 초대 플로우 제거 |
+| Resend 이메일 연동 | 초대 이메일 불필요 |
+| `auth/callback/route.ts` (카카오) | OAuth 콜백 불필요 |
+| `display_name` 컬럼 | 카카오 닉네임 문제 소멸 → `profiles.name` = 실명 |
+
+### 1.3 이 변경으로 해결되는 문제
+
+- **이름 이중관리 근본 해결:** 카카오 닉네임("jmh0310") 유입 경로 자체가 없음
+- **`profiles.name` = 어드민이 입력한 실명** → 모든 화면에서 동일 이름 표시
+- **초대 → 수락 → 가입 3단계가 → 어드민 계정생성 1단계로 축소**
+- **운영 리스크 감소:** 크루가 초대 메일 미확인, 카카오 계정 문제 등 제거
+
+---
+
+## 2. 현재 구조 진단
+
+### 2.1 이중 관리 문제 (여전히 존재)
+
+카카오 로그인은 제거했지만, `workers`와 `profiles` 테이블 분리는 남아있다.
 
 | 항목 | profiles | workers |
 |------|----------|---------|
-| 이름 | 카카오 닉네임 (jmh0310) | 관리자 입력 실명 (장민호) |
+| 이름 | 어드민 입력 실명 | 어드민 입력 실명 (별도 저장) |
 | 연락처 | ❌ 없음 | phone |
 | 상태 | status (active/pending/disabled) | status (active/inactive) |
 | 조직 | org_id | org_id |
 | 연결 키 | id (= auth.users.id) | user_id → profiles.id |
 
-**문제점:**
-- 이름 불일치: `/team`은 `profiles.name`, `/workers`는 `workers.name` 표시
-- 한쪽 수정이 다른 쪽에 반영 안 됨
-- CREW 앱 첫 로그인 시 `workers` 레코드 자동 생성 → `profiles.name`(카카오 닉네임) 복사 → 관리자가 명부에서 실명 수정 → `profiles.name`은 그대로
+**현재 문제:**
+- 같은 실명이 두 테이블에 중복 저장
+- `/team`은 `profiles.name`, `/workers`는 `workers.name` — 한쪽 수정 시 다른 쪽 미반영
+- MVP 임시 조치로 `display_name` 동기화 코드 추가했으나, 근본적으로 테이블이 분리되어 있는 한 동기화 누락 가능
 
-### 1.2 현재 workers 테이블 컬럼
+### 2.2 현재 workers 테이블 컬럼
 
 ```
 workers
 ├── id          uuid PK
 ├── org_id      uuid FK → organizations
-├── user_id     uuid FK → auth.users (nullable — 계정 미연결 근무자)
+├── user_id     uuid FK → auth.users (nullable)
 ├── name        text
 ├── phone       text | null
 ├── status      active | inactive
@@ -42,103 +73,86 @@ workers
 ├── created_at  timestamptz
 ```
 
-### 1.3 worker_id를 FK로 참조하는 테이블 (7개)
+### 2.3 worker_id를 FK로 참조하는 테이블 (7개)
 
 | 테이블 | FK 컬럼 | 용도 |
 |--------|---------|------|
-| worker_attendance | worker_id | 출퇴근 기록 (check_in, check_out, status) |
-| worker_assignments | worker_id | 일일 근무자 배정 (record_id 연동) |
-| worker_leaves | worker_id | 연차 총계 (total_days, used_days) |
+| worker_attendance | worker_id | 출퇴근 기록 |
+| worker_assignments | worker_id | 일일 근무자 배정 |
+| worker_leaves | worker_id | 연차 총계 |
 | worker_leave_records | worker_id | 연차 사용 기록 |
 | worker_reviews | worker_id | 근무 리뷰 |
 | worker_reports | worker_id | 시말서 |
 | store_default_workers | worker_id | 매장별 기본 근무자 |
 
-### 1.4 현재 profiles 테이블 컬럼
+### 2.4 제거 대상 테이블
 
-```
-profiles
-├── id          uuid PK (= auth.users.id)
-├── org_id      uuid FK → organizations
-├── email       text
-├── name        text | null
-├── role        super_admin | admin | crew
-├── status      active | pending | disabled
-├── created_at  timestamptz
-```
+| 테이블 | 이유 |
+|--------|------|
+| `workers` | profiles로 흡수 |
+| `invitations` | 이메일 초대 제거 |
 
 ---
 
-## 2. 목표 구조 (네이티브 앱)
+## 3. 목표 구조 (네이티브 앱)
 
-### 2.1 설계 원칙
+### 3.1 설계 원칙
 
 1. **profiles = 유일한 사용자 테이블** — 모든 사용자 정보의 SSOT
-2. **workers 테이블 완전 제거** — 운영 필드는 profiles로 흡수
+2. **workers, invitations 테이블 완전 제거**
 3. **모든 FK를 user_id (= profiles.id) 기준으로 통일**
-4. **네이티브 앱 = 전원 계정 보유** → "계정 미연결 근무자" 시나리오 제거
+4. **인증 = Supabase email/password** — 어드민이 계정 생성 + ID/비번 부여
+5. **네이티브 앱 = 전원 계정 보유** → "계정 미연결 근무자" 시나리오 제거
 
-### 2.2 확장된 profiles 스키마
+### 3.2 확장된 profiles 스키마
 
 ```sql
--- profiles 테이블 확장 (workers 흡수)
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS phone text;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS region_id uuid REFERENCES regions(id);
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS district text;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS hire_date date;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS daily_wage int DEFAULT 0;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS display_name text;  -- 관리자가 수정하는 표시 이름
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
 
--- 인덱스
 CREATE INDEX IF NOT EXISTS idx_profiles_org_id ON profiles(org_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
 ```
 
-**이름 관리 정책:**
-- `profiles.name`: 카카오 로그인 시 자동 입력 (읽기 전용)
-- `profiles.display_name`: 관리자 또는 본인이 수정하는 표시 이름
-- **표시 우선순위:** `display_name > name > email`
-- 네이티브 앱 온보딩 시 실명 입력 → `display_name`에 저장
-
-### 2.3 확장된 profiles 전체 스키마
+### 3.3 확장된 profiles 전체 스키마
 
 ```
-profiles (확장 후)
+profiles (확장 후 — 최종 형태)
 ├── id              uuid PK (= auth.users.id)
 ├── org_id          uuid FK → organizations
-├── email           text NOT NULL
-├── name            text | null          ← 카카오/소셜 로그인 닉네임 (자동)
-├── display_name    text | null          ← 표시 이름 (관리자/본인 수정)
+├── email           text NOT NULL          ← 로그인 ID
+├── name            text NOT NULL          ← 어드민이 입력한 실명
 ├── role            super_admin | admin | crew
 ├── status          active | pending | disabled
-├── phone           text | null          ← workers에서 흡수
-├── region_id       uuid | null          ← workers에서 흡수
-├── district        text | null          ← workers에서 흡수
-├── hire_date       date | null          ← workers에서 흡수
-├── daily_wage      int DEFAULT 0        ← workers에서 흡수
+├── phone           text | null            ← workers에서 흡수
+├── region_id       uuid | null            ← workers에서 흡수
+├── district        text | null            ← workers에서 흡수
+├── hire_date       date | null            ← workers에서 흡수
+├── daily_wage      int DEFAULT 0          ← workers에서 흡수
 ├── created_at      timestamptz
-├── updated_at      timestamptz          ← 추가
+├── updated_at      timestamptz
 ```
 
----
+**이름 정책:** `profiles.name` = 어드민이 입력한 실명. 끝. display_name 불필요.
 
-## 3. FK 전환 맵핑
+### 3.4 계정 생성 플로우 (어드민)
 
-### 3.1 테이블별 전환 계획
+```
+어드민 → "크루 추가" 클릭
+→ 실명, 이메일(ID), 비밀번호, 역할, 매장 배정 입력
+→ Supabase auth.admin.createUser() 호출
+→ profiles 레코드 자동 생성 (name = 입력한 실명)
+→ store_members 배정
+→ 어드민이 크루에게 ID/비번 전달
+```
 
-모든 `worker_id` → `user_id` (= profiles.id)로 전환한다.
+기존 `/team` 페이지의 "이메일 & 비밀번호 계정 생성" 기능을 확장하되, 초대/수락 플로우는 제거.
 
-| 테이블 | 현재 FK | 전환 후 FK | 비고 |
-|--------|---------|-----------|------|
-| worker_attendance | worker_id → workers.id | user_id → profiles.id | 가장 데이터 많음 |
-| worker_assignments | worker_id → workers.id | user_id → profiles.id | daily_records 연동 |
-| worker_leaves | worker_id → workers.id | user_id → profiles.id | 연차 총계 |
-| worker_leave_records | worker_id → workers.id | user_id → profiles.id | 연차 사용 |
-| worker_reviews | worker_id → workers.id | user_id → profiles.id | |
-| worker_reports | worker_id → workers.id | user_id → profiles.id | |
-| store_default_workers | worker_id → workers.id | user_id → profiles.id | |
-
-### 3.2 store_members 테이블 (변경 없음)
+### 3.5 store_members (변경 없음)
 
 ```
 store_members
@@ -147,13 +161,29 @@ store_members
 ├── org_id    → organizations.id
 ```
 
-현재도 `user_id` 기준이므로 변경 불필요. 오히려 통합 후에는 workers↔store_members 간접 조인이 사라져서 쿼리가 단순해진다.
+---
+
+## 4. FK 전환 맵핑
+
+### 4.1 테이블별 전환
+
+모든 `worker_id` → `user_id` (= profiles.id)
+
+| 테이블 | 현재 FK | 전환 후 FK |
+|--------|---------|-----------|
+| worker_attendance | worker_id → workers.id | user_id → profiles.id |
+| worker_assignments | worker_id → workers.id | user_id → profiles.id |
+| worker_leaves | worker_id → workers.id | user_id → profiles.id |
+| worker_leave_records | worker_id → workers.id | user_id → profiles.id |
+| worker_reviews | worker_id → workers.id | user_id → profiles.id |
+| worker_reports | worker_id → workers.id | user_id → profiles.id |
+| store_default_workers | worker_id → workers.id | user_id → profiles.id |
 
 ---
 
-## 4. 마이그레이션 SQL
+## 5. 마이그레이션 SQL
 
-### 4.1 Phase A: profiles 확장 + 데이터 이관
+### 5.1 Phase A: profiles 확장 + 데이터 이관
 
 ```sql
 -- Step 1: profiles 컬럼 추가
@@ -162,12 +192,11 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS region_id uuid REFERENCES regions(
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS district text;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS hire_date date;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS daily_wage int DEFAULT 0;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS display_name text;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
 
--- Step 2: workers → profiles 데이터 이관 (user_id가 있는 것만)
+-- Step 2: workers → profiles 데이터 이관
 UPDATE profiles p SET
-  display_name = COALESCE(w.name, p.name),
+  name = COALESCE(w.name, p.name),
   phone = w.phone,
   region_id = w.region_id,
   district = w.district,
@@ -179,15 +208,13 @@ WHERE w.user_id = p.id
   AND w.user_id IS NOT NULL;
 ```
 
-### 4.2 Phase B: FK 전환 (각 테이블)
+### 5.2 Phase B: FK 전환
 
 ```sql
 -- worker_attendance
 ALTER TABLE worker_attendance ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES profiles(id);
 UPDATE worker_attendance wa SET user_id = w.user_id
 FROM workers w WHERE wa.worker_id = w.id AND w.user_id IS NOT NULL;
--- 검증 후:
--- ALTER TABLE worker_attendance DROP COLUMN worker_id;
 
 -- worker_leaves
 ALTER TABLE worker_leaves ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES profiles(id);
@@ -220,163 +247,209 @@ UPDATE store_default_workers sdw SET user_id = w.user_id
 FROM workers w WHERE sdw.worker_id = w.id AND w.user_id IS NOT NULL;
 ```
 
-### 4.3 Phase C: 검증 + workers 제거
+### 5.3 Phase C: 검증 + 정리
 
 ```sql
--- 검증: user_id NULL인 레코드 확인 (계정 미연결 workers의 데이터)
+-- 검증: user_id NULL인 레코드 확인
 SELECT 'worker_attendance' AS tbl, COUNT(*) FROM worker_attendance WHERE user_id IS NULL
-UNION ALL
-SELECT 'worker_leaves', COUNT(*) FROM worker_leaves WHERE user_id IS NULL
-UNION ALL
-SELECT 'worker_leave_records', COUNT(*) FROM worker_leave_records WHERE user_id IS NULL
-UNION ALL
-SELECT 'worker_assignments', COUNT(*) FROM worker_assignments WHERE user_id IS NULL
-UNION ALL
-SELECT 'worker_reviews', COUNT(*) FROM worker_reviews WHERE user_id IS NULL
-UNION ALL
-SELECT 'worker_reports', COUNT(*) FROM worker_reports WHERE user_id IS NULL
-UNION ALL
-SELECT 'store_default_workers', COUNT(*) FROM store_default_workers WHERE user_id IS NULL;
+UNION ALL SELECT 'worker_leaves', COUNT(*) FROM worker_leaves WHERE user_id IS NULL
+UNION ALL SELECT 'worker_leave_records', COUNT(*) FROM worker_leave_records WHERE user_id IS NULL
+UNION ALL SELECT 'worker_assignments', COUNT(*) FROM worker_assignments WHERE user_id IS NULL
+UNION ALL SELECT 'worker_reviews', COUNT(*) FROM worker_reviews WHERE user_id IS NULL
+UNION ALL SELECT 'worker_reports', COUNT(*) FROM worker_reports WHERE user_id IS NULL
+UNION ALL SELECT 'store_default_workers', COUNT(*) FROM store_default_workers WHERE user_id IS NULL;
 
--- NULL 레코드가 0이면 → worker_id 컬럼 제거 + workers 테이블 DROP
--- NULL 레코드가 있으면 → 계정 미연결 데이터 수동 처리 후 진행
-
--- 최종 정리 (검증 완료 후)
+-- NULL 0건 확인 후 정리
 -- ALTER TABLE worker_attendance DROP COLUMN worker_id;
--- ALTER TABLE worker_leaves DROP COLUMN worker_id;
--- ... (각 테이블)
+-- (각 테이블 동일)
 -- DROP TABLE workers;
+-- DROP TABLE invitations;
+
+-- display_name 컬럼 정리 (불필요)
+-- ALTER TABLE profiles DROP COLUMN IF EXISTS display_name;
 ```
 
 ---
 
-## 5. 코드 변경 영향 범위
+## 6. 코드 변경 영향 범위
 
-### 5.1 파일별 수정 사항
+### 6.1 제거할 파일/기능
+
+| 파일/기능 | 이유 |
+|-----------|------|
+| 카카오 OAuth 관련 코드 | 로그인 방식 변경 |
+| `auth/callback/route.ts` (카카오 부분) | OAuth 콜백 불필요 |
+| `/api/invite/route.ts` | 이메일 초대 제거 |
+| `invite/accept/page.tsx` | 초대 수락 페이지 불필요 |
+| Resend 패키지/설정 | 이메일 발송 불필요 |
+| `/team` 초대 내역 섹션 | invitations 테이블 제거 |
+| CREW 앱 `workers` 자동 생성 로직 | workers 테이블 제거 |
+| `display_name` 동기화 코드 | display_name 컬럼 제거 |
+
+### 6.2 수정할 파일
 
 | 파일 | 현재 | 변경 후 |
 |------|------|---------|
-| `/app/workers/page.tsx` (명부) | `workers` 테이블 CRUD | `profiles` 직접 CRUD + display_name |
-| `/app/workers/page.tsx` (출퇴근) | `worker_id`로 attendance 조회 | `user_id`로 attendance 조회 |
-| `/app/workers/page.tsx` (근태) | `worker_id` 기준 매트릭스 | `user_id` 기준 매트릭스 |
-| `/app/workers/LeaveTab.tsx` | `workers` + `worker_leaves` 조인 | `profiles` + `worker_leaves` 조인 |
-| `/app/workers/ReviewTab.tsx` | `workers.select("id, name")` | `profiles.select("id, display_name, name")` |
-| `/app/workers/ReportTab.tsx` | `workers.select("id, name")` | `profiles.select("id, display_name, name")` |
-| `/app/team/page.tsx` | `profiles` 별도 조회 | 변경 없음 (이미 profiles 사용) |
-| `/app/crew/attendance/page.tsx` | workers 자동 생성 로직 | **제거** (profiles만 사용) |
-| `/app/crew/page.tsx` | workers 자동 생성 로직 | **제거** |
-| `/app/crew/leave/page.tsx` | `workers.select("id")` | `profiles.id` 직접 사용 |
+| `/app/team/page.tsx` | 초대+크루목록+매장배정 | **계정생성+크루목록+매장배정** (초대 섹션 제거) |
+| `/app/workers/page.tsx` (명부) | `workers` CRUD | `profiles` 직접 CRUD |
+| `/app/workers/page.tsx` (출퇴근) | `worker_id`로 조회 | `user_id` (profiles.id)로 조회 |
+| `/app/workers/page.tsx` (근태) | `worker_id` 매트릭스 | `user_id` 매트릭스 |
+| `/app/workers/LeaveTab.tsx` | workers + worker_leaves 조인 | profiles + worker_leaves 조인 |
+| `/app/workers/ReviewTab.tsx` | `workers.select("id, name")` | `profiles.select("id, name")` |
+| `/app/workers/ReportTab.tsx` | `workers.select("id, name")` | `profiles.select("id, name")` |
+| `/app/crew/attendance/page.tsx` | workers 자동 생성 | **제거** (profiles.id 직접 사용) |
+| `/app/crew/page.tsx` | workers 자동 생성 | **제거** |
 | `/app/dashboard/page.tsx` | `workers.select(count)` | `profiles.select(count).eq("role","crew")` |
-| `/app/settings/workers/page.tsx` | workers CRUD | profiles CRUD |
-| `/app/settings/default-workers/page.tsx` | worker_id 참조 | user_id 참조 |
-| `/lib/types/database.ts` | Worker 타입 정의 | **제거**, Profile 타입 확장 |
+| `/app/login/page.tsx` | 카카오 로그인 버튼 | **이메일/비밀번호 로그인만** |
+| `/lib/types/database.ts` | Worker 타입 | **제거**, Profile 타입 확장 |
 
-### 5.2 헬퍼 함수 변경
+### 6.3 `/team` 페이지 재설계
+
+```
+변경 전:
+├── 관리자 섹션 (super_admin, admin)
+├── 매장별 CREW
+├── 초대 내역 (invitations)
+└── 초대 모달 (이메일 발송)
+
+변경 후:
+├── 관리자 섹션
+├── 매장별 CREW  
+├── 크루 추가 모달 (어드민이 직접 계정 생성)
+│   ├── 이름 (실명) 입력
+│   ├── 이메일 (로그인 ID) 입력
+│   ├── 비밀번호 입력/자동생성
+│   ├── 역할 선택 (crew/admin)
+│   ├── 매장 배정 (복수 선택)
+│   └── 생성 → ID/비번 표시 (복사 버튼)
+└── 매장 배정 변경 모달 (기존 유지)
+```
+
+### 6.4 로그인 페이지 재설계
+
+```
+변경 전:
+├── 카카오 로그인 버튼
+└── (카카오 OAuth → callback → 프로필 생성 → 리다이렉트)
+
+변경 후:
+├── 이메일 입력
+├── 비밀번호 입력
+├── 로그인 버튼
+└── (Supabase signInWithPassword → 리다이렉트)
+```
+
+---
+
+## 7. 헬퍼 함수
+
+### 7.1 이름 표시 (단순화)
 
 ```typescript
-// 현재: getDisplayName 로직 (여러 곳에 산재)
-const name = workers.name;  // workers 테이블에서
-
-// 변경 후: 통일된 헬퍼
-function getDisplayName(profile: Profile): string {
-  return profile.display_name || profile.name || profile.email;
+// 변경 전: display_name || name || email
+// 변경 후:
+function getDisplayName(profile: { name: string; email: string }): string {
+  return profile.name || profile.email;
 }
 ```
 
-### 5.3 CREW 앱 변경
+### 7.2 계정 생성 (어드민용)
 
-```
-현재 플로우:
-  크루 로그인 → workers 레코드 있나? → 없으면 자동 생성 → worker.id로 출퇴근
+```typescript
+// /api/team/create/route.ts
+import { createClient } from '@supabase/supabase-admin';
 
-변경 후:
-  크루 로그인 → profiles.id로 직접 출퇴근 (workers 자동생성 로직 제거)
+export async function POST(req: NextRequest) {
+  const { email, password, name, role, storeIds, orgId } = await req.json();
+  
+  // 1. Supabase Auth 계정 생성
+  const { data: authData, error } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,  // 이메일 인증 스킵
+  });
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  
+  // 2. profiles 업데이트 (trigger로 자동 생성된 row에 추가 정보)
+  await supabaseAdmin.from("profiles").update({
+    name,
+    role,
+    org_id: orgId,
+    status: "active",
+  }).eq("id", authData.user.id);
+  
+  // 3. 매장 배정
+  if (storeIds?.length) {
+    await supabaseAdmin.from("store_members").insert(
+      storeIds.map(sid => ({ user_id: authData.user.id, store_id: sid, org_id: orgId }))
+    );
+  }
+  
+  return NextResponse.json({ success: true, userId: authData.user.id });
+}
 ```
 
 ---
 
-## 6. 엣지 케이스 처리
+## 8. 엣지 케이스 처리
 
-### 6.1 계정 미연결 근무자 (user_id IS NULL)
+### 8.1 계정 미연결 근무자 (기존 데이터)
 
-현재 `workers` 테이블에 `user_id`가 NULL인 레코드가 존재할 수 있다. (앱 미사용 인력)
+마이그레이션 시 `workers.user_id IS NULL`인 레코드의 근태/연차 데이터 처리:
+- **옵션 A:** 해당 인력에게 계정 생성 후 연결 → 데이터 이관
+- **옵션 B:** 이력 데이터만 아카이브 테이블로 이동 → workers DROP
 
-**네이티브 앱 전환 정책:**
-- 전원 앱 설치 필수 → 계정 미연결 근무자 시나리오 제거
-- 마이그레이션 전, `user_id IS NULL`인 workers의 근태/연차 데이터를 확인
-- 옵션 A: 해당 인력에게 계정 생성 후 `user_id` 연결 → 데이터 이관
-- 옵션 B: 이력 데이터만 별도 아카이브 → workers 테이블은 DROP
+### 8.2 이름 기준 role 매핑 (레거시 코드)
 
-### 6.2 이름 충돌
-
-현재 `workers`는 이름 기준으로 role을 매핑하는 코드가 있다:
+현재 `workers/page.tsx`에 이름 기준으로 role을 매핑하는 코드가 있다:
 ```typescript
-// workers/page.tsx:962
-pData.forEach((p: any) => {
-  if (p.name) roleMap[p.name] = p.role;  // 이름 기준!
+pData.forEach((p) => {
+  if (p.name) roleMap[p.name] = p.role;  // 이름 충돌 위험
 });
 ```
+통합 후 `profiles.id` 기준으로 직접 접근하므로 이 문제가 근본적으로 해결된다.
 
-통합 후에는 `profiles.id` 기준으로 직접 접근하므로 이름 충돌 문제가 근본적으로 해결된다.
+### 8.3 퇴사자 처리
 
-### 6.3 퇴사자 처리
-
-현재 `workers.status = "inactive"`로 처리.
-통합 후 `profiles.status = "disabled"` + 앱 접근 차단. 근태/연차 데이터는 `user_id` FK로 보존.
+`profiles.status = "disabled"` + 앱 접근 차단. 근태/연차 데이터는 `user_id` FK로 보존.
 
 ---
 
-## 7. MVP 단계 최소 수정 (지금 적용 가능)
-
-네이티브 전환 전까지, 현재 시스템에서 **방향에 맞는 최소 수정**만 적용한다.
-
-### 7.1 display_name 컬럼 선행 추가
-
-```sql
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS display_name text;
-```
-
-### 7.2 이름 동기화 로직
-
-```typescript
-// workers/page.tsx — 명부에서 이름 수정 시
-const handleSave = async () => {
-  // 기존: workers만 업데이트
-  await supabase.from("workers").update({ name: formData.name, ... }).eq("id", editItem.id);
-  
-  // 추가: profiles.display_name도 동기화
-  if (editItem.user_id) {
-    await supabase.from("profiles")
-      .update({ display_name: formData.name })
-      .eq("id", editItem.user_id);
-  }
-};
-```
-
-### 7.3 팀원 페이지 표시 이름 변경
-
-```typescript
-// team/page.tsx — profiles 표시 시
-// 현재: p.name || "-"
-// 변경: p.display_name || p.name || "-"
-```
-
-이 3가지만 적용하면, 네이티브 전환 전에도 이름 불일치 문제가 해결되고, 전환 시 `display_name` 데이터가 이미 준비되어 있다.
-
----
-
-## 8. 전환 타임라인
+## 9. 전환 타임라인
 
 | 단계 | 시점 | 작업 |
 |------|------|------|
-| **MVP (지금)** | 즉시 | profiles에 display_name 추가 + 이름 동기화 코드 |
-| **네이티브 설계** | 앱 개발 착수 시 | profiles 확장 스키마 최종 확정 |
-| **마이그레이션** | 네이티브 앱 베타 전 | Phase A→B→C SQL 실행 + 코드 전환 |
-| **정리** | 베타 검증 후 | workers 테이블 DROP |
+| **MVP (현재)** | 완료 | display_name 동기화 (임시 조치) |
+| **카카오/초대 제거** | 네이티브 설계 시 | 로그인 페이지 → email/pw만, 초대 → 어드민 직접 생성 |
+| **스키마 마이그레이션** | 네이티브 베타 전 | Phase A→B→C SQL 실행 |
+| **코드 전환** | 마이그레이션 직후 | workers → profiles 참조 변경 (파일 12개) |
+| **정리** | 베타 검증 후 | workers, invitations DROP + display_name 제거 |
 
 ---
 
-## 9. 관련 문서
+## 10. 정리: 최종 제거 목록
+
+### 테이블
+- `workers` → profiles로 흡수
+- `invitations` → 어드민 직접 생성으로 대체
+
+### 컬럼
+- `profiles.display_name` → name이 곧 실명 (불필요)
+
+### 코드/패키지
+- 카카오 OAuth 관련 전체
+- Resend 이메일 패키지
+- `/api/invite/route.ts`
+- `invite/accept/page.tsx`
+- CREW 앱 workers 자동 생성 로직
+
+### 환경변수
+- 카카오 관련 키 (KAKAO_CLIENT_ID 등)
+- Resend API 키
+
+---
+
+## 관련 문서
 
 - 시스템 개발 가이드: `mrpark-system.md`
 - 브랜드/회사 정보: `mrpark-core.md`
