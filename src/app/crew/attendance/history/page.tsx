@@ -67,13 +67,12 @@ export default function CrewAttendanceHistoryPage() {
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
-      const now = new Date();
       const { error } = await supabase.from("checkout_requests").insert({
         org_id: prof?.org_id,
         worker_id: workerId, store_id: storeId,
-        request_date: now.toISOString().split("T")[0],
-        requested_checkout_time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
-        request_reason: "재요청",
+        request_date: originalRequest.request_date,
+        requested_checkout_time: originalRequest.requested_checkout_time,
+        request_reason: `재요청: ${originalRequest.request_reason || "퇴근 미처리 수정"}`,
         status: "pending",
       });
       if (error) throw error;

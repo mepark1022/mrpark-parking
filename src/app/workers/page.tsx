@@ -140,7 +140,7 @@ function ScheduleTab() {
     const oid = await getOrgId();
     setOrgId(oid);
     const supabase = createClient();
-    const { data: w } = await supabase.from("workers").select("id, name").eq("org_id", oid).eq("status", "active").order("name");
+    const { data: w } = await supabase.from("workers").select("id, name, user_id").eq("org_id", oid).eq("status", "active").order("name");
     const { data: s } = await supabase.from("stores").select("id, name").eq("org_id", oid).eq("is_active", true).order("name");
     if (w) setWorkers(w);
     if (s) { setStores(s); if (s.length > 0) setSelectedStore(s[0].id); }
@@ -150,8 +150,8 @@ function ScheduleTab() {
     const supabase = createClient();
     const { data: members } = await supabase.from("store_members").select("user_id").eq("store_id", selectedStore);
     if (members && members.length > 0) {
-      const workerIds = members.map(m => m.user_id);
-      const filtered = workers.filter(w => workerIds.includes(w.id));
+      const memberUserIds = members.map(m => m.user_id);
+      const filtered = workers.filter(w => w.user_id && memberUserIds.includes(w.user_id));
       setStoreWorkers(filtered.length > 0 ? filtered : workers);
     } else {
       setStoreWorkers(workers);
@@ -337,7 +337,7 @@ function ScheduleTab() {
         let sw = workers;
         if (members && members.length > 0) {
           const ids = members.map(m => m.user_id);
-          const filtered = workers.filter(w => ids.includes(w.id));
+          const filtered = workers.filter(w => w.user_id && ids.includes(w.user_id));
           if (filtered.length > 0) sw = filtered;
         }
         const { data: recs } = await supabase.from("worker_attendance").select("*").in("worker_id", sw.map(w => w.id)).eq("store_id", store.id).gte("date", startDate).lte("date", endDate);
@@ -960,7 +960,7 @@ export default function WorkersPage() {
     const allActive = workers.filter(w => w.status === "active");
     if (members && members.length > 0) {
       const ids = members.map(m => m.user_id);
-      const filtered = allActive.filter(w => ids.includes(w.id));
+      const filtered = allActive.filter(w => w.user_id && ids.includes(w.user_id));
       setAttendanceWorkers(filtered.length > 0 ? filtered : allActive);
     } else {
       setAttendanceWorkers(allActive);
@@ -1541,10 +1541,10 @@ export default function WorkersPage() {
             admin:       { label: "어드민",    bg: "#EEF2FF", color: "#1428A0", icon: "🔑" },
             crew:        { label: "크루",      bg: "#dcfce7", color: "#15803d", icon: "👤" },
           };
-          const hqWorkers = workers.filter((w) => !(workerStoreIdMap[w.id] || []).length);
+          const hqWorkers = workers.filter((w) => !(workerStoreIdMap[w.user_id] || []).length);
           const storeGroups = stores.map((s) => ({
             store: s,
-            workers: workers.filter((w) => (workerStoreIdMap[w.id] || []).includes(s.id)),
+            workers: workers.filter((w) => (workerStoreIdMap[w.user_id] || []).includes(s.id)),
           })).filter((g) => g.workers.length > 0);
           const STORE_COLORS = ["#1428A0","#EA580C","#7C3AED","#0F9ED5","#15803d","#b45309","#DC2626"];
 

@@ -28,6 +28,8 @@ interface CheckoutRequest {
   id: string;
   status: "pending" | "approved" | "rejected";
   created_at: string;
+  request_date: string;
+  requested_checkout_time: string | null;
   reject_reason: string | null;
   approved_at: string | null;
   request_reason: string | null;
@@ -71,7 +73,7 @@ export default function CrewAttendancePage() {
     const today = new Date().toISOString().split("T")[0];
     const { data } = await supabase
       .from("checkout_requests")
-      .select("id, status, created_at, request_reason, reject_reason, approved_at")
+      .select("id, status, created_at, request_date, requested_checkout_time, request_reason, reject_reason, approved_at")
       .eq("worker_id", wid)
       .eq("request_date", today)
       .order("created_at", { ascending: false })
@@ -192,6 +194,7 @@ export default function CrewAttendancePage() {
 
           setLatestRequest({
             id: u.id, status: u.status, created_at: u.created_at,
+            request_date: u.request_date, requested_checkout_time: u.requested_checkout_time || null,
             reject_reason: u.reject_reason || null,
             approved_at: u.approved_at || null, request_reason: u.request_reason || null,
           });
@@ -373,19 +376,18 @@ export default function CrewAttendancePage() {
   };
 
   const handleReRequest = async () => {
-    if (!attendance.workerId || !storeId) return;
+    if (!attendance.workerId || !storeId || !latestRequest) return;
     setActionLoading(true);
     const supabase = createClient();
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
-      const now = new Date();
       const { error } = await supabase.from("checkout_requests").insert({
         org_id: prof?.org_id,
         worker_id: attendance.workerId, store_id: storeId,
-        request_date: now.toISOString().split("T")[0],
-        requested_checkout_time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
-        request_reason: "수정 재요청",
+        request_date: latestRequest.request_date,
+        requested_checkout_time: latestRequest.requested_checkout_time,
+        request_reason: `재요청: ${latestRequest.request_reason || "퇴근 미처리 수정"}`,
         status: "pending",
       });
       if (error) throw error;
