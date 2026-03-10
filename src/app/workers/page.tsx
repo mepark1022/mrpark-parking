@@ -1357,36 +1357,39 @@ export default function WorkersPage() {
 
             {/* 카드 헤더 */}
             <div style={{ background: "var(--white)", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderBottom: "1px solid var(--border-light)", flexWrap: "wrap", gap: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span>🕐</span> 오늘의 출퇴근 현황
+              <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border-light)" }}>
+                {/* 상단: 타이틀 + 매장필터 */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
+                    🕐 출퇴근 현황
                   </div>
-                  {/* 매장 필터 */}
                   <select value={attendanceStore} onChange={e => setAttendanceStore(e.target.value)}
-                    style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 13, background: "#fff" }}>
+                    style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid var(--border)", fontSize: 12, background: "#fff" }}>
                     <option value="">전체 매장</option>
                     {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ padding: "5px 12px", borderRadius: 8, background: "var(--success-bg)", color: "var(--success)", fontSize: 13, fontWeight: 700 }}>출근 {checkedIn.length}명</span>
-                  <span style={{ padding: "5px 12px", borderRadius: 8, background: "#fff7ed", color: "#ea580c", fontSize: 13, fontWeight: 700 }}>지각 {late.length}명</span>
-                  <span style={{ padding: "5px 12px", borderRadius: 8, background: "var(--error-bg)", color: "var(--error)", fontSize: 13, fontWeight: 700 }}>미출근 {notYet.length}명</span>
-                  <button onClick={() => loadAll()}
-                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--text-secondary)" }}>
-                    🔄 새로고침
-                  </button>
-                  <button onClick={() => { setManualForm({ workerId: "", status: "present", checkIn: "", checkOut: "" }); setManualMsg(""); setManualModal({ show: true, record: null }); }}
-                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, border: "none", background: "var(--navy)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                    + 수동 등록
-                  </button>
+                {/* 하단: 뱃지 + 버튼 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <span style={{ padding: "3px 10px", borderRadius: 6, background: "var(--success-bg)", color: "var(--success)", fontSize: 12, fontWeight: 700 }}>출근 {checkedIn.length}</span>
+                  <span style={{ padding: "3px 10px", borderRadius: 6, background: "#fff7ed", color: "#ea580c", fontSize: 12, fontWeight: 700 }}>지각 {late.length}</span>
+                  <span style={{ padding: "3px 10px", borderRadius: 6, background: "var(--error-bg)", color: "var(--error)", fontSize: 12, fontWeight: 700 }}>미출근 {notYet.length}</span>
+                  <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                    <button onClick={() => loadAll()}
+                      style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "var(--text-secondary)" }}>
+                      🔄
+                    </button>
+                    <button onClick={() => { setManualForm({ workerId: "", status: "present", checkIn: "", checkOut: "" }); setManualMsg(""); setManualModal({ show: true, record: null }); }}
+                      style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "var(--navy)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      + 수동등록
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div style={{ padding: "16px 24px" }}>
+              <div style={{ padding: "0" }}>
                 {/* PC 테이블 */}
-                <div className="hidden md:block">
+                <div className="hidden md:block" style={{ padding: "16px 24px" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                       <tr>
@@ -1452,7 +1455,7 @@ export default function WorkersPage() {
 
                 {/* 모바일 카드 */}
                 <div className="md:hidden">
-                  {displayWorkers.map(w => {
+                  {displayWorkers.map((w, idx) => {
                     const rec = attendanceRecords.find(r => r.worker_id === w.id);
                     const sm = rec ? statusMap[rec.status] : null;
                     const store = rec ? stores.find((s: any) => s.id === rec.store_id) : null;
@@ -1460,8 +1463,9 @@ export default function WorkersPage() {
                     const hasGps = rec && (rec.check_in_distance_m || rec.check_out_distance_m);
                     return (
                       <div key={w.id} style={{
-                        display: "flex", alignItems: "center", gap: 8, padding: "10px 12px",
-                        borderBottom: "1px solid #f1f5f9",
+                        display: "flex", alignItems: "center", gap: 8, padding: "10px 14px",
+                        background: idx % 2 === 0 ? "#fff" : "#f8fafc",
+                        borderBottom: "1px solid #e8ecf1",
                         borderLeft: `3px solid ${sm ? sm.color : "#cbd5e1"}`,
                       }}>
                         {/* 이름 + 시간 */}
