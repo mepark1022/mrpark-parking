@@ -92,6 +92,7 @@ const DASH_STYLES = `
   .dash-kpi-icon{font-size:18px;margin-bottom:8px;display:block}
   .dash-kpi-val{font-family:'Outfit',sans-serif;font-size:24px;font-weight:900;color:#1a1d2b;line-height:1;display:block;margin-bottom:4px}
   .dash-kpi-label{font-size:11px;font-weight:600;color:#8b90a0}
+  .dash-kpi-sub{font-size:10px;color:#16A34A;font-weight:600;margin-top:4px;display:block}
   .dash-revenue-card{background:linear-gradient(135deg,#1428A0,#0d1f8a);border-radius:20px;padding:18px}
   .dash-revenue-amount{font-family:'Outfit',sans-serif;font-size:32px;font-weight:900;color:#fff;line-height:1;display:block;margin:6px 0 2px}
   .dash-revenue-breakdown{display:flex;background:rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;margin-top:14px}
@@ -646,15 +647,16 @@ export default function DashboardPage() {
           {/* 2. KPI */}
           <div className="dash-kpi-grid">
             {[
-              { cls: "c-navy", icon: "🚗", val: kpi.totalCars.toLocaleString(), label: "총 입차" },
-              { cls: "c-gold", icon: "💰", val: fmtMoney(kpi.totalRevenue), label: "총 매출" },
-              { cls: "c-green", icon: "👥", val: `${todayAttendance}/${totalWorkers}`, label: "출근/총인원" },
-              { cls: "c-purple", icon: "📅", val: `${kpi.activeContracts}건`, label: "월주차 계약" },
+              { cls: "c-navy", icon: "🚗", val: kpi.totalCars.toLocaleString(), label: "총 입차", sub: "" },
+              { cls: "c-gold", icon: "💰", val: fmtMoney(kpi.totalRevenue), label: "총 매출", sub: "" },
+              { cls: "c-green", icon: "👥", val: `${todayAttendance}/${totalWorkers}`, label: "출근/총인원", sub: `금일 ${todayAttendance}명 출근` },
+              { cls: "c-purple", icon: "📅", val: `${kpi.activeContracts}건`, label: "월주차 계약", sub: "" },
             ].map(k => (
               <div key={k.label} className={`dash-kpi-card ${k.cls}`}>
                 <span className="dash-kpi-icon">{k.icon}</span>
                 <span className="dash-kpi-val">{k.val}</span>
                 <span className="dash-kpi-label">{k.label}</span>
+                {k.sub && <span className="dash-kpi-sub">{k.sub}</span>}
               </div>
             ))}
           </div>
