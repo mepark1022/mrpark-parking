@@ -899,7 +899,7 @@ export default function WorkersPage() {
 
   // 출퇴근 탭 진입 시 최신 데이터 새로고침
   useEffect(() => {
-    if (tab === "attendance") loadAll();
+    if (tab === "attendance" || tab === "checkout") loadAll();
   }, [tab]);
 
   const loadAll = async () => {
@@ -912,7 +912,7 @@ export default function WorkersPage() {
       supabase.from("stores").select("id, name, latitude, longitude, road_address").eq("org_id", oid).order("name"),
       supabase.from("worker_attendance").select("*").eq("org_id", oid).eq("date", new Date().toISOString().slice(0, 10)),
       supabase.from("regions").select("*").order("name"),
-      supabase.from("checkout_requests").select("*, workers(name, phone)").eq("org_id", oid).eq("status", "pending").order("created_at", { ascending: false }),
+      supabase.from("checkout_requests").select("*").eq("org_id", oid).eq("status", "pending").order("created_at", { ascending: false }),
     ]);
     if (wData) setWorkers(wData);
     if (sData) setStores(sData);
@@ -1198,7 +1198,7 @@ export default function WorkersPage() {
                         {checkoutModal.mode === "approve" ? "퇴근수정 승인" : "퇴근수정 반려"}
                       </div>
                       <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
-                        {checkoutModal.req.workers?.name} · {checkoutModal.req.request_date}
+                        {workers.find((w: any) => w.id === checkoutModal.req.worker_id)?.name || "알 수 없음"} · {checkoutModal.req.request_date}
                       </div>
                     </div>
                     <button onClick={() => { setCheckoutModal({ show: false, req: null, mode: "approve" }); setCheckoutApproveTime(""); setCheckoutRejectReason(""); }}
@@ -1881,7 +1881,7 @@ export default function WorkersPage() {
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                           <div style={{ width: 40, height: 40, borderRadius: 12, background: "#FEF3C7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🚶</div>
                           <div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: "#1a1d2b" }}>{req.workers?.name || "알 수 없음"}</div>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: "#1a1d2b" }}>{workers.find((w: any) => w.id === req.worker_id)?.name || "알 수 없음"}</div>
                             <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, display: "flex", gap: 8, flexWrap: "wrap" }}>
                               <span>📅 {reqDate}</span>
                               {reqTime && <span>🕐 요청 퇴근 {reqTime}</span>}
