@@ -109,29 +109,6 @@ function CrewLoginContent() {
     checkAuth();
   }, [router]);
 
-  async function handleSocialLogin(provider: "google") {
-    setLoading(true);
-    setError("");
-    
-    try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/crew/auth/callback`,
-        },
-      });
-      
-      if (error) {
-        setError("로그인 중 오류가 발생했습니다.");
-        setLoading(false);
-      }
-    } catch {
-      setError("로그인 중 오류가 발생했습니다.");
-      setLoading(false);
-    }
-  }
-
   async function handleEmailLogin() {
     if (!loginEmail || !loginPassword) return;
     setLoading(true);
@@ -225,32 +202,6 @@ function CrewLoginContent() {
           color: #1A1D2B;
           margin-bottom: 20px;
           text-align: center;
-        }
-        
-        .crew-google-btn {
-          width: 100%;
-          padding: 16px;
-          border-radius: 12px;
-          background: #ffffff;
-          border: 1px solid #d0d5dd;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          font-size: 16px;
-          font-weight: 600;
-          color: #344054;
-          cursor: pointer;
-          transition: opacity 0.15s;
-        }
-        
-        .crew-google-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-        
-        .crew-google-btn:active:not(:disabled) {
-          opacity: 0.9;
         }
         
         .crew-login-error {
@@ -365,34 +316,6 @@ function CrewLoginContent() {
               {loading ? "로그인 중..." : "로그인"}
             </button>
           </div>
-
-          {/* 구분선 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0" }}>
-            <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-            <span style={{ fontSize: 12, color: "#94a3b8" }}>또는</span>
-            <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-          </div>
-
-          {/* 구글 로그인 */}
-          <button
-            className="crew-google-btn"
-            onClick={() => handleSocialLogin("google")}
-            disabled={loading}
-          >
-            {loading ? (
-              <span>연결 중...</span>
-            ) : (
-              <>
-                <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
-                  <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-                  <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
-                  <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-                  <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-                </svg>
-                <span>Google 계정으로 로그인</span>
-              </>
-            )}
-          </button>
 
           {error && (
             <div className="crew-login-error">{error}</div>

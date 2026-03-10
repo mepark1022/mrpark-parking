@@ -2,8 +2,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { login, signup } from "./actions";
-import { createClient } from "@/lib/supabase/client";
+import { login } from "./actions";
 import { useSearchParams, useRouter } from "next/navigation";
 
 /* ────────────────────────────────────────────
@@ -39,33 +38,11 @@ function InlineLogo({ dark = false }: { dark?: boolean }) {
 }
 
 /* ────────────────────────────────────────────
-   소셜 버튼 정의
-──────────────────────────────────────────── */
-const SOCIAL_BUTTONS = [
-  {
-    provider: "google" as const,
-    label: "Google로 시작하기",
-    bg: "#ffffff", color: "#344054", hoverBg: "#f8fafc", border: "1px solid #d0d5dd",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
-        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
-        <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-      </svg>
-    ),
-  },
-];
-
-/* ────────────────────────────────────────────
    메인 컴포넌트
 ──────────────────────────────────────────── */
 function LoginContent() {
-  const [isSignup, setIsSignup] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [socialLoading, setSocialLoading] = useState("");
-  const [signupSuccess, setSignupSuccess] = useState(false);
   const [saveEmail, setSaveEmail] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -87,35 +64,16 @@ function LoginContent() {
   async function handleSubmit(formData: FormData) {
     setError(""); setLoading(true);
     try {
-      // 아이디 저장 처리
       const email = formData.get("email") as string;
       if (saveEmail && email) {
         localStorage.setItem("admin_saved_email", email);
       } else {
         localStorage.removeItem("admin_saved_email");
       }
-      const result = isSignup ? await signup(formData) : await login(formData);
+      const result = await login(formData);
       if (result?.error) setError(result.error);
-      if (result?.success) setSignupSuccess(true);
     } catch { setError("오류가 발생했습니다. 다시 시도해주세요."); }
     finally  { setLoading(false); }
-  }
-
-  async function handleSocialLogin(provider: "google") {
-    setSocialLoading(provider); setError("");
-    try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
-      });
-      if (error) setError("로그인 중 오류가 발생했습니다.");
-    } catch { setError("로그인 중 오류가 발생했습니다."); }
-    finally  { setSocialLoading(""); }
-  }
-
-  function resetToMain() {
-    setIsSignup(false); setSignupSuccess(false); setError("");
   }
 
   /* ── 공통 입력 스타일 ── */
@@ -127,61 +85,27 @@ function LoginContent() {
     fontFamily: "inherit",
   };
 
-  /* ── 소셜 버튼 렌더 ── */
-  const renderSocialButtons = () => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {SOCIAL_BUTTONS.map((btn) => (
-        <button
-          key={btn.provider}
-          onClick={() => handleSocialLogin(btn.provider)}
-          disabled={!!socialLoading}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-            width: "100%", padding: "14px 16px", borderRadius: 12,
-            background: btn.bg, color: btn.color, border: btn.border || "none",
-            fontSize: 15, fontWeight: 600, cursor: "pointer",
-            opacity: socialLoading && socialLoading !== btn.provider ? 0.5 : 1,
-            transition: "opacity 0.15s",
-          }}
-        >
-          {socialLoading === btn.provider
-            ? <span style={{ fontSize: 14 }}>연결 중...</span>
-            : <>{btn.icon}<span>{btn.label}</span></>
-          }
-        </button>
-      ))}
-    </div>
-  );
-
   /* ── 이메일 폼 렌더 ── */
   const renderEmailForm = () => (
     <form action={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {isSignup && (
-        <div>
-          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>이름</label>
-          <input type="text" name="name" required style={inputStyle} placeholder="홍길동" />
-        </div>
-      )}
       <div>
         <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>이메일</label>
-        <input type="email" name="email" required style={inputStyle} placeholder="example@mrpark.co.kr" defaultValue={!isSignup ? (localStorage.getItem("admin_saved_email") || "") : ""} />
+        <input type="email" name="email" required style={inputStyle} placeholder="example@mrpark.co.kr" defaultValue={localStorage.getItem("admin_saved_email") || ""} />
       </div>
       <div>
         <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>비밀번호</label>
         <input type="password" name="password" required minLength={6} style={inputStyle} placeholder="6자 이상" />
       </div>
-      {/* 아이디 저장 (로그인 모드만) */}
-      {!isSignup && (
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "2px 0" }}>
-          <input
-            type="checkbox"
-            checked={saveEmail}
-            onChange={(e) => setSaveEmail(e.target.checked)}
-            style={{ width: 16, height: 16, accentColor: "#1428A0", cursor: "pointer" }}
-          />
-          <span style={{ fontSize: 13, color: "#64748b" }}>아이디 저장</span>
-        </label>
-      )}
+      {/* 아이디 저장 */}
+      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "2px 0" }}>
+        <input
+          type="checkbox"
+          checked={saveEmail}
+          onChange={(e) => setSaveEmail(e.target.checked)}
+          style={{ width: 16, height: 16, accentColor: "#1428A0", cursor: "pointer" }}
+        />
+        <span style={{ fontSize: 13, color: "#64748b" }}>아이디 저장</span>
+      </label>
       {error && (
         <div style={{ padding: "10px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, fontSize: 13, color: "#dc2626" }}>
           {error}
@@ -197,65 +121,22 @@ function LoginContent() {
           marginTop: 2,
         }}
       >
-        {loading ? "처리 중..." : isSignup ? "회원가입" : "로그인"}
+        {loading ? "처리 중..." : "로그인"}
       </button>
     </form>
   );
 
   /* ── 본문 카드 내용 ── */
   const renderCardContent = () => {
-    if (signupSuccess) return (
-      <div style={{ textAlign: "center", padding: "24px 0" }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
-        <div style={{ fontSize: 17, fontWeight: 700, color: "#16A34A", marginBottom: 6 }}>회원가입 완료!</div>
-        <p style={{ fontSize: 14, color: "#64748b", lineHeight: 1.6 }}>관리자 승인 후 이용 가능합니다.</p>
-        <button
-          onClick={resetToMain}
-          style={{ marginTop: 20, padding: "10px 24px", borderRadius: 8, background: "#f1f5f9", border: "none", color: "#475569", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
-        >
-          로그인으로 돌아가기
-        </button>
-      </div>
-    );
-
     return (
       <>
         {/* 모드 헤더 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1D2B", margin: 0 }}>
-            {isSignup ? "회원가입" : "로그인"}
-          </h2>
+        <div style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1D2B", margin: 0 }}>로그인</h2>
         </div>
 
-        {/* 이메일 폼 (항상 표시) */}
+        {/* 이메일 폼 */}
         {renderEmailForm()}
-
-        {/* 구글 로그인 (로그인 모드만) */}
-        {!isSignup && (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0 14px" }}>
-              <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-              <span style={{ fontSize: 12, color: "#94a3b8" }}>또는</span>
-              <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-            </div>
-            {renderSocialButtons()}
-          </>
-        )}
-
-        {/* 회원가입 전환 */}
-        {!signupSuccess && (
-          <div style={{ marginTop: 20, textAlign: "center", paddingTop: 16, borderTop: "1px solid #f1f5f9" }}>
-            <span style={{ fontSize: 13, color: "#94a3b8" }}>
-              {isSignup ? "이미 계정이 있으신가요? " : "계정이 없으신가요? "}
-            </span>
-            <button
-              onClick={() => { setIsSignup(!isSignup); setError(""); }}
-              style={{ background: "none", border: "none", color: "#1428A0", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0 }}
-            >
-              {isSignup ? "로그인" : "회원가입"}
-            </button>
-          </div>
-        )}
       </>
     );
   };
