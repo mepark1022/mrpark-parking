@@ -1187,75 +1187,6 @@ export default function WorkersPage() {
           const notYet = displayWorkers.filter(w => !attendanceRecords.find(r => r.worker_id === w.id));
           return (
           <div>
-            {/* ── 퇴근 처리 요청 승인/반려 모달 ── */}
-            {checkoutModal.show && checkoutModal.req && (
-              <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-                <div style={{ background: "#fff", borderRadius: 20, padding: 28, width: "100%", maxWidth: 440, boxShadow: "0 8px 40px rgba(0,0,0,0.22)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                    <span style={{ fontSize: 22 }}>{checkoutModal.mode === "approve" ? "✅" : "❌"}</span>
-                    <div>
-                      <div style={{ fontSize: 17, fontWeight: 800, color: "#1a1d2b" }}>
-                        {checkoutModal.mode === "approve" ? "퇴근수정 승인" : "퇴근수정 반려"}
-                      </div>
-                      <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
-                        {workers.find((w: any) => w.id === checkoutModal.req.worker_id)?.name || "알 수 없음"} · {checkoutModal.req.request_date}
-                      </div>
-                    </div>
-                    <button onClick={() => { setCheckoutModal({ show: false, req: null, mode: "approve" }); setCheckoutApproveTime(""); setCheckoutRejectReason(""); }}
-                      style={{ marginLeft: "auto", background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#94a3b8", lineHeight: 1 }}>✕</button>
-                  </div>
-
-                  {/* 요청 정보 */}
-                  <div style={{ background: "#f8fafc", borderRadius: 12, padding: "14px 16px", marginBottom: 20, borderLeft: "3px solid #F5B731" }}>
-                    <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8, fontWeight: 600 }}>CREW 수정 요청 내용</div>
-                    <div style={{ display: "flex", gap: 16, fontSize: 14 }}>
-                      <div><span style={{ color: "#94a3b8" }}>요청 퇴근: </span><strong style={{ color: "#1428A0" }}>{checkoutModal.req.requested_checkout_time || "미기재"}</strong></div>
-                    </div>
-                    {checkoutModal.req.request_reason && (
-                      <div style={{ marginTop: 8, fontSize: 13, color: "#475569" }}>💬 {checkoutModal.req.request_reason}</div>
-                    )}
-                  </div>
-
-                  {checkoutModal.mode === "approve" ? (
-                    <>
-                      <div style={{ marginBottom: 20 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1d2b", marginBottom: 8 }}>승인 퇴근 시간 *</div>
-                        <input type="time" value={checkoutApproveTime}
-                          onChange={e => setCheckoutApproveTime(e.target.value)}
-                          defaultValue={checkoutModal.req.requested_checkout_time || ""}
-                          style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #1428A0", fontSize: 16, fontWeight: 700, color: "#1428A0", boxSizing: "border-box" }} />
-                        <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>CREW 앱에서 요청한 시간을 수정할 수 있습니다</div>
-                      </div>
-                      <div style={{ display: "flex", gap: 10 }}>
-                        <button onClick={() => { setCheckoutModal({ ...checkoutModal, mode: "reject" }); setCheckoutApproveTime(""); }}
-                          style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid #dc2626", background: "#fff", color: "#dc2626", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>반려하기</button>
-                        <button onClick={handleCheckoutApprove} disabled={checkoutProcessing}
-                          style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: checkoutProcessing ? "#94a3b8" : "#1428A0", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutProcessing ? "not-allowed" : "pointer" }}>
-                          {checkoutProcessing ? "처리 중..." : "✅ 승인"}
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ marginBottom: 20 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1d2b", marginBottom: 8 }}>반려 사유 *</div>
-                        <textarea value={checkoutRejectReason} onChange={e => setCheckoutRejectReason(e.target.value)}
-                          placeholder="반려 사유를 입력하세요 (CREW에게 전달됩니다)"
-                          style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #dc2626", fontSize: 14, height: 90, resize: "none", boxSizing: "border-box" }} />
-                      </div>
-                      <div style={{ display: "flex", gap: 10 }}>
-                        <button onClick={() => setCheckoutModal({ ...checkoutModal, mode: "approve" })}
-                          style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", color: "#64748b" }}>뒤로</button>
-                        <button onClick={handleCheckoutReject} disabled={checkoutProcessing}
-                          style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: checkoutProcessing ? "#94a3b8" : "#dc2626", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutProcessing ? "not-allowed" : "pointer" }}>
-                          {checkoutProcessing ? "처리 중..." : "❌ 반려"}
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
 
             {/* 수동 등록 모달 */}
             {manualModal.show && (
@@ -1852,61 +1783,44 @@ export default function WorkersPage() {
         {/* ── 퇴근수정 탭 ── */}
         {tab === "checkout" && (
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <span style={{ fontSize: 18 }}>🔔</span>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#1a1d2b" }}>퇴근수정 요청</div>
-                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>CREW 앱에서 퇴근 미처리 수정을 요청합니다</div>
-              </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <span style={{ fontSize: 16 }}>🔔</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: "#1a1d2b" }}>퇴근수정 요청</span>
               {checkoutRequests.length > 0 && (
-                <span style={{ padding: "4px 12px", borderRadius: 20, background: "#F5B731", color: "#1a1d2b", fontSize: 13, fontWeight: 800, marginLeft: "auto" }}>{checkoutRequests.length}건 대기</span>
+                <span style={{ padding: "3px 10px", borderRadius: 20, background: "#F5B731", color: "#1a1d2b", fontSize: 12, fontWeight: 800 }}>{checkoutRequests.length}건</span>
               )}
             </div>
 
             {checkoutRequests.length === 0 ? (
-              <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0", padding: "48px 20px", textAlign: "center" }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#16A34A", marginBottom: 4 }}>처리할 요청이 없습니다</div>
-                <div style={{ fontSize: 13, color: "#94a3b8" }}>CREW가 퇴근수정을 요청하면 여기에 표시됩니다</div>
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: "40px 20px", textAlign: "center" }}>
+                <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#16A34A", marginBottom: 4 }}>처리할 요청이 없습니다</div>
+                <div style={{ fontSize: 12, color: "#94a3b8" }}>CREW가 요청하면 여기에 표시됩니다</div>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {checkoutRequests.map((req: any) => {
-                  const reqDate = req.request_date;
-                  const reqTime = req.requested_checkout_time;
+                  const wName = workers.find((w: any) => w.id === req.worker_id)?.name || "알 수 없음";
                   const store = stores.find((s: any) => s.id === req.store_id);
                   return (
-                    <div key={req.id} style={{ background: "#fff", borderRadius: 14, border: "1px solid #FEF3C7", borderLeft: "4px solid #F5B731", overflow: "hidden" }}>
-                      <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <div style={{ width: 40, height: 40, borderRadius: 12, background: "#FEF3C7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🚶</div>
-                          <div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: "#1a1d2b" }}>{workers.find((w: any) => w.id === req.worker_id)?.name || "알 수 없음"}</div>
-                            <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                              <span>📅 {reqDate}</span>
-                              {reqTime && <span>🕐 요청 퇴근 {reqTime}</span>}
-                              {store && <span>📍 {store.name}</span>}
-                            </div>
-                            {req.request_reason && (
-                              <div style={{ fontSize: 12, color: "#64748b", marginTop: 4, background: "#FFFBEB", borderRadius: 6, padding: "3px 8px", border: "1px solid #FEF3C7" }}>
-                                💬 {req.request_reason}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button
-                            onClick={() => { setCheckoutModal({ show: true, req, mode: "reject" }); setCheckoutRejectReason(""); }}
-                            style={{ padding: "8px 16px", borderRadius: 8, border: "1.5px solid #dc2626", background: "#fff", color: "#dc2626", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                            반려
-                          </button>
-                          <button
-                            onClick={() => { setCheckoutModal({ show: true, req, mode: "approve" }); setCheckoutApproveTime(req.requested_checkout_time || ""); }}
-                            style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                            승인
-                          </button>
+                    <div key={req.id} style={{ background: "#fff", borderRadius: 10, border: "1px solid #FEF3C7", borderLeft: "3px solid #F5B731", padding: "10px 12px" }}>
+                      {/* 1줄: 이름 + 날짜 + 시간 + 매장 + 버튼 */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: "#1a1d2b" }}>{wName}</span>
+                        <span style={{ fontSize: 11, color: "#64748b" }}>📅{req.request_date}</span>
+                        {req.requested_checkout_time && <span style={{ fontSize: 11, color: "#1428A0", fontWeight: 600 }}>🕐{req.requested_checkout_time}</span>}
+                        {store && <span style={{ fontSize: 11, color: "#64748b" }}>📍{store.name}</span>}
+                        <div style={{ marginLeft: "auto", display: "flex", gap: 4, flexShrink: 0 }}>
+                          <button onClick={() => { setCheckoutModal({ show: true, req, mode: "reject" }); setCheckoutRejectReason(""); }}
+                            style={{ padding: "4px 10px", borderRadius: 6, border: "1.5px solid #dc2626", background: "#fff", color: "#dc2626", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>반려</button>
+                          <button onClick={() => { setCheckoutModal({ show: true, req, mode: "approve" }); setCheckoutApproveTime(req.requested_checkout_time || ""); }}
+                            style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "#1428A0", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>승인</button>
                         </div>
                       </div>
+                      {/* 2줄: 사유 (있으면) */}
+                      {req.request_reason && (
+                        <div style={{ fontSize: 11, color: "#64748b", marginTop: 4, paddingLeft: 2 }}>💬 {req.request_reason}</div>
+                      )}
                     </div>
                   );
                 })}
@@ -1915,6 +1829,72 @@ export default function WorkersPage() {
           </div>
         )}
       </div>
+        {/* ── 퇴근수정 승인/반려 모달 (전역) ── */}
+        {checkoutModal.show && checkoutModal.req && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+            <div style={{ background: "#fff", borderRadius: 20, padding: 28, width: "100%", maxWidth: 440, boxShadow: "0 8px 40px rgba(0,0,0,0.22)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                <span style={{ fontSize: 22 }}>{checkoutModal.mode === "approve" ? "✅" : "❌"}</span>
+                <div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: "#1a1d2b" }}>
+                    {checkoutModal.mode === "approve" ? "퇴근수정 승인" : "퇴근수정 반려"}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
+                    {workers.find((w: any) => w.id === checkoutModal.req.worker_id)?.name || "알 수 없음"} · {checkoutModal.req.request_date}
+                  </div>
+                </div>
+                <button onClick={() => { setCheckoutModal({ show: false, req: null, mode: "approve" }); setCheckoutApproveTime(""); setCheckoutRejectReason(""); }}
+                  style={{ marginLeft: "auto", background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#94a3b8", lineHeight: 1 }}>✕</button>
+              </div>
+              <div style={{ background: "#f8fafc", borderRadius: 12, padding: "14px 16px", marginBottom: 20, borderLeft: "3px solid #F5B731" }}>
+                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8, fontWeight: 600 }}>CREW 수정 요청 내용</div>
+                <div style={{ display: "flex", gap: 16, fontSize: 14 }}>
+                  <div><span style={{ color: "#94a3b8" }}>요청 퇴근: </span><strong style={{ color: "#1428A0" }}>{checkoutModal.req.requested_checkout_time || "미기재"}</strong></div>
+                </div>
+                {checkoutModal.req.request_reason && (
+                  <div style={{ marginTop: 8, fontSize: 13, color: "#475569" }}>💬 {checkoutModal.req.request_reason}</div>
+                )}
+              </div>
+              {checkoutModal.mode === "approve" ? (
+                <>
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1d2b", marginBottom: 8 }}>승인 퇴근 시간 *</div>
+                    <input type="time" value={checkoutApproveTime}
+                      onChange={e => setCheckoutApproveTime(e.target.value)}
+                      style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #1428A0", fontSize: 16, fontWeight: 700, color: "#1428A0", boxSizing: "border-box" }} />
+                    <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>요청 시간을 수정할 수 있습니다</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button onClick={() => { setCheckoutModal({ ...checkoutModal, mode: "reject" }); setCheckoutApproveTime(""); }}
+                      style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid #dc2626", background: "#fff", color: "#dc2626", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>반려</button>
+                    <button onClick={handleCheckoutApprove} disabled={checkoutProcessing}
+                      style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: checkoutProcessing ? "#94a3b8" : "#1428A0", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutProcessing ? "not-allowed" : "pointer" }}>
+                      {checkoutProcessing ? "처리 중..." : "✅ 승인"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1d2b", marginBottom: 8 }}>반려 사유 *</div>
+                    <textarea value={checkoutRejectReason} onChange={e => setCheckoutRejectReason(e.target.value)}
+                      placeholder="반려 사유를 입력하세요"
+                      style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #dc2626", fontSize: 14, height: 90, resize: "none", boxSizing: "border-box" }} />
+                  </div>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button onClick={() => setCheckoutModal({ ...checkoutModal, mode: "approve" })}
+                      style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", color: "#64748b" }}>뒤로</button>
+                    <button onClick={handleCheckoutReject} disabled={checkoutProcessing}
+                      style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: checkoutProcessing ? "#94a3b8" : "#dc2626", color: "#fff", fontSize: 14, fontWeight: 700, cursor: checkoutProcessing ? "not-allowed" : "pointer" }}>
+                      {checkoutProcessing ? "처리 중..." : "❌ 반려"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
     </AppLayout>
   );
 }
