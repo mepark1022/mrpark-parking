@@ -466,13 +466,49 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
             <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 0", textAlign: "center", marginBottom: 16, fontFamily: "monospace", fontSize: 22, fontWeight: 900, color: "#fff", letterSpacing: 4 }}>
               {detected?.replace("?", koreanVal || "□")}
             </div>
-            {/* 자주 쓰는 한글 빠른 선택 */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-              {["가","나","다","라","마","바","사","아","자","차","카","타","파","하","허","호"].map(ch => (
-                <button key={ch} onClick={() => setKoreanVal(ch)} style={{ padding: "10px 14px", background: koreanVal === ch ? "#F5B731" : "rgba(255,255,255,0.1)", border: koreanVal === ch ? "2px solid #F5B731" : "1.5px solid rgba(255,255,255,0.2)", borderRadius: 8, color: koreanVal === ch ? "#1A1D2B" : "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", minWidth: 44 }}>
-                  {ch}
-                </button>
-              ))}
+            {/* 자주 쓰는 한글 빠른 선택 (한국 번호판 전체 38자) */}
+            <div style={{ marginBottom: 14 }}>
+              {/* 자가용 기본 (가~자) */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+                {["가","나","다","라","마","바","사","아","자"].map(ch => (
+                  <button key={ch} onClick={() => setKoreanVal(ch)} style={{ padding: "9px 0", background: koreanVal === ch ? "#F5B731" : "rgba(255,255,255,0.1)", border: koreanVal === ch ? "2px solid #F5B731" : "1.5px solid rgba(255,255,255,0.2)", borderRadius: 8, color: koreanVal === ch ? "#1A1D2B" : "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", minWidth: 38, flex: "1 0 38px", textAlign: "center" }}>
+                    {ch}
+                  </button>
+                ))}
+              </div>
+              {/* 거~저 */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+                {["거","너","더","러","머","버","서","어","저"].map(ch => (
+                  <button key={ch} onClick={() => setKoreanVal(ch)} style={{ padding: "9px 0", background: koreanVal === ch ? "#F5B731" : "rgba(255,255,255,0.08)", border: koreanVal === ch ? "2px solid #F5B731" : "1.5px solid rgba(255,255,255,0.15)", borderRadius: 8, color: koreanVal === ch ? "#1A1D2B" : "rgba(255,255,255,0.8)", fontSize: 15, fontWeight: 700, cursor: "pointer", minWidth: 38, flex: "1 0 38px", textAlign: "center" }}>
+                    {ch}
+                  </button>
+                ))}
+              </div>
+              {/* 고~조 */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+                {["고","노","도","로","모","보","소","오","조"].map(ch => (
+                  <button key={ch} onClick={() => setKoreanVal(ch)} style={{ padding: "9px 0", background: koreanVal === ch ? "#F5B731" : "rgba(255,255,255,0.08)", border: koreanVal === ch ? "2px solid #F5B731" : "1.5px solid rgba(255,255,255,0.15)", borderRadius: 8, color: koreanVal === ch ? "#1A1D2B" : "rgba(255,255,255,0.8)", fontSize: 15, fontWeight: 700, cursor: "pointer", minWidth: 38, flex: "1 0 38px", textAlign: "center" }}>
+                    {ch}
+                  </button>
+                ))}
+              </div>
+              {/* 구~주 */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+                {["구","누","두","루","무","부","수","우","주"].map(ch => (
+                  <button key={ch} onClick={() => setKoreanVal(ch)} style={{ padding: "9px 0", background: koreanVal === ch ? "#F5B731" : "rgba(255,255,255,0.08)", border: koreanVal === ch ? "2px solid #F5B731" : "1.5px solid rgba(255,255,255,0.15)", borderRadius: 8, color: koreanVal === ch ? "#1A1D2B" : "rgba(255,255,255,0.8)", fontSize: 15, fontWeight: 700, cursor: "pointer", minWidth: 38, flex: "1 0 38px", textAlign: "center" }}>
+                    {ch}
+                  </button>
+                ))}
+              </div>
+              {/* 렌터카/택시: 하 허 호 배 */}
+              <div style={{ display: "flex", gap: 6 }}>
+                {["하","허","호","배"].map(ch => (
+                  <button key={ch} onClick={() => setKoreanVal(ch)} style={{ padding: "9px 0", background: koreanVal === ch ? "#F5B731" : "rgba(245,183,49,0.08)", border: koreanVal === ch ? "2px solid #F5B731" : "1.5px solid rgba(245,183,49,0.25)", borderRadius: 8, color: koreanVal === ch ? "#1A1D2B" : "#F5B731", fontSize: 15, fontWeight: 700, cursor: "pointer", minWidth: 38, width: 52, textAlign: "center" }}>
+                    {ch}
+                  </button>
+                ))}
+                <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, alignSelf: "center", marginLeft: 4 }}>렌터카/택시</span>
+              </div>
             </div>
             {/* 직접 입력 */}
             <input

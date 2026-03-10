@@ -15,9 +15,31 @@ const PLATE_PATTERNS = [
   /\d{2}[가-힣]\d{4}/,
 ];
 
-// 한글 미인식 폴백 패턴
-const NUMERIC_FALLBACK_7 = /\d{7}/;     // 1234567 (붙어있는 경우)
-const NUMERIC_FALLBACK_3_4 = /(\d{3})\D*(\d{4})/; // 158 나 2953 → 3자리+4자리 분리
+// ─────────────────────────────────────────────
+// 한글 미인식 폴백: "뒤 4자리 고정" 원칙
+// 한국 번호판은 항상 뒤 4자리가 숫자
+//   신형: XXX + 한글 + XXXX (앞3 + 뒤4)
+//   구형: XX + 한글 + XXXX  (앞2 + 뒤4)
+// ─────────────────────────────────────────────
+function buildFallbackCandidates(digits: string): string[] {
+  const results: string[] = [];
+  if (digits.length < 6) return results; // 최소 6자리 (구형 2+4)
+
+  // 뒤 4자리는 항상 고정 (한국 번호판 불변 규칙)
+  const last4 = digits.slice(-4);
+  const front = digits.slice(0, -4); // 앞쪽 나머지 (한글→숫자 변환분 포함)
+
+  // 신형 후보: 앞 3자리 (front가 3자리 이상이면)
+  if (front.length >= 3) {
+    results.push(`${front.slice(0, 3)}? ${last4}`);
+  }
+  // 구형/이륜 후보: 앞 2자리 (front가 2자리 이상이면)
+  if (front.length >= 2) {
+    results.push(`${front.slice(0, 2)}? ${last4}`);
+  }
+
+  return results;
+}
 
 // ─────────────────────────────────────────────
 // 번호판 후보 파싱
@@ -40,33 +62,41 @@ function parsePlates(texts: string[]): string[] {
     }
   }
 
-  // 2차 폴백: 한글 미인식 시
+  // 2차 폴백: 한글 미인식 시 — "뒤 4자리 고정" 원칙 적용
   if (results.size === 0) {
-    // 케이스 A: 4자리+4자리 (한글→숫자 오인식)
-    // "164 4764" = 16나4764(구형) OR 164나4764(신형) 두 가지 가능 → 둘 다 후보로 제공
-    const m44 = fullText.match(/\b(\d{4})\s+(\d{4})\b/);
-    if (m44) {
-      results.add(`${m44[1].slice(0, 3)}? ${m44[2]}`); // 신형: 164? 4764
-      results.add(`${m44[1].slice(0, 2)}? ${m44[2]}`); // 구형/이륜: 16? 4764
-    } else {
-      // 케이스 B: 7자리 연속
-      const m7 = fullText.replace(/\s+/g, "").match(NUMERIC_FALLBACK_7);
-      if (m7) {
-        const n = m7[0];
-        results.add(`${n.slice(0, 3)}? ${n.slice(3)}`); // 신형
-        results.add(`${n.slice(0, 2)}? ${n.slice(2)}`); // 구형/이륜
-      } else {
-        // 케이스 C: 3자리+4자리 분리
-        const m34 = fullText.match(/\b(\d{3})\s+(\d{4})\b/);
-        if (m34) {
-          results.add(`${m34[1]}? ${m34[2]}`);
-        }
-        // 케이스 D: 2자리+4자리 분리
-        const m24 = fullText.match(/\b(\d{2})\s+(\d{4})\b/);
-        if (m24) {
-          results.add(`${m24[1]}? ${m24[2]}`);
+    // 전체 텍스트에서 숫자만 추출 (공백/특수문자 무시)
+    const allDigits = fullText.replace(/[^0-9]/g, "");
+
+    // 6~8자리 연속 숫자 블록 찾기
+    const digitBlocks = allDigits.match(/\d{6,9}/g) || [];
+
+    for (const block of digitBlocks) {
+      for (const c of buildFallbackCandidates(block)) {
+        results.add(c);
+      }
+    }
+
+    // 연속 블록 없으면 → 공백으로 분리된 숫자 그룹 합산 시도
+    if (results.size === 0) {
+      // "212 9935" 또는 "2125 9935" 등 공백 분리 패턴
+      const spaced = fullText.match(/\d[\d\s]{4,10}\d/g) || [];
+      for (const s of spaced) {
+        const digits = s.replace(/\s/g, "");
+        if (digits.length >= 6 && digits.length <= 9) {
+          for (const c of buildFallbackCandidates(digits)) {
+            results.add(c);
+          }
         }
       }
+    }
+
+    // 그래도 없으면 → 3자리+4자리 또는 2자리+4자리 분리 패턴
+    if (results.size === 0) {
+      const m34 = fullText.match(/\b(\d{3})\s+(\d{4})\b/);
+      if (m34) results.add(`${m34[1]}? ${m34[2]}`);
+
+      const m24 = fullText.match(/\b(\d{2})\s+(\d{4})\b/);
+      if (m24) results.add(`${m24[1]}? ${m24[2]}`);
     }
   }
 
