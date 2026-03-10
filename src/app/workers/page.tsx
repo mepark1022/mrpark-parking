@@ -1631,9 +1631,9 @@ export default function WorkersPage() {
 
           const GroupSection = ({ title, accentColor, workers: gWorkers, isHq }: any) => (
             <div style={{ background: "#fff", borderRadius: 12, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
-              <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)", display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border-light)", background: accentColor + "10", display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 3, height: 16, background: accentColor, borderRadius: 2 }} />
-                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{title}</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: accentColor }}>{title}</span>
                 <span style={{ fontSize: 11, fontWeight: 600, padding: "1px 8px", borderRadius: 12, background: accentColor + "20", color: accentColor }}>{gWorkers.length}명</span>
                 {isHq && <span style={{ fontSize: 10, color: "var(--text-muted)" }}>매장 미배정</span>}
               </div>
