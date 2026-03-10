@@ -709,49 +709,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 4. 차트 */}
-          <div className="dash-chart-row">
-            <div className="dash-card dash-compact-card">
-              <div className="dash-sec-label" style={{ marginBottom: isMobile ? 4 : 14 }}>
-                <span className="dash-sec-title">⏰ 시간대별 입차</span>
-                <span className="dash-sec-badge">{periodLabel}</span>
-              </div>
-              {hourlyChartData.some(d => d.count > 0) ? (
-                <ResponsiveContainer width="100%" height={isMobile ? 120 : 200}>
-                  <BarChart data={hourlyChartData} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="hour" tick={{ fontSize: 9 }} interval={1} />
-                    <YAxis tick={{ fontSize: 9 }} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#1428A0" radius={[4, 4, 0, 0]} name="입차량" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div style={{ height: isMobile ? 50 : 140, display: "flex", alignItems: "center", justifyContent: "center", color: "#8b90a0", fontSize: 13 }}>데이터가 없습니다</div>
-              )}
-            </div>
-            <div className="dash-card dash-compact-card">
-              <div className="dash-sec-label" style={{ marginBottom: isMobile ? 4 : 14 }}>
-                <span className="dash-sec-title">📈 일별 추이</span>
-              </div>
-              {dailyTrendData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={isMobile ? 120 : 200}>
-                  <LineChart data={dailyTrendData} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="date" tick={{ fontSize: 9 }} />
-                    <YAxis tick={{ fontSize: 9 }} />
-                    <Tooltip />
-                    <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
-                    <Line type="monotone" dataKey="cars" stroke="#1428A0" name="입차량" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="valet" stroke="#F5B731" name="발렛매출" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div style={{ height: isMobile ? 50 : 140, display: "flex", alignItems: "center", justifyContent: "center", color: "#8b90a0", fontSize: 13 }}>데이터가 없습니다</div>
-              )}
-            </div>
-          </div>
-
           {/* 5. 미정산 + 월주차 만료 */}
           <div className="dash-bottom-row">
             <div className="dash-card dash-compact-card">

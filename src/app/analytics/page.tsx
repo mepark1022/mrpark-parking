@@ -2,13 +2,13 @@
 "use client";
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 import {
-  AreaChart, Area, BarChart, Bar,
+  AreaChart, Area, BarChart, Bar, LineChart, Line, Legend,
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
@@ -161,6 +161,7 @@ export default function AnalyticsPage() {
   const [dailyData, setDailyData] = useState<DailySummary[]>([]);
   const [storeData, setStoreData] = useState<StoreSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hourlyData, setHourlyData] = useState<{hour:number;car_count:number}[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -184,7 +185,7 @@ export default function AnalyticsPage() {
       const prevEndStr = prevEnd.toISOString().split("T")[0];
 
       let q = supabase.from("daily_records")
-        .select("date, store_id, valet_revenue, parking_revenue, total_cars, valet_count")
+        .select("id, date, store_id, valet_revenue, parking_revenue, total_cars, valet_count")
         .eq("org_id", oid).gte("date", start).lte("date", end).order("date");
       if (selectedStore !== "all") q = q.eq("store_id", selectedStore);
       const { data: records } = await q;
@@ -221,6 +222,13 @@ export default function AnalyticsPage() {
       });
       setDailyData(Object.values(dateMap).sort((a, b) => a.date.localeCompare(b.date)));
 
+      // 시간대별 입차 데이터
+      const recordIds = rows.map(r => r.id).filter(Boolean);
+      if (recordIds.length > 0) {
+        const { data: hData } = await supabase.from("hourly_data").select("hour, car_count").in("record_id", recordIds);
+        setHourlyData(hData || []);
+      } else { setHourlyData([]); }
+
       if (selectedStore === "all") {
         const storeMap: Record<string, StoreSummary> = {};
         rows.forEach((r) => {
@@ -239,6 +247,12 @@ export default function AnalyticsPage() {
   }, [period, customStart, customEnd, selectedStore, stores]);
 
   useEffect(() => { if (stores.length > 0 || selectedStore === "all") loadData(); }, [loadData, stores]);
+
+  const hourlyChartData = useMemo(() => {
+    const hourMap: Record<number, number> = {}; for (let h = 7; h <= 22; h++) hourMap[h] = 0;
+    hourlyData.forEach(d => { if (hourMap[d.hour] !== undefined) hourMap[d.hour] += d.car_count; });
+    return Object.entries(hourMap).map(([h, count]) => ({ hour: `${h}시`, count }));
+  }, [hourlyData]);
 
   const totalRevenueForPie = (kpi?.valetRevenue || 0) + (kpi?.parkingRevenue || 0);
 
@@ -397,6 +411,57 @@ export default function AnalyticsPage() {
                   ? <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 13 }}>로드 중...</div>
                   : <MobileBarChart data={dailyData} />
                 }
+              </div>
+            </div>
+          </div>
+
+          {/* 시간대별 입차 */}
+          <div style={{ padding: "14px 16px 0" }}>
+            <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+              <div style={{ padding: "14px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#1a1d2b" }}>⏰ 시간대별 입차</div>
+                <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700 }}>{period === "today" ? "오늘" : period === "week" ? "이번 주" : period === "month" ? "이번 달" : "선택 기간"}</div>
+              </div>
+              <div style={{ padding: "10px 8px 14px" }}>
+                {hourlyChartData.some(d => d.count > 0) ? (
+                  <ResponsiveContainer width="100%" height={140}>
+                    <BarChart data={hourlyChartData} margin={{ top: 0, right: 4, bottom: 0, left: -20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="hour" tick={{ fontSize: 9 }} interval={1} />
+                      <YAxis tick={{ fontSize: 9 }} />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="#1428A0" radius={[4, 4, 0, 0]} name="입차량" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div style={{ height: 60, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 13 }}>데이터가 없습니다</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 일별 추이 */}
+          <div style={{ padding: "14px 16px 0" }}>
+            <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+              <div style={{ padding: "14px 16px", borderBottom: "1px solid #f1f5f9" }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#1a1d2b" }}>📈 일별 추이</div>
+              </div>
+              <div style={{ padding: "10px 8px 14px" }}>
+                {dailyData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={140}>
+                    <LineChart data={dailyData} margin={{ top: 0, right: 4, bottom: 0, left: -20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="label" tick={{ fontSize: 9 }} />
+                      <YAxis tick={{ fontSize: 9 }} />
+                      <Tooltip />
+                      <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+                      <Line type="monotone" dataKey="totalCars" stroke="#1428A0" name="입차량" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="valetRevenue" stroke="#F5B731" name="발렛매출" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div style={{ height: 60, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 13 }}>데이터가 없습니다</div>
+                )}
               </div>
             </div>
           </div>
@@ -607,6 +672,32 @@ export default function AnalyticsPage() {
               content: dailyData.length === 0
                 ? <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#8b919d", fontSize: 14, background: "#f8f9fb", borderRadius: 10, margin: "0 16px" }}>{loading ? "로드 중..." : "데이터 없음"}</div>
                 : <ResponsiveContainer width="100%" height={220}><BarChart data={dailyData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} /><XAxis dataKey="label" tick={{ fontSize: 12, fill: "#8b919d" }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 11, fill: "#8b919d" }} axisLine={false} tickLine={false} width={40} /><Tooltip content={<CustomTooltip />} /><Bar dataKey="totalCars" name="입차량" fill="#F5B731" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer>
+            },
+          ].map(panel => (
+            <div key={panel.title} style={{ background: "#fff", borderRadius: 16, border: "1px solid #eef0f3", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", overflow: "hidden" }}>
+              <div style={{ padding: "18px 24px", borderBottom: "1px solid #eef0f3", display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 18 }}>{panel.icon}</span>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1d26" }}>{panel.title}</span>
+              </div>
+              <div style={{ padding: "16px 8px 12px" }}>{panel.content}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* 시간대별 입차 + 일별 추이 */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+          {[
+            {
+              icon: "⏰", title: "시간대별 입차",
+              content: !hourlyChartData.some(d => d.count > 0)
+                ? <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#8b919d", fontSize: 14, background: "#f8f9fb", borderRadius: 10, margin: "0 16px" }}>{loading ? "로드 중..." : "데이터 없음"}</div>
+                : <ResponsiveContainer width="100%" height={220}><BarChart data={hourlyChartData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} /><XAxis dataKey="hour" tick={{ fontSize: 11, fill: "#8b919d" }} interval={1} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 11, fill: "#8b919d" }} axisLine={false} tickLine={false} width={30} /><Tooltip /><Bar dataKey="count" fill="#1428A0" radius={[4, 4, 0, 0]} name="입차량" /></BarChart></ResponsiveContainer>
+            },
+            {
+              icon: "📈", title: "일별 추이",
+              content: dailyData.length === 0
+                ? <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#8b919d", fontSize: 14, background: "#f8f9fb", borderRadius: 10, margin: "0 16px" }}>{loading ? "로드 중..." : "데이터 없음"}</div>
+                : <ResponsiveContainer width="100%" height={220}><LineChart data={dailyData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" /><XAxis dataKey="label" tick={{ fontSize: 11, fill: "#8b919d" }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 11, fill: "#8b919d" }} axisLine={false} tickLine={false} width={40} /><Tooltip /><Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} /><Line type="monotone" dataKey="totalCars" stroke="#1428A0" name="입차량" strokeWidth={2} dot={false} /><Line type="monotone" dataKey="valetRevenue" stroke="#F5B731" name="발렛매출" strokeWidth={2} dot={false} /></LineChart></ResponsiveContainer>
             },
           ].map(panel => (
             <div key={panel.title} style={{ background: "#fff", borderRadius: 16, border: "1px solid #eef0f3", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", overflow: "hidden" }}>
