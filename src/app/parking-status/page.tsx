@@ -223,7 +223,7 @@ export default function ParkingStatusPage() {
 
     // 2) mepark_tickets - 선택한 날짜 입차분
     let q2=supabase.from("mepark_tickets")
-      .select("id,plate_number,parking_type,status,entry_at,exit_at,store_id,entry_crew_id,parking_location,is_monthly,visit_place_id,stores:store_id(name),visit_places:visit_place_id(name,floor)")
+      .select("id,plate_number,parking_type,status,entry_at,exit_at,store_id,entry_crew_id,parking_location,is_monthly,visit_place_id,entry_method,stores:store_id(name),visit_places:visit_place_id(name,floor)")
       .eq("org_id",ctx.orgId)
       .gte("entry_at",`${selectedDate}T00:00:00`).lte("entry_at",`${selectedDate}T23:59:59`)
       .order("entry_at",{ascending:false});
@@ -232,7 +232,7 @@ export default function ParkingStatusPage() {
     // 3) 날짜 무관 현재 주차 중인 이전 날짜 티켓 (좀비 티켓 — 오늘 날짜에 안 잡힘)
     const todayStart=`${selectedDate}T00:00:00`;
     let q3=supabase.from("mepark_tickets")
-      .select("id,plate_number,parking_type,status,entry_at,exit_at,store_id,entry_crew_id,parking_location,is_monthly,visit_place_id,stores:store_id(name),visit_places:visit_place_id(name,floor)")
+      .select("id,plate_number,parking_type,status,entry_at,exit_at,store_id,entry_crew_id,parking_location,is_monthly,visit_place_id,entry_method,stores:store_id(name),visit_places:visit_place_id(name,floor)")
       .eq("org_id",ctx.orgId)
       .in("status",["parking","pre_paid","exit_requested","car_ready"])
       .lt("entry_at",todayStart)  // 오늘 이전 날짜만
@@ -263,6 +263,7 @@ export default function ParkingStatusPage() {
       floor: t.visit_places?.floor || t.parking_location || null,
       stores: t.stores,
       workers: t.entry_crew_id ? { name: crewMap[t.entry_crew_id] || "CREW" } : null,
+      entry_method: t.entry_method || null,
       _source: "mepark_tickets" as const,
       _ticket_status: t.status, // 원본 티켓 상태 보존
     }));
@@ -283,6 +284,7 @@ export default function ParkingStatusPage() {
         floor: t.visit_places?.floor || t.parking_location || null,
         stores: t.stores,
         workers: t.entry_crew_id ? { name: crewMap[t.entry_crew_id] || "CREW" } : null,
+        entry_method: t.entry_method || null,
         _source: "mepark_tickets" as const,
         _ticket_status: t.status,
         _is_zombie: true, // 이전 날짜 미출차 표시
@@ -566,7 +568,7 @@ export default function ParkingStatusPage() {
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead>
                 <tr>
-                  {["차량번호","매장","유형","입차시간","출차시간","위치","등록자","상태"].map(h=>(
+                  {["차량번호","매장","유형","입차방식","입차시간","출차시간","위치","등록자","상태"].map(h=>(
                     <th key={h} style={{padding:"14px 16px",textAlign:"left",fontSize:13,fontWeight:600,color:C.textMuted,background:C.bgCard,borderBottom:`1px solid ${C.borderLight}`}}>{h}</th>
                   ))}
                 </tr>
@@ -594,6 +596,15 @@ export default function ParkingStatusPage() {
                       <td style={{padding:"12px 16px",fontSize:13,fontWeight:600,color:C.textSecondary,borderBottom:`1px solid ${C.borderLight}`,maxWidth:140,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{e.stores?.name||"-"}</td>
                       <td style={{padding:"12px 16px",borderBottom:`1px solid ${C.borderLight}`}}>
                         <span style={{padding:"4px 12px",borderRadius:6,fontSize:12,fontWeight:700,background:ts.bg,color:ts.color}}>{ts.label}</span>
+                      </td>
+                      <td style={{padding:"12px 16px",borderBottom:`1px solid ${C.borderLight}`}}>
+                        {e.entry_method ? (
+                          <span style={{padding:"3px 10px",borderRadius:6,fontSize:11,fontWeight:700,
+                            background:e.entry_method==="camera"?"#EFF6FF":"#F1F5F9",
+                            color:e.entry_method==="camera"?"#1D4ED8":"#64748B"}}>
+                            {e.entry_method==="camera"?"📷 카메라":"✏️ 수기"}
+                          </span>
+                        ) : <span style={{fontSize:12,color:C.textMuted}}>-</span>}
                       </td>
                       <td style={{padding:"12px 16px",fontSize:14,fontWeight:700,color:C.textPrimary,borderBottom:`1px solid ${C.borderLight}`}}>{fmt(e.entry_time)}</td>
                       <td style={{padding:"12px 16px",fontSize:13,fontWeight:600,color:e.exit_time?C.textSecondary:C.textMuted,borderBottom:`1px solid ${C.borderLight}`}}>{fmt(e.exit_time)}</td>
@@ -859,6 +870,7 @@ export default function ParkingStatusPage() {
                           <span style={{fontSize:10,color:"#94a3b8"}}>⏰ {fmt(e.entry_time)}</span>
                           {!isParked&&e.exit_time&&<><span style={{color:"#e2e8f0",fontSize:9}}>|</span><span style={{fontSize:10,color:"#bbb"}}>→ {fmt(e.exit_time)}</span></>}
                           {e.workers?.name&&<><span style={{color:"#e2e8f0",fontSize:9}}>|</span><span style={{fontSize:10,color:"#bbb"}}>👤 {e.workers.name}</span></>}
+                          {e.entry_method&&<><span style={{color:"#e2e8f0",fontSize:9}}>|</span><span style={{fontSize:10,color:e.entry_method==="camera"?"#1D4ED8":"#94a3b8"}}>{e.entry_method==="camera"?"📷":"✏️"}</span></>}
                         </div>
                       </div>
                       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2,flexShrink:0}}>

@@ -178,6 +178,7 @@ export default function CrewEntryPage() {
 
   // OCR 카메라
   const [showCamera, setShowCamera] = useState(false);
+  const [entryMethod, setEntryMethod] = useState<"manual"|"camera">("manual");
 
   // Step 1
   const [plateNumber, setPlateNumber] = useState("");
@@ -238,6 +239,7 @@ export default function CrewEntryPage() {
     const cleaned = val.replace(/\s/g, "").replace(/[a-z]/g, (c) => c.toUpperCase()).slice(0, 10);
     setPlateNumber(cleaned);
     setPlateError("");
+    setEntryMethod("manual");
     setMonthlyInfo(null);
     if (plateTimer.current) clearTimeout(plateTimer.current);
     if (cleaned.length >= 4) {
@@ -295,6 +297,7 @@ export default function CrewEntryPage() {
           visit_place_id: visitPlaceId || null,
           parking_lot_id: parkingLotId || null,
           parking_location: parkingLocation || null,
+          entry_method: entryMethod,
           entry_at: new Date().toISOString(),
         })
         .select("id").single();
@@ -334,6 +337,7 @@ export default function CrewEntryPage() {
             <CameraOcr
               onConfirm={(plate) => {
                 handlePlateChange(plate);
+                setEntryMethod("camera");
                 setShowCamera(false);
               }}
               onCancel={() => setShowCamera(false)}
