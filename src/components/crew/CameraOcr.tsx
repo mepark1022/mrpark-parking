@@ -459,21 +459,15 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         <div style={{ flex: "0 0 30%", background: "rgba(0,0,0,0.6)" }} />
         <div style={{ flex: "0 0 24%", display: "flex" }}>
           <div style={{ flex: 1, background: "rgba(0,0,0,0.6)" }} />
-          {/* 가이드 프레임 영역 — 번호판을 이 안에 맞춰주세요 */}
-          <div style={{ flex: "0 0 80%", position: "relative" }}>
-            {phase === STATES.IDLE || phase === STATES.SCANNING ? (
-              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", letterSpacing: 0.5, pointerEvents: "none" }}>
-                번호판을 이 안에 맞춰주세요
-              </div>
-            ) : null}
-          </div>
+          {/* 가이드 프레임 영역 — captureFrame 크롭 대상 */}
+          <div style={{ flex: "0 0 80%", position: "relative" }} />
           <div style={{ flex: 1, background: "rgba(0,0,0,0.6)" }} />
         </div>
         <div style={{ flex: 1, background: "rgba(0,0,0,0.6)" }} />
       </div>
 
-      {/* 스캔 박스 */}
-      <div style={{ position: "absolute", zIndex: 10, top: "25%", left: "5%", right: "5%", height: "35%", border: boxBorder[phase], borderRadius: 12, boxShadow: boxGlow[phase], transition: "border 0.3s,box-shadow 0.4s", animation: shakeBox ? "shake 0.4s ease" : "none", overflow: "hidden" }}>
+      {/* 스캔 박스 — captureFrame 크롭 좌표와 동기화 (top:30%, height:24%, 좌우:10%) */}
+      <div style={{ position: "absolute", zIndex: 10, top: "30%", left: "10%", right: "10%", height: "24%", border: boxBorder[phase], borderRadius: 12, boxShadow: boxGlow[phase], transition: "border 0.3s,box-shadow 0.4s", animation: shakeBox ? "shake 0.4s ease" : "none", overflow: "hidden" }}>
         {/* 모서리 마커 */}
         {([
           { t: 0, l: 0, bTop: "3px solid #F5B731", bLeft: "3px solid #F5B731" },
@@ -503,7 +497,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
       </div>
 
       {/* 상태 레이블 */}
-      <div style={{ position: "absolute", zIndex: 15, top: "calc(25% - 44px)", left: 0, right: 0, display: "flex", justifyContent: "center" }}>
+      <div style={{ position: "absolute", zIndex: 15, top: "calc(30% - 44px)", left: 0, right: 0, display: "flex", justifyContent: "center" }}>
         <div style={{ background: "rgba(0,0,0,0.6)", borderRadius: 20, padding: "6px 18px", display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: phase === STATES.CONFIRMED || phase === STATES.CONFIRMING ? "#16A34A" : phase === STATES.SCANNING || phase === STATES.DETECTING ? "#F5B731" : "rgba(255,255,255,0.4)" }} />
           <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{phaseLabel[phase]}</span>
@@ -511,7 +505,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
       </div>
 
       {/* 안내 문구 */}
-      <div style={{ position: "absolute", zIndex: 15, top: "calc(25% + 37%)", left: 0, right: 0, display: "flex", justifyContent: "center", padding: "0 16px" }}>
+      <div style={{ position: "absolute", zIndex: 15, top: "calc(30% + 24% + 10px)", left: 0, right: 0, display: "flex", justifyContent: "center", padding: "0 16px" }}>
         <div style={{ background: "rgba(245,183,49,0.12)", border: "1px solid rgba(245,183,49,0.35)", borderRadius: 10, padding: "8px 16px", display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 14 }}>⚠️</span>
           <span style={{ color: "#F5B731", fontSize: 12, fontWeight: 600, lineHeight: 1.5 }}>
@@ -522,7 +516,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         </div>
       </div>
       {errorMsg && phase === STATES.IDLE && (
-        <div style={{ position: "absolute", zIndex: 15, top: "calc(25% + 38%)", left: "5%", right: "5%", marginTop: 12 }}>
+        <div style={{ position: "absolute", zIndex: 15, top: "calc(30% + 24% + 10px)", left: "10%", right: "10%", marginTop: 12 }}>
           <div style={{ background: "rgba(220,38,38,0.15)", border: "1.5px solid rgba(220,38,38,0.5)", borderRadius: 10, padding: "10px 16px", textAlign: "center" }}>
             <span style={{ color: "#fca5a5", fontSize: 13 }}>⚠️ {errorMsg}</span>
           </div>
