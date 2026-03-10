@@ -20,8 +20,9 @@ const tabs = [
   { id: "roster", label: "명부" },
   { id: "schedule", label: "근태" },
   { id: "leave", label: "연차" },
-  { id: "review", label: "근무리뷰" },
+  { id: "review", label: "리뷰" },
   { id: "report", label: "시말서" },
+  { id: "checkout", label: "퇴근수정" },
 ];
 
 const statusMap = {
@@ -1163,11 +1164,16 @@ export default function WorkersPage() {
         <TodaySummarySection stores={stores} workers={workers} attendanceRecords={attendanceRecords} />
 
         {/* ── 6탭 ── */}
-        <div className="v3-period-tabs overflow-x-auto mb-6" style={{ display: "flex", gap: 4, padding: 4, flexWrap: "nowrap" }}>
+        <div className="v3-period-tabs overflow-x-auto mb-6" style={{ display: "flex", gap: 3, padding: 4, flexWrap: "nowrap" }}>
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`v3-period-tab cursor-pointer whitespace-nowrap${tab === t.id ? " active" : ""}`}
-              style={{ flexShrink: 0 }}>{t.label}</button>
+              style={{ flexShrink: 0, padding: "6px 10px", fontSize: 13, position: "relative" }}>
+              {t.label}
+              {t.id === "checkout" && checkoutRequests.length > 0 && (
+                <span style={{ position: "absolute", top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 8, background: "#DC2626", color: "#fff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>{checkoutRequests.length}</span>
+              )}
+            </button>
           ))}
         </div>
 
@@ -1247,61 +1253,6 @@ export default function WorkersPage() {
                       </div>
                     </>
                   )}
-                </div>
-              </div>
-            )}
-
-            {/* ── 퇴근 처리 요청 섹션 ── */}
-            {checkoutRequests.length > 0 && (
-              <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #FEF3C7", borderLeft: "4px solid #F5B731", boxShadow: "0 2px 12px rgba(245,183,49,0.12)", marginBottom: 20, overflow: "hidden" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #FEF3C7", background: "#FFFBEB" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 18 }}>🔔</span>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: "#92400E" }}>퇴근수정 요청</div>
-                      <div style={{ fontSize: 12, color: "#B45309", marginTop: 2 }}>CREW 앱에서 퇴근 미처리 수정을 요청했습니다. 확인 후 승인하세요.</div>
-                    </div>
-                  </div>
-                  <span style={{ padding: "5px 12px", borderRadius: 20, background: "#F5B731", color: "#1a1d2b", fontSize: 13, fontWeight: 800 }}>{checkoutRequests.length}건</span>
-                </div>
-                <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-                  {checkoutRequests.map((req: any) => {
-                    const reqDate = req.request_date;
-                    const reqTime = req.requested_checkout_time;
-                    const store = stores.find((s: any) => s.id === req.store_id);
-                    return (
-                      <div key={req.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 12, background: "#f8fafc", border: "1px solid #e2e8f0", flexWrap: "wrap", gap: 10 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <div style={{ width: 40, height: 40, borderRadius: 12, background: "#FEF3C7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🚶</div>
-                          <div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: "#1a1d2b" }}>{req.workers?.name || "알 수 없음"}</div>
-                            <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                              <span>📅 {reqDate}</span>
-                              {reqTime && <span>🕐 요청 퇴근 {reqTime}</span>}
-                              {store && <span>📍 {store.name}</span>}
-                            </div>
-                            {req.request_reason && (
-                              <div style={{ fontSize: 12, color: "#64748b", marginTop: 4, background: "#fff", borderRadius: 6, padding: "3px 8px", border: "1px solid #e2e8f0" }}>
-                                💬 {req.request_reason}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button
-                            onClick={() => { setCheckoutModal({ show: true, req, mode: "reject" }); setCheckoutRejectReason(""); }}
-                            style={{ padding: "8px 16px", borderRadius: 8, border: "1.5px solid #dc2626", background: "#fff", color: "#dc2626", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                            반려
-                          </button>
-                          <button
-                            onClick={() => { setCheckoutModal({ show: true, req, mode: "approve" }); setCheckoutApproveTime(req.requested_checkout_time || ""); }}
-                            style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                            승인
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
                 </div>
               </div>
             )}
@@ -1897,6 +1848,72 @@ export default function WorkersPage() {
         {tab === "leave" && <LeaveTab />}
         {tab === "review" && <ReviewTab />}
         {tab === "report" && <ReportTab />}
+
+        {/* ── 퇴근수정 탭 ── */}
+        {tab === "checkout" && (
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <span style={{ fontSize: 18 }}>🔔</span>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#1a1d2b" }}>퇴근수정 요청</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>CREW 앱에서 퇴근 미처리 수정을 요청합니다</div>
+              </div>
+              {checkoutRequests.length > 0 && (
+                <span style={{ padding: "4px 12px", borderRadius: 20, background: "#F5B731", color: "#1a1d2b", fontSize: 13, fontWeight: 800, marginLeft: "auto" }}>{checkoutRequests.length}건 대기</span>
+              )}
+            </div>
+
+            {checkoutRequests.length === 0 ? (
+              <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0", padding: "48px 20px", textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#16A34A", marginBottom: 4 }}>처리할 요청이 없습니다</div>
+                <div style={{ fontSize: 13, color: "#94a3b8" }}>CREW가 퇴근수정을 요청하면 여기에 표시됩니다</div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {checkoutRequests.map((req: any) => {
+                  const reqDate = req.request_date;
+                  const reqTime = req.requested_checkout_time;
+                  const store = stores.find((s: any) => s.id === req.store_id);
+                  return (
+                    <div key={req.id} style={{ background: "#fff", borderRadius: 14, border: "1px solid #FEF3C7", borderLeft: "4px solid #F5B731", overflow: "hidden" }}>
+                      <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: 12, background: "#FEF3C7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🚶</div>
+                          <div>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: "#1a1d2b" }}>{req.workers?.name || "알 수 없음"}</div>
+                            <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              <span>📅 {reqDate}</span>
+                              {reqTime && <span>🕐 요청 퇴근 {reqTime}</span>}
+                              {store && <span>📍 {store.name}</span>}
+                            </div>
+                            {req.request_reason && (
+                              <div style={{ fontSize: 12, color: "#64748b", marginTop: 4, background: "#FFFBEB", borderRadius: 6, padding: "3px 8px", border: "1px solid #FEF3C7" }}>
+                                💬 {req.request_reason}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            onClick={() => { setCheckoutModal({ show: true, req, mode: "reject" }); setCheckoutRejectReason(""); }}
+                            style={{ padding: "8px 16px", borderRadius: 8, border: "1.5px solid #dc2626", background: "#fff", color: "#dc2626", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                            반려
+                          </button>
+                          <button
+                            onClick={() => { setCheckoutModal({ show: true, req, mode: "approve" }); setCheckoutApproveTime(req.requested_checkout_time || ""); }}
+                            style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#1428A0", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                            승인
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </AppLayout>
   );
