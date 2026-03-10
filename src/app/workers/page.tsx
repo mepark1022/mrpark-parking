@@ -1608,7 +1608,7 @@ export default function WorkersPage() {
                   )}
                 </div>
                 {/* 액션 버튼들 */}
-                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                <div style={{ display: "flex", gap: 3, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
                   <button onClick={() => { setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", hire_date: w.hire_date || "" }); setRosterPopup({ type: "edit_form", worker: w }); }}
                     style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", fontSize: 11, fontWeight: 600, color: "#1428A0", cursor: "pointer" }}>수정</button>
                   {email && (
@@ -1630,7 +1630,7 @@ export default function WorkersPage() {
           };
 
           const GroupSection = ({ title, accentColor, workers: gWorkers, isHq }: any) => (
-            <div style={{ background: "#fff", borderRadius: 12, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden", marginBottom: 12 }}>
+            <div style={{ background: "#fff", borderRadius: 12, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
               <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)", display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 3, height: 16, background: accentColor, borderRadius: 2 }} />
                 <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{title}</span>
@@ -1673,8 +1673,10 @@ export default function WorkersPage() {
                 </div>
               )}
 
-              {hqWorkers.length > 0 && <GroupSection title="🏢 본사 / 미배정" accentColor="#1428A0" workers={hqWorkers} isHq />}
-              {storeGroups.map((g, idx) => <GroupSection key={g.store.id} title={`🏪 ${g.store.name}`} accentColor={STORE_COLORS[idx % STORE_COLORS.length]} workers={g.workers} isHq={false} />)}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: 12, alignItems: "start" }}>
+                {hqWorkers.length > 0 && <GroupSection title="🏢 본사 / 미배정" accentColor="#1428A0" workers={hqWorkers} isHq />}
+                {storeGroups.map((g, idx) => <GroupSection key={g.store.id} title={`🏪 ${g.store.name}`} accentColor={STORE_COLORS[idx % STORE_COLORS.length]} workers={g.workers} isHq={false} />)}
+              </div>
               {workers.length === 0 && <div style={{ textAlign: "center" as const, padding: "48px 0", color: "var(--text-muted)", fontSize: 14 }}>등록된 근무자가 없습니다</div>}
 
               {/* ── 명부 팝업 ── */}
