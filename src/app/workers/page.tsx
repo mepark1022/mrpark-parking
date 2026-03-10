@@ -866,6 +866,7 @@ export default function WorkersPage() {
   const [message, setMessage] = useState("");
   // ── 퇴근 처리 요청 state ──
   const [checkoutRequests, setCheckoutRequests] = useState([]);
+  const [storeHours, setStoreHours] = useState<any[]>([]);
   const [checkoutModal, setCheckoutModal] = useState<{ show: boolean; req: any; mode: "approve"|"reject" }>({ show: false, req: null, mode: "approve" });
   const [checkoutApproveTime, setCheckoutApproveTime] = useState("");
   const [checkoutRejectReason, setCheckoutRejectReason] = useState("");
@@ -907,18 +908,20 @@ export default function WorkersPage() {
     const oid = await getOrgId();
     if (!oid) return;
 
-    const [{ data: wData }, { data: sData }, { data: aData }, { data: rData }, { data: crData }] = await Promise.all([
+    const [{ data: wData }, { data: sData }, { data: aData }, { data: rData }, { data: crData }, { data: ohData }] = await Promise.all([
       supabase.from("workers").select("*, regions(name)").eq("org_id", oid).order("name"),
       supabase.from("stores").select("id, name, latitude, longitude, road_address").eq("org_id", oid).order("name"),
       supabase.from("worker_attendance").select("*").eq("org_id", oid).eq("date", new Date().toISOString().slice(0, 10)),
       supabase.from("regions").select("*").order("name"),
       supabase.from("checkout_requests").select("*").eq("org_id", oid).eq("status", "pending").order("created_at", { ascending: false }),
+      supabase.from("store_operating_hours").select("store_id, day_category, open_time, close_time").eq("org_id", oid),
     ]);
     if (wData) setWorkers(wData);
     if (sData) setStores(sData);
     if (aData) setAttendanceRecords(aData);
     if (rData) setRegions(rData);
     if (crData) setCheckoutRequests(crData);
+    if (ohData) setStoreHours(ohData);
     // store_members → workerStoreMap 생성 (별도 처리, 실패해도 영향 없음)
     if (sData) {
       const storeNameMap: Record<string, string> = {};
@@ -1855,6 +1858,22 @@ export default function WorkersPage() {
                   <div style={{ marginTop: 8, fontSize: 13, color: "#475569" }}>💬 {checkoutModal.req.request_reason}</div>
                 )}
               </div>
+              {/* 매장 운영시간 */}
+              {(() => {
+                const reqStore = stores.find((s: any) => s.id === checkoutModal.req.store_id);
+                const hours = storeHours.filter((h: any) => h.store_id === checkoutModal.req.store_id);
+                if (!reqStore && hours.length === 0) return null;
+                return (
+                  <div style={{ background: "#EEF2FF", borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#1428A0" }}>🏢 {reqStore?.name || "매장"}</span>
+                    {hours.length > 0 ? hours.map((h: any, i: number) => (
+                      <span key={i} style={{ fontSize: 12, color: "#475569", background: "#fff", padding: "2px 8px", borderRadius: 6, border: "1px solid #D0D2DA" }}>
+                        {h.day_category === "weekday" ? "평일" : h.day_category === "weekend" ? "주말" : h.day_category} {h.open_time?.slice(0,5)}~{h.close_time?.slice(0,5)}
+                      </span>
+                    )) : <span style={{ fontSize: 11, color: "#94a3b8" }}>운영시간 미등록</span>}
+                  </div>
+                );
+              })()}
               {checkoutModal.mode === "approve" ? (
                 <>
                   <div style={{ marginBottom: 20 }}>
