@@ -2,49 +2,53 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
-function getAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
-
 /**
  * POST /api/team/reset-password
  * 관리자가 팀원 비밀번호를 재설정
  */
 export async function POST(req: NextRequest) {
+  let userId = "";
+  let newPassword = "";
+
   try {
-    const { userId, newPassword } = await req.json();
+    const body = await req.json();
+    userId = body.userId;
+    newPassword = body.newPassword;
+  } catch {
+    return NextResponse.json({ error: "요청 본문을 파싱할 수 없습니다." }, { status: 400 });
+  }
 
-    if (!userId || !newPassword) {
-      return NextResponse.json({ error: "필수 항목이 누락되었습니다." }, { status: 400 });
-    }
-    if (newPassword.length < 6) {
-      return NextResponse.json({ error: "비밀번호는 6자 이상이어야 합니다." }, { status: 400 });
-    }
+  if (!userId || !newPassword) {
+    return NextResponse.json({ error: `필수 항목 누락 (userId: ${!!userId}, pw: ${!!newPassword})` }, { status: 400 });
+  }
+  if (newPassword.length < 6) {
+    return NextResponse.json({ error: "비밀번호는 6자 이상이어야 합니다." }, { status: 400 });
+  }
 
-    const admin = getAdminClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    // 유저 존재 확인
-    const { data: userData, error: getUserErr } = await admin.auth.admin.getUserById(userId);
-    if (getUserErr || !userData?.user) {
-      return NextResponse.json({ error: `사용자를 찾을 수 없습니다: ${getUserErr?.message || "user not found"}` }, { status: 404 });
-    }
+  if (!supabaseUrl || !serviceKey) {
+    return NextResponse.json({ error: `환경변수 누락 (URL: ${!!supabaseUrl}, KEY: ${!!serviceKey})` }, { status: 500 });
+  }
 
-    const { error } = await admin.auth.admin.updateUser(userId, {
+  try {
+    const admin = createClient(supabaseUrl, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data, error } = await admin.auth.admin.updateUser(userId, {
       password: newPassword,
     });
 
     if (error) {
-      console.error("[reset-password] error:", error.message);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: `Supabase: ${error.message}` }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, email: data?.user?.email });
   } catch (e: any) {
-    console.error("[reset-password] unexpected error:", e);
-    return NextResponse.json({ error: e?.message || "서버 오류가 발생했습니다." }, { status: 500 });
+    return NextResponse.json({
+      error: `예외: ${e?.message || String(e)}`,
+    }, { status: 500 });
   }
 }
