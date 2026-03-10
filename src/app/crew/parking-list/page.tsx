@@ -609,68 +609,58 @@ export default function CrewParkingListPage() {
               const mins = Math.floor((Date.now() - new Date(ticket.entry_at).getTime()) / 60000);
               const elapsed = elapsedString(ticket.entry_at);
               const elapsedClass = mins > 120 ? "warn" : mins > 60 ? "caution" : "ok";
+              const elapsedColor = mins > 120 ? "#DC2626" : mins > 60 ? "#EA580C" : "#16A34A";
               const statusCfg = STATUS_CONFIG[ticket.status] || STATUS_CONFIG.parking;
+              const typeBadge = ticket.is_monthly ? { label: "월주차", bg: "#F0FDF4", color: "#16A34A" }
+                : ticket.parking_type === "valet" ? { label: "발렛", bg: "#FFF7ED", color: "#EA580C" }
+                : { label: "자주식", bg: "#EEF2FF", color: "#1428A0" };
 
-              // 추정 요금
               const vp = ticket.visit_places;
               let estFee = ticket.paid_amount || null;
               if (!estFee && !ticket.is_monthly && vp) {
                 const valetFee = ticket.parking_type === "valet" ? (vp.valet_fee || 0) : 0;
                 estFee = (feeFromMinutes(mins, vp) || 0) + valetFee;
               }
+              const entryTime = new Date(ticket.entry_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+
+              const isUrgent = ticket.status === "exit_requested" || ticket.status === "car_ready";
+              const cardBorder = isUrgent ? "2px solid #EA580C" : "1px solid #E2E8F0";
+              const cardBg = ticket.status === "exit_requested" ? "#FFF7ED" : ticket.status === "car_ready" ? "#F0FDF4" : "#fff";
 
               return (
-                <div
-                  key={ticket.id}
-                  className={`vehicle-card ${ticket.status}`}
+                <div key={ticket.id}
                   onClick={() => router.push(`/crew/parking-list/${ticket.id}`)}
+                  style={{
+                    background: cardBg, borderRadius: 12,
+                    border: cardBorder, padding: "10px 12px",
+                    display: "flex", flexDirection: "column", gap: 6,
+                    cursor: "pointer",
+                    ...(isUrgent ? { boxShadow: "0 0 0 3px rgba(234,88,12,0.12)" } : {}),
+                  }}
                 >
-                  <div className="vehicle-card-top">
-                    <div style={{display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0}}>
-                      <div className="vehicle-plate">{(()=>{const [p,n]=splitPlate(ticket.plate_number);return p?<>{p}<span style={{marginLeft:6}}>{n}</span></>:ticket.plate_number;})()}</div>
-                      {ticket.status !== "completed" && (
-                        <button className="btn-plate-edit-sm" onClick={(e) => openPlateEdit(e, ticket.id, ticket.plate_number)}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                    <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-                      <div className="status-badge" style={{ background: statusCfg.bg, color: statusCfg.color }}>
-                        {statusCfg.label}
-                      </div>
-                      <button
-                        className={`btn-checkout-inline ${ticket.status}`}
-                        onClick={(e) => { e.stopPropagation(); router.push(`/crew/parking-list/${ticket.id}`); }}
-                      >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-                        </svg>
-                        출차
-                      </button>
-                    </div>
+                  {/* 1줄: 번호판 + 유형 + 주차시간 + 출차버튼 */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: 1, color: "#1A1D2B", flex: 1 }}>
+                      {(() => { const [p, n] = splitPlate(ticket.plate_number); return p ? `${p} ${n}` : ticket.plate_number; })()}
+                    </span>
+                    <span style={{ padding: "2px 8px", borderRadius: 5, fontSize: 10, fontWeight: 700, background: typeBadge.bg, color: typeBadge.color }}>{typeBadge.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: elapsedColor }}>{elapsed}</span>
+                    <button
+                      className={`btn-checkout-inline ${ticket.status}`}
+                      onClick={(e) => { e.stopPropagation(); router.push(`/crew/parking-list/${ticket.id}`); }}
+                      style={{ padding: "4px 10px", height: 28, fontSize: 12 }}
+                    >출차</button>
                   </div>
-                  <div className="vehicle-card-body">
-                    <div className={`vehicle-type-badge ${ticket.is_monthly ? "monthly" : ticket.parking_type}`}>
-                      {ticket.is_monthly ? "📅 월주차" : ticket.parking_type === "valet" ? "🔑 발렛" : "🏢 자주식"}
-                    </div>
+                  {/* 2줄: 장소 + 입차시간 + 금액 */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#64748B" }}>
                     {ticket.visit_places?.name && (
-                      <div className="vehicle-info-row">
-                        <span>🏥</span><span>{ticket.visit_places.name}</span>
-                      </div>
+                      <><span>🏢 {ticket.visit_places.name}</span><span style={{ color: "#D0D2DA" }}>·</span></>
                     )}
-                    <div className={`vehicle-elapsed ${elapsedClass}`}>{elapsed}</div>
-                  </div>
-                  <div className="vehicle-card-footer">
-                    <div className="vehicle-location">
-                      {ticket.parking_location || new Date(ticket.entry_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) + " 입차"}
-                    </div>
-                    {ticket.is_monthly ? (
-                      <div className="vehicle-fee" style={{ color: "#16A34A" }}>무료</div>
-                    ) : estFee !== null ? (
-                      <div className="vehicle-fee">{estFee.toLocaleString()}원</div>
-                    ) : null}
+                    {ticket.parking_location && <><span>{ticket.parking_location}</span><span style={{ color: "#D0D2DA" }}>·</span></>}
+                    <span style={{ color: "#1428A0" }}>🕐{entryTime}</span>
+                    <span style={{ marginLeft: "auto", fontSize: 13, fontWeight: 700, color: "#1A1D2B" }}>
+                      {ticket.is_monthly ? <span style={{ color: "#16A34A" }}>무료</span> : estFee !== null ? `${estFee.toLocaleString()}원` : ""}
+                    </span>
                   </div>
                 </div>
               );
