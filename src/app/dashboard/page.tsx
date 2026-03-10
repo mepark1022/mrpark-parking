@@ -330,6 +330,7 @@ export default function DashboardPage() {
   const [orgId, setOrgId] = useState(null);
   const [parkingStatus, setParkingStatus] = useState([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [pendingCheckouts, setPendingCheckouts] = useState(0);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -448,6 +449,12 @@ export default function DashboardPage() {
     setTotalWorkers(wkCount || 0);
     const attWorkerIds = new Set((attData || []).map(a => a.worker_id));
     setTodayAttendance(attWorkerIds.size);
+
+    // 퇴근수정 요청 대기 건수
+    if (orgId) {
+      const { count } = await supabase.from("checkout_requests").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("status", "pending");
+      setPendingCheckouts(count || 0);
+    }
 
     const tickets = tData || [];
     setTicketData(tickets);
@@ -660,6 +667,24 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+
+          {/* 퇴근수정 요청 알림 */}
+          {pendingCheckouts > 0 && (
+            <div onClick={() => window.location.href = "/workers"} style={{
+              background: "#FFFBEB", border: "1px solid #FCD34D", borderLeft: "4px solid #F5B731",
+              borderRadius: 12, padding: "12px 16px", marginBottom: 10, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 20 }}>🔔</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "#92400E" }}>퇴근수정 요청 {pendingCheckouts}건</div>
+                  <div style={{ fontSize: 11, color: "#B45309", marginTop: 1 }}>CREW가 퇴근 수정을 요청했습니다. 확인해주세요.</div>
+                </div>
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#92400E" }}>처리하기 →</span>
+            </div>
+          )}
 
           {/* 3. 매출 카드 */}
           <div className="dash-revenue-card">

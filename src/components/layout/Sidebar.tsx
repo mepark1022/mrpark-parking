@@ -60,6 +60,7 @@ export default function Sidebar() {
   const [userRole, setUserRole] = useState("admin");
   const [parkingCount, setParkingCount] = useState(0);
   const [accidentCount, setAccidentCount] = useState(0);
+  const [checkoutReqCount, setCheckoutReqCount] = useState(0);
   const saveTimer = useRef<any>(null);
 
   useEffect(() => { loadMenuOrder(); loadBadgeCounts(); }, []);
@@ -68,6 +69,9 @@ export default function Sidebar() {
   useEffect(() => {
     if (pathname === "/parking-status" || pathname.startsWith("/parking-status/")) {
       setParkingCount(0);
+    }
+    if (pathname === "/workers" || pathname.startsWith("/workers/")) {
+      setCheckoutReqCount(0);
     }
   }, [pathname]);
 
@@ -91,6 +95,12 @@ export default function Sidebar() {
       .eq("org_id", prof.org_id)
       .eq("status", "pending");
     setAccidentCount(aCount ?? 0);
+    // 퇴근수정 요청: pending 건수
+    const { count: cCount } = await supabase.from("checkout_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("org_id", prof.org_id)
+      .eq("status", "pending");
+    setCheckoutReqCount(cCount ?? 0);
   }
 
   async function loadMenuOrder() {
@@ -229,8 +239,11 @@ export default function Sidebar() {
               <Link key={item.id} href={item.href} className={`v3-nav-item ${isActive(item.href) ? "active" : ""}`}>
                 <span style={{ display: "flex", alignItems: "center", width: 22 }}>{item.icon}</span>
                 <span>{item.label}</span>
+                {item.id === "workers" && checkoutReqCount > 0 && (
+                  <span style={{ marginLeft: "auto", minWidth: 18, height: 18, borderRadius: 9, background: "#dc2626", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>{checkoutReqCount}</span>
+                )}
                 {item.badge && accidentCount > 0 && (
-                  <span style={{ marginLeft: "auto", width: 18, height: 18, borderRadius: 9, background: "#dc2626", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{accidentCount}</span>
+                  <span style={{ marginLeft: item.id === "workers" ? 4 : "auto", width: 18, height: 18, borderRadius: 9, background: "#dc2626", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{accidentCount}</span>
                 )}
               </Link>
             ))}
