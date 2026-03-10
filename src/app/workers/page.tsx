@@ -1590,82 +1590,56 @@ export default function WorkersPage() {
             const prof = w.user_id ? workerProfileMap[w.user_id] : null;
             const role = prof?.role || workerRoleMap[w.name];
             const rb = ROLE_BADGE[role] || ROLE_BADGE["crew"];
-            const locationStr = [w.regions?.name, w.district].filter(Boolean).join(" ");
             const email = prof?.email || "";
+            const isAdmin = role === "admin";
             return (
-              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-light)", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", overflow: "hidden" }}>
-                {/* 상단: 아이콘 + [이름(block) / 배지(flex row) / 연락처] */}
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px 12px" }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: rb.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginTop: 2 }}>{rb.icon}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* 이름: 독립 block — flex child가 아니므로 squeeze 불가 */}
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#1a1d2b", marginBottom: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w.name}</div>
-                    {/* 배지 row */}
-                    <div style={{ display: "flex", gap: 5, marginBottom: 5, flexWrap: "wrap" as const }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: rb.bg, color: rb.color }}>{rb.label}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: w.status === "active" ? "#dcfce7" : "#f1f5f9", color: w.status === "active" ? "#16A34A" : "#94a3b8" }}>{w.status === "active" ? "활성" : "비활성"}</span>
-                    </div>
-                    {/* 로그인 ID (이메일) + 비번 재설정 */}
-                    {email && (
-                      <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 11, color: "#1D4ED8", background: "#EFF6FF", padding: "3px 8px", borderRadius: 6 }}>
-                          🔑 {email}
-                        </span>
-                        <button onClick={() => { setPwResetTarget(w); setNewPassword(""); }}
-                          style={{ fontSize: 10, fontWeight: 700, color: "#7C3AED", background: "#EDE9FE", padding: "3px 8px", borderRadius: 6, border: "none", cursor: "pointer" }}>
-                          🔐 비번변경
-                        </button>
-                      </div>
-                    )}
-                    {/* 연락처/지역 */}
-                    {(locationStr || w.phone) && (
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const }}>
-                        {locationStr && <span style={{ fontSize: 11, color: "#94a3b8" }}>📍 {locationStr}</span>}
-                        {w.phone && <span style={{ fontSize: 11, color: "#94a3b8" }}>📱 {w.phone}</span>}
-                      </div>
-                    )}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderBottom: "1px solid #f1f5f9" }}>
+                {/* 아이콘 */}
+                <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: rb.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>{rb.icon}</div>
+                {/* 이름 + 배지 + 이메일 */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: "#1a1d2b" }}>{w.name}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 4, background: rb.bg, color: rb.color }}>{rb.label}</span>
+                    {w.status !== "active" && <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4, background: "#f1f5f9", color: "#94a3b8" }}>비활성</span>}
                   </div>
-                </div>
-                {/* 하단: 액션 버튼 */}
-                <div style={{ display: "grid", gridTemplateColumns: role === "admin" ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", borderTop: "1px solid #f1f5f9" }}>
-                  <button
-                    onClick={() => { setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", hire_date: w.hire_date || "" }); setRosterPopup({ type: "edit_form", worker: w }); }}
-                    style={{ padding: "10px 0", border: "none", borderRight: "1px solid #f1f5f9", background: "#fff", fontSize: 13, fontWeight: 600, color: "#1428A0", cursor: "pointer" }}>
-                    ✏️ 수정
-                  </button>
-                  {role === "admin" && (
-                    <button
-                      onClick={() => changeRole(w, "crew")}
-                      style={{ padding: "10px 0", border: "none", borderRight: "1px solid #f1f5f9", background: "#fff", fontSize: 12, fontWeight: 600, color: "#7C3AED", cursor: "pointer" }}>
-                      👤 크루전환
-                    </button>
+                  {email && (
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{email}</div>
                   )}
-                  <button
-                    onClick={() => toggleStatus(w)}
-                    style={{ padding: "10px 0", border: "none", borderRight: "1px solid #f1f5f9", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: w.status === "active" ? "var(--error)" : "var(--success)" }}>
-                    {w.status === "active" ? "비활성" : "활성화"}
-                  </button>
-                  <button
-                    onClick={async () => { if (!confirm(`${w.name} 근무자를 삭제하시겠습니까?`)) return; const supabase = createClient(); await supabase.from("workers").delete().eq("id", w.id); setWorkers((prev: any[]) => prev.filter((x: any) => x.id !== w.id)); showToast("🗑️ 근무자가 삭제되었습니다"); }}
-                    style={{ padding: "10px 0", border: "none", background: "#fff", fontSize: 13, fontWeight: 600, color: "#DC2626", cursor: "pointer" }}>
-                    🗑 삭제
-                  </button>
+                </div>
+                {/* 액션 버튼들 */}
+                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                  <button onClick={() => { setFormData({ name: w.name, phone: w.phone || "", region_id: w.region_id || "", district: w.district || "", hire_date: w.hire_date || "" }); setRosterPopup({ type: "edit_form", worker: w }); }}
+                    style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", fontSize: 11, fontWeight: 600, color: "#1428A0", cursor: "pointer" }}>수정</button>
+                  {email && (
+                    <button onClick={() => { setPwResetTarget(w); setNewPassword(""); }}
+                      style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", fontSize: 11, fontWeight: 600, color: "#7C3AED", cursor: "pointer" }}>🔐</button>
+                  )}
+                  {isAdmin && (
+                    <button onClick={() => changeRole(w, "crew")}
+                      style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", fontSize: 11, fontWeight: 600, color: "#0F9ED5", cursor: "pointer" }}>크루전환</button>
+                  )}
+                  <button onClick={() => toggleStatus(w)}
+                    style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer", color: w.status === "active" ? "#DC2626" : "#16A34A" }}>
+                    {w.status === "active" ? "비활성" : "활성화"}</button>
+                  <button onClick={async () => { if (!confirm(`${w.name} 근무자를 삭제하시겠습니까?`)) return; const supabase = createClient(); await supabase.from("workers").delete().eq("id", w.id); setWorkers((prev: any[]) => prev.filter((x: any) => x.id !== w.id)); showToast("🗑️ 근무자가 삭제되었습니다"); }}
+                    style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", fontSize: 11, fontWeight: 600, color: "#DC2626", cursor: "pointer" }}>삭제</button>
                 </div>
               </div>
             );
           };
 
           const GroupSection = ({ title, accentColor, workers: gWorkers, isHq }: any) => (
-            <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden", marginBottom: 16 }}>
-              <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)", display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 4, height: 20, background: accentColor, borderRadius: 2 }} />
-                <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{title}</span>
-                <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 20, background: accentColor + "20", color: accentColor }}>{gWorkers.length}명</span>
-                {isHq && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>매장 미배정 근무자</span>}
+            <div style={{ background: "#fff", borderRadius: 12, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden", marginBottom: 12 }}>
+              <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)", display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 3, height: 16, background: accentColor, borderRadius: 2 }} />
+                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{title}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, padding: "1px 8px", borderRadius: 12, background: accentColor + "20", color: accentColor }}>{gWorkers.length}명</span>
+                {isHq && <span style={{ fontSize: 10, color: "var(--text-muted)" }}>매장 미배정</span>}
               </div>
-              <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column" as const, gap: 8 }}>
+              <div>
                 {gWorkers.length === 0
-                  ? <div style={{ textAlign: "center" as const, padding: "16px 0", fontSize: 13, color: "var(--text-muted)" }}>근무자 없음</div>
+                  ? <div style={{ textAlign: "center" as const, padding: "12px 0", fontSize: 12, color: "var(--text-muted)" }}>근무자 없음</div>
                   : gWorkers.map((w: any) => <WorkerCard key={w.id} w={w} />)
                 }
               </div>
