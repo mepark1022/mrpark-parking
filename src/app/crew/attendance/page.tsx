@@ -59,8 +59,9 @@ export default function CrewAttendancePage() {
   const [currentCoords, setCurrentCoords] = useState<{lat: number; lng: number} | null>(null);
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const [checkoutMemo, setCheckoutMemo] = useState("");
-  const [correctionDate, setCorrectionDate] = useState("");
-  const [correctionTime, setCorrectionTime] = useState("");
+  const [missingCheckouts, setMissingCheckouts] = useState<any[]>([]);
+  const [selectedMissing, setSelectedMissing] = useState<any | null>(null);
+  const [missingLoading, setMissingLoading] = useState(false);
   const [storeId, setStoreId] = useState<string | null>(null);
   const [storeInfo, setStoreInfo] = useState<{name: string; address: string; lat: number | null; lng: number | null; gpsRadius: number} | null>(null);
   const [checkInCoords, setCheckInCoords] = useState<{lat: number; lng: number} | null>(null);
@@ -349,18 +350,17 @@ export default function CrewAttendancePage() {
 
   // ── 퇴근수정 요청 (깜빡했을 때 관리자에게 요청) ──
   const handleCorrectionRequest = async () => {
-    if (!attendance.workerId || !storeId) return;
+    if (!attendance.workerId || !storeId || !selectedMissing) return;
     setActionLoading(true);
     const supabase = createClient();
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
-      const now = new Date();
       const { error } = await supabase.from("checkout_requests").insert({
         org_id: prof?.org_id,
-        worker_id: attendance.workerId, store_id: storeId,
-        request_date: correctionDate || now.toISOString().split("T")[0],
-        requested_checkout_time: correctionTime || `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+        worker_id: attendance.workerId, store_id: selectedMissing.store_id || storeId,
+        request_date: selectedMissing.date,
+        requested_checkout_time: null,
         request_reason: checkoutMemo || "퇴근 미처리 수정 요청",
         status: "pending",
       });
@@ -368,8 +368,7 @@ export default function CrewAttendancePage() {
       await loadLatestRequest(attendance.workerId);
       setShowCorrectionModal(false);
       setCheckoutMemo("");
-      setCorrectionDate("");
-      setCorrectionTime("");
+      setSelectedMissing(null);
       showToast("퇴근수정 요청이 전송되었습니다 📋", "info");
     } catch { showToast("요청에 실패했습니다", "error"); }
     finally { setActionLoading(false); }
@@ -395,6 +394,29 @@ export default function CrewAttendancePage() {
       showToast("수정 재요청이 전송되었습니다", "info");
     } catch { showToast("재요청에 실패했습니다", "error"); }
     finally { setActionLoading(false); }
+  };
+
+  // ── 퇴근수정 모달 열기 → 미퇴근 이력 자동 조회 ──
+  const openCorrectionModal = async () => {
+    setShowCorrectionModal(true);
+    setSelectedMissing(null);
+    setCheckoutMemo("");
+    setMissingLoading(true);
+    try {
+      const supabase = createClient();
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("worker_attendance")
+        .select("id, date, check_in, check_out, status, store_id, stores:store_id(name)")
+        .eq("worker_id", attendance.workerId)
+        .not("check_in", "is", null)
+        .is("check_out", null)
+        .lt("date", today)
+        .order("date", { ascending: false })
+        .limit(30);
+      setMissingCheckouts(data || []);
+    } catch { setMissingCheckouts([]); }
+    finally { setMissingLoading(false); }
   };
 
   const fmt = (d: Date) => d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
@@ -453,7 +475,7 @@ export default function CrewAttendancePage() {
         .hist-link { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #fff; border-radius: 12px; border: 1px solid #E2E8F0; cursor: pointer; }
         .hist-link:active { background: #F8FAFC; }
         .modal-ov { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; justify-content: center; z-index: 200; padding: 16px; }
-        .modal-c { background: #fff; border-radius: 20px 20px 0 0; padding: 24px 20px; padding-bottom: calc(24px + env(safe-area-inset-bottom, 0)); width: 100%; max-width: 500px; }
+        .modal-c { background: #fff; border-radius: 20px 20px 0 0; padding: 24px 20px; padding-bottom: calc(24px + env(safe-area-inset-bottom, 0)); width: 100%; max-width: 500px; max-height: 85dvh; overflow-y: auto; }
         .modal-t { font-size: 18px; font-weight: 700; color: #1A1D2B; margin-bottom: 16px; text-align: center; }
         .modal-i { background: #F1F5F9; border-radius: 10px; padding: 14px; margin-bottom: 16px; font-size: 14px; color: #475569; }
         .modal-ta { width: 100%; padding: 14px; border: 1.5px solid #E2E8F0; border-radius: 10px; font-size: 15px; resize: none; margin-bottom: 16px; font-family: inherit; box-sizing: border-box; }
@@ -628,7 +650,7 @@ export default function CrewAttendancePage() {
 
           {/* 퇴근수정 요청 + 이력 링크 */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div className="hist-link" onClick={() => setShowCorrectionModal(true)}>
+            <div className="hist-link" onClick={openCorrectionModal}>
               <span style={{ fontSize: 15, fontWeight: 600, color: "#1A1D2B" }}>📋 퇴근수정 요청</span>
               <span style={{ color: "#94A3B8", fontSize: 12 }}>퇴근 미처리 시</span>
             </div>
@@ -659,25 +681,72 @@ export default function CrewAttendancePage() {
           <div className="modal-ov" onClick={() => setShowCorrectionModal(false)}>
             <div className="modal-c" onClick={e => e.stopPropagation()}>
               <div className="modal-t">퇴근수정 요청</div>
-              <div className="modal-i">
-                퇴근 처리를 깜빡한 경우, 관리자에게 수정을 요청합니다.
+
+              {/* Step 1: 미퇴근 이력 선택 */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 8 }}>① 미퇴근 날짜 선택</div>
+                {missingLoading ? (
+                  <div style={{ textAlign: "center", padding: "20px 0", color: "#94A3B8", fontSize: 13 }}>
+                    <span className="loc-spinner" style={{ marginRight: 8 }}></span>조회 중...
+                  </div>
+                ) : missingCheckouts.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "20px 0", color: "#94A3B8", fontSize: 13, background: "#F8FAFC", borderRadius: 10 }}>
+                    미퇴근 이력이 없습니다 ✓
+                  </div>
+                ) : (
+                  <div style={{ maxHeight: 200, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+                    {missingCheckouts.map(m => {
+                      const d = new Date(m.date + "T00:00:00");
+                      const wd = ["일","월","화","수","목","금","토"][d.getDay()];
+                      const isSelected = selectedMissing?.id === m.id;
+                      return (
+                        <div key={m.id} onClick={() => setSelectedMissing(isSelected ? null : m)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 10,
+                            padding: "12px 14px", borderRadius: 10, cursor: "pointer",
+                            border: `1.5px solid ${isSelected ? "#1428A0" : "#E2E8F0"}`,
+                            background: isSelected ? "#EEF2FF" : "#fff",
+                            transition: "all 0.15s",
+                          }}>
+                          <div style={{
+                            width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+                            border: `2px solid ${isSelected ? "#1428A0" : "#CBD5E1"}`,
+                            background: isSelected ? "#1428A0" : "#fff",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}>
+                            {isSelected && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff" }} />}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: "#1A1D2B" }}>
+                              {`${d.getMonth()+1}월 ${d.getDate()}일 (${wd})`}
+                            </div>
+                            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>
+                              출근 {m.check_in}{m.stores?.name ? ` · ${m.stores.name}` : ""}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "#DC2626", background: "#FEE2E2", padding: "3px 8px", borderRadius: 6 }}>
+                            미퇴근
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>수정할 날짜</label>
-                <input type="date" className="modal-ta" style={{ resize: "none", padding: "12px 14px" }}
-                  value={correctionDate} onChange={e => setCorrectionDate(e.target.value)}
-                  max={new Date().toISOString().split("T")[0]} />
+
+              {/* Step 2: 사유 입력 */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 8 }}>② 사유 입력</div>
+                <textarea className="modal-ta" placeholder="예: 퇴근 처리를 깜빡했습니다" rows={2}
+                  value={checkoutMemo} onChange={e => setCheckoutMemo(e.target.value)}
+                  style={{ marginBottom: 0 }} />
               </div>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>퇴근 시간</label>
-                <input type="time" className="modal-ta" style={{ resize: "none", padding: "12px 14px" }}
-                  value={correctionTime} onChange={e => setCorrectionTime(e.target.value)} />
-              </div>
-              <textarea className="modal-ta" placeholder="사유 (예: 퇴근 미처리)" rows={2}
-                value={checkoutMemo} onChange={e => setCheckoutMemo(e.target.value)} />
+
+              {/* Step 3: 요청 버튼 */}
               <div className="modal-btns">
                 <button className="modal-b cc" onClick={() => setShowCorrectionModal(false)}>취소</button>
-                <button className="modal-b sb" onClick={handleCorrectionRequest} disabled={actionLoading || !correctionDate || !correctionTime}>
+                <button className="modal-b sb" onClick={handleCorrectionRequest}
+                  disabled={actionLoading || !selectedMissing || !checkoutMemo.trim()}>
                   {actionLoading ? "처리 중..." : "요청하기"}
                 </button>
               </div>
