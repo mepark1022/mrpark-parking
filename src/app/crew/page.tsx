@@ -438,9 +438,41 @@ export default function CrewHomePage() {
         }
         
         .crew-quick-emoji {
-          font-size: 36px;
           align-self: flex-end;
           line-height: 1;
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          overflow: hidden;
+        }
+        .crew-quick-emoji::before {
+          content: '';
+          position: absolute;
+          top: 2px; left: 15%; right: 15%; height: 40%;
+          background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 100%);
+          border-radius: 12px 12px 50% 50%;
+          z-index: 1;
+        }
+        .crew-quick-emoji svg { position: relative; z-index: 2; }
+        .crew-quick-emoji.icon-car {
+          background: linear-gradient(135deg, #1E3A8A 0%, #1428A0 50%, #0F1D6B 100%);
+          box-shadow: 0 4px 12px rgba(20,40,160,0.35), inset 0 1px 1px rgba(255,255,255,0.3);
+        }
+        .crew-quick-emoji.icon-exit {
+          background: linear-gradient(135deg, #059669 0%, #16A34A 50%, #0D7A37 100%);
+          box-shadow: 0 4px 12px rgba(22,163,74,0.35), inset 0 1px 1px rgba(255,255,255,0.3);
+        }
+        .crew-quick-emoji.icon-accident {
+          background: linear-gradient(135deg, #DC2626 0%, #EA580C 50%, #C2410C 100%);
+          box-shadow: 0 4px 12px rgba(234,88,12,0.35), inset 0 1px 1px rgba(255,255,255,0.3);
+        }
+        .crew-quick-emoji.icon-monthly {
+          background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%);
+          box-shadow: 0 4px 12px rgba(124,58,237,0.35), inset 0 1px 1px rgba(255,255,255,0.3);
         }
         
         /* 알림 섹션 */
@@ -642,19 +674,48 @@ export default function CrewHomePage() {
           <div className="crew-quick-menu">
             <button className="crew-quick-btn" onClick={() => router.push("/crew/entry")}>
               <span className="crew-quick-label">입차 등록</span>
-              <span className="crew-quick-emoji">🚗</span>
+              <span className="crew-quick-emoji icon-car">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 17H3v-5l2.5-5h11L19 12v5h-2" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="7.5" cy="17.5" r="1.8" stroke="#F5B731" strokeWidth="1.5"/>
+                  <circle cx="16.5" cy="17.5" r="1.8" stroke="#F5B731" strokeWidth="1.5"/>
+                  <path d="M5 12h14" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/>
+                </svg>
+              </span>
             </button>
             <button className="crew-quick-btn" onClick={() => router.push("/crew/parking-list")}>
               <span className="crew-quick-label">출차 처리</span>
-              <span className="crew-quick-emoji">🅿️</span>
+              <span className="crew-quick-emoji icon-exit">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="5" width="18" height="14" rx="3" stroke="#fff" strokeWidth="1.8"/>
+                  <path d="M12 9l4 3-4 3" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M8 12h8" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
+                  <circle cx="17" cy="7" r="2.5" fill="#F5B731" stroke="#fff" strokeWidth="0.8"/>
+                  <text x="17" y="8.2" textAnchor="middle" fontSize="3.5" fontWeight="900" fill="#1A1D2B">P</text>
+                </svg>
+              </span>
             </button>
             <button className="crew-quick-btn" onClick={() => router.push("/crew/accident")}>
               <span className="crew-quick-label">사고 보고</span>
-              <span className="crew-quick-emoji">⚠️</span>
+              <span className="crew-quick-emoji icon-accident">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 3L2 20h20L12 3z" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round" fill="rgba(255,255,255,0.1)"/>
+                  <path d="M12 10v4" stroke="#F5B731" strokeWidth="2.5" strokeLinecap="round"/>
+                  <circle cx="12" cy="17" r="1" fill="#F5B731"/>
+                </svg>
+              </span>
             </button>
             <button className="crew-quick-btn" onClick={() => router.push("/crew/monthly")}>
               <span className="crew-quick-label">월주차 조회</span>
-              <span className="crew-quick-emoji">📅</span>
+              <span className="crew-quick-emoji icon-monthly">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="4" width="18" height="17" rx="3" stroke="#fff" strokeWidth="1.8"/>
+                  <path d="M3 9h18" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/>
+                  <path d="M8 2v4M16 2v4" stroke="#F5B731" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="8" cy="13" r="1.2" fill="#F5B731"/><circle cx="12" cy="13" r="1.2" fill="rgba(255,255,255,0.5)"/><circle cx="16" cy="13" r="1.2" fill="rgba(255,255,255,0.5)"/>
+                  <circle cx="8" cy="17" r="1.2" fill="rgba(255,255,255,0.5)"/><circle cx="12" cy="17" r="1.2" fill="rgba(255,255,255,0.5)"/>
+                </svg>
+              </span>
             </button>
           </div>
         </div>
