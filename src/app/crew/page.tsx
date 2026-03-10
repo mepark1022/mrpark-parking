@@ -125,21 +125,21 @@ export default function CrewHomePage() {
         .limit(1)
         .maybeSingle();
       
-      // worker 레코드가 없는 admin/super_admin → 자동 생성 (중복 방지)
-      if (!worker && (ctx.role === "super_admin" || ctx.role === "admin" || ctx.role === "owner")) {
+      // worker 레코드가 없는 사용자 → 자동 생성 (중복 방지)
+      if (!worker) {
         const { data: prof } = await supabase.from("profiles").select("name, org_id").eq("id", ctx.userId).single();
         if (prof) {
+          const displayName = prof.name || (ctx.role === "crew" ? "크루" : "관리자");
           const { data: newWorker, error: insertErr } = await supabase.from("workers").insert({
             org_id: prof.org_id,
             user_id: ctx.userId,
-            name: prof.name || "관리자",
+            name: displayName,
             phone: "",
             status: "active",
           }).select("id").single();
           if (newWorker) {
             worker = newWorker;
           } else if (insertErr?.code === "23505") {
-            // unique 제약 충돌 → 기존 레코드 조회
             const { data: existing } = await supabase
               .from("workers").select("id").eq("user_id", ctx.userId).limit(1).maybeSingle();
             if (existing) worker = existing;

@@ -113,14 +113,15 @@ export default function CrewAttendancePage() {
       let { data: worker } = await supabase
         .from("workers").select("id").eq("user_id", user.id).limit(1).maybeSingle();
       
-      // worker 레코드가 없는 admin/super_admin → 자동 생성 (중복 방지)
+      // worker 레코드가 없는 사용자 → 자동 생성 (중복 방지)
       if (!worker) {
         const { data: prof } = await supabase.from("profiles").select("name, role, org_id").eq("id", user.id).single();
-        if (prof && (prof.role === "super_admin" || prof.role === "admin" || prof.role === "owner")) {
+        if (prof && prof.org_id) {
+          const displayName = prof.name || (prof.role === "crew" ? "크루" : "관리자");
           const { data: newWorker, error: insertErr } = await supabase.from("workers").insert({
             org_id: prof.org_id,
             user_id: user.id,
-            name: prof.name || "관리자",
+            name: displayName,
             phone: "",
             status: "active",
           }).select("id").single();
