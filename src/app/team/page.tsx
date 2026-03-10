@@ -288,7 +288,7 @@ export default function TeamPage() {
         setMessage({ text: `초대 생성됨. 이메일 발송 실패: ${data.emailError || ""}`, type: "warning" });
         loadData();
       }
-    } catch (e) { setMessage({ text: "서버 오류", type: "error" }); }
+    } catch (e: any) { setMessage({ text: `서버 오류: ${e?.message || "알 수 없는 오류"}`, type: "error" }); }
     setSending(false);
   }
 
@@ -326,7 +326,7 @@ export default function TeamPage() {
         setInviteEmail(""); setInviteName(""); setInvitePassword(""); setInviteRole("admin"); setInviteStoreIds([]); setShowInvite(false);
         loadData();
       }
-    } catch (e) { setMessage({ text: "서버 오류", type: "error" }); }
+    } catch (e: any) { setMessage({ text: `계정 생성 실패: ${e?.message || "서버 오류"}`, type: "error" }); }
     setSending(false);
   }
 
@@ -356,7 +356,7 @@ export default function TeamPage() {
         setResetTarget(null);
         setResetPassword("");
       }
-    } catch (e) { setMessage({ text: "서버 오류", type: "error" }); }
+    } catch (e: any) { setMessage({ text: `비밀번호 재설정 실패: ${e?.message || "서버 오류"}`, type: "error" }); }
     setSending(false);
   }
 

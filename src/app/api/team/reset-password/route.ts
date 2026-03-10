@@ -45,11 +45,13 @@ export async function POST(req: NextRequest) {
     const data = await res.json();
 
     if (!res.ok) {
+      console.error("[reset-password] Supabase error:", res.status, JSON.stringify(data));
       return NextResponse.json({ error: data?.msg || data?.message || data?.error || "Supabase 오류" }, { status: res.status });
     }
 
     return NextResponse.json({ success: true, email: data?.email });
   } catch (e: any) {
+    console.error("[reset-password] Exception:", e?.message || String(e));
     return NextResponse.json({ error: `예외: ${e?.message || String(e)}` }, { status: 500 });
   }
 }
