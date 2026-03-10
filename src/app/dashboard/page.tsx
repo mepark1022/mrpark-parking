@@ -315,7 +315,7 @@ export default function DashboardPage() {
   const supabase = createClient();
   const [stores, setStores] = useState([]);
   const [selectedStore, setSelectedStore] = useState("");
-  const [period, setPeriod] = useState("month");
+  const [period, setPeriod] = useState("today");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -568,7 +568,7 @@ export default function DashboardPage() {
         <CustomDateRangePicker
           startDate={customStart} endDate={customEnd}
           onApply={(s, e) => { setCustomStart(s); setCustomEnd(e); setShowDatePicker(false); }}
-          onClose={() => { setShowDatePicker(false); if (!customStart) setPeriod("month"); }}
+          onClose={() => { setShowDatePicker(false); if (!customStart) setPeriod("today"); }}
         />
       )}
 
@@ -591,7 +591,7 @@ export default function DashboardPage() {
             <div className="dash-card">
               <div className="dash-sec-label">
                 <span className="dash-sec-title">🅿️ 실시간 주차 현황</span>
-                <span className="dash-sec-badge">{selectedStore ? `주차장 ${ps?.lots.length || 0}개` : `${stores.length}개 매장`}</span>
+                <span className="dash-sec-badge">{selectedStore ? stores.find(s => s.id === selectedStore)?.name || "매장" : `전체 ${stores.length}개 매장`}</span>
               </div>
               <div className="dash-occ-grid">
                 <OccRing pct={curOcc} color={occColor.bar} />
@@ -651,21 +651,31 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 2. KPI */}
-          <div className="dash-kpi-grid">
-            {[
-              { cls: "c-navy", icon: "🚗", val: kpi.totalCars.toLocaleString(), label: "총 입차", sub: "" },
-              { cls: "c-gold", icon: "💰", val: fmtMoney(kpi.totalRevenue), label: "총 매출", sub: "" },
-              { cls: "c-green", icon: "👥", val: `${todayAttendance}/${totalWorkers}`, label: "출근/총인원", sub: `금일 ${todayAttendance}명 출근` },
-              { cls: "c-purple", icon: "📅", val: `${kpi.activeContracts}건`, label: "월주차 계약", sub: "" },
-            ].map(k => (
-              <div key={k.label} className={`dash-kpi-card ${k.cls}`}>
-                <span className="dash-kpi-icon">{k.icon}</span>
-                <span className="dash-kpi-val">{k.val}</span>
-                <span className="dash-kpi-label">{k.label}</span>
-                {k.sub && <span className="dash-kpi-sub">{k.sub}</span>}
-              </div>
-            ))}
+          {/* 2. KPI — 히어로 바 (시안A) */}
+          <div style={{
+            background: "linear-gradient(135deg, #1428A0 0%, #0F1D6B 100%)",
+            borderRadius: 16, padding: isMobile ? "14px 12px" : "18px 20px", marginBottom: 10,
+            position: "relative", overflow: "hidden",
+          }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "#F5B731" }} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? 10 : 14 }}>
+              <span style={{ fontSize: isMobile ? 12 : 14, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>📊 {periodLabel} 운영 현황</span>
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.08)", padding: "2px 8px", borderRadius: 4 }}>{periodLabel}</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0 }}>
+              {[
+                { icon: "🚗", val: kpi.totalCars.toLocaleString(), label: "총 입차" },
+                { icon: "💰", val: fmtMoney(kpi.totalRevenue), label: "총 매출" },
+                { icon: "🙋‍♂️", val: `${todayAttendance}/${totalWorkers}`, label: "출근" },
+                { icon: "🗓️", val: `${kpi.activeContracts}건`, label: "월주차" },
+              ].map((k, i) => (
+                <div key={k.label} style={{ textAlign: "center", borderRight: i < 3 ? "1px solid rgba(255,255,255,0.1)" : "none", padding: "0 2px" }}>
+                  <div style={{ fontSize: isMobile ? 14 : 18, marginBottom: isMobile ? 4 : 6 }}>{k.icon}</div>
+                  <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 900, color: "#fff", fontFamily: "Outfit, sans-serif", lineHeight: 1 }}>{k.val}</div>
+                  <div style={{ fontSize: isMobile ? 9 : 11, color: "rgba(255,255,255,0.5)", marginTop: isMobile ? 2 : 4, fontWeight: 600 }}>{k.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* 퇴근수정 요청 알림 */}
