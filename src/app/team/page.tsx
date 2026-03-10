@@ -789,13 +789,23 @@ export default function TeamPage() {
               <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6, lineHeight: 1.6 }}>
                 생성 후에는 비밀번호를 확인할 수 없습니다.
               </div>
-              <div style={{ background: "#f8fafc", borderRadius: 12, padding: "12px 16px", marginBottom: 20, textAlign: "left" }}>
+              <div style={{ background: "#f8fafc", borderRadius: 12, padding: "12px 16px", marginBottom: 12, textAlign: "left" }}>
                 <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 6 }}>생성 정보</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1D2B" }}>{inviteName}</div>
                 <div style={{ fontSize: 12, color: "#64748b" }}>{inviteEmail}</div>
                 <div style={{ fontSize: 12, color: "#64748b" }}>{invitePhone}</div>
                 <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>비밀번호: {invitePassword}</div>
               </div>
+              <button onClick={() => {
+                const text = `[미팍Ticket 로그인 정보]\n이름: ${inviteName}\n이메일: ${inviteEmail}\n연락처: ${invitePhone}\n비밀번호: ${invitePassword}\n\n로그인: https://mrpark-parking.vercel.app/crew/login`;
+                navigator.clipboard.writeText(text).then(() => {
+                  setMessage({ text: "로그인 정보가 복사되었습니다!", type: "success" });
+                }).catch(() => {
+                  // 폴백: textarea 복사
+                  const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+                  setMessage({ text: "로그인 정보가 복사되었습니다!", type: "success" });
+                });
+              }} style={{ width: "100%", padding: "10px 0", borderRadius: 10, border: "1.5px solid #1428A0", background: "#fff", color: "#1428A0", fontSize: 13, fontWeight: 700, cursor: "pointer", marginBottom: 16 }}>📋 로그인 정보 복사하기</button>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => setShowConfirmCreate(false)}
                   style={{ flex: 1, padding: 14, borderRadius: 12, border: "none", background: "#f1f5f9", color: "#64748b", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>돌아가기</button>
