@@ -395,33 +395,32 @@ export default function CrewHomePage() {
         
         /* 빠른 메뉴 */
         .crew-section-title {
-          font-size: 13px;
-          font-weight: 700;
-          color: #94A3B8;
+          font-size: 15px;
+          font-weight: 800;
+          color: #1A1D2B;
           margin-bottom: 12px;
-          letter-spacing: 0.5px;
-          text-transform: uppercase;
         }
         
         .crew-quick-menu {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: 12px;
+          gap: 10px;
           margin-bottom: 24px;
         }
         
         .crew-quick-btn {
           background: #fff;
-          border: 1px solid #E2E8F0;
+          border: 1px solid #F1F5F9;
           border-radius: 16px;
-          padding: 20px 16px;
+          padding: 16px;
           display: flex;
           flex-direction: column;
-          align-items: center;
-          gap: 10px;
+          justify-content: space-between;
+          min-height: 100px;
           cursor: pointer;
           transition: all 0.15s;
           -webkit-tap-highlight-color: transparent;
+          position: relative;
         }
         
         .crew-quick-btn:active {
@@ -429,19 +428,17 @@ export default function CrewHomePage() {
           background: #F8FAFC;
         }
         
-        .crew-quick-icon-wrap {
-          width: 48px;
-          height: 48px;
-          border-radius: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .crew-quick-label {
+          font-size: 15px;
+          font-weight: 800;
+          color: #1A1D2B;
+          text-align: left;
         }
         
-        .crew-quick-label {
-          font-size: 14px;
-          font-weight: 600;
-          color: #1A1D2B;
+        .crew-quick-emoji {
+          font-size: 36px;
+          align-self: flex-end;
+          line-height: 1;
         }
         
         /* 알림 섹션 */
@@ -642,36 +639,20 @@ export default function CrewHomePage() {
           <div className="crew-section-title">빠른 메뉴</div>
           <div className="crew-quick-menu">
             <button className="crew-quick-btn" onClick={() => router.push("/crew/entry")}>
-              <div className="crew-quick-icon-wrap" style={{ background: "#EEF2FF" }}>
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1428A0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 17H3v-5l2.5-5h11L19 12v5h-2" /><circle cx="7.5" cy="17.5" r="1.5" /><circle cx="16.5" cy="17.5" r="1.5" /><path d="M5 12h14" />
-                </svg>
-              </div>
               <span className="crew-quick-label">입차 등록</span>
+              <span className="crew-quick-emoji">🚗</span>
             </button>
             <button className="crew-quick-btn" onClick={() => router.push("/crew/parking-list")}>
-              <div className="crew-quick-icon-wrap" style={{ background: "#F0FDF4" }}>
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="3" /><path d="M9 17V10h3a2.5 2.5 0 0 1 0 5H9" />
-                </svg>
-              </div>
               <span className="crew-quick-label">출차 처리</span>
+              <span className="crew-quick-emoji">🅿️</span>
             </button>
             <button className="crew-quick-btn" onClick={() => router.push("/crew/accident")}>
-              <div className="crew-quick-icon-wrap" style={{ background: "#FFF7ED" }}>
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 4 2.5 20h19L12 4z" /><line x1="12" y1="10" x2="12" y2="14" strokeWidth={2} /><circle cx="12" cy="17" r="0.8" fill="#EA580C" stroke="none" />
-                </svg>
-              </div>
               <span className="crew-quick-label">사고 보고</span>
+              <span className="crew-quick-emoji">⚠️</span>
             </button>
             <button className="crew-quick-btn" onClick={() => router.push("/crew/monthly")}>
-              <div className="crew-quick-icon-wrap" style={{ background: "#F5F3FF" }}>
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
-                </svg>
-              </div>
               <span className="crew-quick-label">월주차 조회</span>
+              <span className="crew-quick-emoji">📅</span>
             </button>
           </div>
         </div>
