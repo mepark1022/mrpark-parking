@@ -357,7 +357,7 @@ export default function CrewAttendancePage() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
       const { error } = await supabase.from("checkout_requests").insert({
-        org_id: prof?.org_id,
+        org_id: prof?.org_id, user_id: authUser?.id,
         worker_id: attendance.workerId, store_id: selectedMissing.store_id || storeId,
         request_date: selectedMissing.date,
         requested_checkout_time: "18:00",
@@ -382,7 +382,7 @@ export default function CrewAttendancePage() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
       const { error } = await supabase.from("checkout_requests").insert({
-        org_id: prof?.org_id,
+        org_id: prof?.org_id, user_id: authUser?.id,
         worker_id: attendance.workerId, store_id: storeId,
         request_date: latestRequest.request_date,
         requested_checkout_time: latestRequest.requested_checkout_time,

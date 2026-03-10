@@ -68,7 +68,7 @@ export default function CrewAttendanceHistoryPage() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const { data: prof } = await supabase.from("profiles").select("org_id").eq("id", authUser?.id).single();
       const { error } = await supabase.from("checkout_requests").insert({
-        org_id: prof?.org_id,
+        org_id: prof?.org_id, user_id: authUser?.id,
         worker_id: workerId, store_id: storeId,
         request_date: originalRequest.request_date,
         requested_checkout_time: originalRequest.requested_checkout_time,
