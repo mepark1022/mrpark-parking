@@ -2,6 +2,8 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 /* ── SVG 아이콘 ── */
 const IconHome = ({ active }: { active: boolean }) => (
@@ -52,6 +54,49 @@ const NAV_ITEMS = [
 export default function CrewBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const [exitReqCount, setExitReqCount] = useState(0);
+
+  // 전역 출차요청 폴링 (모든 CREW 페이지에서 동작)
+  useEffect(() => {
+    let prevCount = -1; // -1 = 초기 로드 (알림 안 보냄)
+
+    // 브라우저 알림 권한 요청
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    const poll = async () => {
+      const sid = typeof window !== "undefined" ? localStorage.getItem("crew_store_id") : null;
+      if (!sid) return;
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("mepark_tickets")
+        .select("id, plate_number")
+        .eq("store_id", sid)
+        .eq("status", "exit_requested");
+      const count = data?.length || 0;
+
+      // 새 출차요청 감지 → 브라우저 알림 + 진동
+      if (count > prevCount && prevCount >= 0) {
+        if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          const plate = data?.[0]?.plate_number || "차량";
+          const diff = count - prevCount;
+          new Notification("🚗 출차요청", {
+            body: diff === 1 ? `${plate} 출차요청이 도착했습니다` : `${plate} 외 ${diff - 1}건 출차요청`,
+            icon: "/icons/icon-192x192.png",
+            tag: "exit-request",
+            renotify: true,
+          });
+        }
+      }
+      setExitReqCount(count);
+      prevCount = count;
+    };
+    poll();
+    const interval = setInterval(poll, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const isActive = (path: string) => {
     if (path === "/crew") return pathname === "/crew";
@@ -75,6 +120,7 @@ export default function CrewBottomNav() {
     }}>
       {NAV_ITEMS.map(({ id, label, path, Icon }) => {
         const active = isActive(path);
+        const hasBadge = id === "parking" && exitReqCount > 0;
         return (
           <div
             key={id}
@@ -100,8 +146,22 @@ export default function CrewBottomNav() {
               background: active ? "#F5B731" : "transparent",
               boxShadow: active ? "0 4px 12px rgba(245,183,49,0.4)" : "none",
               transition: "all 0.2s",
+              position: "relative",
             }}>
               <Icon active={active} />
+              {/* 출차요청 빨간 뱃지 */}
+              {hasBadge && (
+                <div style={{
+                  position: "absolute", top: -2, right: -4,
+                  minWidth: 18, height: 18, borderRadius: 9,
+                  background: "#DC2626", border: "2px solid #0a1352",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "0 4px",
+                  animation: "crewBadgePulse 1.5s ease-in-out infinite",
+                }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{exitReqCount}</span>
+                </div>
+              )}
             </div>
 
             {/* 라벨 */}
@@ -117,6 +177,12 @@ export default function CrewBottomNav() {
           </div>
         );
       })}
+      <style>{`
+        @keyframes crewBadgePulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.15); }
+        }
+      `}</style>
     </div>
   );
 }

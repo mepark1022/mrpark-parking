@@ -249,7 +249,7 @@ export default function CrewHomePage() {
 
     init();
 
-    // 5초 폴링 - 출차요청 감지
+    // 5초 폴링 - 출차요청 감지 (진동만, 알림은 CrewBottomNav에서 처리)
     let prevCount = 0;
     const supabaseRt = createClient();
     const pollInterval = setInterval(async () => {
