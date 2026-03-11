@@ -54,7 +54,8 @@ function RegisterForm() {
   const [saving, setSaving] = useState(false);
 
   const todayDate = new Date();
-  const initialEndDate = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0).toISOString().split("T")[0];
+  const lastDayOfMonth = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0);
+  const initialEndDate = `${lastDayOfMonth.getFullYear()}-${String(lastDayOfMonth.getMonth() + 1).padStart(2, "0")}-${String(lastDayOfMonth.getDate()).padStart(2, "0")}`;
 
   const [form, setForm] = useState({
     store_id: "",
@@ -105,18 +106,25 @@ function RegisterForm() {
 
   function setEndDateFromMonths(months: number) {
     if (!form.start_date) return;
-    const start = new Date(form.start_date);
+    const start = new Date(form.start_date + "T00:00:00");
     start.setMonth(start.getMonth() + months);
     start.setDate(start.getDate() - 1);
-    setForm({ ...form, end_date: start.toISOString().split("T")[0] });
+    setForm({ ...form, end_date: fmtLocal(start) });
   }
 
   // 시작일 변경 → 해당월 말일 자동 세팅
   function handleStartDateChange(v: string) {
-    const d = new Date(v);
+    const d = new Date(v + "T00:00:00");
     const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-    const endStr = lastDay.toISOString().split("T")[0];
-    setForm({ ...form, start_date: v, end_date: endStr });
+    setForm({ ...form, start_date: v, end_date: fmtLocal(lastDay) });
+  }
+
+  // 타임존 안전한 날짜 포맷
+  function fmtLocal(d: Date) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
   }
 
   async function handleSave() {

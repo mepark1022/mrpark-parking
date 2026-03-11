@@ -193,9 +193,10 @@ function CrewMonthlyRegisterForm() {
   const [done, setDone] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(!!editId);
 
-  const today = new Date().toISOString().split("T")[0];
   const todayObj = new Date();
-  const initialEndDate = new Date(todayObj.getFullYear(), todayObj.getMonth() + 1, 0).toISOString().split("T")[0];
+  const today = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, "0")}-${String(todayObj.getDate()).padStart(2, "0")}`;
+  const lastDayOfMonth = new Date(todayObj.getFullYear(), todayObj.getMonth() + 1, 0);
+  const initialEndDate = `${lastDayOfMonth.getFullYear()}-${String(lastDayOfMonth.getMonth() + 1).padStart(2, "0")}-${String(lastDayOfMonth.getDate()).padStart(2, "0")}`;
 
   const [form, setForm] = useState({
     vehicle_number: "",
@@ -268,22 +269,29 @@ function CrewMonthlyRegisterForm() {
     })();
   }, []);
 
+  // 타임존 안전한 날짜 포맷
+  function fmtLocal(d: Date) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
   // 기간 퀵선택 (1/3/6/12개월 버튼)
   useEffect(() => {
     if (!form.start_date || !periodMonths) return;
-    const start = new Date(form.start_date);
+    const start = new Date(form.start_date + "T00:00:00");
     start.setMonth(start.getMonth() + periodMonths);
     start.setDate(start.getDate() - 1);
-    setForm(f => ({ ...f, end_date: start.toISOString().split("T")[0] }));
+    setForm(f => ({ ...f, end_date: fmtLocal(start) }));
   }, [form.start_date, periodMonths]);
 
   // 시작일 변경 → 해당월 말일 자동 세팅
   function handleStartDateChange(v: string) {
-    const d = new Date(v);
+    const d = new Date(v + "T00:00:00");
     const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-    const endStr = lastDay.toISOString().split("T")[0];
-    setForm(f => ({ ...f, start_date: v, end_date: endStr }));
-    setPeriodMonths(0); // 퀵선택 해제
+    setForm(f => ({ ...f, start_date: v, end_date: fmtLocal(lastDay) }));
+    setPeriodMonths(0);
   }
 
   function handlePeriod(months: number) {
