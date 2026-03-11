@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import CrewHeader from "@/components/crew/CrewHeader";
 import { useCrewToast } from "@/components/crew/CrewToast";
@@ -166,6 +167,7 @@ const CSS = `
 ───────────────────────────────────────────── */
 export default function CrewMonthlyPage() {
   const supabase = createClient();
+  const router = useRouter();
   const { showToast } = useCrewToast();
 
   const [orgId, setOrgId] = useState("");
@@ -233,7 +235,25 @@ export default function CrewMonthlyPage() {
     <>
       <style>{CSS}</style>
       <div className="mly-page">
-        <CrewHeader title="월주차 조회" showBack />
+        <CrewHeader
+          title="월주차 관리"
+          showBack
+          rightAction={
+            <button
+              onClick={() => router.push("/crew/monthly/register")}
+              style={{
+                display: "flex", alignItems: "center", gap: 4,
+                padding: "7px 14px", borderRadius: 8,
+                background: "#1428A0", color: "#fff",
+                border: "none", fontSize: 13, fontWeight: 700,
+                cursor: "pointer", fontFamily: "inherit",
+                WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              <span style={{ fontSize: 15 }}>+</span> 등록
+            </button>
+          }
+        />
 
         {/* 검색 바 */}
         <div className="mly-search-bar">
