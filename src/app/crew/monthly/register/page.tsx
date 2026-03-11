@@ -194,6 +194,8 @@ function CrewMonthlyRegisterForm() {
   const [loadingEdit, setLoadingEdit] = useState(!!editId);
 
   const today = new Date().toISOString().split("T")[0];
+  const todayObj = new Date();
+  const initialEndDate = new Date(todayObj.getFullYear(), todayObj.getMonth() + 1, 0).toISOString().split("T")[0];
 
   const [form, setForm] = useState({
     vehicle_number: "",
@@ -201,14 +203,14 @@ function CrewMonthlyRegisterForm() {
     customer_name: "",
     customer_phone: "",
     start_date: today,
-    end_date: "",
+    end_date: initialEndDate,
     monthly_fee: 150000,
     payment_status: "unpaid" as "paid" | "unpaid",
     contract_status: "active" as "active" | "expired" | "cancelled",
     note: "",
   });
 
-  const [periodMonths, setPeriodMonths] = useState(1);
+  const [periodMonths, setPeriodMonths] = useState(0);
 
   // 한글만 허용 필터
   function filterKorean(val: string) {
@@ -266,7 +268,7 @@ function CrewMonthlyRegisterForm() {
     })();
   }, []);
 
-  // 기간 퀵선택
+  // 기간 퀵선택 (1/3/6/12개월 버튼)
   useEffect(() => {
     if (!form.start_date || !periodMonths) return;
     const start = new Date(form.start_date);
@@ -274,6 +276,15 @@ function CrewMonthlyRegisterForm() {
     start.setDate(start.getDate() - 1);
     setForm(f => ({ ...f, end_date: start.toISOString().split("T")[0] }));
   }, [form.start_date, periodMonths]);
+
+  // 시작일 변경 → 해당월 말일 자동 세팅
+  function handleStartDateChange(v: string) {
+    const d = new Date(v);
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    const endStr = lastDay.toISOString().split("T")[0];
+    setForm(f => ({ ...f, start_date: v, end_date: endStr }));
+    setPeriodMonths(0); // 퀵선택 해제
+  }
 
   function handlePeriod(months: number) {
     setPeriodMonths(months);
@@ -486,7 +497,7 @@ function CrewMonthlyRegisterForm() {
                   <div className="mreg-label">시작일 <span className="mreg-required">*</span></div>
                   <MeParkDatePicker
                     value={form.start_date}
-                    onChange={v => setForm(f => ({ ...f, start_date: v }))}
+                    onChange={handleStartDateChange}
                     compact
                     style={{ width: "100%" }}
                     align="left"
@@ -635,11 +646,11 @@ function CrewMonthlyRegisterForm() {
                   setForm({
                     vehicle_number: "", vehicle_type: "",
                     customer_name: "", customer_phone: "",
-                    start_date: today, end_date: "",
+                    start_date: today, end_date: initialEndDate,
                     monthly_fee: form.monthly_fee, payment_status: "unpaid",
                     contract_status: "active", note: "",
                   });
-                  setPeriodMonths(1);
+                  setPeriodMonths(0);
                 }}
               >
                 추가 등록하기

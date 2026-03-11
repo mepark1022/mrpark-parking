@@ -53,6 +53,9 @@ function RegisterForm() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const todayDate = new Date();
+  const initialEndDate = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0).toISOString().split("T")[0];
+
   const [form, setForm] = useState({
     store_id: "",
     vehicle_number: "",
@@ -60,7 +63,7 @@ function RegisterForm() {
     customer_name: "",
     customer_phone: "",
     start_date: new Date().toISOString().split("T")[0],
-    end_date: "",
+    end_date: initialEndDate,
     monthly_fee: 100000,
     payment_status: "unpaid" as "paid" | "unpaid" | "overdue",
     contract_status: "active" as "active" | "expired" | "cancelled",
@@ -106,6 +109,14 @@ function RegisterForm() {
     start.setMonth(start.getMonth() + months);
     start.setDate(start.getDate() - 1);
     setForm({ ...form, end_date: start.toISOString().split("T")[0] });
+  }
+
+  // 시작일 변경 → 해당월 말일 자동 세팅
+  function handleStartDateChange(v: string) {
+    const d = new Date(v);
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    const endStr = lastDay.toISOString().split("T")[0];
+    setForm({ ...form, start_date: v, end_date: endStr });
   }
 
   async function handleSave() {
@@ -283,7 +294,7 @@ function RegisterForm() {
                     <label style={labelStyle}>시작일<RequiredDot /></label>
                     <MeParkDatePicker
                       value={form.start_date}
-                      onChange={(v) => setForm({ ...form, start_date: v })}
+                      onChange={handleStartDateChange}
                       style={{ width: "100%" }}
                       align="left"
                     />
