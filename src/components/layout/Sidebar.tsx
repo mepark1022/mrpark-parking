@@ -232,7 +232,13 @@ export default function Sidebar() {
               <Link key={item.id} href={item.href} className={`v3-nav-item ${isActive(item.href) ? "active" : ""}`}>
                 <span style={{ display: "flex", alignItems: "center", width: 22 }}>{item.icon}</span>
                 <span>{item.label}</span>
-                {item.badge && parkingCount > 0 && <span className="v3-nav-badge">{parkingCount}</span>}
+                {item.id === "parking-status" && parkingCount > 0 && <span className="v3-nav-badge">{parkingCount}</span>}
+                {item.id === "accident" && accidentCount > 0 && (
+                  <span style={{ marginLeft: "auto", minWidth: 18, height: 18, borderRadius: 9, background: "#dc2626", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>{accidentCount}</span>
+                )}
+                {item.id === "workers" && checkoutReqCount > 0 && (
+                  <span style={{ marginLeft: "auto", minWidth: 18, height: 18, borderRadius: 9, background: "#dc2626", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>{checkoutReqCount}</span>
+                )}
               </Link>
             ))}
 
@@ -243,11 +249,12 @@ export default function Sidebar() {
               <Link key={item.id} href={item.href} className={`v3-nav-item ${isActive(item.href) ? "active" : ""}`}>
                 <span style={{ display: "flex", alignItems: "center", width: 22 }}>{item.icon}</span>
                 <span>{item.label}</span>
+                {item.id === "parking-status" && parkingCount > 0 && <span className="v3-nav-badge">{parkingCount}</span>}
+                {item.id === "accident" && accidentCount > 0 && (
+                  <span style={{ marginLeft: "auto", minWidth: 18, height: 18, borderRadius: 9, background: "#dc2626", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>{accidentCount}</span>
+                )}
                 {item.id === "workers" && checkoutReqCount > 0 && (
                   <span style={{ marginLeft: "auto", minWidth: 18, height: 18, borderRadius: 9, background: "#dc2626", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>{checkoutReqCount}</span>
-                )}
-                {item.badge && accidentCount > 0 && (
-                  <span style={{ marginLeft: item.id === "workers" ? 4 : "auto", width: 18, height: 18, borderRadius: 9, background: "#dc2626", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{accidentCount}</span>
                 )}
               </Link>
             ))}
