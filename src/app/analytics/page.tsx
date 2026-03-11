@@ -183,64 +183,94 @@ export default function AnalyticsPage() {
       const prevEnd = new Date(startD.getTime() - 86400000);
       const prevStart = new Date(prevEnd.getTime() - duration);
       const prevStartStr = toKSTDateStr(prevStart);
-      const prevEndStr = prevEntoKSTDateStr(d);
+      const prevEndStr = toKSTDateStr(prevEnd);
 
-      let q = supabase.from("daily_records")
-        .select("id, date, store_id, valet_revenue, parking_revenue, total_cars, valet_count")
-        .eq("org_id", oid).gte("date", start).lte("date", end).order("date");
+      // ── mepark_tickets 기반 쿼리 (KST 날짜 범위 → UTC timestamptz 변환)
+      const startUTC = `${start}T00:00:00+09:00`;
+      const endUTC = `${end}T23:59:59+09:00`;
+      const prevStartUTC = `${prevStartStr}T00:00:00+09:00`;
+      const prevEndUTC = `${prevEndStr}T23:59:59+09:00`;
+
+      // 현재 기간 티켓 조회 (완료된 건만 집계)
+      let q = supabase.from("mepark_tickets")
+        .select("id, store_id, entry_at, paid_amount, parking_type, is_monthly")
+        .eq("org_id", oid)
+        .eq("status", "completed")
+        .gte("entry_at", startUTC)
+        .lte("entry_at", endUTC);
       if (selectedStore !== "all") q = q.eq("store_id", selectedStore);
-      const { data: records } = await q;
+      const { data: tickets } = await q;
 
-      let prevQ = supabase.from("daily_records")
-        .select("date, valet_revenue, parking_revenue, total_cars, valet_count")
-        .eq("org_id", oid).gte("date", prevStartStr).lte("date", prevEndStr);
+      // 이전 기간 티켓 조회 (비교용)
+      let prevQ = supabase.from("mepark_tickets")
+        .select("paid_amount, parking_type")
+        .eq("org_id", oid)
+        .eq("status", "completed")
+        .gte("entry_at", prevStartUTC)
+        .lte("entry_at", prevEndUTC);
       if (selectedStore !== "all") prevQ = prevQ.eq("store_id", selectedStore);
-      const { data: prevRecords } = await prevQ;
+      const { data: prevTickets } = await prevQ;
 
-      const rows = records || []; const prevRows = prevRecords || [];
+      const rows = tickets || [];
+      const prevRows = prevTickets || [];
 
-      const totalRevenue = rows.reduce((s, r) => s + (r.valet_revenue || 0) + (r.parking_revenue || 0), 0);
-      const valetRevenue = rows.reduce((s, r) => s + (r.valet_revenue || 0), 0);
-      const parkingRevenue = rows.reduce((s, r) => s + (r.parking_revenue || 0), 0);
-      const totalCars = rows.reduce((s, r) => s + (r.total_cars || 0), 0);
-      const valetCount = rows.reduce((s, r) => s + (r.valet_count || 0), 0);
-      const prevTotalRevenue = prevRows.reduce((s, r) => s + (r.valet_revenue || 0) + (r.parking_revenue || 0), 0);
-      const prevTotalCars = prevRows.reduce((s, r) => s + (r.total_cars || 0), 0);
+      // ── KST 날짜 추출 헬퍼
+      const toKSTDate = (iso: string) => {
+        const kst = new Date(new Date(iso).getTime() + 9 * 60 * 60 * 1000);
+        return kst.toISOString().split("T")[0];
+      };
+      const toKSTHour = (iso: string) => {
+        const kst = new Date(new Date(iso).getTime() + 9 * 60 * 60 * 1000);
+        return kst.getUTCHours();
+      };
+
+      // ── KPI 집계
+      const valetRevenue = rows.filter(r => r.parking_type === "valet").reduce((s, r) => s + (r.paid_amount || 0), 0);
+      const parkingRevenue = rows.filter(r => r.parking_type !== "valet").reduce((s, r) => s + (r.paid_amount || 0), 0);
+      const totalRevenue = valetRevenue + parkingRevenue;
+      const totalCars = rows.length;
+      const valetCount = rows.filter(r => r.parking_type === "valet").length;
+      const prevTotalRevenue = prevRows.reduce((s, r) => s + (r.paid_amount || 0), 0);
+      const prevTotalCars = prevRows.length;
 
       setKpi({ totalRevenue, valetRevenue, parkingRevenue, totalCars, valetCount, avgPerCar: totalCars > 0 ? Math.round(totalRevenue / totalCars) : 0, prevTotalRevenue, prevTotalCars });
 
+      // ── 일별 집계
       const dateMap: Record<string, DailySummary> = {};
       rows.forEach((r) => {
-        if (!dateMap[r.date]) {
-          const d = new Date(r.date);
-          dateMap[r.date] = { date: r.date, label: `${d.getMonth() + 1}/${d.getDate()}`, valetRevenue: 0, parkingRevenue: 0, totalRevenue: 0, totalCars: 0, valetCount: 0 };
+        const dateStr = toKSTDate(r.entry_at);
+        if (!dateMap[dateStr]) {
+          const d = new Date(dateStr);
+          dateMap[dateStr] = { date: dateStr, label: `${d.getMonth() + 1}/${d.getDate()}`, valetRevenue: 0, parkingRevenue: 0, totalRevenue: 0, totalCars: 0, valetCount: 0 };
         }
-        dateMap[r.date].valetRevenue += r.valet_revenue || 0;
-        dateMap[r.date].parkingRevenue += r.parking_revenue || 0;
-        dateMap[r.date].totalRevenue += (r.valet_revenue || 0) + (r.parking_revenue || 0);
-        dateMap[r.date].totalCars += r.total_cars || 0;
-        dateMap[r.date].valetCount += r.valet_count || 0;
+        const amt = r.paid_amount || 0;
+        if (r.parking_type === "valet") { dateMap[dateStr].valetRevenue += amt; dateMap[dateStr].valetCount += 1; }
+        else dateMap[dateStr].parkingRevenue += amt;
+        dateMap[dateStr].totalRevenue += amt;
+        dateMap[dateStr].totalCars += 1;
       });
       setDailyData(Object.values(dateMap).sort((a, b) => a.date.localeCompare(b.date)));
 
-      // 시간대별 입차 데이터
-      const recordIds = rows.map(r => r.id).filter(Boolean);
-      if (recordIds.length > 0) {
-        const { data: hData } = await supabase.from("hourly_data").select("hour, car_count").in("record_id", recordIds);
-        setHourlyData(hData || []);
-      } else { setHourlyData([]); }
+      // ── 시간대별 집계 (mepark_tickets.entry_at 직접 사용)
+      const hourMap: Record<number, number> = {};
+      rows.forEach(r => {
+        const h = toKSTHour(r.entry_at);
+        hourMap[h] = (hourMap[h] || 0) + 1;
+      });
+      setHourlyData(Object.entries(hourMap).map(([h, count]) => ({ hour: Number(h), car_count: count })));
 
+      // ── 매장별 집계
       if (selectedStore === "all") {
         const storeMap: Record<string, StoreSummary> = {};
         rows.forEach((r) => {
           const store = stores.find((s) => s.id === r.store_id);
           const name = store?.name || r.store_id;
           if (!storeMap[r.store_id]) storeMap[r.store_id] = { id: r.store_id, name, totalRevenue: 0, valetRevenue: 0, parkingRevenue: 0, totalCars: 0, valetCount: 0, avgPerCar: 0 };
-          storeMap[r.store_id].valetRevenue += r.valet_revenue || 0;
-          storeMap[r.store_id].parkingRevenue += r.parking_revenue || 0;
-          storeMap[r.store_id].totalRevenue += (r.valet_revenue || 0) + (r.parking_revenue || 0);
-          storeMap[r.store_id].totalCars += r.total_cars || 0;
-          storeMap[r.store_id].valetCount += r.valet_count || 0;
+          const amt = r.paid_amount || 0;
+          if (r.parking_type === "valet") { storeMap[r.store_id].valetRevenue += amt; storeMap[r.store_id].valetCount += 1; }
+          else storeMap[r.store_id].parkingRevenue += amt;
+          storeMap[r.store_id].totalRevenue += amt;
+          storeMap[r.store_id].totalCars += 1;
         });
         setStoreData(Object.values(storeMap).map(s => ({ ...s, avgPerCar: s.totalCars > 0 ? Math.round(s.totalRevenue / s.totalCars) : 0 })).sort((a, b) => b.totalRevenue - a.totalRevenue));
       }
