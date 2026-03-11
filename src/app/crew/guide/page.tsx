@@ -136,6 +136,51 @@ export default function CrewGuidePage() {
           ))}
         </div>
 
+        {/* 업데이트 이력 */}
+        <div style={{ margin: "0 16px 16px", background: "#fff", borderRadius: 16, border: "1px solid #E2E8F0", overflow: "hidden" }}>
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 18 }}>📋</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1A1D2B" }}>업데이트 이력</div>
+              <div style={{ fontSize: 11, color: "#94A3B8" }}>앱 변경 내역을 확인합니다</div>
+            </div>
+          </div>
+          <div style={{ padding: "14px 16px" }}>
+            {[
+              { date: "2026.03.11", items: [
+                "월주차 신규등록 · 수정 기능 추가",
+                "월주차 시작일 → 해당월 말일 자동 세팅",
+                "미팍 캘린더 적용 (시작일/종료일)",
+                "고객명 한글만 입력 가능",
+                "기능안내 페이지 추가",
+              ]},
+              { date: "2026.03.05", items: [
+                "카메라 OCR 번호판 인식 기능",
+                "입차현황 출차처리 버튼 추가",
+                "출차요청 실시간 알림 (토스트 + 진동)",
+                "중복 차량 입차 방지 팝업",
+              ]},
+              { date: "2026.02.25", items: [
+                "CREW앱 v3 디자인 전체 적용",
+                "홈 · 입차등록 · 입차현황 · 출퇴근 · 설정",
+              ]},
+            ].map((log, i) => (
+              <div key={i} style={{ marginBottom: 16, paddingBottom: i < 2 ? 16 : 0, borderBottom: i < 2 ? "1px solid #F1F5F9" : "none" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#1428A0", fontFamily: "monospace" }}>{log.date}</span>
+                  {i === 0 && <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: "#1428A0", padding: "2px 8px", borderRadius: 4 }}>최신</span>}
+                </div>
+                {log.items.map((item, j) => (
+                  <div key={j} className="cguide-detail">
+                    <span className="cguide-dot">●</span>
+                    <span className="cguide-detail-text">{item}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* 푸터 */}
         <div className="cguide-footer">
           <p>© 주식회사 미스터팍 · 미팍Ticket CREW</p>
