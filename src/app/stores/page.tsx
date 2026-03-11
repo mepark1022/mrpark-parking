@@ -932,7 +932,7 @@ export default function StoresPage() {
                                 <div key={vp.id} style={{ background: "#fff", borderRadius: 8, padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                                   <div>
                                     <div style={{ fontSize: 13, fontWeight: 600 }}>{vp.name}</div>
-                                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>무료 {vp.free_minutes}분 · 기본 ₩{vp.base_fee.toLocaleString()}</div>
+                                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>무료 {vp.free_minutes}분 · 기본 ₩{(vp.base_fee ?? 0).toLocaleString()}</div>
                                   </div>
                                   <div style={{ display: "flex", gap: 4 }}>
                                     <button onClick={(e) => { e.stopPropagation(); setVisitForm({ name: vp.name, floor: vp.floor ?? "", free_minutes: vp.free_minutes, base_fee: vp.base_fee, base_minutes: vp.base_minutes, extra_fee: vp.extra_fee, daily_max: vp.daily_max, valet_fee: vp.valet_fee, monthly_fee: vp.monthly_fee }); setEditingItem(vp as unknown as Record<string, unknown>); setStoreForAction(store.id); setModalType("visit"); }}
@@ -1275,11 +1275,11 @@ export default function StoresPage() {
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                         {[
                           { label: "무료", value: `${vp.free_minutes}분` },
-                          { label: "기본요금", value: `₩${vp.base_fee.toLocaleString()}/${vp.base_minutes}분` },
-                          { label: "추가요금", value: `₩${vp.extra_fee.toLocaleString()}/10분` },
-                          { label: "발렛요금", value: `₩${vp.valet_fee.toLocaleString()}` },
-                          { label: "월정기", value: `₩${vp.monthly_fee.toLocaleString()}` },
-                          { label: "일일최대", value: vp.daily_max > 0 ? `₩${vp.daily_max.toLocaleString()}` : "제한없음" },
+                          { label: "기본요금", value: `₩${(vp.base_fee ?? 0).toLocaleString()}/${vp.base_minutes}분` },
+                          { label: "추가요금", value: `₩${(vp.extra_fee ?? 0).toLocaleString()}/10분` },
+                          { label: "발렛요금", value: `₩${(vp.valet_fee ?? 0).toLocaleString()}` },
+                          { label: "월정기", value: `₩${(vp.monthly_fee ?? 0).toLocaleString()}` },
+                          { label: "일일최대", value: vp.daily_max > 0 ? `₩${(vp.daily_max ?? 0).toLocaleString()}` : "제한없음" },
                         ].map(item => (
                           <div key={item.label} style={{ background: "#fff", borderRadius: 8, padding: "8px 12px" }}>
                             <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 2 }}>{item.label}</div>
@@ -1309,10 +1309,10 @@ export default function StoresPage() {
                         <Td><strong>{vp.name}</strong></Td>
                         <Td style={{ color: C.textSecondary }}>{vp.floor || "-"}</Td>
                         <Td>{vp.free_minutes}분</Td>
-                        <Td>₩{vp.base_fee.toLocaleString()} / {vp.base_minutes}분</Td>
-                        <Td>₩{vp.extra_fee.toLocaleString()}</Td>
-                        <Td>₩{vp.valet_fee.toLocaleString()}</Td>
-                        <Td>₩{vp.monthly_fee.toLocaleString()}</Td>
+                        <Td>₩{(vp.base_fee ?? 0).toLocaleString()} / {vp.base_minutes}분</Td>
+                        <Td>₩{(vp.extra_fee ?? 0).toLocaleString()}</Td>
+                        <Td>₩{(vp.valet_fee ?? 0).toLocaleString()}</Td>
+                        <Td>₩{(vp.monthly_fee ?? 0).toLocaleString()}</Td>
                         <Td>
                           <div style={{ display: "flex", gap: 6 }}>
                             <BtnGhost onClick={() => {
@@ -2136,10 +2136,10 @@ export default function StoresPage() {
                   <div style={{ fontSize: 11, fontWeight: 700, color: C.textSecondary, marginBottom: 6 }}>📋 요금 요약</div>
                   <div style={{ fontSize: 12, color: C.textPrimary, lineHeight: 1.8 }}>
                     {storeForm.free_minutes > 0 && <div>✓ 무료 {storeForm.free_minutes}분</div>}
-                    <div>✓ 기본 {storeForm.base_minutes}분 → <strong>₩{storeForm.base_fee.toLocaleString()}</strong></div>
-                    <div>✓ 초과 {storeForm.extra_unit_minutes}분마다 → <strong>₩{storeForm.extra_fee.toLocaleString()}</strong></div>
-                    {storeForm.daily_max > 0 && <div>✓ 일 최대 → <strong>₩{storeForm.daily_max.toLocaleString()}</strong></div>}
-                    {storeForm.enable_valet && <div>✓ 발렛 → <strong>₩{storeForm.valet_fee.toLocaleString()}</strong></div>}
+                    <div>✓ 기본 {storeForm.base_minutes}분 → <strong>₩{(storeForm.base_fee ?? 0).toLocaleString()}</strong></div>
+                    <div>✓ 초과 {storeForm.extra_unit_minutes}분마다 → <strong>₩{(storeForm.extra_fee ?? 0).toLocaleString()}</strong></div>
+                    {storeForm.daily_max > 0 && <div>✓ 일 최대 → <strong>₩{(storeForm.daily_max ?? 0).toLocaleString()}</strong></div>}
+                    {storeForm.enable_valet && <div>✓ 발렛 → <strong>₩{(storeForm.valet_fee ?? 0).toLocaleString()}</strong></div>}
                   </div>
                 </div>
               </div>
