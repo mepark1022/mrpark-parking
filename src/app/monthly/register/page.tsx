@@ -171,6 +171,7 @@ function RegisterForm() {
     <AppLayout>
       <style>{`
         .reg-grid { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; }
+        .reg-grid > .v3-info-card { overflow: visible; }
         .reg-form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .reg-form-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
         @media (max-width: 767px) {
