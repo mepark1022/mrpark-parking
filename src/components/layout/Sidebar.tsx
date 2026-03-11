@@ -89,12 +89,12 @@ export default function Sidebar() {
       .in("status", ["parking", "pre_paid", "exit_requested", "car_ready"])
       .gte("entry_at", todayStart.toISOString());
     setParkingCount(pCount ?? 0);
-    // 사고보고: 미처리(pending) 건수
+    // 사고보고: 미처리(접수/처리중) 건수
     try {
       const { count: aCount } = await supabase.from("accident_reports")
         .select("*", { count: "exact", head: true })
         .eq("org_id", prof.org_id)
-        .eq("status", "pending");
+        .in("status", ["접수", "처리중", "pending"]);
       setAccidentCount(aCount ?? 0);
     } catch { setAccidentCount(0); }
     // 퇴근수정 요청: pending 건수
