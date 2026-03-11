@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getOrgId } from "@/lib/utils/org";
 import { calcAnnualLeaveDays, calcTotalLeaveDays, calcYearEndLeaveDays, getYearsWorkedLabel } from "@/lib/utils/leave";
 import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
+import { toKSTDateStr } from "@/lib/utils/date";
 
 const leaveTypeMap = {
   annual:  { label: "연차",  bg: "#ede9fe", color: "#7c3aed" },
@@ -131,7 +132,7 @@ export default function LeaveTab() {
       const start = new Date(form.start_date);
       const end   = new Date(form.end_date);
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().slice(0, 10);
+        const dateStr = toKSTDateStr(d);
         const { data: exists } = await supabase
           .from("worker_attendance").select("id, status")
           .eq("worker_id", selectedWorker).eq("date", dateStr).maybeSingle();
@@ -186,7 +187,7 @@ export default function LeaveTab() {
       const start = new Date(record.start_date);
       const end   = new Date(record.end_date);
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().slice(0, 10);
+        const dateStr = toKSTDateStr(d);
         const { data: exists } = await supabase
           .from("worker_attendance").select("id, status")
           .eq("worker_id", selectedWorker).eq("date", dateStr).maybeSingle();

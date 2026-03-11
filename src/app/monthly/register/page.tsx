@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
 import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 import type { Store } from "@/lib/types/database";
+import { getToday, toKSTDateStr } from "@/lib/utils/date";
 
 const inputStyle = {
   width: "100%", padding: "11px 14px",
@@ -54,8 +55,7 @@ function RegisterForm() {
   const [saving, setSaving] = useState(false);
 
   const todayDate = new Date();
-  const lastDayOfMonth = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0);
-  const initialEndDate = `${lastDayOfMonth.getFullYear()}-${String(lastDayOfMonth.getMonth() + 1).padStart(2, "0")}-${String(lastDayOfMonth.getDate()).padStart(2, "0")}`;
+  const initialEndDate = toKSTDateStr(new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0));
 
   const [form, setForm] = useState({
     store_id: "",
@@ -63,7 +63,7 @@ function RegisterForm() {
     vehicle_type: "",
     customer_name: "",
     customer_phone: "",
-    start_date: new Date().toISOString().split("T")[0],
+    start_date: getToday(),
     end_date: initialEndDate,
     monthly_fee: 100000,
     payment_status: "unpaid" as "paid" | "unpaid" | "overdue",
@@ -109,23 +109,17 @@ function RegisterForm() {
     const start = new Date(form.start_date + "T00:00:00");
     start.setMonth(start.getMonth() + months);
     start.setDate(start.getDate() - 1);
-    setForm({ ...form, end_date: fmtLocal(start) });
+    setForm({ ...form, end_date: toKSTDateStr(start) });
   }
 
   // 시작일 변경 → 해당월 말일 자동 세팅
   function handleStartDateChange(v: string) {
     const d = new Date(v + "T00:00:00");
     const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-    setForm({ ...form, start_date: v, end_date: fmtLocal(lastDay) });
+    setForm({ ...form, start_date: v, end_date: toKSTDateStr(lastDay) });
   }
 
-  // 타임존 안전한 날짜 포맷
-  function fmtLocal(d: Date) {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  }
+
 
   async function handleSave() {
     if (!form.store_id || !form.vehicle_number || !form.customer_name || !form.customer_phone || !form.start_date || !form.end_date) {

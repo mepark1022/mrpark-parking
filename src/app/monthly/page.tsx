@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
 import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 import type { Store } from "@/lib/types/database";
+import { getToday, toKSTDateStr } from "@/lib/utils/date";
 
 type MonthlyRow = {
   id: string;
@@ -88,7 +89,7 @@ export default function MonthlyPage() {
     if (!ctx.orgId) { setLoading(false); return; }
 
     // 만료일이 지난 active 계약 자동 expired 처리
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getToday();
     await supabase
       .from("monthly_parking")
       .update({ contract_status: "expired" })
@@ -168,10 +169,10 @@ export default function MonthlyPage() {
   }
 
   function calcRenewEnd(baseEnd: string, months: number): string {
-    const base = new Date(baseEnd < new Date().toISOString().slice(0,10) ? new Date().toISOString().slice(0,10) : baseEnd);
+    const base = new Date(baseEnd < getToday() ? getToday() : baseEnd);
     base.setMonth(base.getMonth() + months);
     base.setDate(base.getDate() - 1);
-    return base.toISOString().slice(0, 10);
+    return toKSTDateStr(base);
   }
 
   function handleRenewMonths(months: number) {
@@ -184,7 +185,7 @@ export default function MonthlyPage() {
     const c = renewModal.contract;
     if (!c || !renewModal.customEnd) return;
     setRenewModal(m => ({ ...m, saving: true }));
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getToday();
     const newStart = c.end_date < today ? today : c.end_date;
     const { error } = await supabase.from("monthly_parking").update({
       start_date: newStart,
@@ -825,7 +826,7 @@ ${alimModal.contract.stores?.name ?? ""} 월주차 계약 만료가 임박했습
               <div style={{ background: "#ecfdf5", border: "1px solid #bbf7d0", borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
                 <div style={{ fontSize: 12, color: "#065f46", fontWeight: 700, marginBottom: 6 }}>갱신 후 계약 내용</div>
                 <div style={{ fontSize: 13, color: "#047857" }}>
-                  📅 {new Date().toISOString().slice(0,10) > renewModal.contract.end_date ? new Date().toISOString().slice(0,10) : renewModal.contract.end_date}
+                  📅 {getToday() > renewModal.contract.end_date ? getToday() : renewModal.contract.end_date}
                   {" → "}
                   <strong>{renewModal.customEnd || "-"}</strong>
                 </div>

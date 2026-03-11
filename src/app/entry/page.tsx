@@ -9,6 +9,7 @@ import { getOrgId, getUserContext } from "@/lib/utils/org";
 import { getDayType, getDayTypeLabel } from "@/utils/holidays";
 import AppLayout from "@/components/layout/AppLayout";
 import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
+import { getToday } from "@/lib/utils/date";
 
 type Store = { id: string; name: string; has_valet: boolean; valet_fee: number };
 type Worker = { id: string; name: string };
@@ -161,7 +162,7 @@ export default function EntryPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [selectedStore, setSelectedStore] = useState("");
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState(() => getToday());
   const [inputMode, setInputMode] = useState<"total" | "hourly">("total");
   const [hourlyData, setHourlyData] = useState<Record<number, number>>({});
   const [totalCarsOnly, setTotalCarsOnly] = useState(0);

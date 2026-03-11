@@ -8,6 +8,7 @@ import { getUserContext } from "@/lib/utils/org";
 import { fmtPlate, splitPlate } from "@/lib/utils/format";
 import AppLayout from "@/components/layout/AppLayout";
 import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
+import { getToday } from "@/lib/utils/date";
 
 const C = {
   navy: "#1428A0", navyLight: "#2d3a8c", gold: "#F5B731", goldLight: "#fef9e7",
@@ -97,7 +98,7 @@ export default function ParkingStatusPage() {
   const [overdueTickets,setOverdueTickets]=useState([]);
   const [loading,setLoading]=useState(true);
   const [selectedStore,setSelectedStore]=useState("");
-  const [selectedDate,setSelectedDate]=useState(new Date().toISOString().split("T")[0]);
+  const [selectedDate,setSelectedDate]=useState(getToday());
   const [search,setSearch]=useState("");
   const [typeFilter,setTypeFilter]=useState("all");
   const [statusFilter,setStatusFilter]=useState("all");

@@ -11,6 +11,7 @@ import {
   LineChart, Line, Legend,
 } from "recharts";
 import type { Store } from "@/lib/types/database";
+import { getToday, toKSTDateStr } from "@/lib/utils/date";
 
 type DailyRecord = {
   id: string; store_id: string; date: string;
@@ -25,13 +26,13 @@ function getThisWeekRange() {
   const now = new Date(); const day = now.getDay(); const diff = day === 0 ? 6 : day - 1;
   const monday = new Date(now); monday.setDate(now.getDate() - diff);
   const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
-  return { start: monday.toISOString().split("T")[0], end: sunday.toISOString().split("T")[0] };
+  return { start: toKSTDateStr(monday), end: toKSTDateStr(sunday) };
 }
 function getThisMonthRange() {
   const now = new Date();
   return {
-    start: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0],
-    end: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0],
+    start: toKSTDateStr(new Date(now.getFullYear(), now.getMonth(), 1)),
+    end: toKSTDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
   };
 }
 function getOccColor(occ) {
@@ -131,7 +132,7 @@ function CustomDateRangePicker({ startDate, endDate, onApply, onClose }: {
   onClose: () => void;
 }) {
   const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
+  const todayStr = toKSTDateStr(today);
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selStart, setSelStart] = useState(startDate || "");
@@ -278,7 +279,7 @@ function CustomDateRangePicker({ startDate, endDate, onApply, onClose }: {
             { label:"이번 달", fn:() => { const r=getThisMonthRange(); setSelStart(r.start); setSelEnd(r.end); }},
             { label:"지난 7일", fn:() => {
               const s=new Date(today); s.setDate(today.getDate()-6);
-              setSelStart(s.toISOString().split("T")[0]); setSelEnd(todayStr);
+              setSelStart(toKSTDateStr(s)); setSelEnd(todayStr);
             }},
           ].map(q => (
             <button key={q.label} onClick={q.fn} className="cursor-pointer"
@@ -405,7 +406,7 @@ export default function DashboardPage() {
   }
 
   function getDateRange() {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getToday();
     if (period === "today") return { start: today, end: today };
     if (period === "week") return getThisWeekRange();
     if (period === "month") return getThisMonthRange();
@@ -435,7 +436,7 @@ export default function DashboardPage() {
     const [{ data: tData }, { data: mpData }, { data: rData }] = await Promise.all([tQ, mpQ, recQ]);
 
     // 등록 총인원 (active 근무자) + 금일 출근인원
-    const today = new Date().toISOString().split("T")[0];
+    const today = getToday();
     let wkQ = supabase.from("workers").select("id", { count: "exact", head: true }).eq("status", "active");
     if (orgId) wkQ = wkQ.eq("org_id", orgId);
     let attQ = supabase.from("worker_attendance")

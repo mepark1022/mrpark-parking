@@ -14,6 +14,7 @@ const AdminGpsMap = nextDynamic(() => import("@/components/admin/AdminGpsMap"), 
 import { showToast as _showToast } from "@/lib/utils/toast";
 import { getDayType, getHolidayName, getDayTypeLabel } from "@/utils/holidays";
 import * as XLSX from "xlsx";
+import { getToday } from "@/lib/utils/date";
 
 const tabs = [
   { id: "attendance", label: "출퇴근" },
@@ -224,7 +225,7 @@ function ScheduleTab() {
   const [y, m] = selectedMonth.split("-");
   const daysInMonth = new Date(Number(y), Number(m), 0).getDate();
   const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
-  const today = new Date().toISOString().split("T")[0];
+  const today = getToday();
 
   const getWorkerStats = (workerId) => {
     const wr = records.filter(r => r.worker_id === workerId);
@@ -253,7 +254,7 @@ function ScheduleTab() {
 
   const getWorkerMissingStats = (workerId) => {
     const wr = records.filter(r => r.worker_id === workerId);
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getToday();
     // 미퇴근: check_in 있고 check_out 없는 과거 날짜 (present/late)
     const noCheckout = wr.filter(r =>
       (r.status === "present" || r.status === "late") &&
@@ -278,7 +279,7 @@ function ScheduleTab() {
     d.dayOfWeek !== 0 && d.dayOfWeek !== 6 && !d.holidayName
   ).length;
   // 오늘까지의 소정근로일 (현재 월일 경우 부분 계산)
-  const todayStr0 = new Date().toISOString().split("T")[0];
+  const todayStr0 = getToday();
   const isCurrentMonth = `${y}-${m}` === todayStr0.slice(0, 7);
   const elapsedWorkDays = isCurrentMonth
     ? dates.filter(d => d.dayOfWeek !== 0 && d.dayOfWeek !== 6 && !d.holidayName && d.date <= todayStr0).length
@@ -423,7 +424,7 @@ function ScheduleTab() {
 
         {/* 미출퇴근 집계 요약 */}
         {storeWorkers.length > 0 && (() => {
-          const todayStr = new Date().toISOString().split("T")[0];
+          const todayStr = getToday();
           const allStats = storeWorkers.map(w => {
             const { noCheckin, noCheckout } = getWorkerMissingStats(w.id);
             const stats = getWorkerStats(w.id);
@@ -689,7 +690,7 @@ function ScheduleTab() {
                         {dates.map(d => {
                           const rec = records.find(r => r.worker_id === w.id && r.date === d.date);
                           const st = rec ? statusMap[rec.status] : null;
-                          const todayStr2 = new Date().toISOString().split("T")[0];
+                          const todayStr2 = getToday();
                           const isNoCheckout = rec && (rec.status === "present" || rec.status === "late") && rec.check_in && !rec.check_out && d.date < todayStr2;
                           const isEditing = editCell?.workerId === w.id && editCell?.date === d.date;
                           return (
@@ -911,7 +912,7 @@ export default function WorkersPage() {
     const [{ data: wData }, { data: sData }, { data: aData }, { data: rData }, { data: crData }, { data: ohData }] = await Promise.all([
       supabase.from("workers").select("*, regions(name)").eq("org_id", oid).order("name"),
       supabase.from("stores").select("id, name, latitude, longitude, road_address").eq("org_id", oid).order("name"),
-      supabase.from("worker_attendance").select("*").eq("org_id", oid).eq("date", new Date().toISOString().slice(0, 10)),
+      supabase.from("worker_attendance").select("*").eq("org_id", oid).eq("date", getToday()),
       supabase.from("regions").select("*").order("name"),
       supabase.from("checkout_requests").select("*").eq("org_id", oid).eq("status", "pending").order("created_at", { ascending: false }),
       supabase.from("store_operating_hours").select("store_id, day_category, open_time, close_time").eq("org_id", oid),
@@ -988,7 +989,7 @@ export default function WorkersPage() {
     if (!manualForm.workerId) { setManualMsg("근무자를 선택하세요"); return; }
     const supabase = createClient();
     const oid = await getOrgId();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getToday();
     const existing = attendanceRecords.find(r => r.worker_id === manualForm.workerId);
     const payload = {
       org_id: oid,
@@ -1195,7 +1196,7 @@ export default function WorkersPage() {
 
         {/* ── 출퇴근 탭 ── */}
         {tab === "attendance" && (() => {
-          const today = new Date().toISOString().slice(0, 10);
+          const today = getToday();
           const displayWorkers = attendanceWorkers.length > 0 ? attendanceWorkers : workers.filter(w => w.status === "active");
           const checkedIn = displayWorkers.filter(w => attendanceRecords.find(r => r.worker_id === w.id && (r.status === "present" || r.status === "late")));
           const late = displayWorkers.filter(w => attendanceRecords.find(r => r.worker_id === w.id && r.status === "late"));

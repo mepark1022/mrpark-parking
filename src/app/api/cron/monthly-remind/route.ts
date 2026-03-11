@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendAlimtalk, logAlimtalk, maskPhone } from "@/lib/utils/solapi";
+import { toKSTDateStr } from "@/lib/utils/date";
 
 export async function GET(req) {
   // Vercel Cron 인증
@@ -24,7 +25,7 @@ export async function GET(req) {
 
   const d7Date = new Date();
   d7Date.setDate(d7Date.getDate() + 7);
-  const d7Str = d7Date.toISOString().slice(0, 10);
+  const d7Str = toKSTDateStr(d7Date);
 
   const { data: contracts, error } = await supabase
     .from("monthly_parking")

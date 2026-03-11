@@ -8,6 +8,7 @@ import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 import CrewHeader from "@/components/crew/CrewHeader";
 import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 import { fmtPlate, splitPlate } from "@/lib/utils/format";
+import { getToday } from "@/lib/utils/date";
 
 const CSS = `
   @keyframes slideDown {
@@ -278,7 +279,7 @@ export default function CrewParkingListPage() {
   const [exitToast, setExitToast] = useState(null); // { plate, id }
   const [typeChangeTarget, setTypeChangeTarget] = useState(null); // { id, plate, currentType, newType }
   const [typeChangeLoading, setTypeChangeLoading] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState(getToday());
   const [exitedTickets, setExitedTickets] = useState([]);
   const [exitedLoading, setExitedLoading] = useState(false);
 

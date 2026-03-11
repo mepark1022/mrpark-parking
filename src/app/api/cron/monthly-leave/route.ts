@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { toKSTDateStr } from "@/lib/utils/date";
 
 // Vercel Cron: 매월 1일 오전 09:00 KST (UTC 00:00)
 // vercel.json → { "path": "/api/cron/monthly-leave", "schedule": "0 0 1 * *" }
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
   // hire_date가 오늘 기준 1년 이내 (1년 미만 월차 대상)
   const oneYearAgo = new Date(today);
   oneYearAgo.setFullYear(today.getFullYear() - 1);
-  const oneYearAgoStr = oneYearAgo.toISOString().slice(0, 10);
+  const oneYearAgoStr = toKSTDateStr(oneYearAgo);
 
   const { data: workers, error: workersErr } = await supabase
     .from("workers")

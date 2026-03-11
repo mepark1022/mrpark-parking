@@ -8,6 +8,7 @@ import CrewHeader from "@/components/crew/CrewHeader";
 import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 import { useCrewToast } from "@/components/crew/CrewToast";
 import { calcTotalLeaveDays, getYearsWorkedLabel, calcMonthlyLeaveDays } from "@/lib/utils/leave";
+import { toKSTDateStr } from "@/lib/utils/date";
 
 /* ── 상수 ── */
 const LEAVE_TYPES = [
@@ -204,12 +205,12 @@ function LeaveCalendarPicker({ startDate, endDate, onApply, onClose }: {
 }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split("T")[0];
+  const todayStr = toKSTDateStr(today);
 
   // 2주 후 (신청 가능 최소 날짜)
   const minDate = new Date(today);
   minDate.setDate(today.getDate() + 14);
-  const minDateStr = minDate.toISOString().split("T")[0];
+  const minDateStr = toKSTDateStr(minDate);
 
   const [viewYear, setViewYear] = useState(() => minDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(() => minDate.getMonth());
@@ -365,15 +366,15 @@ function LeaveCalendarPicker({ startDate, endDate, onApply, onClose }: {
           {[
             { label:"3주 후", fn:() => {
               const d = new Date(today); d.setDate(today.getDate()+21);
-              const s = d.toISOString().split("T")[0]; setSelStart(s); setSelEnd(s);
+              const s = toKSTDateStr(d); setSelStart(s); setSelEnd(s);
             }},
             { label:"한 달 후", fn:() => {
               const d = new Date(today); d.setDate(today.getDate()+30);
-              const s = d.toISOString().split("T")[0]; setSelStart(s); setSelEnd(s);
+              const s = toKSTDateStr(d); setSelStart(s); setSelEnd(s);
             }},
             { label:"다음 달 초", fn:() => {
               const d = new Date(today.getFullYear(), today.getMonth()+2, 1);
-              const s = d.toISOString().split("T")[0]; setSelStart(s); setSelEnd(s);
+              const s = toKSTDateStr(d); setSelStart(s); setSelEnd(s);
               setViewYear(d.getFullYear()); setViewMonth(d.getMonth());
             }},
           ].map(q => (

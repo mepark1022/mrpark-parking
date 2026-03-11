@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import CrewHeader from "@/components/crew/CrewHeader";
 import { useCrewToast } from "@/components/crew/CrewToast";
 import CameraOcr from "@/components/crew/CameraOcr";
+import { getToday } from "@/lib/utils/date";
 
 const CSS = `
   .entry-page {
@@ -252,7 +253,7 @@ export default function CrewEntryPage() {
 
   const checkMonthly = async (plate) => {
     if (!storeId) { setMonthlyChecking(false); return; }
-    const today = new Date().toISOString().split("T")[0];
+    const today = getToday();
     const { data } = await supabase
       .from("monthly_parking")
       .select("id, customer_name, end_date")

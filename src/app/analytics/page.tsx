@@ -8,6 +8,7 @@ import { getOrgId } from "@/lib/utils/org";
 import AppLayout from "@/components/layout/AppLayout";
 import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 import {
+import { toKSTDateStr } from "@/lib/utils/date";
   AreaChart, Area, BarChart, Bar, LineChart, Line, Legend,
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
@@ -51,7 +52,7 @@ const PERIOD_OPTIONS: { key: PeriodType; label: string }[] = [
 
 function getPeriodDates(period: PeriodType, customStart?: string, customEnd?: string) {
   const now = new Date();
-  const toISO = (d: Date) => d.toISOString().split("T")[0];
+  const toISO = (d: Date) => toKSTDateStr(d);
   switch (period) {
     case "today": return { start: toISO(now), end: toISO(now) };
     case "week": {
@@ -181,8 +182,8 @@ export default function AnalyticsPage() {
       const duration = endD.getTime() - startD.getTime();
       const prevEnd = new Date(startD.getTime() - 86400000);
       const prevStart = new Date(prevEnd.getTime() - duration);
-      const prevStartStr = prevStart.toISOString().split("T")[0];
-      const prevEndStr = prevEnd.toISOString().split("T")[0];
+      const prevStartStr = toKSTDateStr(prevStart);
+      const prevEndStr = prevEntoKSTDateStr(d);
 
       let q = supabase.from("daily_records")
         .select("id, date, store_id, valet_revenue, parking_revenue, total_cars, valet_count")

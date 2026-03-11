@@ -7,6 +7,7 @@ import { getUserContext } from "@/lib/utils/org";
 import { useRouter } from "next/navigation";
 import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 import CrewHeader from "@/components/crew/CrewHeader";
+import { getToday } from "@/lib/utils/date";
 
 interface UserInfo {
   id: string;
@@ -115,7 +116,7 @@ export default function CrewHomePage() {
       }
 
       // 오늘 출근 정보 조회
-      const today = new Date().toISOString().split("T")[0];
+      const today = getToday();
       
       // workers 테이블에서 현재 사용자의 worker 정보 찾기
       let { data: worker } = await supabase

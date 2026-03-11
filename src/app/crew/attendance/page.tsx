@@ -8,6 +8,7 @@ import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
 import CrewHeader from "@/components/crew/CrewHeader";
 import { useCrewToast } from "@/components/crew/CrewToast";
 import AttendanceMapView from "@/components/crew/AttendanceMapView";
+import { getToday } from "@/lib/utils/date";
 
 interface AttendanceInfo {
   isCheckedIn: boolean;
@@ -74,7 +75,7 @@ export default function CrewAttendancePage() {
 
   const loadLatestRequest = useCallback(async (wid: string) => {
     const supabase = createClient();
-    const today = new Date().toISOString().split("T")[0];
+    const today = getToday();
     const { data } = await supabase
       .from("checkout_requests")
       .select("id, status, created_at, request_date, requested_checkout_time, request_reason, reject_reason, approved_at")
@@ -150,7 +151,7 @@ export default function CrewAttendancePage() {
       }
 
       // 오늘 출근 정보
-      const today = new Date().toISOString().split("T")[0];
+      const today = getToday();
       const { data: ad } = await supabase
         .from("worker_attendance").select("*")
         .eq("worker_id", worker.id).eq("date", today).maybeSingle();
@@ -203,7 +204,7 @@ export default function CrewAttendancePage() {
         }, (payload) => {
           const u = payload.new as any;
           const reqDate = u.request_date;
-          const todayStr = new Date().toISOString().split("T")[0];
+          const todayStr = getToday();
           if (reqDate !== todayStr) return;
 
           setLatestRequest({
@@ -288,7 +289,7 @@ export default function CrewAttendancePage() {
     if (!attendance.workerId || !storeId) return;
     setActionLoading(true);
     const supabase = createClient();
-    const today = new Date().toISOString().split("T")[0];
+    const today = getToday();
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     try {
@@ -335,7 +336,7 @@ export default function CrewAttendancePage() {
     if (!attendance.workerId || !storeId) return;
     setActionLoading(true);
     const supabase = createClient();
-    const today = new Date().toISOString().split("T")[0];
+    const today = getToday();
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
@@ -381,7 +382,7 @@ export default function CrewAttendancePage() {
     if (!attendance.workerId || !storeId) return;
     setActionLoading(true);
     const supabase = createClient();
-    const today = new Date().toISOString().split("T")[0];
+    const today = getToday();
     try {
       const { data: existing } = await supabase
         .from("worker_attendance").select("id")
@@ -455,7 +456,7 @@ export default function CrewAttendancePage() {
     setMissingLoading(true);
     try {
       const supabase = createClient();
-      const today = new Date().toISOString().split("T")[0];
+      const today = getToday();
       const { data } = await supabase
         .from("worker_attendance")
         .select("id, date, check_in, check_out, status, store_id, stores:store_id(name)")
