@@ -1,8 +1,8 @@
 // @ts-nocheck
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import CrewHeader from "@/components/crew/CrewHeader";
 import { useCrewToast } from "@/components/crew/CrewToast";
@@ -179,9 +179,11 @@ const CSS = `
 /* ─────────────────────────────────────────────
    컴포넌트
 ───────────────────────────────────────────── */
-export default function CrewMonthlyRegisterPage() {
+function CrewMonthlyRegisterForm() {
   const supabase = createClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("id");
   const { showToast } = useCrewToast();
 
   const [orgId, setOrgId] = useState("");
@@ -189,6 +191,7 @@ export default function CrewMonthlyRegisterPage() {
   const [storeName, setStoreName] = useState("");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(!!editId);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -201,10 +204,16 @@ export default function CrewMonthlyRegisterPage() {
     end_date: "",
     monthly_fee: 150000,
     payment_status: "unpaid" as "paid" | "unpaid",
+    contract_status: "active" as "active" | "expired" | "cancelled",
     note: "",
   });
 
   const [periodMonths, setPeriodMonths] = useState(1);
+
+  // 한글만 허용 필터
+  function filterKorean(val: string) {
+    return val.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ\s]/g, "");
+  }
 
   // 초기화
   useEffect(() => {
@@ -219,15 +228,39 @@ export default function CrewMonthlyRegisterPage() {
       setStoreId(sid);
       setStoreName(sname);
 
-      // 매장의 월주차 기본 요금 가져오기
-      if (sid) {
-        const { data: store } = await supabase
-          .from("stores").select("monthly_fee").eq("id", sid).single();
-        // visit_places에서 월주차 요금 가져오기
-        const { data: visits } = await supabase
-          .from("visit_places").select("monthly_fee").eq("store_id", sid).limit(1);
-        if (visits && visits.length > 0 && visits[0].monthly_fee) {
-          setForm(f => ({ ...f, monthly_fee: visits[0].monthly_fee }));
+      // 수정 모드: 기존 데이터 로드
+      if (editId) {
+        const { data } = await supabase
+          .from("monthly_parking")
+          .select("*, stores(name)")
+          .eq("id", editId)
+          .single();
+        if (data) {
+          setForm({
+            vehicle_number: data.vehicle_number || "",
+            vehicle_type: data.vehicle_type || "",
+            customer_name: data.customer_name || "",
+            customer_phone: data.customer_phone || "",
+            start_date: data.start_date || today,
+            end_date: data.end_date || "",
+            monthly_fee: data.monthly_fee ?? 150000,
+            payment_status: data.payment_status || "unpaid",
+            contract_status: data.contract_status || "active",
+            note: data.note || "",
+          });
+          if (data.store_id) setStoreId(data.store_id);
+          if (data.stores?.name) setStoreName(data.stores.name);
+          setPeriodMonths(0); // 수동 모드
+        }
+        setLoadingEdit(false);
+      } else {
+        // 신규: 매장 기본 요금
+        if (sid) {
+          const { data: visits } = await supabase
+            .from("visit_places").select("monthly_fee").eq("store_id", sid).limit(1);
+          if (visits && visits.length > 0 && visits[0].monthly_fee) {
+            setForm(f => ({ ...f, monthly_fee: visits[0].monthly_fee }));
+          }
         }
       }
     })();
@@ -257,8 +290,7 @@ export default function CrewMonthlyRegisterPage() {
 
     setSaving(true);
     try {
-      const { error } = await supabase.from("monthly_parking").insert({
-        org_id: orgId,
+      const payload = {
         store_id: storeId,
         vehicle_number: form.vehicle_number.toUpperCase().trim(),
         vehicle_type: form.vehicle_type || null,
@@ -268,18 +300,31 @@ export default function CrewMonthlyRegisterPage() {
         end_date: form.end_date,
         monthly_fee: form.monthly_fee,
         payment_status: form.payment_status,
-        contract_status: "active",
+        contract_status: form.contract_status,
         note: form.note || null,
-      });
+      };
 
-      if (error) {
-        showToast("등록 실패: " + error.message, "error");
-        return;
+      if (editId) {
+        // 수정
+        const { error } = await supabase
+          .from("monthly_parking").update(payload).eq("id", editId);
+        if (error) {
+          showToast("수정 실패: " + error.message, "error");
+          return;
+        }
+      } else {
+        // 신규 등록
+        const { error } = await supabase
+          .from("monthly_parking").insert({ ...payload, org_id: orgId });
+        if (error) {
+          showToast("등록 실패: " + error.message, "error");
+          return;
+        }
       }
 
       setDone(true);
     } catch (e: any) {
-      showToast("등록 실패: " + e.message, "error");
+      showToast((editId ? "수정" : "등록") + " 실패: " + e.message, "error");
     } finally {
       setSaving(false);
     }
@@ -295,11 +340,27 @@ export default function CrewMonthlyRegisterPage() {
     ? Math.ceil((new Date(form.end_date).getTime() - new Date(form.start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1
     : 0;
 
+  if (loadingEdit) {
+    return (
+      <>
+        <style>{CSS}</style>
+        <div className="mreg-page">
+          <CrewHeader title="월주차 수정" showBack />
+          <div style={{ padding: 40, textAlign: "center" }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
+            <div style={{ fontSize: 14, color: "#64748B" }}>데이터 로딩 중...</div>
+          </div>
+        </div>
+        <CrewBottomNav />
+      </>
+    );
+  }
+
   return (
     <>
       <style>{CSS}</style>
       <div className="mreg-page">
-        <CrewHeader title="월주차 등록" showBack />
+        <CrewHeader title={editId ? "월주차 수정" : "월주차 등록"} showBack />
 
         <div className="mreg-form">
 
@@ -373,9 +434,12 @@ export default function CrewMonthlyRegisterPage() {
                 <input
                   className="mreg-input"
                   value={form.customer_name}
-                  onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))}
+                  onChange={e => setForm(f => ({ ...f, customer_name: filterKorean(e.target.value) }))}
                   placeholder="홍길동"
                 />
+                {form.customer_name !== form.customer_name && (
+                  <div style={{ fontSize: 11, color: "#DC2626", marginTop: 4 }}>한글만 입력 가능합니다</div>
+                )}
               </div>
               <div className="mreg-field">
                 <div className="mreg-label">연락처 <span className="mreg-required">*</span></div>
@@ -475,6 +539,20 @@ export default function CrewMonthlyRegisterPage() {
                   <option value="paid">납부완료</option>
                 </select>
               </div>
+              {editId && (
+                <div className="mreg-field">
+                  <div className="mreg-label">계약 상태</div>
+                  <select
+                    className="mreg-select"
+                    value={form.contract_status}
+                    onChange={e => setForm(f => ({ ...f, contract_status: e.target.value as any }))}
+                  >
+                    <option value="active">계약중</option>
+                    <option value="expired">만료</option>
+                    <option value="cancelled">해지</option>
+                  </select>
+                </div>
+              )}
               <div className="mreg-field">
                 <div className="mreg-label">메모</div>
                 <textarea
@@ -518,10 +596,10 @@ export default function CrewMonthlyRegisterPage() {
                   borderTopColor: "#fff", borderRadius: "50%",
                   animation: "spin .7s linear infinite",
                 }} />
-                등록 중...
+                {editId ? "수정 중..." : "등록 중..."}
               </>
             ) : (
-              <>💾 월주차 등록</>
+              <>{editId ? "✅ 수정 완료" : "💾 월주차 등록"}</>
             )}
           </button>
         </div>
@@ -534,11 +612,11 @@ export default function CrewMonthlyRegisterPage() {
       {done && (
         <div className="mreg-done-overlay">
           <div className="mreg-done-card">
-            <div className="mreg-done-icon">🎉</div>
-            <div className="mreg-done-title">등록 완료!</div>
+            <div className="mreg-done-icon">{editId ? "✅" : "🎉"}</div>
+            <div className="mreg-done-title">{editId ? "수정 완료!" : "등록 완료!"}</div>
             <div className="mreg-done-sub">
               <strong>{form.vehicle_number}</strong> 차량의<br />
-              월주차 계약이 등록되었습니다.
+              월주차 계약이 {editId ? "수정" : "등록"}되었습니다.
             </div>
             <button
               className="mreg-done-btn"
@@ -547,27 +625,45 @@ export default function CrewMonthlyRegisterPage() {
             >
               월주차 목록으로
             </button>
-            <button
-              className="mreg-done-btn"
-              style={{ background: "#F1F5F9", color: "#64748B" }}
-              onClick={() => {
-                setDone(false);
-                setForm({
-                  vehicle_number: "", vehicle_type: "",
-                  customer_name: "", customer_phone: "",
-                  start_date: today, end_date: "",
-                  monthly_fee: form.monthly_fee, payment_status: "unpaid", note: "",
-                });
-                setPeriodMonths(1);
-              }}
-            >
-              추가 등록하기
-            </button>
+            {!editId && (
+              <button
+                className="mreg-done-btn"
+                style={{ background: "#F1F5F9", color: "#64748B" }}
+                onClick={() => {
+                  setDone(false);
+                  setForm({
+                    vehicle_number: "", vehicle_type: "",
+                    customer_name: "", customer_phone: "",
+                    start_date: today, end_date: "",
+                    monthly_fee: form.monthly_fee, payment_status: "unpaid",
+                    contract_status: "active", note: "",
+                  });
+                  setPeriodMonths(1);
+                }}
+              >
+                추가 등록하기
+              </button>
+            )}
           </div>
         </div>
       )}
 
       <style>{`@keyframes spin { to { transform:rotate(360deg); } }`}</style>
     </>
+  );
+}
+
+export default function CrewMonthlyRegisterPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100dvh", background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
+          <div style={{ fontSize: 14, color: "#64748B" }}>로딩 중...</div>
+        </div>
+      </div>
+    }>
+      <CrewMonthlyRegisterForm />
+    </Suspense>
   );
 }

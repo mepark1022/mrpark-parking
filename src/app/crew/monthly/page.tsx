@@ -103,7 +103,10 @@ const CSS = `
   .mly-card {
     background:#fff; border-radius:16px; border:1px solid #E2E8F0;
     overflow:hidden; box-shadow:0 2px 8px rgba(20,40,160,.06);
+    transition:transform .1s, box-shadow .15s;
+    -webkit-tap-highlight-color:transparent;
   }
+  .mly-card:active { transform:scale(.98); box-shadow:0 1px 4px rgba(20,40,160,.1); }
   .mly-card-header {
     padding:14px 16px 12px;
     border-bottom:1px solid #F1F5F9;
@@ -345,7 +348,7 @@ export default function CrewMonthlyPage() {
                   const barColor = daysLeft < 0 ? "#DC2626" : daysLeft <= 7 ? "#F5B731" : "#1428A0";
 
                   return (
-                    <div key={c.id} className="mly-card">
+                    <div key={c.id} className="mly-card" onClick={() => router.push(`/crew/monthly/register?id=${c.id}`)} style={{ cursor: "pointer" }}>
                       {/* 헤더 */}
                       <div className="mly-card-header">
                         <div>
