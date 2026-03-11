@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import CrewHeader from "@/components/crew/CrewHeader";
 import { useCrewToast } from "@/components/crew/CrewToast";
 import CrewBottomNav, { CrewNavSpacer } from "@/components/crew/CrewBottomNav";
+import MeParkDatePicker from "@/components/ui/MeParkDatePicker";
 
 /* ─────────────────────────────────────────────
    CSS
@@ -419,23 +420,23 @@ export default function CrewMonthlyRegisterPage() {
               <div className="mreg-row">
                 <div className="mreg-field">
                   <div className="mreg-label">시작일 <span className="mreg-required">*</span></div>
-                  <input
-                    className="mreg-input"
-                    type="date"
+                  <MeParkDatePicker
                     value={form.start_date}
-                    onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
+                    onChange={v => setForm(f => ({ ...f, start_date: v }))}
+                    compact
+                    style={{ width: "100%" }}
                   />
                 </div>
                 <div className="mreg-field">
                   <div className="mreg-label">종료일 <span className="mreg-required">*</span></div>
-                  <input
-                    className="mreg-input"
-                    type="date"
-                    value={form.end_date}
-                    onChange={e => {
-                      setForm(f => ({ ...f, end_date: e.target.value }));
-                      setPeriodMonths(0); // 수동 변경 시 퀵선택 해제
+                  <MeParkDatePicker
+                    value={form.end_date || today}
+                    onChange={v => {
+                      setForm(f => ({ ...f, end_date: v }));
+                      setPeriodMonths(0);
                     }}
+                    compact
+                    style={{ width: "100%" }}
                   />
                 </div>
               </div>
