@@ -103,10 +103,23 @@ const CSS = `
   .mly-card {
     background:#fff; border-radius:16px; border:1px solid #E2E8F0;
     overflow:hidden; box-shadow:0 2px 8px rgba(20,40,160,.06);
-    transition:transform .1s, box-shadow .15s;
+  }
+
+  .mly-card-action {
+    padding:0 16px 14px;
+  }
+  .mly-edit-btn {
+    width:100%; height:42px; border-radius:10px;
+    border:1.5px solid #1428A0; background:#EEF2FF;
+    color:#1428A0; font-size:14px; font-weight:700;
+    cursor:pointer; font-family:inherit;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    transition:all .15s;
     -webkit-tap-highlight-color:transparent;
   }
-  .mly-card:active { transform:scale(.98); box-shadow:0 1px 4px rgba(20,40,160,.1); }
+  .mly-edit-btn:active {
+    background:#1428A0; color:#fff; transform:scale(.97);
+  }
   .mly-card-header {
     padding:14px 16px 12px;
     border-bottom:1px solid #F1F5F9;
@@ -348,7 +361,7 @@ export default function CrewMonthlyPage() {
                   const barColor = daysLeft < 0 ? "#DC2626" : daysLeft <= 7 ? "#F5B731" : "#1428A0";
 
                   return (
-                    <div key={c.id} className="mly-card" onClick={() => router.push(`/crew/monthly/register?id=${c.id}`)} style={{ cursor: "pointer" }}>
+                    <div key={c.id} className="mly-card">
                       {/* 헤더 */}
                       <div className="mly-card-header">
                         <div>
@@ -388,7 +401,7 @@ export default function CrewMonthlyPage() {
                         )}
                       </div>
 
-                      {/* 푸터: 결제 상태 + 진행 바 */}
+                      {/* 푸터: 결제 상태 + 진행 바 + 수정 버튼 */}
                       <div className="mly-card-footer">
                         <div
                           className="mly-payment-badge"
@@ -408,6 +421,20 @@ export default function CrewMonthlyPage() {
                         <span style={{ fontSize:11, color:"#94A3B8", fontWeight:600, whiteSpace:"nowrap" }}>
                           {daysLeft >= 0 ? `D-${daysLeft}` : `${Math.abs(daysLeft)}일 초과`}
                         </span>
+                      </div>
+
+                      {/* 수정 버튼 */}
+                      <div className="mly-card-action">
+                        <button
+                          className="mly-edit-btn"
+                          onClick={() => router.push(`/crew/monthly/register?id=${c.id}`)}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                          수정하기
+                        </button>
                       </div>
                     </div>
                   );
