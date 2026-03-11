@@ -28,9 +28,10 @@ interface Props {
   onChange: (v: string) => void;
   style?: React.CSSProperties;
   compact?: boolean;       // 모바일용 작은 사이즈
+  align?: "left" | "right"; // 드롭다운 정렬 방향
 }
 
-export default function MeParkDatePicker({ value, onChange, style, compact }: Props) {
+export default function MeParkDatePicker({ value, onChange, style, compact, align = "right" }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -154,7 +155,7 @@ export default function MeParkDatePicker({ value, onChange, style, compact }: Pr
         <div style={{
           position: "absolute",
           top: "calc(100% + 6px)",
-          right: 0,
+          ...(align === "left" ? { left: 0 } : { right: 0 }),
           zIndex: 9999,
           background: C.white,
           borderRadius: 14,

@@ -489,6 +489,7 @@ function CrewMonthlyRegisterForm() {
                     onChange={v => setForm(f => ({ ...f, start_date: v }))}
                     compact
                     style={{ width: "100%" }}
+                    align="left"
                   />
                 </div>
                 <div className="mreg-field">

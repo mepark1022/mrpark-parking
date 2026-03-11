@@ -285,6 +285,7 @@ function RegisterForm() {
                       value={form.start_date}
                       onChange={(v) => setForm({ ...form, start_date: v })}
                       style={{ width: "100%" }}
+                      align="left"
                     />
                   </div>
                   <div>
