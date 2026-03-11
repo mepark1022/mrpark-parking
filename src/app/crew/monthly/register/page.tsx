@@ -19,7 +19,7 @@ const CSS = `
 
   .mreg-section {
     background:#fff; border-radius:16px; border:1px solid #E2E8F0;
-    margin-bottom:14px; overflow:hidden;
+    margin-bottom:14px; overflow:visible;
     box-shadow:0 1px 4px rgba(20,40,160,.04);
   }
   .mreg-section-title {
