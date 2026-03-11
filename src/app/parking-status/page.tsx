@@ -243,12 +243,12 @@ export default function ParkingStatusPage() {
     const [{data:peData},{data:mtData},zombieResult]=await Promise.all([q1,q2,q3]);
     const zombieData=zombieResult?.data||[];
 
-    // CREW 이름 조회
+    // CREW 이름 조회 (display_name 우선 → name 폴백)
     const crewIds=[...new Set((mtData||[]).map(t=>t.entry_crew_id).filter(Boolean))];
     let crewMap:Record<string,string>={};
     if(crewIds.length>0){
-      const{data:profiles}=await supabase.from("profiles").select("id,name").in("id",crewIds);
-      (profiles||[]).forEach(p=>{crewMap[p.id]=p.name||"CREW";});
+      const{data:profiles}=await supabase.from("profiles").select("id,name,display_name").in("id",crewIds);
+      (profiles||[]).forEach(p=>{crewMap[p.id]=p.display_name||p.name||"CREW";});
     }
 
     // mepark_tickets → parking_entries 형식으로 정규화

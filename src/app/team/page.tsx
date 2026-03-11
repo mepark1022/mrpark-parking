@@ -165,14 +165,14 @@ function RoleDropdown({ profile, currentUserRole, currentUserId, onRoleChange }:
     </div>
   );
 }
-type Invitation = { id: string; email: string; role: string; status: string; created_at: string; updated_at: string; token: string; store_id: string; stores?: { name: string } };
+
 type Store = { id: string; name: string };
 type StoreMember = { id: string; user_id: string; store_id: string };
 
 export default function TeamPage() {
   const supabase = createClient();
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  
   const [stores, setStores] = useState<Store[]>([]);
   const [storeMembers, setStoreMembers] = useState<StoreMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -208,7 +208,7 @@ export default function TeamPage() {
   const [removeTarget, setRemoveTarget] = useState<Profile | null>(null);
 
   // 초대 매핑
-  const [inviteMap, setInviteMap] = useState<Record<string, { invited: string; accepted: string }>>({});
+  
 
   useEffect(() => { loadData(); }, []);
 
@@ -224,9 +224,8 @@ export default function TeamPage() {
       if (myProfile) setCurrentUserRole(myProfile.role);
     }
 
-    const [profilesRes, invitationsRes, storesRes, membersRes] = await Promise.all([
+    const [profilesRes, storesRes, membersRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("org_id", oid).order("created_at"),
-      supabase.from("invitations").select("*, stores(name)").eq("org_id", oid).order("created_at", { ascending: false }),
       supabase.from("stores").select("id, name").eq("org_id", oid).eq("is_active", true).order("name"),
       supabase.from("store_members").select("*").eq("org_id", oid),
     ]);
@@ -234,18 +233,6 @@ export default function TeamPage() {
     if (storesRes.data) setStores(storesRes.data);
     if (membersRes.data) setStoreMembers(membersRes.data);
 
-    if (invitationsRes.data) {
-      setInvitations(invitationsRes.data);
-      const map: Record<string, { invited: string; accepted: string }> = {};
-      invitationsRes.data.forEach((inv) => {
-        if (inv.status === "accepted") {
-          if (!map[inv.email] || new Date(inv.updated_at || inv.created_at) > new Date(map[inv.email].accepted)) {
-            map[inv.email] = { invited: inv.created_at, accepted: inv.updated_at || inv.created_at };
-          }
-        }
-      });
-      setInviteMap(map);
-    }
     setLoading(false);
   }
 
@@ -256,43 +243,6 @@ export default function TeamPage() {
   }
 
   // --- 초대 ---
-  async function handleInvite() {
-    if (!inviteEmail) return;
-    if (inviteRole === "crew" && inviteStoreIds.length === 0) {
-      setMessage({ text: "CREW는 배정 매장을 선택해주세요.", type: "error" });
-      return;
-    }
-    setSending(true);
-    setMessage({ text: "", type: "" });
-    try {
-      // 첫 번째 매장으로 초대 생성 (store_id는 첫 매장)
-      const res = await fetch("/api/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: inviteEmail,
-          role: inviteRole,
-          storeId: inviteStoreIds[0] || null,
-          storeIds: inviteStoreIds,
-          invitedBy: currentUserId,
-          orgId: orgId,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        setMessage({ text: data.error || "초대 실패", type: "error" });
-      } else if (data.emailSent) {
-        setMessage({ text: `${inviteEmail}로 초대 이메일을 발송했습니다!`, type: "success" });
-        setInviteEmail(""); setInviteRole("admin"); setInviteStoreIds([]); setShowInvite(false);
-        loadData();
-      } else {
-        setMessage({ text: `초대 생성됨. 이메일 발송 실패: ${data.emailError || ""}`, type: "warning" });
-        loadData();
-      }
-    } catch (e: any) { setMessage({ text: `서버 오류: ${e?.message || "알 수 없는 오류"}`, type: "error" }); }
-    setSending(false);
-  }
-
   // --- 계정 직접 생성 ---
   async function handleDirectCreate() {
     if (!inviteEmail || !inviteName || !invitePhone || !invitePassword) return;
@@ -374,33 +324,6 @@ export default function TeamPage() {
     setSending(false);
   }
 
-  async function cancelInvitation(id: string) {
-    await supabase.from("invitations").update({ status: "rejected" }).eq("id", id);
-    loadData();
-  }
-
-  async function deleteInvitation(id: string) {
-    if (!confirm("이 초대 기록을 삭제하시겠습니까?")) return;
-    await supabase.from("invitations").delete().eq("id", id);
-    loadData();
-  }
-
-  async function resendInvitation(inv: Invitation) {
-    setSending(true);
-    try {
-      await supabase.from("invitations").update({ status: "rejected" }).eq("id", inv.id);
-      const res = await fetch("/api/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: inv.email, role: inv.role, storeId: inv.store_id || null, invitedBy: currentUserId, orgId }),
-      });
-      const data = await res.json();
-      setMessage({ text: data.emailSent ? `${inv.email} 재발송 완료` : "재발송 실패", type: data.emailSent ? "success" : "error" });
-      loadData();
-    } catch (e) { setMessage({ text: "재발송 오류", type: "error" }); }
-    setSending(false);
-  }
-
   function openAssignModal(profile: Profile) {
     const currentStoreIds = storeMembers.filter(m => m.user_id === profile.id).map(m => m.store_id);
     setAssignProfile(profile);
@@ -462,7 +385,7 @@ export default function TeamPage() {
     return { bg: "#f1f5f9", color: "#475569", label: status === "disabled" ? "비활성" : "취소" };
   };
   const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString("ko-KR", { year: "numeric", month: "numeric", day: "numeric" }) : "-";
-  const pendingInvitations = invitations.filter(inv => inv.status !== "accepted");
+  
 
   async function toggleStatus(profile: Profile) {
     const newStatus = profile.status === "active" ? "disabled" : "active";
@@ -489,7 +412,7 @@ export default function TeamPage() {
       if (!res.ok) {
         setMessage({ text: data.error || "제거 실패", type: "error" });
       } else {
-        setMessage({ text: `${profile.display_name || profile.name || profile.email}님이 조직에서 제거되었습니다. 재초대 시 새 초대 이메일을 발송하세요.`, type: "success" });
+        setMessage({ text: `${profile.display_name || profile.name || profile.email}님이 조직에서 제거되었습니다.`, type: "success" });
         setRemoveTarget(null);
         loadData();
       }
@@ -540,7 +463,7 @@ export default function TeamPage() {
           const renderMemberCard = (p: Profile, compact?: boolean) => {
             const sb = statusBadge(p.status);
             const memberStores = getMemberStores(p.id);
-            const inv = inviteMap[p.email];
+            
             return (
               <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid var(--border-light)", transition: "background 0.1s" }} className="hover:bg-[var(--bg-card)] last:border-b-0">
                 {/* 아바타 */}
@@ -882,7 +805,7 @@ export default function TeamPage() {
                 <strong>{removeTarget.display_name || removeTarget.name || removeTarget.email}</strong>님을 조직에서 제거합니다.<br/>
                 <span style={{ color: "#ef4444", fontSize: 12, marginTop: 6, display: "block" }}>
                   ⚠️ 모든 매장 배정이 삭제되고 초대 기록도 지워집니다.<br/>
-                  재초대 시 새 초대 이메일을 발송해야 합니다.
+                  재등록이 필요한 경우 팀원 추가에서 계정을 다시 생성해주세요.
                 </span>
               </p>
               <div style={{ background: "#fafafa", borderRadius: 10, padding: "10px 14px", marginBottom: 20, fontSize: 13, color: "#374151" }}>
