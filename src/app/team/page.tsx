@@ -425,9 +425,9 @@ export default function TeamPage() {
   return (
     <AppLayout>
       <div className="max-w-5xl">
-        <div className="flex items-center justify-between mb-6">
-          <h3 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>팀원 관리</h3>
-          <button onClick={() => { setMessage({ text: "", type: "" }); setShowInvite(true); }} style={{ padding: "10px 20px", borderRadius: 10, background: "var(--navy)", color: "#fff", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer" }}>+ 팀원 추가</button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, gap: 12 }}>
+          <h3 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>팀원 관리</h3>
+          <button onClick={() => { setMessage({ text: "", type: "" }); setShowInvite(true); }} style={{ padding: "9px 16px", borderRadius: 10, background: "var(--navy)", color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>+ 팀원 추가</button>
         </div>
 
         {message.text && (
@@ -463,63 +463,74 @@ export default function TeamPage() {
           const renderMemberCard = (p: Profile, compact?: boolean) => {
             const sb = statusBadge(p.status);
             const memberStores = getMemberStores(p.id);
+            const hasActions = canManageRole(p) || canRemoveMember(p);
             
             return (
-              <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid var(--border-light)", transition: "background 0.1s" }} className="hover:bg-[var(--bg-card)] last:border-b-0">
-                {/* 아바타 */}
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: ROLE_CONFIG[p.role]?.bg || "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-                  {ROLE_CONFIG[p.role]?.icon || "👤"}
-                </div>
-                {/* 정보 */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{p.display_name || p.name || "-"}</span>
-                    <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: sb.bg, color: sb.color }}>{sb.label}</span>
-                    {p.status === "disabled" && <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 600 }}>접근 차단</span>}
+              <div key={p.id} style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-light)", transition: "background 0.1s" }} className="hover:bg-[var(--bg-card)] last:border-b-0">
+                {/* Row 1: 아바타 + 이름/이메일 + 역할 드롭다운 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {/* 아바타 */}
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: ROLE_CONFIG[p.role]?.bg || "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
+                    {ROLE_CONFIG[p.role]?.icon || "👤"}
                   </div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.email}</div>
-                  {!compact && memberStores.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
-                      {memberStores.map((name, i) => (
+                  {/* 정보 */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.display_name || p.name || "-"}</span>
+                      <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: sb.bg, color: sb.color, flexShrink: 0 }}>{sb.label}</span>
+                      {p.status === "disabled" && <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 600, flexShrink: 0 }}>차단</span>}
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.email}</div>
+                  </div>
+                  {/* 역할 드롭다운 (항상 우측) */}
+                  <div style={{ flexShrink: 0 }}>
+                    <RoleDropdown profile={p} currentUserRole={currentUserRole} currentUserId={currentUserId} onRoleChange={changeRole} />
+                  </div>
+                </div>
+
+                {/* Row 2: 매장 뱃지 + 액션 버튼 */}
+                {(!compact || hasActions) && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6, paddingLeft: 46, gap: 8 }}>
+                    {/* 매장 뱃지 */}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, flex: 1, minWidth: 0 }}>
+                      {!compact && memberStores.length > 0 && memberStores.map((name, i) => (
                         <span key={i} style={{ padding: "1px 7px", borderRadius: 5, fontSize: 10, fontWeight: 600, background: "#EEF2FF", color: "#4338ca" }}>{name}</span>
                       ))}
+                      {!compact && memberStores.length === 0 && p.role === "admin" && (
+                        <span style={{ fontSize: 10, color: "#94a3b8" }}>전체 매장 접근</span>
+                      )}
                     </div>
-                  )}
-                  {!compact && memberStores.length === 0 && p.role === "admin" && (
-                    <span style={{ fontSize: 10, color: "#94a3b8", marginTop: 2, display: "inline-block" }}>전체 매장 접근</span>
-                  )}
-                </div>
-                {/* 권한 + 액션 */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <RoleDropdown profile={p} currentUserRole={currentUserRole} currentUserId={currentUserId} onRoleChange={changeRole} />
-                  {/* 더보기 메뉴 - PC */}
-                  <div className="hidden sm:flex gap-1.5 items-center">
-                    {canManageRole(p) && (
-                      <>
-                        <button onClick={() => openAssignModal(p)} title="매장배정" style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>📍</button>
-                        <button onClick={() => { setResetTarget(p); setResetPassword(""); }} title="비번재설정" style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>🔑</button>
-                        <button onClick={() => toggleStatus(p)} title={p.status === "active" ? "비활성화" : "활성화"} style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>{p.status === "active" ? "🚫" : "✅"}</button>
-                      </>
+                    {/* 액션 버튼 - PC */}
+                    {hasActions && (
+                      <div className="hidden lg:flex gap-1.5 items-center" style={{ flexShrink: 0 }}>
+                        {canManageRole(p) && (
+                          <>
+                            <button onClick={() => openAssignModal(p)} title="매장배정" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>📍</button>
+                            <button onClick={() => { setResetTarget(p); setResetPassword(""); }} title="비번재설정" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>🔑</button>
+                            <button onClick={() => toggleStatus(p)} title={p.status === "active" ? "비활성화" : "활성화"} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>{p.status === "active" ? "🚫" : "✅"}</button>
+                          </>
+                        )}
+                        {canRemoveMember(p) && (
+                          <button onClick={() => setRemoveTarget(p)} title="제거" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #fee2e2", background: "#fff", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>🗑️</button>
+                        )}
+                      </div>
                     )}
-                    {canRemoveMember(p) && (
-                      <button onClick={() => setRemoveTarget(p)} title="제거" style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #fee2e2", background: "#fff", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>🗑️</button>
+                    {/* 액션 버튼 - 모바일/태블릿 */}
+                    {hasActions && (
+                      <div className="lg:hidden flex gap-2 items-center" style={{ flexShrink: 0 }}>
+                        {canManageRole(p) && (
+                          <>
+                            <button onClick={() => openAssignModal(p)} style={{ fontSize: 11, fontWeight: 700, color: "#1428A0", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>배정</button>
+                            <button onClick={() => { setResetTarget(p); setResetPassword(""); }} style={{ fontSize: 11, fontWeight: 600, color: "#ea580c", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>비번</button>
+                          </>
+                        )}
+                        {canRemoveMember(p) && (
+                          <button onClick={() => setRemoveTarget(p)} style={{ fontSize: 11, fontWeight: 600, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>제거</button>
+                        )}
+                      </div>
                     )}
                   </div>
-                  {/* 더보기 메뉴 - 모바일 */}
-                  {(canManageRole(p) || canRemoveMember(p)) && (
-                    <div className="sm:hidden flex gap-1 items-center">
-                      {canManageRole(p) && (
-                        <>
-                          <button onClick={() => openAssignModal(p)} style={{ fontSize: 10, fontWeight: 700, color: "#1428A0", background: "none", border: "none", cursor: "pointer", padding: "4px 2px" }}>배정</button>
-                          <button onClick={() => { setResetTarget(p); setResetPassword(""); }} style={{ fontSize: 10, fontWeight: 600, color: "#ea580c", background: "none", border: "none", cursor: "pointer", padding: "4px 2px" }}>비번</button>
-                        </>
-                      )}
-                      {canRemoveMember(p) && (
-                        <button onClick={() => setRemoveTarget(p)} style={{ fontSize: 10, fontWeight: 600, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: "4px 2px" }}>제거</button>
-                      )}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             );
           };
@@ -554,7 +565,7 @@ export default function TeamPage() {
                     <p style={{ fontSize: 12, color: "#cbd5e1", margin: "4px 0 0" }}>팀원 추가에서 CREW를 등록하세요</p>
                   </div>
                 ) : (
-                  <div style={{ display: "grid", gap: 16 }} className="grid-cols-1 md:grid-cols-2">
+                  <div style={{ display: "grid", gap: 16 }} className="grid-cols-1 lg:grid-cols-2">
                     {Object.values(storeCrewMap).filter(g => g.members.length > 0).map(({ store, members }) => (
                       <div key={store.id} style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-light)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
                         <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-light)", background: "var(--bg-card)", display: "flex", alignItems: "center", gap: 8 }}>
