@@ -220,7 +220,7 @@ export default function StoresPage() {
 
         {/* 매장 추가/수정 모달 */}
         {showForm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
             <div className="bg-white rounded-2xl p-7 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
               <h3 className="text-xl font-bold text-gray-900 mb-5">{editStore ? "매장 수정" : "매장 추가"}</h3>
               <div className="space-y-4">
@@ -269,7 +269,7 @@ export default function StoresPage() {
 
         {/* 요금 설정 모달 */}
         {showFeeModal && feeStore && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
             <div className="bg-white rounded-2xl p-7 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
               <h3 className="text-xl font-bold text-gray-900 mb-1">{feeStore.name}</h3>
               <p className="text-sm text-gray-500 mb-6">주차 요금 설정</p>

@@ -598,8 +598,8 @@ export default function TeamPage() {
 
         {/* ===== 초대 모달 ===== */}
         {showInvite && (
-          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl p-6 sm:p-7 w-full sm:max-w-md shadow-2xl max-h-[85vh] overflow-y-auto" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
+          <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-[200] p-0 md:p-4">
+            <div className="bg-white rounded-t-2xl md:rounded-2xl p-5 md:p-7 w-full md:max-w-md shadow-2xl max-h-[85vh] overflow-y-auto" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
               <h3 className="text-xl font-bold text-gray-900 mb-5">팀원 추가</h3>
 
               {/* 안내 배너 */}
@@ -722,7 +722,7 @@ export default function TeamPage() {
 
         {/* ===== 계정 생성 확인 팝업 ===== */}
         {showConfirmCreate && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[210] p-4">
             <div style={{ background: "#fff", borderRadius: 20, padding: 28, width: "100%", maxWidth: 380, textAlign: "center" }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
               <div style={{ fontSize: 17, fontWeight: 800, color: "#1A1D2B", marginBottom: 8 }}>아이디와 비밀번호를<br/>메모하셨나요?</div>
@@ -758,8 +758,8 @@ export default function TeamPage() {
 
         {/* ===== 매장 배정 모달 ===== */}
         {showAssign && assignProfile && (
-          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl p-6 sm:p-7 w-full sm:max-w-md shadow-2xl max-h-[85vh] overflow-y-auto" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
+          <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-[200] p-0 md:p-4">
+            <div className="bg-white rounded-t-2xl md:rounded-2xl p-5 md:p-7 w-full md:max-w-md shadow-2xl max-h-[85vh] overflow-y-auto" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
               <h3 className="text-xl font-bold text-gray-900 mb-2">매장 배정</h3>
               <p className="text-sm text-gray-500 mb-5">
                 <strong>{assignProfile.display_name || assignProfile.name}</strong> ({assignProfile.email})
@@ -808,8 +808,8 @@ export default function TeamPage() {
         )}
         {/* ===== 멤버 제거 확인 모달 ===== */}
         {removeTarget && (
-          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl p-6 sm:p-7 w-full sm:max-w-sm shadow-2xl" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
+          <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-[200] p-0 md:p-4">
+            <div className="bg-white rounded-t-2xl md:rounded-2xl p-5 md:p-7 w-full md:max-w-sm shadow-2xl" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
               <div style={{ width: 48, height: 48, borderRadius: 14, background: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>🗑️</div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">팀원 제거</h3>
               <p className="text-sm text-gray-500 mb-4" style={{ lineHeight: 1.6 }}>
@@ -846,8 +846,8 @@ export default function TeamPage() {
 
         {/* ===== 계정 생성/비번 재설정 완료 팝업 ===== */}
         {createdAccount && (
-          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl p-6 sm:p-7 w-full sm:max-w-sm shadow-2xl" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
+          <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-[200] p-0 md:p-4">
+            <div className="bg-white rounded-t-2xl md:rounded-2xl p-5 md:p-7 w-full md:max-w-sm shadow-2xl" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
               <div style={{ width: 48, height: 48, borderRadius: 14, background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>✅</div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">계정 정보</h3>
               <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
@@ -886,8 +886,8 @@ export default function TeamPage() {
 
         {/* ===== 비밀번호 재설정 모달 ===== */}
         {resetTarget && (
-          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl p-6 sm:p-7 w-full sm:max-w-sm shadow-2xl" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
+          <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-[200] p-0 md:p-4">
+            <div className="bg-white rounded-t-2xl md:rounded-2xl p-5 md:p-7 w-full md:max-w-sm shadow-2xl" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
               <div style={{ width: 48, height: 48, borderRadius: 14, background: "#fff7ed", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>🔑</div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">비밀번호 재설정</h3>
               <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
