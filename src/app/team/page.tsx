@@ -611,14 +611,7 @@ export default function TeamPage() {
                 {/* 이름 */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">이름 * <span style={{ fontSize: 11, fontWeight: 500, color: "#94a3b8" }}>(한글만 입력 가능)</span></label>
-                  <input type="text" value={inviteName} onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "" || /^[가-힣ㄱ-ㅎㅏ-ㅣ\s]*$/.test(val)) {
-                      setInviteName(val);
-                    } else {
-                      setMessage({ text: "이름은 한글만 입력할 수 있습니다.", type: "error" });
-                    }
-                  }} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-[15px] text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="홍길동" />
+                  <input type="text" value={inviteName} onChange={(e) => setInviteName(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-[15px] text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="홍길동" />
                 </div>
 
                 {/* 이메일 */}
