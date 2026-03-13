@@ -94,7 +94,7 @@ function RoleDropdown({ profile, currentUserRole, currentUserId, onRoleChange }:
 
       {open && (
         <div style={{
-          position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 100,
+          position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 300,
           background: "#fff", borderRadius: 12, boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
           border: "1px solid #e2e8f0", minWidth: 200, padding: 6, overflow: "hidden"
         }}>
