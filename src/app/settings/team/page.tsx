@@ -210,7 +210,7 @@ export default function TeamPage() {
 
         {/* 초대 모달 */}
         {showInvite && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[300]">
             <div className="bg-white rounded-2xl p-7 w-full max-w-md shadow-2xl">
               <h3 className="text-xl font-bold text-gray-900 mb-5">팀원 초대</h3>
               <div className="space-y-4">
