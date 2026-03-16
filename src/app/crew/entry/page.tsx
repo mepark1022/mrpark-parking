@@ -60,6 +60,48 @@ const CSS = `
     border-bottom: 1px solid #F1F5F9;
   }
   .entry-section-body { padding: 16px; }
+  .plate-split-wrap {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 10px;
+    border: 2.5px solid #E2E8F0; border-radius: 12px;
+    background: #fff; transition: border-color 0.2s;
+  }
+  .plate-split-wrap.focused { border-color: #1428A0; }
+  .plate-split-wrap.monthly { border-color: #16A34A; background: #F0FDF4; }
+  .plate-split-num {
+    flex: 1; height: 44px; border: none; outline: none;
+    font-size: 26px; font-weight: 800; color: #1A1D2B;
+    text-align: center; letter-spacing: 2px; background: transparent;
+  }
+  .plate-split-kor {
+    min-width: 44px; height: 44px;
+    border: 1.5px dashed #CBD5E1; border-radius: 8px;
+    font-size: 26px; font-weight: 800; color: #1A1D2B;
+    text-align: center; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; background: #F8FAFC; flex-shrink: 0;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .plate-split-kor.selected { border-color: #1428A0; background: #EEF2FF; border-style: solid; }
+  .plate-split-kor.active { border-color: #1428A0; background: #EEF2FF; border-style: solid; }
+  .plate-split-sep { font-size: 20px; color: #CBD5E1; font-weight: 300; flex-shrink: 0; }
+  .kor-picker {
+    margin-top: 10px; padding: 12px;
+    background: #F1F5F9; border-radius: 12px;
+    border: 1.5px solid #E2E8F0;
+  }
+  .kor-picker-label { font-size: 11px; color: #64748B; font-weight: 600; margin-bottom: 8px; }
+  .kor-picker-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;
+  }
+  .kor-btn {
+    height: 38px; border-radius: 8px;
+    border: 1.5px solid #CBD5E1; background: #fff;
+    font-size: 16px; font-weight: 700; color: #1A1D2B;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .kor-btn:active { transform: scale(0.93); }
+  .kor-btn.selected { background: #1428A0; color: #fff; border-color: #1428A0; }
   .plate-input {
     width: 100%; height: 60px;
     border: 2.5px solid #E2E8F0; border-radius: 12px;
@@ -181,8 +223,57 @@ export default function CrewEntryPage() {
   const [showCamera, setShowCamera] = useState(false);
   const [entryMethod, setEntryMethod] = useState<"manual"|"camera">("manual");
 
-  // Step 1
+  // Step 1 — 분할 번호판 입력
   const [plateNumber, setPlateNumber] = useState("");
+  const [platePart1, setPlatePart1] = useState(""); // 앞 숫자 (2~3자리)
+  const [plateKor, setPlateKor] = useState("");      // 한글 1자리
+  const [platePart2, setPlatePart2] = useState(""); // 뒷 숫자 (4자리)
+  const [showKorPicker, setShowKorPicker] = useState(false);
+  const [splitFocused, setSplitFocused] = useState(false);
+  const part1Ref = useRef(null);
+  const part2Ref = useRef(null);
+
+  const combinePlate = (p1, kor, p2) => p1 + kor + p2;
+
+  const handlePart1Change = (v) => {
+    const digits = v.replace(/\D/g, "").slice(0, 3);
+    setPlatePart1(digits);
+    const combined = combinePlate(digits, plateKor, platePart2);
+    setPlateNumber(combined);
+    handlePlateChange(combined);
+    if (digits.length >= 2) setShowKorPicker(true);
+  };
+
+  const handleKorSelect = (kor) => {
+    setPlateKor(kor);
+    setShowKorPicker(false);
+    const combined = combinePlate(platePart1, kor, platePart2);
+    setPlateNumber(combined);
+    handlePlateChange(combined);
+    setTimeout(() => part2Ref.current?.focus(), 50);
+  };
+
+  const handlePart2Change = (v) => {
+    const digits = v.replace(/\D/g, "").slice(0, 4);
+    setPlatePart2(digits);
+    const combined = combinePlate(platePart1, plateKor, digits);
+    setPlateNumber(combined);
+    handlePlateChange(combined);
+  };
+
+  const applyOcrPlate = (plate) => {
+    const n = plate.replace(/\s/g, "");
+    const korMatch = n.match(/[가-힣]/);
+    if (korMatch) {
+      const idx = n.indexOf(korMatch[0]);
+      setPlatePart1(n.slice(0, idx));
+      setPlateKor(korMatch[0]);
+      setPlatePart2(n.slice(idx + 1));
+    }
+    setPlateNumber(n);
+    handlePlateChange(n);
+  };
+
   const [monthlyInfo, setMonthlyInfo] = useState(null);
   const [monthlyChecking, setMonthlyChecking] = useState(false);
   const plateTimer = useRef(null);
@@ -339,7 +430,7 @@ export default function CrewEntryPage() {
           <div style={{ position: "fixed", inset: 0, zIndex: 100 }}>
             <CameraOcr
               onConfirm={(plate) => {
-                handlePlateChange(plate);
+                applyOcrPlate(plate);
                 setEntryMethod("camera");
                 setShowCamera(false);
               }}
@@ -378,19 +469,67 @@ export default function CrewEntryPage() {
                   📷 번호판 자동 스캔
                 </button>
                 <div className="divider-or">또는 직접 입력</div>
-                <input
-                  className={`plate-input${monthlyInfo ? " monthly" : ""}`}
-                  value={plateNumber}
-                  onChange={(e) => handlePlateChange(e.target.value)}
-                  placeholder="12가3456"
-                  inputMode="text"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                  autoFocus
-                  maxLength={10}
-                />
+
+                {/* 분할 번호판 입력 */}
+                <div
+                  className={`plate-split-wrap${splitFocused ? " focused" : ""}${monthlyInfo ? " monthly" : ""}`}
+                  onClick={() => { if (!platePart1) part1Ref.current?.focus(); }}
+                >
+                  <input
+                    ref={part1Ref}
+                    className="plate-split-num"
+                    value={platePart1}
+                    onChange={(e) => handlePart1Change(e.target.value)}
+                    placeholder="12"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                    autoFocus
+                    onFocus={() => setSplitFocused(true)}
+                    onBlur={() => setSplitFocused(false)}
+                    style={{ maxWidth: 70 }}
+                  />
+                  <div
+                    className={`plate-split-kor${plateKor ? " selected" : ""}${showKorPicker ? " active" : ""}`}
+                    onClick={() => { setShowKorPicker(v => !v); setSplitFocused(true); }}
+                  >
+                    {plateKor || <span style={{fontSize:13,color:"#94A3B8"}}>한글</span>}
+                  </div>
+                  <input
+                    ref={part2Ref}
+                    className="plate-split-num"
+                    value={platePart2}
+                    onChange={(e) => handlePart2Change(e.target.value)}
+                    placeholder="3456"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                    onFocus={() => { setSplitFocused(true); setShowKorPicker(false); }}
+                    onBlur={() => setSplitFocused(false)}
+                    style={{ maxWidth: 90 }}
+                  />
+                </div>
+
+                {/* 한글 피커 */}
+                {showKorPicker && (
+                  <div className="kor-picker">
+                    <div className="kor-picker-label">한글 선택</div>
+                    <div className="kor-picker-grid">
+                      {["가","나","다","라","마","바","사","아","자","차","카","타","파","하",
+                        "거","너","더","러","머","버","서","어","저","처","커","터","퍼","허",
+                        "고","노","도","로","모","보","소","오","조","초","코","토","포","호",
+                        "구","두","루","무","부","수","우","주","추","쿠","투","푸","후","배"].map(k => (
+                        <button
+                          key={k}
+                          className={`kor-btn${plateKor === k ? " selected" : ""}`}
+                          onMouseDown={(e) => { e.preventDefault(); handleKorSelect(k); }}
+                        >
+                          {k}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {monthlyChecking && (
                   <div className="monthly-badge no">🔍 월주차 확인 중...</div>
                 )}
