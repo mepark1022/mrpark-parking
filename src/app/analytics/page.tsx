@@ -272,7 +272,7 @@ export default function AnalyticsPage() {
           storeMap[r.store_id].totalRevenue += amt;
           storeMap[r.store_id].totalCars += 1;
         });
-        setStoreData(Object.values(storeMap).map(s => ({ ...s, avgPerCar: s.totalCars > 0 ? Math.round(s.totalRevenue / s.totalCars) : 0 })).sort((a, b) => b.totalRevenue - a.totalRevenue));
+        setStoreData(Object.values(storeMap).map(s => ({ ...s, avgPerCar: s.totalCars > 0 ? Math.round(s.totalRevenue / s.totalCars) : 0 })).sort((a, b) => b.totalCars - a.totalCars));
       }
     } finally { setLoading(false); }
   }, [period, customStart, customEnd, selectedStore, stores]);
