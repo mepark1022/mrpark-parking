@@ -1,8 +1,11 @@
 // @ts-nocheck
 "use client";
 
+import { useState } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { LogoGNB } from "@/components/Logo";
+import OnboardingTour from "@/components/onboarding/OnboardingTour";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 const features = [
   { icon: "📊", title: "대시보드", desc: "매장별 매출 현황, 입차 통계, 월주차 현황, 근무자 배치 등을 한눈에 파악합니다.", details: [
@@ -67,6 +70,8 @@ const features = [
 ];
 
 export default function GuidePage() {
+  const { showTour, role, restartTour, completeOnboarding } = useOnboarding();
+
   return (
     <AppLayout>
       <style>{`
@@ -190,12 +195,39 @@ export default function GuidePage() {
           </div>
         </div>
 
+        {/* 온보딩 투어 다시보기 */}
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <button
+            onClick={() => restartTour("admin")}
+            style={{
+              padding: "12px 28px",
+              borderRadius: 12,
+              background: "#1428A0",
+              color: "#fff",
+              fontSize: 14,
+              fontWeight: 700,
+              border: "none",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            🎯 온보딩 투어 다시보기
+          </button>
+          <p style={{ fontSize: 12, color: "#999", marginTop: 8 }}>처음 시작 가이드를 다시 볼 수 있어요</p>
+        </div>
+
         {/* 푸터 */}
         <div className="guide-footer mt-8 text-center pb-4">
           <p style={{ fontSize: 11, color: "var(--text-muted)" }}>© 주식회사 미스터팍 (Mr. Park) · 미팍Ticket 주차운영 시스템</p>
           <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>문의: mepark1022@gmail.com</p>
         </div>
       </div>
+      {/* 다시보기 투어 오버레이 */}
+      {showTour && role && (
+        <OnboardingTour role={role} onComplete={completeOnboarding} />
+      )}
     </AppLayout>
   );
 }

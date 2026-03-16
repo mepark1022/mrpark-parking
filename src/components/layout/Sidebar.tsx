@@ -228,7 +228,7 @@ export default function Sidebar() {
           // Normal mode: grouped with divider
           <>
             {mainItems.map((item) => (
-              <Link key={item.id} href={item.href} className={`v3-nav-item ${isActive(item.href) ? "active" : ""}`}>
+              <Link key={item.id} href={item.href} data-menu={item.id} className={`v3-nav-item ${isActive(item.href) ? "active" : ""}`}>
                 <span style={{ display: "flex", alignItems: "center", width: 22 }}>{item.icon}</span>
                 <span>{item.label}</span>
                 {item.id === "parking-status" && parkingCount > 0 && <span className="v3-nav-badge">{parkingCount}</span>}
@@ -245,7 +245,7 @@ export default function Sidebar() {
             <div className="v3-nav-section-title">관리</div>
 
             {mgmtItems.map((item) => (
-              <Link key={item.id} href={item.href} className={`v3-nav-item ${isActive(item.href) ? "active" : ""}`}>
+              <Link key={item.id} href={item.href} data-menu={item.id} className={`v3-nav-item ${isActive(item.href) ? "active" : ""}`}>
                 <span style={{ display: "flex", alignItems: "center", width: 22 }}>{item.icon}</span>
                 <span>{item.label}</span>
                 {item.id === "parking-status" && parkingCount > 0 && <span className="v3-nav-badge">{parkingCount}</span>}

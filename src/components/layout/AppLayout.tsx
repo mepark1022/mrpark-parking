@@ -6,8 +6,12 @@ import Header from "./Header";
 import MobileTabBar from "./MobileTabBar";
 import MoreSubNav from "./MoreSubNav";
 import BugReportFAB from "../BugReportFAB";
+import OnboardingTour from "../onboarding/OnboardingTour";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { showTour, role, completeOnboarding } = useOnboarding();
+
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f1f5f9", maxWidth: "100vw", overflowX: "hidden" }}>
       {/* PC 사이드바 (768px 이상에서만 표시 - Sidebar.tsx 내부 className으로 처리) */}
@@ -55,6 +59,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* 오류 제보 FAB (모든 페이지 항시 노출) */}
       <BugReportFAB />
+
+      {/* 온보딩 투어 (최초 로그인 1회만) */}
+      {showTour && role && (
+        <OnboardingTour role={role} onComplete={completeOnboarding} />
+      )}
     </div>
   );
 }
