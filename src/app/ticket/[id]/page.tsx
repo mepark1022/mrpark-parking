@@ -341,10 +341,9 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
               },
               { label: "입차 시간", value: fmt(ticket.entry_at as string) },
               { label: "유형", value: ticket.parking_type === "valet" ? "발렛" : "일반" },
-              {
-                label: "방문지",
-                value: (ticket.visit_places as Record<string, unknown>)?.name as string ?? "기본요금",
-              },
+              ...((ticket.visit_places as Record<string, unknown>)?.name
+                ? [{ label: "방문지", value: (ticket.visit_places as Record<string, unknown>)?.name as string }]
+                : []),
             ].map(item => (
               <div key={item.label} style={{ background: "#f8f9fb", borderRadius: 10, padding: "12px 14px" }}>
                 <div style={{ fontSize: 11, color: "#999", marginBottom: 4 }}>{item.label}</div>
