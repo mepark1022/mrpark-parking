@@ -95,6 +95,52 @@ export default function BugReportFAB() {
     });
   };
 
+  const addImageFromClipboard = (items: DataTransferItemList | ClipboardItem[]) => {
+    if (screenshots.length >= 3) return;
+    // DataTransferItemList (paste event)
+    if (items[0] && 'getAsFile' in items[0]) {
+      for (let i = 0; i < items.length; i++) {
+        if (screenshots.length + i >= 3) break;
+        const item = items[i] as DataTransferItem;
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            setScreenshots(prev => [...prev, { file, preview: URL.createObjectURL(file) }]);
+          }
+        }
+      }
+    }
+  };
+
+  const handlePaste = async () => {
+    try {
+      const clipItems = await navigator.clipboard.read();
+      for (const item of clipItems) {
+        const imgType = item.types.find(t => t.startsWith("image/"));
+        if (imgType && screenshots.length < 3) {
+          const blob = await item.getType(imgType);
+          const file = new File([blob], `paste_${Date.now()}.png`, { type: imgType });
+          setScreenshots(prev => [...prev, { file, preview: URL.createObjectURL(file) }]);
+        }
+      }
+    } catch {
+      setToast("클립보드에 이미지가 없습니다");
+      setTimeout(() => setToast(""), 2000);
+    }
+  };
+
+  // Ctrl+V 붙여넣기 리스너
+  useEffect(() => {
+    if (!open) return;
+    const onPaste = (e: ClipboardEvent) => {
+      if (e.clipboardData?.items) {
+        addImageFromClipboard(e.clipboardData.items);
+      }
+    };
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  }, [open, screenshots.length]);
+
   const handleSubmit = async () => {
     if (!form.title.trim()) {
       setToast("제목을 입력해주세요");
@@ -425,35 +471,40 @@ export default function BugReportFAB() {
                 <label style={{ fontSize: 13, fontWeight: 700, color: "#1A1D2B", marginBottom: 6, display: "block" }}>
                   스크린샷 (선택, 최대 3장)
                 </label>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {screenshots.map((ss, i) => (
-                    <div key={i} style={{
-                      width: 80, height: 80, borderRadius: 10, overflow: "hidden",
-                      position: "relative", border: "1px solid #e2e8f0",
-                    }}>
-                      <img src={ss.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      <button
-                        onClick={() => removeScreenshot(i)}
-                        style={{
-                          position: "absolute", top: 2, right: 2,
-                          width: 20, height: 20, borderRadius: 6,
-                          background: "rgba(0,0,0,0.6)", border: "none",
-                          color: "#fff", fontSize: 11, cursor: "pointer",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                        }}
-                      >✕</button>
-                    </div>
-                  ))}
-                  {screenshots.length < 3 && (
+                {/* 미리보기 */}
+                {screenshots.length > 0 && (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                    {screenshots.map((ss, i) => (
+                      <div key={i} style={{
+                        width: 80, height: 80, borderRadius: 10, overflow: "hidden",
+                        position: "relative", border: "1px solid #e2e8f0",
+                      }}>
+                        <img src={ss.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <button
+                          onClick={() => removeScreenshot(i)}
+                          style={{
+                            position: "absolute", top: 2, right: 2,
+                            width: 20, height: 20, borderRadius: 6,
+                            background: "rgba(0,0,0,0.6)", border: "none",
+                            color: "#fff", fontSize: 11, cursor: "pointer",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}
+                        >✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* 첨부 버튼들 */}
+                {screenshots.length < 3 && (
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {/* 갤러리/파일 선택 */}
                     <label style={{
-                      width: 80, height: 80, borderRadius: 10,
-                      border: "2px dashed #cbd5e1", background: "#f8fafc",
-                      display: "flex", flexDirection: "column",
-                      alignItems: "center", justifyContent: "center",
-                      cursor: "pointer", gap: 2,
+                      flex: 1, padding: "10px 0", borderRadius: 10,
+                      border: "1px solid #e2e8f0", background: "#f8fafc",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#64748B",
                     }}>
-                      <span style={{ fontSize: 22, color: "#94a3b8" }}>📷</span>
-                      <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600 }}>추가</span>
+                      🖼️ 갤러리
                       <input
                         type="file"
                         accept="image/*"
@@ -462,8 +513,42 @@ export default function BugReportFAB() {
                         style={{ display: "none" }}
                       />
                     </label>
-                  )}
-                </div>
+                    {/* 카메라 촬영 */}
+                    <label style={{
+                      flex: 1, padding: "10px 0", borderRadius: 10,
+                      border: "1px solid #e2e8f0", background: "#f8fafc",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#64748B",
+                    }}>
+                      📷 촬영
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleScreenshots}
+                        style={{ display: "none" }}
+                      />
+                    </label>
+                    {/* 클립보드 붙여넣기 */}
+                    <button
+                      type="button"
+                      onClick={handlePaste}
+                      style={{
+                        flex: 1, padding: "10px 0", borderRadius: 10,
+                        border: "1px solid #e2e8f0", background: "#f8fafc",
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                        cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#64748B",
+                      }}
+                    >
+                      📋 붙여넣기
+                    </button>
+                  </div>
+                )}
+                {screenshots.length < 3 && (
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 6 }}>
+                    Ctrl+V로도 스크린샷을 붙여넣을 수 있습니다
+                  </div>
+                )}
               </div>
 
               {/* 제출 버튼 */}
