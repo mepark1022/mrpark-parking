@@ -332,10 +332,12 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
           {/* 상세 정보 */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             {[
-              { label: "주차장", value:
-                ((ticket.parking_lots as Record<string, unknown>)?.name as string)
-                || (ticket.parking_location as string)
-                || "-"
+              { label: "주차 구역", value: (() => {
+                  const lotName = (ticket.parking_lots as Record<string, unknown>)?.name as string;
+                  const loc = ticket.parking_location as string;
+                  if (lotName && loc) return `${lotName} · ${loc}`;
+                  return lotName || loc || "-";
+                })()
               },
               { label: "입차 시간", value: fmt(ticket.entry_at as string) },
               { label: "유형", value: ticket.parking_type === "valet" ? "발렛" : "일반" },
