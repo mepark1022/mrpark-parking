@@ -384,6 +384,7 @@ export default function StoresPage() {
 
   // Modal 상태
   const [modalType, setModalType] = useState<string | null>(null);
+  const [storeModalTab, setStoreModalTab] = useState<"기본정보"|"주차장"|"방문지"|"운영설정">("기본정보");
   const [editingItem, setEditingItem] = useState<Record<string, unknown> | null>(null);
   const [storeForAction, setStoreForAction] = useState<string | null>(null);
 
@@ -704,8 +705,12 @@ export default function StoresPage() {
       }
     }
     showToast(editingItem?.id ? "✅ 주차장이 수정되었습니다" : "✅ 주차장이 추가되었습니다");
-    setModalType(null);
     loadData();
+    // 주차장 탭이 열려있던 store 모달로 복귀
+    if (storeForAction) {
+      setStoreModalTab("주차장"); setModalType("store"); return;
+    }
+    setModalType(null);
   }
 
   async function deleteLot(lotId: string, storeId: string) {
@@ -738,8 +743,12 @@ export default function StoresPage() {
     }
     if (error) { alert("저장 실패: " + error.message); return; }
     showToast(editingItem?.id ? "✅ 방문지가 수정되었습니다" : "✅ 방문지가 추가되었습니다");
-    setModalType(null);
     loadData();
+    // 방문지 탭이 열려있던 store 모달로 복귀
+    if (storeForAction) {
+      setStoreModalTab("방문지"); setModalType("store"); return;
+    }
+    setModalType(null);
   }
 
   async function saveHours() {
@@ -822,7 +831,7 @@ export default function StoresPage() {
           <BtnPrimary onClick={() => {
             setStoreForm({ name: "", region_city: "", region_district: "", road_address: "", manager_name: "", contact_name: "", contact_phone: "", is_free_parking: false, has_kiosk: false, has_toss_kiosk: false, grace_period_minutes: 30, gps_radius_meters: 150, latitude: "", longitude: "", require_entry_photo: false, enable_plate_search: true, enable_valet: true, enable_monthly: true, require_visit_place: false });
             setEditingItem(null);
-            setModalType("store");
+            setStoreModalTab("기본정보"); setModalType("store");
           }}>
             + 매장 추가
           </BtnPrimary>
@@ -1030,7 +1039,7 @@ export default function StoresPage() {
                           valet_fee: (store as any).valet_fee ?? 3000,
                         });
                         setEditingItem(store as unknown as Record<string, unknown>);
-                        setModalType("store");
+                        setStoreModalTab("기본정보"); setModalType("store");
                       }} style={{ flex: 1, padding: "8px", fontSize: 13 }}>✏️ 수정</BtnGhost>
                       <BtnGhost onClick={() => deleteStore(store.id)}
                         style={{ flex: 1, padding: "8px", fontSize: 13, color: C.error, borderColor: C.error + "44" }}>
@@ -1125,7 +1134,7 @@ export default function StoresPage() {
                               valet_fee: (store as any).valet_fee ?? 3000,
                             });
                             setEditingItem(store as unknown as Record<string, unknown>);
-                            setModalType("store");
+                            setStoreModalTab("기본정보"); setModalType("store");
                           }} style={{ padding: "6px 14px", whiteSpace: "nowrap" }}>수정</BtnGhost>
                           <BtnGhost onClick={() => deleteStore(store.id)}
                             style={{ padding: "6px 14px", whiteSpace: "nowrap", color: C.error, borderColor: C.error + "44" }}>삭제</BtnGhost>
@@ -1732,7 +1741,31 @@ export default function StoresPage() {
     if (!modalType) return null;
 
     if (modalType === "store") return (
-      <Modal title={editingItem ? "매장 수정" : "매장 추가"} onClose={() => setModalType(null)}>
+      <Modal title={editingItem ? "매장 수정" : "매장 추가"} onClose={() => setModalType(null)} width={680}>
+        {/* ── 탭 바 (수정 모드에서만) ── */}
+        {editingItem && (
+          <div style={{
+            display: "flex", gap: 0, marginBottom: 20,
+            borderBottom: `2px solid ${C.borderLight}`,
+          }}>
+            {(["기본정보", "주차장", "방문지", "운영설정"] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setStoreModalTab(tab)}
+                style={{
+                  padding: "10px 18px", fontSize: 13, fontWeight: 700,
+                  border: "none", background: "transparent", cursor: "pointer",
+                  color: storeModalTab === tab ? C.navy : C.textMuted,
+                  borderBottom: storeModalTab === tab ? `2px solid ${C.navy}` : "2px solid transparent",
+                  marginBottom: -2, transition: "all 0.15s",
+                }}
+              >{tab}</button>
+            ))}
+          </div>
+        )}
+
+        {/* ── 기본정보 탭 / 신규 추가 ── */}
+        {(storeModalTab === "기본정보" || !editingItem) && (
         <div className="stores-grid-2col" style={{ display: "grid", gap: 16 }}>
           <FormGroup label="매장명">
             <Input value={storeForm.name} onChange={e => setStoreForm(f => ({ ...f, name: e.target.value }))} />
@@ -2185,17 +2218,180 @@ export default function StoresPage() {
           </div>
         </div>
 
+        {/* 기본정보 저장 버튼 */}
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
           <BtnGhost onClick={() => setModalType(null)}>취소</BtnGhost>
           <BtnPrimary onClick={saveStore}>
             {editingItem ? "수정 완료" : "매장 추가"}
           </BtnPrimary>
         </div>
+        )} {/* end 기본정보 탭 */}
+
+        {/* ── 주차장 탭 ── */}
+        {editingItem && storeModalTab === "주차장" && (() => {
+          const sid = (editingItem as any).id as string;
+          const lots = parkingLots[sid] ?? [];
+          return (
+            <div>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+                <BtnPrimary onClick={() => {
+                  setLotForm({ name: "", lot_type: "internal", parking_type: ["self"], road_address: (editingItem as any).road_address ?? "", self_spaces: 0, mechanical_normal: 0, mechanical_suv: 0 });
+                  setEditingItem(null);
+                  setStoreForAction(sid);
+                  setModalType("lot");
+                }}>+ 주차장 추가</BtnPrimary>
+              </div>
+              {lots.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: C.textMuted, fontSize: 14 }}>
+                  등록된 주차장이 없습니다
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {lots.map((lot: any) => (
+                    <div key={lot.id} style={{
+                      background: "#f8f9fc", borderRadius: 12, padding: "14px 16px",
+                      border: `1px solid ${C.borderLight}`,
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                    }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: C.textPrimary }}>{lot.name}</div>
+                        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 3 }}>
+                          {lot.lot_type === "internal" ? "본관" : "외부"} ·{" "}
+                          자주식 {lot.self_spaces}면 / 기계식 {(lot.mechanical_normal||0)+(lot.mechanical_suv||0)}면
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => {
+                          setLotForm({ name: lot.name, lot_type: lot.lot_type, parking_type: lot.parking_type ?? ["self"], road_address: lot.road_address ?? "", self_spaces: lot.self_spaces, mechanical_normal: lot.mechanical_normal, mechanical_suv: lot.mechanical_suv });
+                          setEditingItem(lot);
+                          setStoreForAction(sid);
+                          setModalType("lot");
+                        }} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>수정</button>
+                        <button onClick={() => setDeleteConfirm({ type: "lot", id: lot.id, name: lot.name })}
+                          style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #fca5a5", background: "#fef2f2", color: "#dc2626", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>삭제</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── 방문지 탭 ── */}
+        {editingItem && storeModalTab === "방문지" && (() => {
+          const sid = (editingItem as any).id as string;
+          const vps = visitPlaces[sid] ?? [];
+          return (
+            <div>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+                <BtnPrimary onClick={() => {
+                  setVisitForm({ name: "", floor: "", free_minutes: 30, base_fee: 1000, base_minutes: 30, extra_fee: 500, daily_max: 0, valet_fee: 3000, monthly_fee: 150000 });
+                  setEditingItem(null);
+                  setStoreForAction(sid);
+                  setModalType("visit");
+                }}>+ 방문지 추가</BtnPrimary>
+              </div>
+              {vps.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: C.textMuted, fontSize: 14 }}>
+                  등록된 방문지가 없습니다
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {vps.map((vp: any) => (
+                    <div key={vp.id} style={{
+                      background: "#f8f9fc", borderRadius: 12, padding: "14px 16px",
+                      border: `1px solid ${C.borderLight}`,
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                    }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: C.textPrimary }}>{vp.name}</div>
+                        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 3 }}>
+                          무료 {vp.free_minutes}분 · 기본 {(vp.base_fee||0).toLocaleString()}원
+                          {vp.valet_fee > 0 && ` · 발렛 ${vp.valet_fee.toLocaleString()}원`}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => {
+                          setVisitForm({ name: vp.name, floor: vp.floor ?? "", free_minutes: vp.free_minutes, base_fee: vp.base_fee, base_minutes: vp.base_minutes, extra_fee: vp.extra_fee, daily_max: vp.daily_max, valet_fee: vp.valet_fee, monthly_fee: vp.monthly_fee });
+                          setEditingItem(vp);
+                          setStoreForAction(sid);
+                          setModalType("visit");
+                        }} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>수정</button>
+                        <button onClick={async () => { if (!confirm("삭제하시겠습니까?")) return; await supabase.from("visit_places").delete().eq("id", vp.id); loadData(); }}
+                          style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #fca5a5", background: "#fef2f2", color: "#dc2626", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>삭제</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── 운영설정 탭 ── */}
+        {editingItem && storeModalTab === "운영설정" && (() => {
+          const sid = (editingItem as any).id as string;
+          const store = stores.find(s => s.id === sid);
+          if (!store) return null;
+          const toggles = [
+            { key: "is_free_parking", label: "무료 운영", desc: "결제 없이 바로 출차요청 처리", icon: "🆓" },
+            { key: "has_kiosk", label: "미팍 1.0 키오스크 보유", desc: "스탠드형 키오스크로 고객 직접 결제", icon: "🖥️" },
+            { key: "has_toss_kiosk", label: "토스키오스크 보유", desc: "토스키오스크 연동 결제", icon: "💳" },
+            { key: "require_entry_photo", label: "입차 사진 필수", desc: "크루가 입차 시 차량 사진 촬영 필수", icon: "📷" },
+            { key: "enable_plate_search", label: "차량번호 검색", desc: "크루앱에서 차량번호 검색 기능 활성화", icon: "🔍" },
+            { key: "enable_valet", label: "발렛 주차 가능", desc: "발렛 주차 서비스 제공 여부", icon: "🚗" },
+            { key: "enable_monthly", label: "월주차 가능", desc: "월주차 계약 기능 활성화", icon: "📅" },
+            { key: "require_visit_place", label: "방문지 선택 필수", desc: "입차 등록 시 방문지 선택 필수", icon: "🏥" },
+          ] as const;
+          return (
+            <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 12, overflow: "hidden", border: `1px solid ${C.borderLight}` }}>
+              {toggles.map(({ key, label, desc, icon }, idx) => {
+                const isOn = (store as any)[key] ?? false;
+                return (
+                  <div key={key} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "13px 16px",
+                    background: isOn ? "#eef1fb" : "#f8f9fc",
+                    borderBottom: idx < toggles.length - 1 ? `1px solid ${C.borderLight}` : "none",
+                    transition: "background 0.15s",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 20 }}>{icon}</span>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: C.textPrimary }}>{label}</div>
+                        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 1 }}>{desc}</div>
+                      </div>
+                    </div>
+                    <div onClick={() => saveStoreSetting(sid, { [key]: !isOn })} style={{
+                      width: 48, height: 26, borderRadius: 13, cursor: "pointer",
+                      background: isOn ? C.navy : "#D0D2DA",
+                      position: "relative", transition: "background 0.2s", flexShrink: 0,
+                    }}>
+                      <div style={{
+                        position: "absolute", top: 3, left: isOn ? 25 : 3,
+                        width: 20, height: 20, borderRadius: "50%", background: "#fff",
+                        boxShadow: "0 1px 4px rgba(0,0,0,0.18)", transition: "left 0.2s",
+                      }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+
       </Modal>
     );
 
     if (modalType === "lot") return (
-      <Modal title={editingItem ? "주차장 수정" : "주차장 추가"} onClose={() => setModalType(null)}>
+      <Modal title={editingItem ? "주차장 수정" : "주차장 추가"} onClose={() => {
+        if (storeForAction) {
+          const s = stores.find(st => st.id === storeForAction);
+          if (s) { setEditingItem(s as unknown as Record<string, unknown>); setStoreModalTab("주차장"); setModalType("store"); return; }
+        }
+        setModalType(null);
+      }}>
         <FormGroup label="주차장명">
           <Input value={lotForm.name} onChange={e => setLotForm(f => ({ ...f, name: e.target.value }))} placeholder="예: 본관 지하 1층" />
         </FormGroup>
@@ -2261,7 +2457,13 @@ export default function StoresPage() {
     );
 
     if (modalType === "visit") return (
-      <Modal title={editingItem ? "방문지 수정" : "방문지 추가"} onClose={() => setModalType(null)}>
+      <Modal title={editingItem ? "방문지 수정" : "방문지 추가"} onClose={() => {
+        if (storeForAction) {
+          const s = stores.find(st => st.id === storeForAction);
+          if (s) { setEditingItem(s as unknown as Record<string, unknown>); setStoreModalTab("방문지"); setModalType("store"); return; }
+        }
+        setModalType(null);
+      }}>
         <div className="stores-grid-2col" style={{ display: "grid", gap: 16 }}>
           <FormGroup label="방문지명">
             <Input value={visitForm.name} onChange={e => setVisitForm(f => ({ ...f, name: e.target.value }))} placeholder="예: 1층 내과" />
