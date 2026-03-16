@@ -54,7 +54,39 @@ export default function CrewHomePage() {
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [exitReqCount, setExitReqCount] = useState(0);
+  const [quickModal, setQuickModal] = useState<string | null>(null);
   const router = useRouter();
+
+  const QUICK_MENUS = {
+    entry: {
+      title: "입차 등록",
+      path: "/crew/entry",
+      desc: "차량 번호를 입력하거나 카메라로 번호판을 인식하여 입차를 등록합니다.",
+      features: ["번호판 OCR 자동인식", "수동 번호 입력", "방문지·주차장 선택", "월주차 자동 판별"],
+      color: "#1428A0",
+    },
+    exit: {
+      title: "출차 처리",
+      path: "/crew/parking-list",
+      desc: "현재 주차 중인 차량 목록을 확인하고 출차 처리합니다.",
+      features: ["주차 중 차량 목록", "발렛/자주식 구분", "출차 완료 처리", "주차 요금 확인"],
+      color: "#16A34A",
+    },
+    accident: {
+      title: "사고 보고",
+      path: "/crew/accident",
+      desc: "주차 중 발생한 사고를 사진과 함께 보고합니다.",
+      features: ["사고 사진 촬영·첨부", "사고 유형 선택", "차량·위치 정보 기록", "관리자 즉시 확인"],
+      color: "#EA580C",
+    },
+    monthly: {
+      title: "월주차 조회",
+      path: "/crew/monthly",
+      desc: "월주차 계약 차량을 조회하고 만료 예정 차량을 확인합니다.",
+      features: ["차량번호 검색", "계약 기간 확인", "만료 임박 알림", "월주차 등록"],
+      color: "#7C3AED",
+    },
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -680,7 +712,7 @@ export default function CrewHomePage() {
           {/* 빠른 메뉴 */}
           <div className="crew-section-title">빠른 메뉴</div>
           <div className="crew-quick-menu">
-            <button className="crew-quick-btn" onClick={() => router.push("/crew/entry")}>
+            <button className="crew-quick-btn" onClick={() => setQuickModal("entry")}>
               <span className="crew-quick-label">입차 등록</span>
               <span className="crew-quick-emoji icon-car">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
@@ -691,7 +723,7 @@ export default function CrewHomePage() {
                 </svg>
               </span>
             </button>
-            <button className="crew-quick-btn" onClick={() => router.push("/crew/parking-list")}>
+            <button className="crew-quick-btn" onClick={() => setQuickModal("exit")}>
               <span className="crew-quick-label">출차 처리</span>
               <span className="crew-quick-emoji icon-exit">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
@@ -703,7 +735,7 @@ export default function CrewHomePage() {
                 </svg>
               </span>
             </button>
-            <button className="crew-quick-btn" onClick={() => router.push("/crew/accident")}>
+            <button className="crew-quick-btn" onClick={() => setQuickModal("accident")}>
               <span className="crew-quick-label">사고 보고</span>
               <span className="crew-quick-emoji icon-accident">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
@@ -713,7 +745,7 @@ export default function CrewHomePage() {
                 </svg>
               </span>
             </button>
-            <button className="crew-quick-btn" onClick={() => router.push("/crew/monthly")}>
+            <button className="crew-quick-btn" onClick={() => setQuickModal("monthly")}>
               <span className="crew-quick-label">월주차 조회</span>
               <span className="crew-quick-emoji icon-monthly">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
@@ -731,6 +763,104 @@ export default function CrewHomePage() {
         <CrewNavSpacer />
         <CrewBottomNav />
       </div>
+
+      {/* 빠른메뉴 기능 설명 모달 */}
+      {quickModal && QUICK_MENUS[quickModal] && (() => {
+        const menu = QUICK_MENUS[quickModal];
+        return (
+          <div
+            style={{
+              position: "fixed", inset: 0, zIndex: 9999,
+              background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
+              display: "flex", alignItems: "flex-end", justifyContent: "center",
+              padding: "0 0 0 0",
+            }}
+            onClick={() => setQuickModal(null)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "#fff", borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 480,
+                padding: "0", overflow: "hidden",
+                animation: "slideUp 0.25s ease-out",
+              }}
+            >
+              {/* 헤더 바 */}
+              <div style={{
+                background: menu.color, padding: "20px 24px 16px",
+                position: "relative",
+              }}>
+                <div style={{
+                  position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)",
+                  width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.4)",
+                }} />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: "#fff" }}>{menu.title}</span>
+                  <button
+                    onClick={() => setQuickModal(null)}
+                    style={{
+                      width: 30, height: 30, borderRadius: 10, border: "none",
+                      background: "rgba(255,255,255,0.2)", color: "#fff",
+                      fontSize: 14, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >✕</button>
+                </div>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", marginTop: 6, lineHeight: 1.5 }}>
+                  {menu.desc}
+                </p>
+              </div>
+
+              {/* 기능 목록 */}
+              <div style={{ padding: "16px 24px 8px" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#94A3B8", marginBottom: 10 }}>주요 기능</div>
+                {menu.features.map((feat, i) => (
+                  <div key={i} style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 14px", marginBottom: 6,
+                    background: "#F8FAFC", borderRadius: 12,
+                  }}>
+                    <div style={{
+                      width: 24, height: 24, borderRadius: 8,
+                      background: `${menu.color}15`, color: menu.color,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 12, fontWeight: 800, flexShrink: 0,
+                    }}>{i + 1}</div>
+                    <span style={{ fontSize: 14, color: "#1e293b", fontWeight: 500 }}>{feat}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* 이동 버튼 */}
+              <div style={{ padding: "8px 24px 24px" }}>
+                <button
+                  onClick={() => {
+                    setQuickModal(null);
+                    router.push(menu.path);
+                  }}
+                  style={{
+                    width: "100%", padding: "14px", borderRadius: 14,
+                    border: "none", cursor: "pointer",
+                    background: menu.color, color: "#fff",
+                    fontSize: 15, fontWeight: 800,
+                    boxShadow: `0 4px 16px ${menu.color}40`,
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  }}
+                >
+                  {menu.title} 바로가기 →
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+      `}</style>
     </>
   );
 }
