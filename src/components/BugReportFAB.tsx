@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getOrgId, getUserContext } from "@/lib/utils/org";
 
@@ -47,6 +48,8 @@ const SEVERITY = [
 export default function BugReportFAB() {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const pathname = usePathname();
+  const isCrew = pathname?.startsWith("/crew");
   const [toast, setToast] = useState("");
   const [customPageUrl, setCustomPageUrl] = useState("");
   const [screenshots, setScreenshots] = useState<{ file: File; preview: string }[]>([]);
@@ -241,12 +244,12 @@ export default function BugReportFAB() {
       {/* ─── FAB 버튼 ─── */}
       <button
         onClick={() => setOpen(true)}
-        className="bug-fab"
+        className={`bug-fab ${isCrew ? "bug-fab-crew" : ""}`}
         style={{
           position: "fixed",
           bottom: 100, right: 20,
-          width: 52, height: 52,
-          borderRadius: 16,
+          width: 44, height: 44,
+          borderRadius: 14,
           background: "linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)",
           color: "#fff",
           border: "none",
@@ -598,8 +601,17 @@ export default function BugReportFAB() {
       <style>{`
         .bug-fab:hover { transform: scale(1.08); }
         .bug-fab:active { transform: scale(0.95); }
+        .bug-fab-crew {
+          bottom: calc(76px + env(safe-area-inset-bottom, 10px)) !important;
+          width: 40px !important;
+          height: 40px !important;
+          border-radius: 12px !important;
+          font-size: 20px !important;
+          opacity: 0.85;
+        }
         @media (min-width: 768px) {
           .bug-fab { bottom: 32px !important; right: 32px !important; }
+          .bug-fab-crew { opacity: 1; width: 44px !important; height: 44px !important; }
         }
       `}</style>
     </>
