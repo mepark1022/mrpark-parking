@@ -143,6 +143,8 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
   /* ─── 카운트다운 & overdue 감지 타이머 ─── */
   useEffect(() => {
     if (!ticket) return;
+    // 무료 처리 차량은 항상 0원
+    if (ticket.is_free) { setLiveFee(0); return; }
     // 초기 liveFee 즉시 계산
     if (["parking", "exit_requested", "car_ready"].includes(ticket.status as string)) {
       const fee = calcTicketFee(
@@ -235,6 +237,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
   const isOverdue = status === "overdue";
   const isPrePaid = status === "pre_paid";
   const isCompleted = status === "completed";
+  const isFreeTicket = !!(ticket as Record<string, unknown>)?.is_free;
   const gracePeriod = (store as Record<string, unknown>)?.grace_period_minutes as number ?? 30;
 
   return (
@@ -404,6 +407,27 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
         </div>
       </div>
 
+      {/* ─── 무료 처리 차량 안내 배너 ─── */}
+      {isFreeTicket && ["parking", "exit_requested", "car_ready"].includes(ticket.status as string) && (
+        <div style={{ margin: "20px 16px 0" }}>
+          <div style={{
+            background: "#F0FDF4", border: "2px solid #86EFAC",
+            borderRadius: 14, padding: "16px",
+            display: "flex", alignItems: "center", gap: 12,
+          }}>
+            <div style={{ fontSize: 32, flexShrink: 0 }}>🆓</div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#16A34A", marginBottom: 2 }}>
+                무료 처리 차량입니다
+              </div>
+              <div style={{ fontSize: 12, color: "#4ADE80" }}>
+                별도 결제 없이 출차 처리됩니다
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ─── 발렛 출차요청 버튼 ─── */}
       {ticket.parking_type === "valet" && ticket.status === "parking" && (
         <div style={{ padding: "20px 16px 0" }}>
@@ -448,7 +472,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
       )}
 
       {/* ─── overdue 결제 버튼 섹션 ─── */}
-      {isOverdue && (
+      {isOverdue && !isFreeTicket && (
         <div style={{ padding: "20px 16px 0" }}>
           <div style={{
             background: "#fff3f3", borderRadius: 16, padding: "16px 20px",

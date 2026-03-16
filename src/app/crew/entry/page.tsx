@@ -203,6 +203,7 @@ export default function CrewEntryPage() {
   const [parkingLots, setParkingLots] = useState([]);
   const [parkingLotId, setParkingLotId] = useState("");
   const [parkingLocation, setParkingLocation] = useState("");
+  const [isFree, setIsFree] = useState(false);
 
   // Step 3
   const [phone, setPhone] = useState("");
@@ -299,6 +300,7 @@ export default function CrewEntryPage() {
           parking_lot_id: parkingLotId || null,
           parking_location: parkingLocation || null,
           entry_method: entryMethod,
+          is_free: isFree,
           entry_at: new Date().toISOString(),
         })
         .select("id").single();
@@ -498,6 +500,45 @@ export default function CrewEntryPage() {
               </div>
             </div>
 
+            {/* 무료 처리 토글 */}
+            <div className="entry-section">
+              <div className="entry-section-body" style={{ padding: "14px 16px" }}>
+                <div
+                  onClick={() => setIsFree(v => !v)}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "14px 16px", borderRadius: 12,
+                    border: `2px solid ${isFree ? "#16A34A" : "#E2E8F0"}`,
+                    background: isFree ? "#F0FDF4" : "#F8FAFC",
+                    cursor: "pointer", transition: "all 0.2s",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: isFree ? "#16A34A" : "#1A1D2B" }}>
+                      🆓 무료 처리
+                    </div>
+                    <div style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                      요금 없이 출차 처리됩니다
+                    </div>
+                  </div>
+                  <div style={{
+                    width: 48, height: 28, borderRadius: 14,
+                    background: isFree ? "#16A34A" : "#CBD5E1",
+                    position: "relative", transition: "background 0.2s", flexShrink: 0,
+                  }}>
+                    <div style={{
+                      position: "absolute", top: 3,
+                      left: isFree ? 23 : 3,
+                      width: 22, height: 22, borderRadius: "50%",
+                      background: "#fff",
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+                      transition: "left 0.2s",
+                    }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="entry-footer">
               <button className="btn-secondary" onClick={() => setStep(1)}>← 이전</button>
               <button className="btn-primary" onClick={() => setStep(3)}>다음 →</button>
@@ -522,6 +563,12 @@ export default function CrewEntryPage() {
                   <div className="summary-row">
                     <span className="summary-key">주차 유형</span>
                     <span className="summary-val">{parkingType === "valet" ? "🔑 발렛" : "🏢 자주식"}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span className="summary-key">요금</span>
+                    <span className="summary-val" style={{ color: isFree ? "#16A34A" : "#1A1D2B", fontWeight: 700 }}>
+                      {isFree ? "🆓 무료 처리" : "요금 적용"}
+                    </span>
                   </div>
                   {visitPlaceId && (
                     <div className="summary-row">
