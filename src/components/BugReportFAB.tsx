@@ -48,6 +48,7 @@ export default function BugReportFAB() {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
+  const [customPageUrl, setCustomPageUrl] = useState("");
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -57,10 +58,20 @@ export default function BugReportFAB() {
     steps_to_reproduce: "",
   });
 
-  // 현재 페이지 URL 자동 설정
+  // 현재 페이지 URL 자동 매칭
+  const PAGE_OPTIONS = [
+    "/dashboard", "/parking-status", "/monthly", "/analytics", "/workers",
+    "/stores", "/team", "/accident", "/bugs", "/settings", "/login",
+    "/crew", "/crew/entry", "/crew/parking-status", "/crew/attendance",
+    "/crew/accident", "/crew/monthly", "/ticket", "/scan",
+  ];
+
   useEffect(() => {
     if (open && typeof window !== "undefined") {
-      setForm(f => ({ ...f, page_url: window.location.pathname }));
+      const path = window.location.pathname;
+      const matched = PAGE_OPTIONS.find(p => path.startsWith(p));
+      setForm(f => ({ ...f, page_url: matched || "기타" }));
+      if (!matched) setCustomPageUrl(path);
     }
   }, [open]);
 
@@ -83,6 +94,7 @@ export default function BugReportFAB() {
       if (!ctx?.orgId) throw new Error("org_id 없음");
 
       const { data: { user } } = await supabase.auth.getUser();
+      const resolvedPageUrl = form.page_url === "기타" ? customPageUrl : form.page_url;
 
       // 1. DB에 제보 저장
       const { data: inserted, error } = await supabase.from("bug_reports").insert({
@@ -93,7 +105,7 @@ export default function BugReportFAB() {
         description: form.description.trim(),
         category: form.category,
         severity: form.severity,
-        page_url: form.page_url,
+        page_url: resolvedPageUrl,
         steps_to_reproduce: form.steps_to_reproduce.trim(),
         status: "open",
         user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "",
@@ -112,7 +124,7 @@ export default function BugReportFAB() {
             title: form.title,
             description: form.description,
             category: form.category,
-            page_url: form.page_url,
+            page_url: resolvedPageUrl,
             steps: form.steps_to_reproduce,
           }),
         }).catch(() => {}); // 실패해도 무시
@@ -123,6 +135,7 @@ export default function BugReportFAB() {
         setToast("");
         setOpen(false);
         setForm({ title: "", description: "", category: "", severity: "medium", page_url: "", steps_to_reproduce: "" });
+        setCustomPageUrl("");
       }, 1500);
     } catch (err) {
       console.error("Bug report error:", err);
@@ -278,16 +291,58 @@ export default function BugReportFAB() {
                 <label style={{ fontSize: 13, fontWeight: 700, color: "#1A1D2B", marginBottom: 6, display: "block" }}>
                   발생 페이지
                 </label>
-                <input
+                <select
                   value={form.page_url}
                   onChange={(e) => setForm({ ...form, page_url: e.target.value })}
-                  placeholder="/dashboard, /workers 등"
                   style={{
                     width: "100%", padding: "12px 14px", borderRadius: 10,
-                    border: "1px solid #e2e8f0", fontSize: 14, color: "#1e293b",
+                    border: "1px solid #e2e8f0", fontSize: 14, color: form.page_url ? "#1e293b" : "#94a3b8",
                     background: "#f8fafc", outline: "none", boxSizing: "border-box",
+                    appearance: "none", WebkitAppearance: "none",
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M2 4l4 4 4-4'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center",
                   }}
-                />
+                >
+                  <option value="">페이지 선택</option>
+                  <optgroup label="어드민">
+                    <option value="/dashboard">대시보드</option>
+                    <option value="/parking-status">입차 현황</option>
+                    <option value="/monthly">월주차 관리</option>
+                    <option value="/analytics">매출 분석</option>
+                    <option value="/workers">근무자 관리</option>
+                    <option value="/stores">매장 관리</option>
+                    <option value="/team">팀원 관리</option>
+                    <option value="/accident">사고보고</option>
+                    <option value="/bugs">오류보고</option>
+                    <option value="/settings">설정</option>
+                    <option value="/login">로그인</option>
+                  </optgroup>
+                  <optgroup label="CREW앱">
+                    <option value="/crew">CREW 홈</option>
+                    <option value="/crew/entry">CREW 입차등록</option>
+                    <option value="/crew/parking-status">CREW 입차현황</option>
+                    <option value="/crew/attendance">CREW 출퇴근</option>
+                    <option value="/crew/accident">CREW 사고보고</option>
+                    <option value="/crew/monthly">CREW 월주차</option>
+                  </optgroup>
+                  <optgroup label="미팍티켓">
+                    <option value="/ticket">미팍티켓 고객화면</option>
+                    <option value="/scan">QR 스캔</option>
+                  </optgroup>
+                  <option value="기타">기타 (직접 입력)</option>
+                </select>
+                {form.page_url === "기타" && (
+                  <input
+                    value={customPageUrl}
+                    onChange={(e) => setCustomPageUrl(e.target.value)}
+                    placeholder="페이지 경로 입력 (예: /settings)"
+                    style={{
+                      width: "100%", padding: "10px 14px", borderRadius: 10, marginTop: 8,
+                      border: "1px solid #e2e8f0", fontSize: 13, color: "#1e293b",
+                      background: "#fff", outline: "none", boxSizing: "border-box",
+                    }}
+                  />
+                )}
               </div>
 
               {/* 상세 설명 */}
