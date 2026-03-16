@@ -445,7 +445,6 @@ export default function CrewHomePage() {
           bottom: 0;
           left: 0;
           right: 0;
-          background: rgba(20, 40, 160, 0.92);
           color: #fff;
           font-size: 11px;
           font-weight: 600;
@@ -457,6 +456,10 @@ export default function CrewHomePage() {
           pointer-events: none;
           line-height: 1.4;
         }
+        .crew-quick-tip.tip-navy::after { background: rgba(20, 40, 160, 0.92); }
+        .crew-quick-tip.tip-green::after { background: rgba(22, 163, 74, 0.92); }
+        .crew-quick-tip.tip-orange::after { background: rgba(234, 88, 12, 0.92); }
+        .crew-quick-tip.tip-purple::after { background: rgba(124, 58, 237, 0.92); }
         .crew-quick-tip:hover::after {
           opacity: 1;
           transform: translateY(0);
@@ -710,7 +713,7 @@ export default function CrewHomePage() {
           {/* 빠른 메뉴 */}
           <div className="crew-section-title">빠른 메뉴</div>
           <div className="crew-quick-menu">
-            <button className="crew-quick-btn crew-quick-tip" onClick={() => router.push("/crew/entry")} data-tip="번호판 인식 또는 수동으로 입차 등록">
+            <button className="crew-quick-btn crew-quick-tip tip-navy" onClick={() => router.push("/crew/entry")} data-tip="번호판 인식 또는 수동으로 입차 등록">
               <span className="crew-quick-label">입차 등록</span>
               <span className="crew-quick-emoji icon-car">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
@@ -721,7 +724,7 @@ export default function CrewHomePage() {
                 </svg>
               </span>
             </button>
-            <button className="crew-quick-btn crew-quick-tip" onClick={() => router.push("/crew/parking-list")} data-tip="주차 중 차량 확인 및 출차 처리">
+            <button className="crew-quick-btn crew-quick-tip tip-green" onClick={() => router.push("/crew/parking-list")} data-tip="주차 중 차량 확인 및 출차 처리">
               <span className="crew-quick-label">출차 처리</span>
               <span className="crew-quick-emoji icon-exit">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
@@ -733,7 +736,7 @@ export default function CrewHomePage() {
                 </svg>
               </span>
             </button>
-            <button className="crew-quick-btn crew-quick-tip" onClick={() => router.push("/crew/accident")} data-tip="사고 발생 시 사진과 함께 보고">
+            <button className="crew-quick-btn crew-quick-tip tip-orange" onClick={() => router.push("/crew/accident")} data-tip="사고 발생 시 사진과 함께 보고">
               <span className="crew-quick-label">사고 보고</span>
               <span className="crew-quick-emoji icon-accident">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
@@ -743,7 +746,7 @@ export default function CrewHomePage() {
                 </svg>
               </span>
             </button>
-            <button className="crew-quick-btn crew-quick-tip" onClick={() => router.push("/crew/monthly")} data-tip="월주차 계약 차량 검색 및 조회">
+            <button className="crew-quick-btn crew-quick-tip tip-purple" onClick={() => router.push("/crew/monthly")} data-tip="월주차 계약 차량 검색 및 조회">
               <span className="crew-quick-label">월주차 조회</span>
               <span className="crew-quick-emoji icon-monthly">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
