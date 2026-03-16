@@ -86,7 +86,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
       .from("mepark_tickets")
       .select(`
         *,
-        stores:store_id(name, address, grace_period_minutes, has_kiosk),
+        stores:store_id(name, road_address),
         visit_places:visit_place_id(name, extra_fee, free_minutes, base_minutes, base_fee, daily_max, valet_fee)
       `)
       .eq("id", ticketId)
@@ -97,7 +97,6 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
     if (data) {
       setTicket(data);
       setStore(data.stores);
-      setHasKiosk(data.stores?.has_kiosk ?? false);
       setAdditionalFee(data.additional_fee ?? 0);
     }
     setLoading(false);
@@ -238,7 +237,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
   const isPrePaid = status === "pre_paid";
   const isCompleted = status === "completed";
   const isFreeTicket = !!(ticket as Record<string, unknown>)?.is_free;
-  const gracePeriod = (store as Record<string, unknown>)?.grace_period_minutes as number ?? 30;
+  const gracePeriod = 30; // 기본 30분 (stores.grace_period_minutes 미구현)
 
   return (
     <div style={{ minHeight: "100vh", background: "#f4f5f8", fontFamily: "'Pretendard', -apple-system, sans-serif" }}>
