@@ -487,14 +487,14 @@ export default function CrewEntryPage() {
                     </select>
                   </div>
                 )}
-                {parkingType === "valet" && (
-                  <div className="form-group">
-                    <label className="form-label">차량 위치 (발렛)</label>
-                    <input className="form-input" value={parkingLocation}
-                      onChange={(e) => setParkingLocation(e.target.value)}
-                      placeholder="예: B1 가-15, 2층 3번" />
-                  </div>
-                )}
+                <div className="form-group">
+                  <label className="form-label">
+                    차량 위치 (선택){parkingType === "valet" ? " · 발렛 필수 입력 권장" : ""}
+                  </label>
+                  <input className="form-input" value={parkingLocation}
+                    onChange={(e) => setParkingLocation(e.target.value)}
+                    placeholder={parkingType === "valet" ? "예: B1 가-15, 2층 3번" : "예: 1층 A-12, 지하 2층"} />
+                </div>
               </div>
             </div>
 
@@ -531,7 +531,7 @@ export default function CrewEntryPage() {
                       </span>
                     </div>
                   )}
-                  {parkingType === "valet" && parkingLocation && (
+                  {parkingLocation && (
                     <div className="summary-row">
                       <span className="summary-key">차량 위치</span>
                       <span className="summary-val">{parkingLocation}</span>
