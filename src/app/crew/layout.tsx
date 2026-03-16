@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { Metadata, Viewport } from "next";
 import { CrewToastProvider } from "@/components/crew/CrewToast";
+import BugReportFAB from "@/components/BugReportFAB";
 
 export const metadata: Metadata = {
   title: "미팍Ticket CREW",
@@ -66,6 +67,7 @@ export default function CrewLayout({
       <CrewToastProvider>
         {children}
       </CrewToastProvider>
+      <BugReportFAB />
     </div>
   );
 }

@@ -63,14 +63,19 @@ export default function BugReportFAB() {
   const PAGE_OPTIONS = [
     "/dashboard", "/parking-status", "/monthly", "/analytics", "/workers",
     "/stores", "/team", "/accident", "/bugs", "/settings", "/login",
-    "/crew", "/crew/entry", "/crew/parking-status", "/crew/attendance",
-    "/crew/accident", "/crew/monthly", "/ticket", "/scan",
+    "/crew", "/crew/entry", "/crew/entry/qr", "/crew/parking-status",
+    "/crew/parking-list", "/crew/attendance", "/crew/attendance/history",
+    "/crew/accident", "/crew/monthly", "/crew/monthly/register",
+    "/crew/leave", "/crew/settings", "/crew/guide",
+    "/ticket", "/scan",
   ];
 
   useEffect(() => {
     if (open && typeof window !== "undefined") {
       const path = window.location.pathname;
-      const matched = PAGE_OPTIONS.find(p => path.startsWith(p));
+      // 긴 경로부터 매칭 (e.g. /crew/entry가 /crew보다 먼저)
+      const sorted = [...PAGE_OPTIONS].sort((a, b) => b.length - a.length);
+      const matched = sorted.find(p => path.startsWith(p));
       setForm(f => ({ ...f, page_url: matched || "기타" }));
       if (!matched) setCustomPageUrl(path);
     }
@@ -405,10 +410,17 @@ export default function BugReportFAB() {
                   <optgroup label="CREW앱">
                     <option value="/crew">CREW 홈</option>
                     <option value="/crew/entry">CREW 입차등록</option>
+                    <option value="/crew/entry/qr">CREW QR발급</option>
                     <option value="/crew/parking-status">CREW 입차현황</option>
+                    <option value="/crew/parking-list">CREW 주차장목록</option>
                     <option value="/crew/attendance">CREW 출퇴근</option>
+                    <option value="/crew/attendance/history">CREW 출퇴근이력</option>
                     <option value="/crew/accident">CREW 사고보고</option>
                     <option value="/crew/monthly">CREW 월주차</option>
+                    <option value="/crew/monthly/register">CREW 월주차등록</option>
+                    <option value="/crew/leave">CREW 연차</option>
+                    <option value="/crew/settings">CREW 설정</option>
+                    <option value="/crew/guide">CREW 가이드</option>
                   </optgroup>
                   <optgroup label="미팍티켓">
                     <option value="/ticket">미팍티켓 고객화면</option>
