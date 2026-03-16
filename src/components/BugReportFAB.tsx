@@ -49,6 +49,7 @@ export default function BugReportFAB() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
   const [customPageUrl, setCustomPageUrl] = useState("");
+  const [screenshots, setScreenshots] = useState<{ file: File; preview: string }[]>([]);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -75,6 +76,25 @@ export default function BugReportFAB() {
     }
   }, [open]);
 
+  const handleScreenshots = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const remaining = 3 - screenshots.length;
+    const toAdd = files.slice(0, remaining);
+    const newItems = toAdd.map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setScreenshots(prev => [...prev, ...newItems]);
+    e.target.value = "";
+  };
+
+  const removeScreenshot = (idx: number) => {
+    setScreenshots(prev => {
+      URL.revokeObjectURL(prev[idx].preview);
+      return prev.filter((_, i) => i !== idx);
+    });
+  };
+
   const handleSubmit = async () => {
     if (!form.title.trim()) {
       setToast("제목을 입력해주세요");
@@ -96,7 +116,23 @@ export default function BugReportFAB() {
       const { data: { user } } = await supabase.auth.getUser();
       const resolvedPageUrl = form.page_url === "기타" ? customPageUrl : form.page_url;
 
-      // 1. DB에 제보 저장
+      // 1. 스크린샷 업로드
+      const screenshotUrls: string[] = [];
+      for (const ss of screenshots) {
+        const ext = ss.file.name.split(".").pop() || "png";
+        const path = `${ctx.orgId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("bug-screenshots")
+          .upload(path, ss.file, { contentType: ss.file.type });
+        if (!uploadErr) {
+          const { data: urlData } = supabase.storage
+            .from("bug-screenshots")
+            .getPublicUrl(path);
+          if (urlData?.publicUrl) screenshotUrls.push(urlData.publicUrl);
+        }
+      }
+
+      // 2. DB에 제보 저장
       const { data: inserted, error } = await supabase.from("bug_reports").insert({
         org_id: ctx.orgId,
         reporter_id: user?.id,
@@ -107,6 +143,7 @@ export default function BugReportFAB() {
         severity: form.severity,
         page_url: resolvedPageUrl,
         steps_to_reproduce: form.steps_to_reproduce.trim(),
+        screenshot_urls: screenshotUrls.length > 0 ? screenshotUrls : null,
         status: "open",
         user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "",
         screen_size: typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : "",
@@ -136,6 +173,8 @@ export default function BugReportFAB() {
         setOpen(false);
         setForm({ title: "", description: "", category: "", severity: "medium", page_url: "", steps_to_reproduce: "" });
         setCustomPageUrl("");
+        screenshots.forEach(s => URL.revokeObjectURL(s.preview));
+        setScreenshots([]);
       }, 1500);
     } catch (err) {
       console.error("Bug report error:", err);
@@ -379,6 +418,52 @@ export default function BugReportFAB() {
                     resize: "vertical", outline: "none", boxSizing: "border-box",
                   }}
                 />
+              </div>
+
+              {/* 스크린샷 첨부 */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ fontSize: 13, fontWeight: 700, color: "#1A1D2B", marginBottom: 6, display: "block" }}>
+                  스크린샷 (선택, 최대 3장)
+                </label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {screenshots.map((ss, i) => (
+                    <div key={i} style={{
+                      width: 80, height: 80, borderRadius: 10, overflow: "hidden",
+                      position: "relative", border: "1px solid #e2e8f0",
+                    }}>
+                      <img src={ss.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <button
+                        onClick={() => removeScreenshot(i)}
+                        style={{
+                          position: "absolute", top: 2, right: 2,
+                          width: 20, height: 20, borderRadius: 6,
+                          background: "rgba(0,0,0,0.6)", border: "none",
+                          color: "#fff", fontSize: 11, cursor: "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}
+                      >✕</button>
+                    </div>
+                  ))}
+                  {screenshots.length < 3 && (
+                    <label style={{
+                      width: 80, height: 80, borderRadius: 10,
+                      border: "2px dashed #cbd5e1", background: "#f8fafc",
+                      display: "flex", flexDirection: "column",
+                      alignItems: "center", justifyContent: "center",
+                      cursor: "pointer", gap: 2,
+                    }}>
+                      <span style={{ fontSize: 22, color: "#94a3b8" }}>📷</span>
+                      <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600 }}>추가</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleScreenshots}
+                        style={{ display: "none" }}
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
 
               {/* 제출 버튼 */}

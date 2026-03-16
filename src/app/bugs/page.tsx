@@ -219,6 +219,9 @@ export default function BugsPage() {
                       <span>{bug.page_url || "—"}</span>
                       <span>{bug.reporter_email?.split("@")[0] || "—"}</span>
                       <span>{formatDate(bug.created_at)}</span>
+                      {bug.screenshot_urls?.length > 0 && (
+                        <span style={{ color: "#6366F1" }}>📷 {bug.screenshot_urls.length}</span>
+                      )}
                     </div>
                     {/* AI 분석 미리보기 */}
                     {bug.ai_analysis && (
@@ -327,6 +330,23 @@ export default function BugsPage() {
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", marginBottom: 4 }}>재현 방법</div>
                   <div style={{ fontSize: 14, color: "#1e293b", lineHeight: 1.6, whiteSpace: "pre-wrap", background: "#F8FAFC", padding: "12px", borderRadius: 10 }}>
                     {selectedBug.steps_to_reproduce}
+                  </div>
+                </div>
+              )}
+
+              {/* 스크린샷 */}
+              {selectedBug.screenshot_urls && selectedBug.screenshot_urls.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", marginBottom: 6 }}>📷 스크린샷</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {selectedBug.screenshot_urls.map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{
+                        width: 120, height: 90, borderRadius: 10, overflow: "hidden",
+                        border: "1px solid #e2e8f0", display: "block", cursor: "zoom-in",
+                      }}>
+                        <img src={url} alt={`스크린샷 ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </a>
+                    ))}
                   </div>
                 </div>
               )}
