@@ -87,6 +87,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
       .select(`
         *,
         stores:store_id(name, road_address),
+        parking_lots:parking_lot_id(name),
         visit_places:visit_place_id(name, extra_fee, free_minutes, base_minutes, base_fee, daily_max, valet_fee)
       `)
       .eq("id", ticketId)
@@ -331,7 +332,11 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
           {/* 상세 정보 */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             {[
-              { label: "주차장", value: (store as Record<string, unknown>)?.name as string ?? "-" },
+              { label: "주차장", value:
+                ((ticket.parking_lots as Record<string, unknown>)?.name as string)
+                || (ticket.parking_location as string)
+                || "-"
+              },
               { label: "입차 시간", value: fmt(ticket.entry_at as string) },
               { label: "유형", value: ticket.parking_type === "valet" ? "발렛" : "일반" },
               {
