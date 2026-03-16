@@ -293,6 +293,7 @@ export default function CrewEntryPage() {
   const [visitPlaceId, setVisitPlaceId] = useState("");
   const [parkingLots, setParkingLots] = useState([]);
   const [parkingLotId, setParkingLotId] = useState("");
+  const [showLotAlert, setShowLotAlert] = useState(false);
   const [parkingLocation, setParkingLocation] = useState("");
   const [isFree, setIsFree] = useState(false);
 
@@ -427,6 +428,51 @@ export default function CrewEntryPage() {
       <style>{CSS}</style>
       <div className="entry-page">
         <CrewHeader title="입차 등록" showBack />
+
+        {/* ── 주차장 미선택 경고 팝업 ── */}
+        {showLotAlert && (
+          <div style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "0 24px",
+          }}>
+            <div style={{
+              background: "#fff", borderRadius: 16, padding: "28px 24px",
+              width: "100%", maxWidth: 360, textAlign: "center",
+            }}>
+              <div style={{ fontSize: 36, marginBottom: 12 }}>🅿️</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "#1A1D2B", marginBottom: 8 }}>
+                주차장을 선택해 주세요
+              </div>
+              <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.6, marginBottom: 24 }}>
+                주차장을 선택하면 고객 티켓에<br />정확한 위치가 표시됩니다.
+              </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => { setShowLotAlert(false); setStep(3); }}
+                  style={{
+                    flex: 1, height: 48, borderRadius: 10,
+                    border: "1.5px solid #E2E8F0", background: "#F8FAFC",
+                    fontSize: 14, fontWeight: 600, color: "#64748B", cursor: "pointer",
+                  }}
+                >
+                  그냥 진행
+                </button>
+                <button
+                  onClick={() => setShowLotAlert(false)}
+                  style={{
+                    flex: 2, height: 48, borderRadius: 10,
+                    border: "none", background: "#1428A0",
+                    fontSize: 14, fontWeight: 700, color: "#fff", cursor: "pointer",
+                  }}
+                >
+                  주차장 선택하기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── OCR 카메라 오버레이 ── */}
         {showCamera && (
@@ -683,7 +729,13 @@ export default function CrewEntryPage() {
 
             <div className="entry-footer">
               <button className="btn-secondary" onClick={() => setStep(1)}>← 이전</button>
-              <button className="btn-primary" onClick={() => setStep(3)}>다음 →</button>
+              <button className="btn-primary" onClick={() => {
+                if (parkingLots.length > 0 && !parkingLotId) {
+                  setShowLotAlert(true);
+                  return;
+                }
+                setStep(3);
+              }}>다음 →</button>
             </div>
           </>
         )}
