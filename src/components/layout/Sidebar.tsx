@@ -268,6 +268,12 @@ export default function Sidebar() {
       </nav>
 
       {/* Guide Button */}
+      <div style={{ padding: "0 14px 4px" }}>
+        <Link href="/bugs" className={`v3-nav-item ${isActive("/bugs") ? "active" : ""}`} style={{ background: isActive("/bugs") ? "rgba(220,38,38,0.15)" : "transparent" }}>
+          <span style={{ background: "#DC2626", width: 24, height: 24, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>🐛</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: isActive("/bugs") ? "#fff" : "rgba(255,255,255,0.6)" }}>오류보고</span>
+        </Link>
+      </div>
       <div style={{ padding: "0 14px 8px" }}>
         <Link href="/guide" className={`v3-nav-item v3-nav-highlight ${isActive("/guide") ? "active" : ""}`}>
           <span style={{ background: "#F5B731", width: 24, height: 24, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#0a1352", flexShrink: 0 }}>?</span>

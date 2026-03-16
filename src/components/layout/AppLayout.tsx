@@ -5,6 +5,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import MobileTabBar from "./MobileTabBar";
 import MoreSubNav from "./MoreSubNav";
+import BugReportFAB from "../BugReportFAB";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -51,6 +52,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* 모바일 하단 탭바 (768px 미만에서만 표시 - MobileTabBar 내부 className으로 처리) */}
       <MobileTabBar />
+
+      {/* 오류 제보 FAB (모든 페이지 항시 노출) */}
+      <BugReportFAB />
     </div>
   );
 }

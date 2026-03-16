@@ -450,10 +450,8 @@ export default function CrewEntryPage() {
               </div>
               <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.6, marginBottom: 24 }}>
                 {requiredAlertMsg === "방문지"
-                  ? "방문지를 선택하면 정확한 요금이
-적용됩니다."
-                  : "주차장을 선택하면 고객 티켓에
-정확한 위치가 표시됩니다."}
+                  ? "방문지를 선택하면 정확한 요금이 적용됩니다."
+                  : "주차장을 선택하면 고객 티켓에 정확한 위치가 표시됩니다."}
               </div>
               <button
                 onClick={() => setShowRequiredAlert(false)}

@@ -1765,7 +1765,7 @@ export default function StoresPage() {
         )}
 
         {/* ── 기본정보 탭 / 신규 추가 ── */}
-        {(storeModalTab === "기본정보" || !editingItem) && (
+        {(storeModalTab === "기본정보" || !editingItem) && (<>
         <div className="stores-grid-2col" style={{ display: "grid", gap: 16 }}>
           <FormGroup label="매장명">
             <Input value={storeForm.name} onChange={e => setStoreForm(f => ({ ...f, name: e.target.value }))} />
@@ -2225,7 +2225,7 @@ export default function StoresPage() {
             {editingItem ? "수정 완료" : "매장 추가"}
           </BtnPrimary>
         </div>
-        )} {/* end 기본정보 탭 */}
+        </>)} {/* end 기본정보 탭 */}
 
         {/* ── 주차장 탭 ── */}
         {editingItem && storeModalTab === "주차장" && (() => {
