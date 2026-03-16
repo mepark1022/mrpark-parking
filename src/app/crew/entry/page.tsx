@@ -648,7 +648,7 @@ export default function CrewEntryPage() {
               <div className="entry-section-body">
                 {visitPlaces.length > 0 && (
                   <div className="form-group">
-                    <label className="form-label">방문지 (선택)</label>
+                    <label className="form-label">방문지 (필수)</label>
                     <select className="form-select" value={visitPlaceId}
                       onChange={(e) => setVisitPlaceId(e.target.value)}>
                       <option value="">방문지 선택 안 함</option>
@@ -662,7 +662,7 @@ export default function CrewEntryPage() {
                 )}
                 {parkingLots.length > 0 && (
                   <div className="form-group">
-                    <label className="form-label">주차장 (선택)</label>
+                    <label className="form-label">주차장 (필수)</label>
                     <select className="form-select" value={parkingLotId}
                       onChange={(e) => setParkingLotId(e.target.value)}>
                       <option value="">주차장 선택 안 함</option>
