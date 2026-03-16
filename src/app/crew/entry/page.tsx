@@ -355,9 +355,12 @@ export default function CrewEntryPage() {
       .eq("status", "active")
       .single();
     setMonthlyChecking(false);
+    setIsFree(false); // 번호판 변경 시 무료처리 항상 OFF 초기화
     if (data) {
       const daysLeft = Math.ceil((new Date(data.end_date) - new Date()) / 86400000);
       setMonthlyInfo({ id: data.id, name: data.customer_name, endDate: data.end_date, daysLeft });
+    } else {
+      setMonthlyInfo(null);
     }
   };
 
