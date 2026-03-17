@@ -7,6 +7,8 @@ import { getUserContext } from "@/lib/utils/org";
 
 export type OnboardingRole = "admin" | "crew" | null;
 
+const LS_KEY = "mepark_onboarding_done";
+
 export function useOnboarding() {
   const [showTour, setShowTour] = useState(false);
   const [role, setRole] = useState<OnboardingRole>(null);
@@ -18,6 +20,12 @@ export function useOnboarding() {
 
   async function checkOnboardingStatus() {
     try {
+      // localStorage 우선 체크 (가장 빠름)
+      if (typeof window !== "undefined" && localStorage.getItem(LS_KEY) === "true") {
+        setLoading(false);
+        return;
+      }
+
       const supabase = createClient();
       const ctx = await getUserContext();
       if (!ctx.userId) { setLoading(false); return; }
@@ -29,8 +37,12 @@ export function useOnboarding() {
         .eq("id", ctx.userId)
         .single();
 
-      // 완료된 경우 투어 안 보여줌
-      if (profile?.onboarding_completed) { setLoading(false); return; }
+      // 완료된 경우 투어 안 보여줌 + localStorage 동기화
+      if (profile?.onboarding_completed) {
+        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, "true");
+        setLoading(false);
+        return;
+      }
 
       // role 결정
       const userRole = profile?.role || ctx.role;
@@ -45,6 +57,11 @@ export function useOnboarding() {
   }
 
   async function completeOnboarding() {
+    // 1. localStorage 즉시 저장 (DB 실패해도 다시 안 뜸)
+    if (typeof window !== "undefined") localStorage.setItem(LS_KEY, "true");
+    setShowTour(false);
+
+    // 2. DB 저장 (실패해도 무시)
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -58,9 +75,7 @@ export function useOnboarding() {
         })
         .eq("id", user.id);
     } catch (e) {
-      console.error("온보딩 완료 저장 실패:", e);
-    } finally {
-      setShowTour(false);
+      console.error("온보딩 완료 DB 저장 실패 (localStorage로 대체됨):", e);
     }
   }
 
