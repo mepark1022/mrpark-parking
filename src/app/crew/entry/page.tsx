@@ -587,9 +587,9 @@ export default function CrewEntryPage() {
                     ref={korRef}
                     className="plate-split-kor-input"
                     value={plateKor}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      const kor = v.replace(/[^가-힣]/g, "").slice(-1);
+                    onChange={(e) => setPlateKor(e.target.value)}
+                    onCompositionEnd={(e) => {
+                      const kor = (e.target as HTMLInputElement).value.replace(/[^가-힣]/g, "").slice(-1);
                       setPlateKor(kor);
                       const combined = combinePlate(platePart1, kor, platePart2);
                       setPlateNumber(combined);
@@ -599,7 +599,16 @@ export default function CrewEntryPage() {
                     placeholder="한글"
                     autoComplete="off"
                     onFocus={() => setSplitFocused(true)}
-                    onBlur={() => setSplitFocused(false)}
+                    onBlur={() => {
+                      const kor = plateKor.replace(/[^가-힣]/g, "").slice(-1);
+                      setPlateKor(kor);
+                      if (kor) {
+                        const combined = combinePlate(platePart1, kor, platePart2);
+                        setPlateNumber(combined);
+                        handlePlateChange(combined);
+                      }
+                      setSplitFocused(false);
+                    }}
                     style={{
                       width: 48, height: 44, border: "none", outline: "none",
                       fontSize: 22, fontWeight: 800, color: "#1A1D2B",
