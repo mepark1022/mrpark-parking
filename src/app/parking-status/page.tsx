@@ -244,8 +244,8 @@ export default function ParkingStatusPage() {
     const [{data:peData},{data:mtData},zombieResult]=await Promise.all([q1,q2,q3]);
     const zombieData=zombieResult?.data||[];
 
-    // CREW 이름 조회 (display_name 우선 → name 폴백)
-    const crewIds=[...new Set((mtData||[]).map(t=>t.entry_crew_id).filter(Boolean))];
+    // CREW 이름 조회 (display_name 우선 → name 폴백) — 오늘 티켓 + 좀비 티켓 모두 포함
+    const crewIds=[...new Set([...(mtData||[]),...zombieData].map(t=>t.entry_crew_id).filter(Boolean))];
     let crewMap:Record<string,string>={};
     if(crewIds.length>0){
       const{data:profiles}=await supabase.from("profiles").select("id,name,display_name").in("id",crewIds);
@@ -329,7 +329,14 @@ export default function ParkingStatusPage() {
   },[filtered]);
 
   const maxHour=Math.max(...hourlyData.map(d=>d.count),1);
-  const entryWorkers=workers.filter(w=>[...new Set(entries.map(e=>e.worker_id))].includes(w.id));
+  // entries 데이터에서 등록자 목록 추출 (workers 테이블 + profiles 모두 대응)
+  const entryWorkers=useMemo(()=>{
+    const map=new Map<string,string>();
+    entries.forEach(e=>{
+      if(e.worker_id && e.workers?.name) map.set(e.worker_id, e.workers.name);
+    });
+    return Array.from(map, ([id,name])=>({id,name})).sort((a,b)=>a.name.localeCompare(b.name));
+  },[entries]);
 
   const kpiCards=[
     {icon:"🚗",label:"총 입차",value:kpi.total,unit:"대",color:C.textPrimary,bg:`${C.navy}10`},
