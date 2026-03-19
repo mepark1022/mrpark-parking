@@ -4,6 +4,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { unlockAudio, playExitRequestSound } from "@/lib/utils/sound";
 
 /* ── SVG 아이콘 ── */
 const IconHome = ({ active }: { active: boolean }) => (
@@ -56,6 +57,17 @@ export default function CrewBottomNav() {
   const router = useRouter();
   const [exitReqCount, setExitReqCount] = useState(0);
 
+  // 모바일 AudioContext unlock (첫 터치 시)
+  useEffect(() => {
+    const handler = () => unlockAudio();
+    document.addEventListener("touchstart", handler, { once: true });
+    document.addEventListener("click", handler, { once: true });
+    return () => {
+      document.removeEventListener("touchstart", handler);
+      document.removeEventListener("click", handler);
+    };
+  }, []);
+
   // 전역 출차요청 폴링 (모든 CREW 페이지에서 동작)
   useEffect(() => {
     let prevCount = -1; // -1 = 초기 로드 (알림 안 보냄)
@@ -76,9 +88,11 @@ export default function CrewBottomNav() {
         .eq("status", "exit_requested");
       const count = data?.length || 0;
 
-      // 새 출차요청 감지 → 브라우저 알림 + 진동
+      // 새 출차요청 감지 → 소리 + 브라우저 알림 + 진동
       if (count > prevCount && prevCount >= 0) {
-        if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        // 🔊 소리 알림 (크게 3톤 비프)
+        playExitRequestSound();
+        if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
         if (typeof Notification !== "undefined" && Notification.permission === "granted") {
           const plate = data?.[0]?.plate_number || "차량";
           const diff = count - prevCount;
