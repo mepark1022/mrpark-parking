@@ -58,14 +58,16 @@ const ADMIN_STEPS = [
 
 // ─── 말풍선 위치 계산 ──────────────────────────────────────────
 function getBubbleStyle(highlight: string | null, position: string) {
-  if (!highlight || position === "center") {
+  // 모바일에서는 항상 중앙
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  if (!highlight || position === "center" || isMobile) {
     return {
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)",
     };
   }
-  // 사이드바 메뉴 기준 — 사이드바 240px 우측에 말풍선
+  // PC: 사이드바 메뉴 기준 — 사이드바 240px 우측에 말풍선
   return {
     top: "50%",
     left: "260px",
@@ -89,6 +91,8 @@ function HighlightRing({ selector }: { selector: string | null }) {
   }, [selector]);
 
   if (!rect) return null;
+  // 모바일에서는 사이드바가 없으므로 하이라이트 링 숨김
+  if (typeof window !== "undefined" && window.innerWidth < 768) return null;
 
   return (
     <div
@@ -184,12 +188,13 @@ export default function OnboardingTour({ role, onComplete }: OnboardingTourProps
         style={{
           position: "fixed",
           zIndex: 10000,
-          width: 300,
+          width: typeof window !== "undefined" && window.innerWidth < 768 ? "calc(100vw - 48px)" : 300,
+          maxWidth: 340,
           background: "#fff",
           borderRadius: 20,
           boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
           padding: "28px 24px 20px",
-          animation: current.position === "center"
+          animation: (current.position === "center" || (typeof window !== "undefined" && window.innerWidth < 768))
             ? "onboarding-fadein-center 0.25s ease"
             : "onboarding-fadein 0.25s ease",
           ...bubbleStyle,
