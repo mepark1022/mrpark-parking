@@ -235,7 +235,9 @@ export default function ParkingStatusPage() {
     const todayStart=`${selectedDate}T00:00:00`;
     let q3=supabase.from("mepark_tickets")
       .select("id,plate_number,parking_type,status,entry_at,exit_at,store_id,entry_crew_id,parking_location,is_monthly,is_free,visit_place_id,entry_method,stores:store_id(name),visit_places:visit_place_id(name,floor)")
+      .eq("org_id",ctx.orgId)
       .lt("entry_at",todayStart)  // 오늘 이전 날짜만
+      .in("status",["parking","pre_paid","exit_requested","car_ready","overdue"])  // 미출차 티켓만
       .order("entry_at",{ascending:false});
     if(selectedStore) q3=q3.eq("store_id",selectedStore);
 
