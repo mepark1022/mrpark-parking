@@ -265,7 +265,7 @@ export default function CrewEntryPage() {
   };
 
   // Step 2
-  const [parkingType, setParkingType] = useState("self");
+  const [parkingType, setParkingType] = useState("valet");
   const [visitPlaces, setVisitPlaces] = useState([]);
   const [visitPlaceId, setVisitPlaceId] = useState("");
   const [parkingLots, setParkingLots] = useState([]);
