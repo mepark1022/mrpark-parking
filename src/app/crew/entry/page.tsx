@@ -300,6 +300,7 @@ export default function CrewEntryPage() {
         .from("visit_places").select("id, name, floor, free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee")
         .eq("store_id", savedStoreId).order("name");
       setVisitPlaces(places || []);
+      if (places && places.length === 1) setVisitPlaceId(places[0].id);
 
       const { data: storeData } = await supabase
         .from("stores").select("free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee")
@@ -310,6 +311,7 @@ export default function CrewEntryPage() {
         .from("parking_lots").select("id, name")
         .eq("store_id", savedStoreId).order("name");
       setParkingLots(lots || []);
+      if (lots && lots.length === 1) setParkingLotId(lots[0].id);
     };
     init();
   }, []);
