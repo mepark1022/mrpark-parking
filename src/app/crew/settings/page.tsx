@@ -17,7 +17,13 @@ export default function CrewSettingsPage() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [defaultParkingType, setDefaultParkingType] = useState("valet");
   const router = useRouter();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("crew_default_parking_type");
+    if (saved) setDefaultParkingType(saved);
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -335,6 +341,35 @@ export default function CrewSettingsPage() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 18l6-6-6-6" />
               </svg>
+            </div>
+            <div className="settings-item" style={{ cursor: "default" }}>
+              <div className="settings-item-left">
+                <div className="settings-item-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1428A0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                  </svg>
+                </div>
+                <span className="settings-item-text">기본 주차유형</span>
+              </div>
+              <div style={{ display: "flex", background: "#F1F5F9", borderRadius: 8, overflow: "hidden" }}>
+                {[
+                  { val: "valet", label: "발렛" },
+                  { val: "self", label: "자주식" },
+                ].map(t => (
+                  <button key={t.val}
+                    onClick={() => {
+                      setDefaultParkingType(t.val);
+                      localStorage.setItem("crew_default_parking_type", t.val);
+                    }}
+                    style={{
+                      padding: "6px 14px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer",
+                      background: defaultParkingType === t.val ? "#1428A0" : "transparent",
+                      color: defaultParkingType === t.val ? "#fff" : "#64748B",
+                      borderRadius: 6, transition: "all 0.2s",
+                    }}
+                  >{t.label}</button>
+                ))}
+              </div>
             </div>
           </div>
 

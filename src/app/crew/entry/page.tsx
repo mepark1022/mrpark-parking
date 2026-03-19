@@ -265,7 +265,10 @@ export default function CrewEntryPage() {
   };
 
   // Step 2
-  const [parkingType, setParkingType] = useState("valet");
+  const [parkingType, setParkingType] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("crew_default_parking_type") || "valet";
+    return "valet";
+  });
   const [visitPlaces, setVisitPlaces] = useState([]);
   const [visitPlaceId, setVisitPlaceId] = useState("");
   const [parkingLots, setParkingLots] = useState([]);
@@ -816,8 +819,8 @@ export default function CrewEntryPage() {
               <div className="entry-section-body">
                 <div className="type-toggle">
                   {[
-                    { val: "self", icon: "🏢", label: "자주식", desc: "고객 직접 주차" },
                     { val: "valet", icon: "🔑", label: "발렛", desc: "크루가 주차" },
+                    { val: "self", icon: "🏢", label: "자주식", desc: "고객 직접 주차" },
                   ].map(t => (
                     <div
                       key={t.val}
