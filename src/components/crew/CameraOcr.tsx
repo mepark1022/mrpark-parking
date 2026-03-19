@@ -46,9 +46,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // 멀티프레임 캡처 진행률 (0=대기, 1~3=캡처중, 4=분석중)
   const [multiProgress, setMultiProgress] = useState(0);
-  // 한글 수정 팝업 (? 감지 시)
-  const [koreanEdit, setKoreanEdit] = useState(false);
-  const [koreanVal, setKoreanVal] = useState("");
+  // (koreanEdit 제거 — ? 감지 시 직접 입력으로 전환)
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -221,12 +219,15 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
       if (best) {
         setDetected(best.plate);
         setCandidates(best.candidates);
-        setPhase(STATES.CONFIRMING);
         stopCamera();
         navigator.vibrate?.([100, 50, 100]);
         if (best.plate.includes("?")) {
-          setKoreanVal("");
-          setKoreanEdit(true);
+          // 한글 인식 실패 → 직접 입력으로 전환 (OCR 결과에서 ? 제거하고 프리필)
+          setManualVal(best.plate.replace(/\?/g, ""));
+          setManualInput(true);
+          setPhase(STATES.IDLE);
+        } else {
+          setPhase(STATES.CONFIRMING);
         }
       } else {
         navigator.vibrate?.([300]);
@@ -256,8 +257,6 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     setScanLine(0);
     setDetected(null);
     setErrorMsg(null);
-    setKoreanEdit(false);
-    setKoreanVal("");
     setMultiProgress(0);
   }, [stopCamera]);
 
@@ -432,7 +431,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
             <button onClick={startScan} style={{ width: "100%", padding: "16px 0", background: "#F5B731", border: "none", borderRadius: 12, fontSize: 17, fontWeight: 800, color: "#1A1D2B", cursor: "pointer" }}>
               📷 번호판 스캔
             </button>
-            <button onClick={() => setManualInput(true)} style={{ background: "none", border: "1.5px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "11px 0", width: "100%", color: "rgba(255,255,255,0.65)", fontSize: 14, cursor: "pointer" }}>
+            <button onClick={() => { setManualVal(""); setManualInput(true); }} style={{ background: "none", border: "1.5px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "11px 0", width: "100%", color: "rgba(255,255,255,0.65)", fontSize: 14, cursor: "pointer" }}>
               직접 입력
             </button>
           </div>
@@ -463,14 +462,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         {phase === STATES.CONFIRMING && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, margin: "0 0 2px", textAlign: "center" }}>인식된 번호판이 맞나요?</p>
-            {/* ? 포함 시 한글 수정 안내 */}
-            {detected?.includes("?") && (
-              <div style={{ background: "rgba(245,183,49,0.15)", border: "1.5px solid rgba(245,183,49,0.4)", borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ color: "#F5B731", fontSize: 12 }}>⚠️ 한글 인식 실패 — 직접 입력해주세요</span>
-                <button onClick={() => { setKoreanVal(""); setKoreanEdit(true); }} style={{ background: "#F5B731", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 700, color: "#1A1D2B", cursor: "pointer" }}>수정</button>
-              </div>
-            )}
-            <button onClick={() => confirm(detected!)} disabled={!!detected?.includes("?")} style={{ width: "100%", padding: "15px 0", background: detected?.includes("?") ? "rgba(255,255,255,0.1)" : "#16A34A", border: "none", borderRadius: 12, fontSize: 17, fontWeight: 800, color: detected?.includes("?") ? "rgba(255,255,255,0.3)" : "#fff", cursor: detected?.includes("?") ? "default" : "pointer" }}>
+            <button onClick={() => confirm(detected!)} style={{ width: "100%", padding: "15px 0", background: "#16A34A", border: "none", borderRadius: 12, fontSize: 17, fontWeight: 800, color: "#fff", cursor: "pointer" }}>
               ✅ {detected} — 맞습니다
             </button>
             {candidates.length > 0 && (
@@ -486,8 +478,8 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
               <button onClick={startScan} style={{ flex: 1, padding: "11px 0", background: "rgba(245,183,49,0.15)", border: "1.5px solid #F5B731", borderRadius: 10, color: "#F5B731", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                 🔄 재스캔
               </button>
-              <button onClick={() => { setManualInput(true); setPhase(STATES.IDLE); }} style={{ flex: 1, padding: "11px 0", background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 10, color: "rgba(255,255,255,0.55)", fontSize: 13, cursor: "pointer" }}>
-                ✏️ 직접입력
+              <button onClick={() => { setManualVal(detected || ""); setManualInput(true); setPhase(STATES.IDLE); }} style={{ flex: 1, padding: "11px 0", background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 10, color: "rgba(255,255,255,0.55)", fontSize: 13, cursor: "pointer" }}>
+                ✏️ 직접수정
               </button>
             </div>
           </div>
@@ -515,125 +507,33 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         )}
       </div>
 
-      {/* 한글 수정 팝업 (? 감지 시 자동 표시) */}
-      {koreanEdit && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "flex-end" }}>
-          <div style={{ width: "100%", background: "#1a1a2e", borderRadius: "20px 20px 0 0", padding: "28px 24px 48px", border: "1.5px solid rgba(245,183,49,0.3)", boxSizing: "border-box" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-              <span style={{ color: "#fff", fontWeight: 800, fontSize: 17 }}>한글 문자 입력</span>
-              <button onClick={() => setKoreanEdit(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 20, cursor: "pointer" }}>✕</button>
-            </div>
-            <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, margin: "0 0 16px" }}>
-              번호판 중간 한글을 입력해주세요 (예: 가, 나, 허 등)
-            </p>
-
-            {/* 후보 번호판이 있을 때 — 패턴 선택 먼저 */}
-            {candidates.filter(c => c.includes("?")).length > 0 && (
-              <div style={{ marginBottom: 16, background: "rgba(245,183,49,0.1)", border: "1.5px solid rgba(245,183,49,0.3)", borderRadius: 12, padding: "12px 14px" }}>
-                <p style={{ color: "#F5B731", fontSize: 12, fontWeight: 700, margin: "0 0 10px" }}>
-                  ⚠️ 번호판 자릿수를 선택해주세요
-                </p>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {[detected, ...candidates.filter(c => c.includes("?"))].filter(Boolean).map((cand, i) => (
-                    <button key={i} onClick={() => { setDetected(cand!); setKoreanVal(""); }}
-                      style={{ flex: 1, padding: "12px 6px", background: detected === cand ? "#F5B731" : "rgba(255,255,255,0.07)", border: detected === cand ? "2px solid #F5B731" : "1.5px solid rgba(255,255,255,0.2)", borderRadius: 10, color: detected === cand ? "#1A1D2B" : "rgba(255,255,255,0.8)", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace", letterSpacing: 2 }}>
-                      {cand?.replace("?", "□")}
-                      <div style={{ fontSize: 10, fontWeight: 600, marginTop: 4, fontFamily: "sans-serif", letterSpacing: 0 }}>
-                        {cand === detected ? (i === 0 ? "신형(3자리)" : "구형(2자리)") : "구형(2자리)"}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 현재 번호판 미리보기 */}
-            <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 0", textAlign: "center", marginBottom: 16, fontFamily: "monospace", fontSize: 22, fontWeight: 900, color: "#fff", letterSpacing: 4 }}>
-              {detected?.replace("?", koreanVal || "□")}
-            </div>
-            {/* 자주 쓰는 한글 빠른 선택 (한국 번호판 전체 38자) */}
-            <div style={{ marginBottom: 14 }}>
-              {/* 자가용 기본 (가~자) */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
-                {["가","나","다","라","마","바","사","아","자"].map(ch => (
-                  <button key={ch} onClick={() => setKoreanVal(ch)} style={{ padding: "9px 0", background: koreanVal === ch ? "#F5B731" : "rgba(255,255,255,0.1)", border: koreanVal === ch ? "2px solid #F5B731" : "1.5px solid rgba(255,255,255,0.2)", borderRadius: 8, color: koreanVal === ch ? "#1A1D2B" : "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", minWidth: 38, flex: "1 0 38px", textAlign: "center" }}>
-                    {ch}
-                  </button>
-                ))}
-              </div>
-              {/* 거~저 */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
-                {["거","너","더","러","머","버","서","어","저"].map(ch => (
-                  <button key={ch} onClick={() => setKoreanVal(ch)} style={{ padding: "9px 0", background: koreanVal === ch ? "#F5B731" : "rgba(255,255,255,0.08)", border: koreanVal === ch ? "2px solid #F5B731" : "1.5px solid rgba(255,255,255,0.15)", borderRadius: 8, color: koreanVal === ch ? "#1A1D2B" : "rgba(255,255,255,0.8)", fontSize: 15, fontWeight: 700, cursor: "pointer", minWidth: 38, flex: "1 0 38px", textAlign: "center" }}>
-                    {ch}
-                  </button>
-                ))}
-              </div>
-              {/* 고~조 */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
-                {["고","노","도","로","모","보","소","오","조"].map(ch => (
-                  <button key={ch} onClick={() => setKoreanVal(ch)} style={{ padding: "9px 0", background: koreanVal === ch ? "#F5B731" : "rgba(255,255,255,0.08)", border: koreanVal === ch ? "2px solid #F5B731" : "1.5px solid rgba(255,255,255,0.15)", borderRadius: 8, color: koreanVal === ch ? "#1A1D2B" : "rgba(255,255,255,0.8)", fontSize: 15, fontWeight: 700, cursor: "pointer", minWidth: 38, flex: "1 0 38px", textAlign: "center" }}>
-                    {ch}
-                  </button>
-                ))}
-              </div>
-              {/* 구~주 */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
-                {["구","누","두","루","무","부","수","우","주"].map(ch => (
-                  <button key={ch} onClick={() => setKoreanVal(ch)} style={{ padding: "9px 0", background: koreanVal === ch ? "#F5B731" : "rgba(255,255,255,0.08)", border: koreanVal === ch ? "2px solid #F5B731" : "1.5px solid rgba(255,255,255,0.15)", borderRadius: 8, color: koreanVal === ch ? "#1A1D2B" : "rgba(255,255,255,0.8)", fontSize: 15, fontWeight: 700, cursor: "pointer", minWidth: 38, flex: "1 0 38px", textAlign: "center" }}>
-                    {ch}
-                  </button>
-                ))}
-              </div>
-              {/* 렌터카/택시: 하 허 호 배 */}
-              <div style={{ display: "flex", gap: 6 }}>
-                {["하","허","호","배"].map(ch => (
-                  <button key={ch} onClick={() => setKoreanVal(ch)} style={{ padding: "9px 0", background: koreanVal === ch ? "#F5B731" : "rgba(245,183,49,0.08)", border: koreanVal === ch ? "2px solid #F5B731" : "1.5px solid rgba(245,183,49,0.25)", borderRadius: 8, color: koreanVal === ch ? "#1A1D2B" : "#F5B731", fontSize: 15, fontWeight: 700, cursor: "pointer", minWidth: 38, width: 52, textAlign: "center" }}>
-                    {ch}
-                  </button>
-                ))}
-                <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, alignSelf: "center", marginLeft: 4 }}>렌터카/택시</span>
-              </div>
-            </div>
-            {/* 직접 입력 */}
-            <input
-              value={koreanVal}
-              onChange={(e) => setKoreanVal(e.target.value.slice(-1))}
-              placeholder="한글 1자 직접 입력"
-              style={{ width: "100%", padding: "12px 16px", fontSize: 18, background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 10, color: "#fff", outline: "none", boxSizing: "border-box", textAlign: "center", marginBottom: 12 }}
-            />
-            <button
-              onClick={() => {
-                if (koreanVal) {
-                  const fixed = detected?.replace("?", koreanVal) ?? "";
-                  setDetected(fixed);
-                  setKoreanEdit(false);
-                }
-              }}
-              style={{ width: "100%", padding: "15px 0", background: koreanVal ? "#16A34A" : "rgba(255,255,255,0.1)", border: "none", borderRadius: 12, fontSize: 16, fontWeight: 800, color: koreanVal ? "#fff" : "rgba(255,255,255,0.3)", cursor: koreanVal ? "pointer" : "default" }}
-            >
-              ✅ 확인 — {detected?.replace("?", koreanVal || "□")}
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* 직접 입력 모달 */}
       {manualInput && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end" }}>
           <div style={{ width: "100%", background: "#1a1a2e", borderRadius: "20px 20px 0 0", padding: "28px 24px 48px", border: "1.5px solid rgba(255,255,255,0.12)", boxSizing: "border-box" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <span style={{ color: "#fff", fontWeight: 800, fontSize: 17 }}>번호판 직접 입력</span>
               <button onClick={() => setManualInput(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 20, cursor: "pointer" }}>✕</button>
             </div>
+            {/* OCR 인식 결과가 있으면 안내 */}
+            {detected && (
+              <div style={{ background: "rgba(245,183,49,0.1)", border: "1.5px solid rgba(245,183,49,0.3)", borderRadius: 10, padding: "8px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 14 }}>📷</span>
+                <span style={{ color: "#F5B731", fontSize: 12, fontWeight: 600 }}>
+                  OCR 인식: <span style={{ fontFamily: "monospace", fontWeight: 800, letterSpacing: 1, fontSize: 14 }}>{detected}</span>
+                  {detected.includes("?") && " — 한글 부분을 수정해주세요"}
+                </span>
+              </div>
+            )}
             <input
               value={manualVal}
               onChange={(e) => setManualVal(e.target.value)}
-              placeholder="예) 123가 4567"
+              placeholder="예) 123가4567"
+              autoFocus
               style={{ width: "100%", padding: "14px 16px", fontSize: 20, background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(245,183,49,0.6)", borderRadius: 12, color: "#fff", outline: "none", boxSizing: "border-box", letterSpacing: 3, fontFamily: "monospace", fontWeight: 700, textAlign: "center" }}
             />
             <button
-              onClick={() => { if (manualVal.trim()) { confirm(manualVal.trim()); setManualInput(false); } }}
+              onClick={() => { if (manualVal.trim()) { confirm(manualVal.trim().toUpperCase().replace(/\s/g, "")); setManualInput(false); } }}
               style={{ width: "100%", marginTop: 14, padding: "15px 0", background: manualVal.trim() ? "#F5B731" : "rgba(255,255,255,0.1)", border: "none", borderRadius: 12, fontSize: 16, fontWeight: 800, color: manualVal.trim() ? "#1A1D2B" : "rgba(255,255,255,0.3)", cursor: manualVal.trim() ? "pointer" : "default" }}
             >
               입차 등록
