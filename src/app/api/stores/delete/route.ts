@@ -11,8 +11,8 @@ export async function POST(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // FK 참조 테이블 순서대로 삭제
-  const tables = [
+  // FK 참조 테이블 순서대로 삭제 (store_id 기반)
+  const storeIdTables = [
     "accident_reports",
     "worker_assignments",
     "worker_attendance",
@@ -21,12 +21,7 @@ export async function POST(req: NextRequest) {
     "hourly_data",
     "monthly_parking",
     "parking_entries",
-    // mepark_tickets 참조 테이블 먼저
-    "alimtalk_send_logs",
-    "payment_records",
     "exit_requests",
-    // 이후 mepark_tickets
-    "mepark_tickets",
     "invitations",
     "store_members",
     "visit_places",
@@ -37,10 +32,31 @@ export async function POST(req: NextRequest) {
     "parking_lots",
   ];
 
-  for (const table of tables) {
+  // mepark_tickets를 참조하는 테이블은 ticket_id 기반 삭제 필요
+  // 먼저 해당 매장의 티켓 ID 목록 조회
+  const { data: tickets } = await supabase
+    .from("mepark_tickets").select("id").eq("store_id", storeId);
+  const ticketIds = (tickets || []).map(t => t.id);
+
+  if (ticketIds.length > 0) {
+    for (const table of ["alimtalk_send_logs", "payment_records"]) {
+      const { error } = await supabase.from(table).delete().in("ticket_id", ticketIds);
+      if (error && error.code !== "42703") {
+        console.error(`[deleteStore] ${table} 삭제 실패:`, error.message);
+      }
+    }
+  }
+
+  // mepark_tickets 삭제
+  {
+    const { error } = await supabase.from("mepark_tickets").delete().eq("store_id", storeId);
+    if (error) console.error(`[deleteStore] mepark_tickets 삭제 실패:`, error.message);
+  }
+
+  // 나머지 store_id 기반 테이블 삭제
+  for (const table of storeIdTables) {
     const { error } = await supabase.from(table).delete().eq("store_id", storeId);
     if (error) {
-      // 테이블에 store_id 컬럼 없으면 무시 (42703: column does not exist)
       if (error.code !== "42703") {
         console.error(`[deleteStore] ${table} 삭제 실패:`, error.message);
       }
