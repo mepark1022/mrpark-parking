@@ -446,7 +446,10 @@ export default function CrewParkingListPage() {
         {/* ─── 출차요청 고정 배너 ─── */}
         {exitReqCount > 0 && (
           <div
-            onClick={() => setActiveTab("valet")}
+            onClick={() => {
+              const firstExit = tickets.find(t => t.status === "exit_requested");
+              if (firstExit) router.push(`/crew/parking-list/${firstExit.id}`);
+            }}
             style={{
               position: "sticky", top: 56, zIndex: 50,
               background: "#EA580C", color: "#fff",
