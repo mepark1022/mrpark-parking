@@ -190,6 +190,7 @@ export default function CrewEntryPage() {
   const [storeId, setStoreId] = useState(null);
   const [orgId, setOrgId] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [storeFee, setStoreFee] = useState(null);
 
   // OCR 카메라
   const [showCamera, setShowCamera] = useState(false);
@@ -293,9 +294,14 @@ export default function CrewEntryPage() {
       if (profile) setOrgId(profile.org_id);
 
       const { data: places } = await supabase
-        .from("visit_places").select("id, name, floor")
+        .from("visit_places").select("id, name, floor, free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee")
         .eq("store_id", savedStoreId).order("name");
       setVisitPlaces(places || []);
+
+      const { data: storeData } = await supabase
+        .from("stores").select("free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee")
+        .eq("id", savedStoreId).single();
+      if (storeData) setStoreFee(storeData);
 
       const { data: lots } = await supabase
         .from("parking_lots").select("id, name")
@@ -946,7 +952,15 @@ export default function CrewEntryPage() {
                   <div className="summary-row">
                     <span className="summary-key">요금</span>
                     <span className="summary-val" style={{ color: isFree ? "#16A34A" : "#1A1D2B", fontWeight: 700 }}>
-                      {isFree ? "🆓 무료 처리" : "요금 적용"}
+                      {isFree ? "🆓 무료 처리" : (() => {
+                        const feeData = (visitPlaceId ? visitPlaces.find(p => p.id === visitPlaceId) : null) || storeFee;
+                        if (!feeData) return "요금 적용";
+                        const valetAmt = parkingType === "valet" ? (feeData.valet_fee || 0) : 0;
+                        const parts = [];
+                        if (feeData.base_fee > 0) parts.push(`기본 ₩${feeData.base_fee.toLocaleString()}`);
+                        if (valetAmt > 0) parts.push(`발렛 ₩${valetAmt.toLocaleString()}`);
+                        return parts.length > 0 ? parts.join(" + ") : "요금 적용";
+                      })()}
                     </span>
                   </div>
                   {visitPlaceId && (

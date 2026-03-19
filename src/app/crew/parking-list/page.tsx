@@ -328,7 +328,8 @@ export default function CrewParkingListPage() {
       .select(`
         id, plate_number, plate_last4, parking_type, status,
         entry_at, pre_paid_at, parking_location, is_monthly, paid_amount,
-        visit_place_id, visit_places(name, free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee)
+        visit_place_id, visit_places(name, free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee),
+        stores:store_id(free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee)
       `)
       .eq("store_id", sid)
       .neq("status", "completed")
@@ -353,7 +354,8 @@ export default function CrewParkingListPage() {
         id, plate_number, plate_last4, parking_type, status,
         entry_at, exit_at, parking_location, is_monthly, paid_amount,
         entry_method, entry_crew_id, exit_crew_id,
-        visit_place_id, visit_places(name, free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee)
+        visit_place_id, visit_places(name, free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee),
+        stores:store_id(free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee)
       `)
       .eq("store_id", sid)
       .eq("status", "completed")
@@ -646,10 +648,11 @@ export default function CrewParkingListPage() {
                 : { label: "자주식", bg: "#EEF2FF", color: "#1428A0" };
 
               const vp = ticket.visit_places;
+              const feeSource = vp || ticket.stores;
               let estFee = ticket.paid_amount || null;
-              if (!estFee && !ticket.is_monthly && vp) {
-                const valetFee = ticket.parking_type === "valet" ? (vp.valet_fee || 0) : 0;
-                estFee = (feeFromMinutes(mins, vp) || 0) + valetFee;
+              if (!estFee && !ticket.is_monthly && feeSource) {
+                const valetFee = ticket.parking_type === "valet" ? (feeSource.valet_fee || 0) : 0;
+                estFee = (feeFromMinutes(mins, feeSource) || 0) + valetFee;
               }
               const entryTime = new Date(ticket.entry_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 

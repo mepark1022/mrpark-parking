@@ -274,7 +274,8 @@ export default function CrewTicketDetailPage() {
         paid_amount, calculated_fee, additional_fee, payment_method,
         monthly_parking_id,
         visit_places(id, name, floor, free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee),
-        parking_lots(id, name)
+        parking_lots(id, name),
+        stores:store_id(free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee)
       `)
       .eq("id", id)
       .single();
@@ -321,7 +322,7 @@ export default function CrewTicketDetailPage() {
   /* ── 출차 완료 ── */
   const handleCheckout = async () => {
     setActionLoading(true);
-    const fee = ticket.is_monthly ? 0 : calcFee(ticket.entry_at, ticket.visit_places, ticket.parking_type);
+    const fee = ticket.is_monthly ? 0 : calcFee(ticket.entry_at, ticket.visit_places || ticket.stores, ticket.parking_type);
     const isOverdue = !ticket.is_monthly && ticket.status === "pre_paid" &&
       new Date(ticket.pre_paid_at) < new Date(Date.now() - 30 * 60 * 1000);
 
@@ -397,14 +398,14 @@ export default function CrewTicketDetailPage() {
   }
 
   const statusCfg = STATUS_CONFIG[ticket.status] || STATUS_CONFIG.parking;
-  const fee = ticket.is_monthly ? 0 : calcFee(ticket.entry_at, ticket.visit_places, ticket.parking_type);
+  const fee = ticket.is_monthly ? 0 : calcFee(ticket.entry_at, ticket.visit_places || ticket.stores, ticket.parking_type);
   const isOverdue = !ticket.is_monthly && ticket.status === "pre_paid" &&
     new Date(ticket.pre_paid_at) < new Date(Date.now() - 30 * 60 * 1000);
   const overdueMin = isOverdue
     ? Math.floor((Date.now() - new Date(ticket.pre_paid_at).getTime()) / 60000) - 30
     : 0;
 
-  const vp = ticket.visit_places;
+  const vp = ticket.visit_places || ticket.stores;
 
   return (
     <>
