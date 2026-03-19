@@ -223,6 +223,18 @@ export default function CrewEntryPage() {
   const [showCamera, setShowCamera] = useState(false);
   const [entryMethod, setEntryMethod] = useState<"manual"|"camera">("manual");
 
+  // 차량사진 (6장)
+  const [photoEnabled, setPhotoEnabled] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("crew_photo_enabled") !== "false";
+    return true;
+  });
+  const [photos, setPhotos] = useState<(string | null)[]>([null, null, null, null, null, null]);
+  const [photoCapturing, setPhotoCapturing] = useState<number | null>(null); // 현재 촬영 중인 슬롯 인덱스
+  const photoVideoRef = useRef<HTMLVideoElement>(null);
+  const photoCanvasRef = useRef<HTMLCanvasElement>(null);
+  const photoStreamRef = useRef<MediaStream | null>(null);
+  const PHOTO_LABELS = ["전면", "후면", "좌측", "우측", "실내", "기타"];
+
   // Step 1 — 분할 번호판 입력
   const [plateNumber, setPlateNumber] = useState("");
   const [platePart1, setPlatePart1] = useState(""); // 앞 숫자 (2~3자리)
@@ -403,6 +415,29 @@ export default function CrewEntryPage() {
 
       if (error) throw error;
 
+      // 차량 사진 업로드 (Supabase Storage)
+      const uploadedPhotos = photos.filter(p => p);
+      if (uploadedPhotos.length > 0 && ticket?.id) {
+        const uploadPromises = photos.map(async (photo, idx) => {
+          if (!photo) return null;
+          try {
+            const base64 = photo.split(",")[1];
+            const byteArray = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+            const path = `${orgId}/${ticket.id}/${idx}_${PHOTO_LABELS[idx]}.jpg`;
+            await supabase.storage.from("vehicle-photos").upload(path, byteArray, {
+              contentType: "image/jpeg", upsert: true,
+            });
+            return path;
+          } catch { return null; }
+        });
+        const paths = (await Promise.all(uploadPromises)).filter(Boolean);
+        if (paths.length > 0) {
+          await supabase.from("mepark_tickets").update({
+            vehicle_photos: paths,
+          }).eq("id", ticket.id);
+        }
+      }
+
       if (phone && phone.length >= 10) {
         fetch("/api/alimtalk/entry", {
           method: "POST",
@@ -422,7 +457,60 @@ export default function CrewEntryPage() {
     }
   };
 
-  const stepLabels = ["번호판", "정보입력", "확인"];
+  const stepLabels = photoEnabled ? ["번호판", "사진", "정보입력", "확인"] : ["번호판", "정보입력", "확인"];
+  const nextStep = (from: number) => {
+    if (from === 1 && !photoEnabled) return 3; // 사진 OFF → 정보입력으로 건너뜀
+    return from + 1;
+  };
+  const prevStep = (from: number) => {
+    if (from === 3 && !photoEnabled) return 1; // 사진 OFF → 번호판으로 돌아감
+    return from - 1;
+  };
+  const stepNumbers = photoEnabled ? [1, 2, 3, 4] : [1, 3, 4];
+
+  // 차량사진 촬영
+  const startPhotoCapture = async (idx: number) => {
+    setPhotoCapturing(idx);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+      photoStreamRef.current = stream;
+      if (photoVideoRef.current) {
+        photoVideoRef.current.srcObject = stream;
+        await photoVideoRef.current.play();
+      }
+    } catch {
+      setPhotoCapturing(null);
+    }
+  };
+
+  const takePhoto = () => {
+    const video = photoVideoRef.current;
+    const canvas = photoCanvasRef.current;
+    if (!video || !canvas || photoCapturing === null) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")?.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+    setPhotos(prev => { const n = [...prev]; n[photoCapturing] = dataUrl; return n; });
+    stopPhotoCapture();
+  };
+
+  const stopPhotoCapture = () => {
+    photoStreamRef.current?.getTracks().forEach(t => t.stop());
+    photoStreamRef.current = null;
+    setPhotoCapturing(null);
+  };
+
+  const removePhoto = (idx: number) => {
+    setPhotos(prev => { const n = [...prev]; n[idx] = null; return n; });
+  };
+
+  const togglePhotoEnabled = (val: boolean) => {
+    setPhotoEnabled(val);
+    localStorage.setItem("crew_photo_enabled", String(val));
+  };
 
   return (
     <>
@@ -484,14 +572,14 @@ export default function CrewEntryPage() {
         {/* 진행 단계 */}
         <div className="step-indicator">
           {stepLabels.map((label, i) => {
-            const num = i + 1;
+            const num = stepNumbers[i];
             const state = num < step ? "done" : num === step ? "active" : "idle";
             return (
               <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 0 }}>
                 {i > 0 && <div className={`step-line ${num <= step ? "done" : ""}`} />}
                 <div className="step-wrap">
                   <div className={`step-dot ${state}`}>
-                    {state === "done" ? "✓" : num}
+                    {state === "done" ? "✓" : i + 1}
                   </div>
                   <div className="step-label">{label}</div>
                 </div>
@@ -608,7 +696,7 @@ export default function CrewEntryPage() {
                   return;
                 }
                 setPlateError("");
-                setStep(2);
+                setStep(nextStep(1));
               }} disabled={!plateNumber.trim()}>
                 다음 →
               </button>
@@ -616,8 +704,136 @@ export default function CrewEntryPage() {
           </>
         )}
 
-        {/* STEP 2 */}
+        {/* STEP 2 — 차량사진 촬영 */}
         {step === 2 && (
+          <>
+            <div className="entry-section">
+              <div className="entry-section-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span>📷 차량 사진</span>
+                <div
+                  onClick={() => togglePhotoEnabled(!photoEnabled)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6, cursor: "pointer",
+                    padding: "4px 10px", borderRadius: 8,
+                    background: photoEnabled ? "#F0FDF4" : "#F1F5F9",
+                  }}
+                >
+                  <span style={{ fontSize: 11, fontWeight: 700, color: photoEnabled ? "#16A34A" : "#94A3B8" }}>
+                    {photoEnabled ? "ON" : "OFF"}
+                  </span>
+                  <div style={{
+                    width: 36, height: 20, borderRadius: 10,
+                    background: photoEnabled ? "#16A34A" : "#CBD5E1",
+                    position: "relative", transition: "background 0.2s",
+                  }}>
+                    <div style={{
+                      position: "absolute", top: 2,
+                      left: photoEnabled ? 18 : 2,
+                      width: 16, height: 16, borderRadius: "50%",
+                      background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                      transition: "left 0.2s",
+                    }} />
+                  </div>
+                </div>
+              </div>
+              <div className="entry-section-body">
+                <p style={{ fontSize: 12, color: "#64748B", margin: "0 0 14px", lineHeight: 1.5 }}>
+                  차량 상태를 기록합니다. 필요한 부분만 촬영하세요.
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                  {PHOTO_LABELS.map((label, idx) => (
+                    <div key={idx} style={{
+                      aspectRatio: "4/3", borderRadius: 12, overflow: "hidden",
+                      border: photos[idx] ? "2px solid #16A34A" : "2px dashed #CBD5E1",
+                      background: photos[idx] ? "#000" : "#F8FAFC",
+                      position: "relative", cursor: "pointer",
+                    }}
+                      onClick={() => { if (!photos[idx]) startPhotoCapture(idx); }}
+                    >
+                      {photos[idx] ? (
+                        <>
+                          <img src={photos[idx]!} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); removePhoto(idx); }}
+                            style={{
+                              position: "absolute", top: 4, right: 4,
+                              width: 22, height: 22, borderRadius: "50%",
+                              background: "rgba(0,0,0,0.6)", border: "none",
+                              color: "#fff", fontSize: 12, cursor: "pointer",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                            }}
+                          >✕</button>
+                          <div style={{
+                            position: "absolute", bottom: 0, left: 0, right: 0,
+                            background: "rgba(0,0,0,0.5)", padding: "3px 0",
+                            fontSize: 10, fontWeight: 700, color: "#fff", textAlign: "center",
+                          }}>{label}</div>
+                        </>
+                      ) : (
+                        <div style={{
+                          display: "flex", flexDirection: "column", alignItems: "center",
+                          justifyContent: "center", height: "100%", gap: 4,
+                        }}>
+                          <span style={{ fontSize: 20, color: "#CBD5E1" }}>📷</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8" }}>{label}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="entry-footer">
+              <button className="btn-secondary" onClick={() => setStep(1)}>← 이전</button>
+              <button className="btn-primary" onClick={() => setStep(3)}>
+                {photos.some(p => p) ? "다음 →" : "건너뛰기 →"}
+              </button>
+            </div>
+
+            {/* 사진 촬영 오버레이 */}
+            {photoCapturing !== null && (
+              <div style={{
+                position: "fixed", inset: 0, zIndex: 200, background: "#000",
+                display: "flex", flexDirection: "column",
+              }}>
+                <canvas ref={photoCanvasRef} style={{ display: "none" }} />
+                <video
+                  ref={photoVideoRef}
+                  autoPlay playsInline muted
+                  style={{ flex: 1, objectFit: "cover" }}
+                />
+                <div style={{
+                  position: "absolute", top: 0, left: 0, right: 0,
+                  padding: "16px 20px", background: "linear-gradient(to bottom,rgba(0,0,0,0.7),transparent)",
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                }}>
+                  <span style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>
+                    📷 {PHOTO_LABELS[photoCapturing]} 촬영
+                  </span>
+                  <button onClick={stopPhotoCapture} style={{
+                    background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 20,
+                    color: "#fff", padding: "6px 14px", fontSize: 13, cursor: "pointer",
+                  }}>취소</button>
+                </div>
+                <div style={{
+                  position: "absolute", bottom: 0, left: 0, right: 0,
+                  padding: "24px 0 48px", background: "linear-gradient(to top,rgba(0,0,0,0.8),transparent)",
+                  display: "flex", justifyContent: "center",
+                }}>
+                  <button onClick={takePhoto} style={{
+                    width: 72, height: 72, borderRadius: "50%",
+                    background: "#fff", border: "4px solid rgba(255,255,255,0.4)",
+                    cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+                  }} />
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* STEP 3 — 정보입력 */}
+        {step === 3 && (
           <>
             <div className="entry-section">
               <div className="entry-section-title">🅿️ 주차 유형</div>
@@ -721,7 +937,7 @@ export default function CrewEntryPage() {
             </div>
 
             <div className="entry-footer">
-              <button className="btn-secondary" onClick={() => setStep(1)}>← 이전</button>
+              <button className="btn-secondary" onClick={() => setStep(prevStep(3))}>← 이전</button>
               <button className="btn-primary" onClick={() => {
                 if (visitPlaces.length > 0 && !visitPlaceId) {
                   setRequiredAlertMsg("방문지");
@@ -733,14 +949,14 @@ export default function CrewEntryPage() {
                   setShowRequiredAlert(true);
                   return;
                 }
-                setStep(3);
+                setStep(4);
               }}>다음 →</button>
             </div>
           </>
         )}
 
-        {/* STEP 3 */}
-        {step === 3 && (
+        {/* STEP 4 — 확인 */}
+        {step === 4 && (
           <>
             <div className="entry-section">
               <div className="entry-section-title">📋 입차 정보 확인</div>
@@ -783,6 +999,14 @@ export default function CrewEntryPage() {
                       {new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
+                  {photos.some(p => p) && (
+                    <div className="summary-row">
+                      <span className="summary-key">차량 사진</span>
+                      <span className="summary-val" style={{ color: "#16A34A" }}>
+                        📷 {photos.filter(p => p).length}장 촬영
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -803,7 +1027,7 @@ export default function CrewEntryPage() {
             </div>
 
             <div className="entry-footer">
-              <button className="btn-secondary" onClick={() => setStep(2)}>← 이전</button>
+              <button className="btn-secondary" onClick={() => setStep(3)}>← 이전</button>
               <button className="btn-primary gold" onClick={handleSubmit} disabled={loading}>
                 {loading ? <span className="spinner" /> : "입차 등록 완료"}
               </button>
