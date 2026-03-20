@@ -227,7 +227,7 @@ export default function CrewEntryPage() {
     const combined = combinePlate(digits, plateKor, platePart2);
     setPlateNumber(combined);
     handlePlateChange(combined);
-    if (digits.length >= 2 && !plateKor) setTimeout(() => korRef.current?.focus(), 50);
+    if (digits.length >= 3 && !plateKor) setTimeout(() => korRef.current?.focus(), 50);
   };
 
   const handlePart2Change = (v) => {
@@ -585,14 +585,14 @@ export default function CrewEntryPage() {
                     className="plate-split-num"
                     value={platePart1}
                     onChange={(e) => handlePart1Change(e.target.value)}
-                    placeholder="12"
+                    placeholder="123"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     autoComplete="off"
                     autoFocus
                     onFocus={() => setSplitFocused(true)}
                     onBlur={() => setSplitFocused(false)}
-                    style={{ maxWidth: 70 }}
+                    style={{ maxWidth: 85 }}
                   />
                   <input
                     ref={korRef}
