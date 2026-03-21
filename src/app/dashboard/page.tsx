@@ -341,7 +341,7 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => { loadStores(); }, []);
-  useEffect(() => { loadData(); }, [selectedStore, period, customStart, customEnd]);
+  useEffect(() => { if (orgId) loadData(); }, [selectedStore, period, customStart, customEnd, orgId]);
   useEffect(() => {
     if (!orgId) return;
     loadParkingStatus();
@@ -418,18 +418,21 @@ export default function DashboardPage() {
     const { start, end } = getDateRange();
 
     // mepark_tickets (기간 내 입차 티켓) + monthly_parking + daily_records(차트용) 병렬 실행
+    if (!orgId) return;
     let tQ = supabase
       .from("mepark_tickets")
       .select("id, store_id, parking_type, paid_amount, is_monthly, status, entry_at, exit_at")
+      .eq("org_id", orgId)
       .gte("entry_at", start + "T00:00:00+09:00")
       .lte("entry_at", end + "T23:59:59+09:00");
     if (selectedStore) tQ = tQ.eq("store_id", selectedStore);
 
-    let mpQ = supabase.from("monthly_parking").select("id, store_id, contract_status, monthly_fee, end_date, stores(name)");
+    let mpQ = supabase.from("monthly_parking").select("id, store_id, contract_status, monthly_fee, end_date, stores(name)").eq("org_id", orgId);
     if (selectedStore) mpQ = mpQ.eq("store_id", selectedStore);
 
     let recQ = supabase.from("daily_records")
       .select("id, store_id, date, total_cars, valet_count, valet_revenue")
+      .eq("org_id", orgId)
       .gte("date", start).lte("date", end).order("date");
     if (selectedStore) recQ = recQ.eq("store_id", selectedStore);
 
