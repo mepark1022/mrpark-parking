@@ -219,7 +219,7 @@ export default function ParkingStatusPage() {
 
     // 1) parking_entries (기존 수동입력)
     let q1=supabase.from("parking_entries").select("*,stores(name),workers(name)")
-      .gte("entry_time",`${selectedDate}T00:00:00`).lte("entry_time",`${selectedDate}T23:59:59`)
+      .gte("entry_time",`${selectedDate}T00:00:00+09:00`).lte("entry_time",`${selectedDate}T23:59:59+09:00`)
       .order("entry_time",{ascending:false});
     if(selectedStore) q1=q1.eq("store_id",selectedStore);
 
@@ -227,12 +227,12 @@ export default function ParkingStatusPage() {
     let q2=supabase.from("mepark_tickets")
       .select("id,plate_number,parking_type,status,entry_at,exit_at,store_id,entry_crew_id,parking_location,is_monthly,is_free,visit_place_id,entry_method,stores:store_id(name),visit_places:visit_place_id(name,floor)")
       .eq("org_id",ctx.orgId)
-      .gte("entry_at",`${selectedDate}T00:00:00`).lte("entry_at",`${selectedDate}T23:59:59`)
+      .gte("entry_at",`${selectedDate}T00:00:00+09:00`).lte("entry_at",`${selectedDate}T23:59:59+09:00`)
       .order("entry_at",{ascending:false});
     if(selectedStore) q2=q2.eq("store_id",selectedStore);
 
     // 3) 날짜 무관 현재 주차 중인 이전 날짜 티켓 (좀비 티켓 — 오늘 날짜에 안 잡힘)
-    const todayStart=`${selectedDate}T00:00:00`;
+    const todayStart=`${selectedDate}T00:00:00+09:00`;
     let q3=supabase.from("mepark_tickets")
       .select("id,plate_number,parking_type,status,entry_at,exit_at,store_id,entry_crew_id,parking_location,is_monthly,is_free,visit_place_id,entry_method,stores:store_id(name),visit_places:visit_place_id(name,floor)")
       .eq("org_id",ctx.orgId)
