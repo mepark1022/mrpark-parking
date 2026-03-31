@@ -13,9 +13,9 @@ export async function middleware(request: NextRequest) {
     if (pathname === "/") {
       return NextResponse.rewrite(new URL("/homepage.html", request.url));
     }
-    // API는 그대로 통과
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.next();
+    // API, CREW앱, 데모 → 직접 통과
+    if (pathname.startsWith("/api/") || pathname.startsWith("/crew") || pathname.startsWith("/demo")) {
+      return await updateSession(request);
     }
     // 그 외 경로 → admin으로 리다이렉트
     return NextResponse.redirect(`https://admin.mepark.kr${pathname}`);
