@@ -9,7 +9,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "미팍티켓 | AI주차장운영",
+  title: "미팍티켓 | AI 스마트주차권",
   description: "주식회사 미스터팍 — ME.PARK 2.0 스마트 주차운영 관리 플랫폼 · 미팍Ticket",
   icons: {
     icon: [
