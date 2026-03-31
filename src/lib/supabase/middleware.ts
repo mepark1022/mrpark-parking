@@ -13,6 +13,7 @@ const PUBLIC_PATHS = [
   "/scan",     // 고정 QR 스캔
   "/api/payment", // 토스페이먼츠 웹훅
   "/api/alimtalk", // 솔라피 웹훅
+  "/homepage",  // 홈페이지 (mepark.kr)
 ];
 
 function isPublicPath(pathname: string): boolean {
