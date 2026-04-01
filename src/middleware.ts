@@ -13,8 +13,12 @@ export async function middleware(request: NextRequest) {
     if (pathname === "/") {
       return NextResponse.rewrite(new URL("/homepage.html", request.url));
     }
-    // API, CREW앱, 데모 → 직접 통과
-    if (pathname.startsWith("/api/") || pathname.startsWith("/crew") || pathname.startsWith("/demo")) {
+    // 데모 페이지 → 인증 없이 바로 통과 (비로그인 방문자용)
+    if (pathname.startsWith("/demo")) {
+      return NextResponse.next();
+    }
+    // API, CREW앱 → 세션 체크 후 통과
+    if (pathname.startsWith("/api/") || pathname.startsWith("/crew")) {
       return await updateSession(request);
     }
     // 그 외 경로 → admin으로 리다이렉트
