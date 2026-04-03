@@ -34,8 +34,8 @@ export async function middleware(request: NextRequest) {
     ) {
       return await updateSession(request);
     }
-    // 그 외 → 홈페이지로 리다이렉트
-    return NextResponse.redirect("https://mepark.kr");
+    // 그 외 → 어드민으로 리다이렉트
+    return NextResponse.redirect(`https://admin.mepark.kr${pathname}`);
   }
 
   // ── admin.mepark.kr (또는 기존 vercel.app) → 관리자 시스템 ──
