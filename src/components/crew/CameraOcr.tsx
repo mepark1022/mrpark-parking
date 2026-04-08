@@ -19,7 +19,9 @@ type Phase = (typeof STATES)[keyof typeof STATES];
 interface OcrResult {
   success: boolean;
   plate?: string;
+  last4?: string;
   candidates?: string[];
+  score?: number;
   error?: string;
 }
 
@@ -31,7 +33,7 @@ interface CameraOcrProps {
 }
 
 // ─────────────────────────────────────────────
-// CameraOcr 컴포넌트
+// CameraOcr 컴포넌트 (Plate Recognizer 1장 촬영)
 // ─────────────────────────────────────────────
 export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
   const [phase, setPhase] = useState<Phase>(STATES.IDLE);
@@ -44,23 +46,18 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
   const [manualInput, setManualInput] = useState(false);
   const [manualVal, setManualVal] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  // 멀티프레임 캡처 진행률 (0=대기, 1~3=캡처중, 4=분석중)
-  const [multiProgress, setMultiProgress] = useState(0);
-  // (koreanEdit 제거 — ? 감지 시 직접 입력으로 전환)
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // (autoMode 제거 — 3장 연속 단일 모드로 통합)
-
   // ── 카메라 시작 ──────────────────────────────
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: { ideal: "environment" }, // 후면 우선, 없으면 전면/PC 웹캠 사용
+          facingMode: { ideal: "environment" },
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -82,8 +79,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
   }, []);
 
   // ── 현재 프레임 캡처 → base64 ────────────────
-  // 가이드 프레임 영역만 크롭하여 전송
-  // 프레임: 화면 상단 30%~54% 구간, 좌우 10% 마진 (뷰파인더 오버레이와 동일)
+  // 가이드 프레임 영역만 크롭 (상단30%, 높이24%, 좌우10%)
   const captureFrame = useCallback((): string | null => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -92,24 +88,21 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     const vw = video.videoWidth;
     const vh = video.videoHeight;
 
-    // 가이드 프레임 좌표 계산 (뷰파인더 오버레이 비율과 동기화)
-    // 오버레이: 상단 30% 여백, 높이 24%, 좌우 각 10% 여백
     const cropX = Math.floor(vw * 0.10);
     const cropY = Math.floor(vh * 0.30);
     const cropW = Math.floor(vw * 0.80);
     const cropH = Math.floor(vh * 0.24);
 
-    // 크롭 영역을 캔버스에 그리기 (번호판 영역만 Vision API로 전송)
     canvas.width = cropW;
     canvas.height = cropH;
 
     const ctx = canvas.getContext("2d");
     ctx?.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-    return canvas.toDataURL("image/jpeg", 0.9); // 크롭 후 화질 올림
+    return canvas.toDataURL("image/jpeg", 0.9);
   }, []);
 
-  // ── Google Vision API 호출 ───────────────────
+  // ── Plate Recognizer API 호출 ───────────────
   const callOcrApi = useCallback(async (imageBase64: string): Promise<OcrResult> => {
     const res = await fetch("/api/ocr/plate", {
       method: "POST",
@@ -119,51 +112,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     return res.json();
   }, []);
 
-  // ── 멀티프레임 최적 결과 선택 ─────────────────
-  // 3장 OCR 결과 중 가장 신뢰도 높은 결과 선택
-  // 우선순위: ① 한글 포함(? 없는) ② 다수결(2/3 동일) ③ 첫 번째 성공
-  const selectBestResult = useCallback((results: OcrResult[]): { plate: string; candidates: string[] } | null => {
-    const valid = results.filter((r) => r.success && r.plate);
-    if (valid.length === 0) return null;
-
-    // 한글 완전 인식된 결과 우선 (? 미포함)
-    const complete = valid.filter((r) => !r.plate!.includes("?"));
-
-    // 다수결: 가장 많이 나온 plate 선택
-    const countMap = new Map<string, number>();
-    const pool = complete.length > 0 ? complete : valid;
-    for (const r of pool) {
-      const key = r.plate!;
-      countMap.set(key, (countMap.get(key) || 0) + 1);
-    }
-
-    // 최다 빈도 plate 찾기
-    let bestPlate = "";
-    let bestCount = 0;
-    for (const [plate, count] of countMap) {
-      if (count > bestCount) {
-        bestPlate = plate;
-        bestCount = count;
-      }
-    }
-
-    // 모든 결과에서 후보 수집 (중복 제거)
-    const allCandidates = new Set<string>();
-    for (const r of valid) {
-      if (r.plate && r.plate !== bestPlate) allCandidates.add(r.plate);
-      for (const c of r.candidates ?? []) {
-        if (c !== bestPlate) allCandidates.add(c);
-      }
-    }
-
-    return {
-      plate: bestPlate,
-      candidates: Array.from(allCandidates).slice(0, 4),
-    };
-  }, []);
-
-  // ── 스캔 시작 (3장 연속 촬영 — 단일 모드) ────────────
-  // 크루가 박스에 번호판 맞춤 → 버튼 → 3장 연속 → 최적 결과
+  // ── 스캔 시작 (1장 촬영) ────────────────────
   const startScan = useCallback(async () => {
     setPhase(STATES.SCANNING);
     setDetected(null);
@@ -171,11 +120,10 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     setErrorMsg(null);
     setManualInput(false);
     setManualVal("");
-    setMultiProgress(0);
 
     await startCamera();
 
-    // 1.5초 대기 (카메라 안정화) → 3장 연속 캡처
+    // 1.5초 대기 (카메라 안정화) → 1장 캡처
     timerRef.current = setTimeout(async () => {
       const video = videoRef.current;
       if (!video || video.videoWidth === 0 || video.readyState < 2) {
@@ -189,65 +137,38 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
       setShakeBox(true);
       setTimeout(() => setShakeBox(false), 600);
 
-      // 3장 연속 캡처 (300ms 간격)
-      const frames: string[] = [];
-      for (let i = 0; i < 3; i++) {
-        setMultiProgress(i + 1);
-        const frame = captureFrame();
-        if (frame) frames.push(frame);
-        if (i < 2) await new Promise((r) => setTimeout(r, 300));
-      }
-
-      if (frames.length === 0) {
+      // 1장 캡처
+      const frame = captureFrame();
+      if (!frame) {
         setErrorMsg("카메라 프레임을 가져올 수 없습니다.");
         setPhase(STATES.IDLE);
         stopCamera();
         return;
       }
 
-      // 3장 동시 API 호출 (병렬)
-      setMultiProgress(4); // 분석 중 표시
-      const results = await Promise.all(
-        frames.map((f) => callOcrApi(f).catch(() => ({ success: false } as OcrResult)))
-      );
+      // API 호출
+      const result = await callOcrApi(frame).catch(() => ({ success: false } as OcrResult));
 
-      console.log("[OCR] 3장 결과:", results.map((r) => r.plate ?? "실패"));
-
-      // 최적 결과 선택
-      const best = selectBestResult(results);
-
-      if (best) {
-        setDetected(best.plate);
-        setCandidates(best.candidates);
+      if (result.success && result.plate) {
+        setDetected(result.plate);
+        setCandidates(result.candidates || []);
         stopCamera();
         navigator.vibrate?.([100, 50, 100]);
-        if (best.plate.includes("?")) {
-          // 한글 인식 실패 → 직접 입력으로 전환 (OCR 결과에서 ? 제거하고 프리필)
-          setManualVal(best.plate.replace(/\?/g, ""));
-          setManualInput(true);
-          setPhase(STATES.IDLE);
-        } else {
-          setPhase(STATES.CONFIRMING);
-        }
+        setPhase(STATES.CONFIRMING);
       } else {
         navigator.vibrate?.([300]);
-        setErrorMsg("번호판을 인식하지 못했습니다. 다시 시도하거나 직접 입력해주세요.");
+        setErrorMsg(result.error || "번호판을 인식하지 못했습니다. 다시 시도하거나 직접 입력해주세요.");
         setPhase(STATES.IDLE);
         stopCamera();
       }
-
-      setMultiProgress(0);
     }, 1500);
-  }, [startCamera, stopCamera, captureFrame, callOcrApi, selectBestResult]);
+  }, [startCamera, stopCamera, captureFrame, callOcrApi]);
 
   // ── 확정 ─────────────────────────────────────
-  const confirm = useCallback(
-    (plate: string) => {
-      setConfirmed(plate);
-      setPhase(STATES.CONFIRMED);
-    },
-    []
-  );
+  const confirm = useCallback((plate: string) => {
+    setConfirmed(plate);
+    setPhase(STATES.CONFIRMED);
+  }, []);
 
   // ── 리셋 ─────────────────────────────────────
   const reset = useCallback(() => {
@@ -257,7 +178,6 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     setScanLine(0);
     setDetected(null);
     setErrorMsg(null);
-    setMultiProgress(0);
   }, [stopCamera]);
 
   // ── 입차 완료 → 상위 컴포넌트 전달 ──────────
@@ -295,7 +215,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
   const phaseLabel: Record<Phase, string> = {
     idle: "번호판을 박스 안에 맞춰주세요",
     scanning: `카메라 준비 중${dots}`,
-    detecting: multiProgress <= 3 ? `📸 ${multiProgress}/3 촬영 중${dots}` : `3장 비교 분석 중${dots}`,
+    detecting: `번호판 인식 중${dots}`,
     confirming: "인식 완료 — 확인해주세요",
     confirmed: "입차 등록 완료",
   };
@@ -342,7 +262,6 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
             <span style={{ fontWeight: 900, fontSize: 15, color: "#1A1D2B", position: "relative", zIndex: 1, marginTop: -3 }}>P</span>
           </div>
           <span style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>미팍<span style={{ color: "#F5B731" }}>Ticket</span></span>
-          <span style={{ background: "#1428A0", color: "#fff", fontSize: 9, fontWeight: 800, padding: "1px 5px", borderRadius: 4, marginLeft: 2 }}>CREW</span>
         </div>
         <button onClick={() => { reset(); onCancel(); }} style={{ background: "rgba(255,255,255,0.12)", border: "none", borderRadius: 20, color: "#fff", padding: "6px 14px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>취소</button>
       </div>
@@ -352,19 +271,18 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         <div style={{ position: "absolute", inset: 0, opacity: 0.04, backgroundImage: "linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)", backgroundSize: "40px 40px" }} />
       </div>
 
-      {/* 뷰파인더 오버레이 — captureFrame 크롭 좌표와 동기화 (상단30%, 높이24%, 좌우10%) */}
+      {/* 뷰파인더 오버레이 */}
       <div style={{ position: "absolute", inset: 0, zIndex: 5, display: "flex", flexDirection: "column" }}>
         <div style={{ flex: "0 0 30%", background: "rgba(0,0,0,0.6)" }} />
         <div style={{ flex: "0 0 24%", display: "flex" }}>
           <div style={{ flex: 1, background: "rgba(0,0,0,0.6)" }} />
-          {/* 가이드 프레임 영역 — captureFrame 크롭 대상 */}
           <div style={{ flex: "0 0 80%", position: "relative" }} />
           <div style={{ flex: 1, background: "rgba(0,0,0,0.6)" }} />
         </div>
         <div style={{ flex: 1, background: "rgba(0,0,0,0.6)" }} />
       </div>
 
-      {/* 스캔 박스 — captureFrame 크롭 좌표와 동기화 (top:30%, height:24%, 좌우:10%) */}
+      {/* 스캔 박스 */}
       <div style={{ position: "absolute", zIndex: 10, top: "30%", left: "10%", right: "10%", height: "24%", border: boxBorder[phase], borderRadius: 12, boxShadow: boxGlow[phase], transition: "border 0.3s,box-shadow 0.4s", animation: shakeBox ? "shake 0.4s ease" : "none", overflow: "hidden" }}>
         {/* 모서리 마커 */}
         {([
@@ -407,7 +325,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         <div style={{ background: "rgba(245,183,49,0.12)", border: "1px solid rgba(245,183,49,0.35)", borderRadius: 10, padding: "8px 16px", display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 14 }}>⚠️</span>
           <span style={{ color: "#F5B731", fontSize: 12, fontWeight: 600, lineHeight: 1.5 }}>
-            번호판을 박스 안에 맞추고 스캔하세요<br />한글 인식 실패 시 직접 입력 가능합니다
+            번호판을 박스 안에 맞추고 스캔하세요<br />한글은 *로 표시됩니다 (숫자만 인식)
           </span>
         </div>
       </div>
@@ -426,7 +344,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         {phase === STATES.IDLE && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
             <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, margin: 0, textAlign: "center" }}>
-              번호판을 박스 안에 맞추면 3장 자동 촬영 후 최적 결과를 선택합니다
+              번호판을 박스 안에 맞추면 자동 인식합니다
             </p>
             <button onClick={startScan} style={{ width: "100%", padding: "16px 0", background: "#F5B731", border: "none", borderRadius: 12, fontSize: 17, fontWeight: 800, color: "#1A1D2B", cursor: "pointer" }}>
               📷 번호판 스캔
@@ -442,15 +360,11 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
             <div style={{ width: "100%", height: 4, background: "rgba(255,255,255,0.15)", borderRadius: 2 }}>
               <div style={{ height: "100%", borderRadius: 2, background: "#F5B731",
-                width: phase === STATES.DETECTING
-                  ? (multiProgress <= 3 ? `${multiProgress * 25}%` : "95%")
-                  : `${Math.min(scanLine * 0.6, 55)}%`,
+                width: phase === STATES.DETECTING ? "80%" : `${Math.min(scanLine * 0.6, 55)}%`,
                 transition: "width 0.5s ease" }} />
             </div>
             <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, margin: 0 }}>
-              {phase === STATES.DETECTING
-                ? (multiProgress <= 3 ? `📸 프레임 캡처 중 (${multiProgress}/3)` : "🔍 3장 비교 분석 중...")
-                : "카메라 준비 중... 움직이지 마세요"}
+              {phase === STATES.DETECTING ? "🔍 번호판 분석 중..." : "카메라 준비 중... 움직이지 마세요"}
             </p>
             <button onClick={reset} style={{ background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 10, padding: "12px 0", width: "100%", color: "rgba(255,255,255,0.55)", fontSize: 14, cursor: "pointer" }}>
               취소
@@ -496,7 +410,6 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
                 <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, margin: 0 }}>{new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 입차 등록</p>
               </div>
             </div>
-            {/* 입차 처리 → 상위 컴포넌트 */}
             <button onClick={handleComplete} style={{ width: "100%", padding: "15px 0", background: "#1428A0", border: "none", borderRadius: 12, fontSize: 16, fontWeight: 800, color: "#fff", cursor: "pointer" }}>
               입차 등록 완료
             </button>
@@ -515,25 +428,27 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
               <span style={{ color: "#fff", fontWeight: 800, fontSize: 17 }}>번호판 직접 입력</span>
               <button onClick={() => setManualInput(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 20, cursor: "pointer" }}>✕</button>
             </div>
+            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, margin: "0 0 14px" }}>
+              숫자만 입력하세요. 한글은 *로 표시됩니다. 예) 123* 4567
+            </p>
             {/* OCR 인식 결과가 있으면 안내 */}
             {detected && (
               <div style={{ background: "rgba(245,183,49,0.1)", border: "1.5px solid rgba(245,183,49,0.3)", borderRadius: 10, padding: "8px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 14 }}>📷</span>
                 <span style={{ color: "#F5B731", fontSize: 12, fontWeight: 600 }}>
                   OCR 인식: <span style={{ fontFamily: "monospace", fontWeight: 800, letterSpacing: 1, fontSize: 14 }}>{detected}</span>
-                  {detected.includes("?") && " — 한글 부분을 수정해주세요"}
                 </span>
               </div>
             )}
             <input
               value={manualVal}
               onChange={(e) => setManualVal(e.target.value)}
-              placeholder="예) 123가4567"
+              placeholder="예) 123* 4567"
               autoFocus
               style={{ width: "100%", padding: "14px 16px", fontSize: 20, background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(245,183,49,0.6)", borderRadius: 12, color: "#fff", outline: "none", boxSizing: "border-box", letterSpacing: 3, fontFamily: "monospace", fontWeight: 700, textAlign: "center" }}
             />
             <button
-              onClick={() => { if (manualVal.trim()) { confirm(manualVal.trim().toUpperCase().replace(/\s/g, "")); setManualInput(false); } }}
+              onClick={() => { if (manualVal.trim()) { confirm(manualVal.trim().toUpperCase().replace(/\s+/g, " ")); setManualInput(false); } }}
               style={{ width: "100%", marginTop: 14, padding: "15px 0", background: manualVal.trim() ? "#F5B731" : "rgba(255,255,255,0.1)", border: "none", borderRadius: 12, fontSize: 16, fontWeight: 800, color: manualVal.trim() ? "#1A1D2B" : "rgba(255,255,255,0.3)", cursor: manualVal.trim() ? "pointer" : "default" }}
             >
               입차 등록

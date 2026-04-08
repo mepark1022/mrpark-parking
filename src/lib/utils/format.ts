@@ -32,20 +32,45 @@ export function formatPhone(phone: string): string {
 }
 
 export function isValidVehicleNumber(num: string): boolean {
-  return /^\d{2,3}[가-힣]\d{4}$/.test(num.replace(/\s/g, ""));
+  const clean = num.replace(/\s/g, "");
+  // 기존 한글 포함: 12가2456, 123가4567
+  if (/^\d{2,3}[가-힣]\d{4}$/.test(clean)) return true;
+  // 신규 * 마스킹: 12*3456, 123*4567
+  if (/^\d{2,3}\*\d{4}$/.test(clean)) return true;
+  return false;
 }
 
-/** 차량번호 포맷: "12가2456" → "12가 2456" (한글 뒤 공백) */
+/** 차량번호 포맷: "12가2456" → "12가 2456", "123*4567" → "123* 4567" */
 export function fmtPlate(plate: string | null | undefined): string {
   if (!plate) return "";
-  return plate.replace(/\s/g, "").replace(/([가-힣])(\d)/, "$1 $2");
+  const clean = plate.replace(/\s/g, "");
+  // * 마스킹 형식: "123*4567" → "123* 4567"
+  if (clean.includes("*")) {
+    return clean.replace(/(\*)(\d)/, "$1 $2");
+  }
+  // 기존 한글 형식
+  return clean.replace(/([가-힣])(\d)/, "$1 $2");
 }
 
-/** 차량번호를 앞부분/뒷부분으로 분리: "12가2456" → ["12가", "2456"] */
+/** 차량번호를 앞부분/뒷부분으로 분리: "12가2456" → ["12가", "2456"], "123*4567" → ["123*", "4567"] */
 export function splitPlate(plate: string | null | undefined): [string, string] {
   if (!plate) return ["", ""];
   const clean = plate.replace(/\s/g, "");
+  // * 마스킹 형식
+  const maskMatch = clean.match(/^(.*\*)(\d+)$/);
+  if (maskMatch) return [maskMatch[1], maskMatch[2]];
+  // 기존 한글 형식
   const match = clean.match(/^(.*[가-힣])(\d+)$/);
   if (match) return [match[1], match[2]];
   return [clean, ""];
+}
+
+/**
+ * 차량번호에서 숫자만 추출 (월주차 매칭용)
+ * "120서 6041" → "1206041"
+ * "120* 6041" → "1206041"
+ * 기존 한글 데이터와 신규 * 데이터 간 비교에 사용
+ */
+export function extractDigits(plate: string): string {
+  return plate.replace(/[^0-9]/g, "");
 }
