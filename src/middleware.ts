@@ -38,6 +38,28 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(`https://admin.mepark.kr${pathname}`);
   }
 
+  // ── crew.mepark.kr → CREW앱 전용 ──
+  if (hostname === "crew.mepark.kr") {
+    // API 요청 → 세션 체크 후 통과
+    if (pathname.startsWith("/api/")) {
+      return await updateSession(request);
+    }
+    // CREW앱 페이지 → 세션 체크 후 통과
+    if (pathname.startsWith("/crew")) {
+      return await updateSession(request);
+    }
+    // v2 UI 페이지 (추후)
+    if (pathname.startsWith("/v2/")) {
+      return await updateSession(request);
+    }
+    // CREW 로그인 페이지
+    if (pathname === "/login" || pathname.startsWith("/auth/")) {
+      return await updateSession(request);
+    }
+    // 그 외 → CREW 메인으로 리다이렉트
+    return NextResponse.redirect(new URL("/crew", request.url));
+  }
+
   // ── admin.mepark.kr (또는 기존 vercel.app) → 관리자 시스템 ──
   return await updateSession(request);
 }

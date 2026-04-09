@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.09
-> **마지막 작업:** Part 1~5 완료 (API 기반구조 + DB SQL + Auth API + 권한헬퍼 + Employee API)
+> **마지막 작업:** Part 1~6 완료 (API 기반구조 + DB SQL + Auth API + 권한헬퍼 + Employee API + Middleware)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -32,7 +32,7 @@ cat TODO-V2-UNIFIED.md
 | **Part 3** | Auth API — 통합 로그인 + 비밀번호 시스템 | ✅ 코드 완료 | Part 2 SQL 실행 후 동작 |
 | **Part 4** | 권한 미들웨어 보완 (helpers.ts: SELF헬퍼, audit, pagination, scope) | ✅ 완료 | (이번 push) |
 | **Part 5** | Employee API 5라우트 (목록/상세/수정/삭제/퇴사/복직/일괄) | ✅ 완료 | (이번 push) |
-| **Part 6** | middleware.ts 업데이트 (crew.mepark.kr 추가) | ⬜ 대기 | 가장 마지막 |
+| **Part 6** | middleware.ts 업데이트 (crew.mepark.kr 분기 추가) | ✅ 완료 | (이번 push) |
 | **Part 7** | 연동 테스트 + 충돌 검증 | ⬜ 대기 | |
 
 ---
@@ -160,6 +160,7 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 | 2026.04.09 | Part 3 | Auth API 7개 (login, logout, me, create-account, bulk-create, reset-password, ban, unban) | ✅ | (이번 push) |
 | 2026.04.09 | Part 4 | 권한 미들웨어 보완 (helpers.ts: SELF헬퍼, audit log, pagination, scope filter, validation) | ✅ | (이번 push) |
 | 2026.04.09 | Part 5 | Employee API 5라우트 (목록/상세/수정/삭제+퇴사/복직/일괄등록) | ✅ | (이번 push) |
+| 2026.04.09 | Part 6 | middleware.ts에 crew.mepark.kr 분기 추가 (API/CREW/v2/login 허용, 그 외 /crew 리다이렉트) | ✅ | (이번 push) |
 
 ---
 
