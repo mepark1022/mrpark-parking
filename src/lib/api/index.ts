@@ -50,6 +50,25 @@ export {
   canAccessStore,
 } from './auth-middleware';
 
+// 보조 유틸 (Part 4)
+export {
+  canAccessSelfOrManage,
+  checkSelfOrManage,
+  writeAuditLog,
+  parsePagination,
+  paginationMeta,
+  applyScopeFilter,
+  validateRequired,
+  isValidEmpNo,
+  getQueryParam,
+  getQueryParams,
+} from './helpers';
+
+export type {
+  PaginationParams,
+  ValidationError,
+} from './helpers';
+
 // 비밀번호 유틸
 export {
   generateInitialPassword,

@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.09
-> **마지막 작업:** Part 1~3 완료 (API 기반구조 + DB SQL + Auth API 7개)
+> **마지막 작업:** Part 1~5 완료 (API 기반구조 + DB SQL + Auth API + 권한헬퍼 + Employee API)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -30,8 +30,8 @@ cat TODO-V2-UNIFIED.md
 | **Part 1** | API v1 기반 구조 (타입, 미들웨어 헬퍼, 응답규격) | ✅ 완료 | af1efd1 |
 | **Part 2** | DB 스키마 SQL (employees 확장, profiles 확장, audit_logs 등) | 🔸 SQL 실행 대기 | 코드 push 완료, Supabase 실행 필요 |
 | **Part 3** | Auth API — 통합 로그인 + 비밀번호 시스템 | ✅ 코드 완료 | Part 2 SQL 실행 후 동작 |
-| **Part 4** | 권한 미들웨어 (SYSTEM/MANAGE/OPERATE/SELF) | ⬜ 대기 | |
-| **Part 5** | Employee API 기본 CRUD | ⬜ 대기 | |
+| **Part 4** | 권한 미들웨어 보완 (helpers.ts: SELF헬퍼, audit, pagination, scope) | ✅ 완료 | (이번 push) |
+| **Part 5** | Employee API 5라우트 (목록/상세/수정/삭제/퇴사/복직/일괄) | ✅ 완료 | (이번 push) |
 | **Part 6** | middleware.ts 업데이트 (crew.mepark.kr 추가) | ⬜ 대기 | 가장 마지막 |
 | **Part 7** | 연동 테스트 + 충돌 검증 | ⬜ 대기 | |
 
@@ -72,7 +72,12 @@ src/app/api/v1/auth/
 └── unban/[id]/route.ts          # POST 정지 해제
 ```
 
-### Part 4 — 권한 미들웨어 (Part 1의 auth-middleware.ts 완성)
+### Part 4 — 권한 미들웨어 보완
+```
+src/lib/api/
+├── helpers.ts             # SELF 권한 헬퍼, audit log, pagination, scope filter, validation
+└── index.ts               # helpers export 추가
+```
 
 ### Part 5 — Employee API
 ```
@@ -153,6 +158,8 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 | 2026.04.09 | Part 1 | API v1 기반 구조 (types, response, errors, password, auth-middleware, index) | ✅ | af1efd1 |
 | 2026.04.09 | Part 2 | DB 스키마 SQL 4개 (employees, profiles확장, store_members, audit_logs) | 🔸 SQL 대기 | af1efd1 |
 | 2026.04.09 | Part 3 | Auth API 7개 (login, logout, me, create-account, bulk-create, reset-password, ban, unban) | ✅ | (이번 push) |
+| 2026.04.09 | Part 4 | 권한 미들웨어 보완 (helpers.ts: SELF헬퍼, audit log, pagination, scope filter, validation) | ✅ | (이번 push) |
+| 2026.04.09 | Part 5 | Employee API 5라우트 (목록/상세/수정/삭제+퇴사/복직/일괄등록) | ✅ | (이번 push) |
 
 ---
 
