@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.09
-> **마지막 작업:** 초기 세팅 (추적 문서 생성)
+> **마지막 작업:** Part 1~3 완료 (API 기반구조 + DB SQL + Auth API 7개)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -27,9 +27,9 @@ cat TODO-V2-UNIFIED.md
 
 | Part | 내용 | 상태 | 비고 |
 |------|------|------|------|
-| **Part 1** | API v1 기반 구조 (타입, 미들웨어 헬퍼, 응답규격) | ⬜ 대기 | |
-| **Part 2** | DB 스키마 SQL (employees 확장, profiles 확장, audit_logs 등) | ⬜ 대기 | Supabase 실행 필요 |
-| **Part 3** | Auth API — 통합 로그인 + 비밀번호 시스템 | ⬜ 대기 | Part 2 SQL 실행 후 |
+| **Part 1** | API v1 기반 구조 (타입, 미들웨어 헬퍼, 응답규격) | ✅ 완료 | af1efd1 |
+| **Part 2** | DB 스키마 SQL (employees 확장, profiles 확장, audit_logs 등) | 🔸 SQL 실행 대기 | 코드 push 완료, Supabase 실행 필요 |
+| **Part 3** | Auth API — 통합 로그인 + 비밀번호 시스템 | ✅ 코드 완료 | Part 2 SQL 실행 후 동작 |
 | **Part 4** | 권한 미들웨어 (SYSTEM/MANAGE/OPERATE/SELF) | ⬜ 대기 | |
 | **Part 5** | Employee API 기본 CRUD | ⬜ 대기 | |
 | **Part 6** | middleware.ts 업데이트 (crew.mepark.kr 추가) | ⬜ 대기 | 가장 마지막 |
@@ -150,7 +150,9 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 
 | 날짜 | Part | 작업 내용 | 결과 | 커밋 |
 |------|------|----------|------|------|
-| 2026.04.09 | - | 추적 문서 생성 | ✅ | (이번 push) |
+| 2026.04.09 | Part 1 | API v1 기반 구조 (types, response, errors, password, auth-middleware, index) | ✅ | af1efd1 |
+| 2026.04.09 | Part 2 | DB 스키마 SQL 4개 (employees, profiles확장, store_members, audit_logs) | 🔸 SQL 대기 | af1efd1 |
+| 2026.04.09 | Part 3 | Auth API 7개 (login, logout, me, create-account, bulk-create, reset-password, ban, unban) | ✅ | (이번 push) |
 
 ---
 
