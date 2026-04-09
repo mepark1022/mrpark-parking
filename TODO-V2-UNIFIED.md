@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.09
-> **마지막 작업:** Part 1~6 완료 (API 기반구조 + DB SQL + Auth API + 권한헬퍼 + Employee API + Middleware)
+> **마지막 작업:** Part 1~7 코드 완료 (Part 2 SQL Supabase 실행만 남음)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -33,7 +33,7 @@ cat TODO-V2-UNIFIED.md
 | **Part 4** | 권한 미들웨어 보완 (helpers.ts: SELF헬퍼, audit, pagination, scope) | ✅ 완료 | (이번 push) |
 | **Part 5** | Employee API 5라우트 (목록/상세/수정/삭제/퇴사/복직/일괄) | ✅ 완료 | (이번 push) |
 | **Part 6** | middleware.ts 업데이트 (crew.mepark.kr 분기 추가) | ✅ 완료 | (이번 push) |
-| **Part 7** | 연동 테스트 + 충돌 검증 | ⬜ 대기 | |
+| **Part 7** | 연동 테스트 + 충돌 검증 (코드레벨) | ✅ 완료 | 6/7 통과, RLS는 SQL 실행 후 |
 
 ---
 
@@ -142,12 +142,13 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 
 | # | 연동 | 기존 영향 | 상태 |
 |---|------|----------|------|
-| 1 | 신규 employees → 기존 workers 충돌 없음 | workers 테이블 그대로 유지, employees는 별도 | ⬜ |
-| 2 | profiles 컬럼 추가 → 기존 로그인 영향 없음 | 새 컬럼은 NULL 허용, 기존 쿼리 불영향 | ⬜ |
-| 3 | /api/v1/* → 기존 /api/* 충돌 없음 | 경로 완전 분리 | ⬜ |
-| 4 | crew.mepark.kr → 기존 /crew/* 공존 | middleware에서 도메인별 분기 | ⬜ |
-| 5 | 새 RLS 정책 → 기존 RLS 충돌 없음 | 새 테이블에만 적용 | ⬜ |
-| 6 | npm build 성공 | 타입 에러 없음 | ⬜ |
+| 1 | 신규 employees → 기존 workers 충돌 없음 | v1 API에서 workers 참조 0건 확인 | ✅ |
+| 2 | profiles 컬럼 추가 → 기존 로그인 영향 없음 | 새 컬럼 NULL 허용, 기존 코드에서 profiles 직접 참조 없음 | ✅ |
+| 3 | /api/v1/* → 기존 /api/* 충돌 없음 | 경로 완전 분리 (api/ 하위에 v1/ 별도 디렉토리) | ✅ |
+| 4 | crew.mepark.kr → 기존 /crew/* 공존 | middleware hostname 분기, mepark.kr의 /crew 경로도 유지 | ✅ |
+| 5 | 새 RLS 정책 → 기존 RLS 충돌 없음 | employees, store_members, audit_logs 모두 신규 테이블 (Part 2 SQL 실행 후 확인) | 🔸 |
+| 6 | npm build 성공 | ✅ Compiled successfully, 타입 에러 없음 | ✅ |
+| 7 | UserRole 타입 충돌 없음 | database.ts(v1)과 api/types.ts(v2) 별도 모듈, import 경로 분리 | ✅ |
 
 ---
 
@@ -161,6 +162,7 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 | 2026.04.09 | Part 4 | 권한 미들웨어 보완 (helpers.ts: SELF헬퍼, audit log, pagination, scope filter, validation) | ✅ | (이번 push) |
 | 2026.04.09 | Part 5 | Employee API 5라우트 (목록/상세/수정/삭제+퇴사/복직/일괄등록) | ✅ | (이번 push) |
 | 2026.04.09 | Part 6 | middleware.ts에 crew.mepark.kr 분기 추가 (API/CREW/v2/login 허용, 그 외 /crew 리다이렉트) | ✅ | (이번 push) |
+| 2026.04.09 | Part 7 | 연동 테스트: workers충돌0, profiles호환, 경로분리, UserRole분리, 빌드성공 (RLS는 SQL 실행 후) | ✅ | (이번 push) |
 
 ---
 
