@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.10
-> **마지막 작업:** Part 10B 현장일보 수정 API 4엔드포인트 완료 → Part 10C(images/export) 대기
+> **마지막 작업:** Part 10C 사진 업로드 + Excel 내보내기 완료 → Part 10A SQL 실행 대기 🔸 + Storage 버킷 생성 대기 🔸
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -37,7 +37,8 @@ cat TODO-V2-UNIFIED.md
 | **Part 8** | Store API (사업장 CRUD + 주차장 + 방문지) | ✅ 완료 | (이번 push) |
 | **Part 9** | Ticket API — GET 목록/상세, PATCH 수동 상태변경(MANAGE) | ✅ 완료 | b5320bf |
 | **Part 10A** | 현장일보 DB(4테이블) + 기본 CRUD 6엔드포인트 | ✅ 완료 | 4d9851e / SQL 실행 대기 🔸 |
-| **Part 10B** | 현장일보 수정 API 4개 (staff/payment/unconfirm/history) | ✅ 완료 | (이번 push) |
+| **Part 10B** | 현장일보 수정 API 4개 (staff/payment/unconfirm/history) | ✅ 완료 | 8678b40 |
+| **Part 10C** | 현장일보 사진 업로드 + Excel 내보내기 | ✅ 완료 | (이번 push) / Storage 버킷 🔸 |
 
 ---
 
@@ -171,7 +172,8 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 | 2026.04.10 | Part 8 | Store API 7라우트 (목록/등록/상세/수정/삭제/복구 + 주차장CRUD + 방문지CRUD), errors.ts STORE_/LOT_/PLACE_ 코드 추가, types.ts StoreRow/ParkingLotRow/VisitPlaceRow 추가, 빌드 성공 | ✅ | (이번 push) |
 | 2026.04.10 | Part 9 | Ticket API — tickets/route.ts에 GET 목록 추가(8필터+페이지네이션, crew는 배정사업장 스코프), tickets/[id]/route.ts 신규(GET 상세 visit_places+stores JOIN / PATCH MANAGE 수동보정 9필드 화이트리스트+상태전환시 타임스탬프 자동셋+audit_logs 기록). types.ts ApiSuccess.meta에 page_size/total_pages 추가, helpers.ts paginationMeta가 계산하도록 시그니처 확장. 빌드 성공 | ✅ | (이번 push) |
 | 2026.04.10 | Part 10A | 현장일보 DB 4테이블(daily_reports/staff/payment/extra) + RLS + updated_at 트리거 SQL, API 4파일 6엔드포인트: GET 목록(필터·스코프·페이지네이션) / POST 작성(staff·payment·extra 일괄 insert, 실패 시 master 롤백) / GET 상세(자식 병렬 JOIN) / PUT 수정(OPERATE 본인·당일·미확정 제약, MANAGE 예외) / PATCH confirm(audit 기록) / POST bulk-confirm(ids 또는 조건 기반). types.ts DailyReport* 4종 타입 추가, errors.ts REPORT_* 5코드 추가, index.ts export 추가. 빌드 성공 | 🔸 SQL 대기 | 4d9851e |
-| 2026.04.10 | Part 10B | 현장일보 수정 API 4파일: PUT /:id/staff (기존 전체 삭제→재insert, audit 전체 before/after) / PUT /:id/payment (교체 + total_revenue/valet_count 자동 재계산 + audit) / PATCH /:id/unconfirm (status confirmed→submitted, confirmed_at/by null, audit) / GET /:id/history (audit_logs에서 daily_reports/staff/payment 3테이블 record_id=일보id 집계, 페이지네이션). 빌드 성공 8라우트 등록 확인 | ✅ | (이번 push) |
+| 2026.04.10 | Part 10B | 현장일보 수정 API 4파일: PUT /:id/staff (기존 전체 삭제→재insert, audit 전체 before/after) / PUT /:id/payment (교체 + total_revenue/valet_count 자동 재계산 + audit) / PATCH /:id/unconfirm (status confirmed→submitted, confirmed_at/by null, audit) / GET /:id/history (audit_logs에서 daily_reports/staff/payment 3테이블 record_id=일보id 집계, 페이지네이션). 빌드 성공 8라우트 등록 확인 | ✅ | 8678b40 |
+| 2026.04.10 | Part 10C | 현장일보 사진 업로드 + Excel 내보내기 2파일: POST /:id/images (multipart/form-data, OPERATE + canAccessStore, confirmed는 MANAGE만, 파일검증 20개·10MB·jpeg/png/webp/heic, Storage 'daily-report-photos' 버킷 {org_id}/{report_id}/{ts}_{i}.{ext} 업로드, daily_report_extra category='photo' 일괄 insert, insert 실패 시 Storage 롤백, audit 기록) / GET /export (MANAGE, date_from/date_to 필수·store_id 선택, reports+staff(employees JOIN)+payment 조회, XLSX 3시트 '일보요약'/'근무인원'/'결제매출' 한글 헤더+enum 한글변환, 빈 데이터도 헤더행 보장, Content-Disposition attachment). 빌드 성공 10라우트 등록 확인 | 🔸 Storage 버킷+10A SQL 대기 | (이번 push) |
 
 ---
 
