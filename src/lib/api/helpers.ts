@@ -96,12 +96,16 @@ export function parsePagination(request: NextRequest): PaginationParams {
 
 /**
  * 페이지네이션 메타 생성
+ * page_size: 현재 페이지에 실제 반환된 항목 수 (지정 시)
+ * total_pages: 전체 페이지 수 (limit으로 나눈 올림)
  */
-export function paginationMeta(total: number, params: PaginationParams) {
+export function paginationMeta(total: number, params: PaginationParams, returnedCount?: number) {
   return {
     total,
     page: params.page,
     limit: params.limit,
+    page_size: returnedCount ?? Math.min(params.limit, Math.max(0, total - params.offset)),
+    total_pages: params.limit > 0 ? Math.ceil(total / params.limit) : 0,
   };
 }
 

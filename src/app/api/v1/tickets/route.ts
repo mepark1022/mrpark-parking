@@ -1,14 +1,19 @@
 /**
- * POST /api/v1/tickets
- * 입차 등록 — CREW가 차량을 입차 처리
- * 
- * Body: {
+ * GET  /api/v1/tickets    티켓 목록 조회 (필터 + 페이지네이션)
+ * POST /api/v1/tickets    입차 등록 — CREW가 차량을 입차 처리
+ *
+ * GET 필터: store_id, status, parking_type, search(차량번호),
+ *           date_from, date_to, is_monthly, is_free
+ * GET 권한: OPERATE (admin/super_admin/crew, field_member 제외)
+ *           crew는 배정 사업장(ctx.storeIds)만 조회
+ *
+ * POST Body: {
  *   store_id, plate_number, plate_last4,
  *   parking_type (valet|self), visit_place_id?, parking_lot_id?,
  *   parking_location?, entry_method?, is_free?, phone?
  * }
- * 
- * 권한: OPERATE (crew 이상, field_member 제외)
+ *
+ * POST 권한: OPERATE (crew 이상, field_member 제외)
  * ⚠️ phone은 알림톡 발송에만 사용, DB 미저장
  */
 import { NextRequest } from 'next/server';
@@ -16,6 +21,92 @@ import { createClient } from '@/lib/supabase/server';
 import { requireAuth, canAccessStore } from '@/lib/api/auth-middleware';
 import { ok, created, badRequest, forbidden, conflict, serverError } from '@/lib/api/response';
 import { ErrorCodes } from '@/lib/api/errors';
+import { parsePagination, paginationMeta, getQueryParam } from '@/lib/api/helpers';
+
+// ── GET: 티켓 목록 ──
+export async function GET(request: NextRequest) {
+  const auth = await requireAuth(request, 'OPERATE');
+  if (auth.error) return auth.error;
+  const { ctx } = auth;
+
+  if (ctx.role === 'field_member') {
+    return forbidden('현장요원은 티켓 목록 조회 권한이 없습니다');
+  }
+
+  try {
+    const supabase = await createClient();
+    const { page, limit, offset } = parsePagination(request);
+
+    // 필터
+    const storeId = getQueryParam(request, 'store_id');
+    const status = getQueryParam(request, 'status');           // parking|pre_paid|exit_requested|car_ready|completed
+    const parkingType = getQueryParam(request, 'parking_type'); // valet|self
+    const search = getQueryParam(request, 'search');           // 차량번호 부분 일치
+    const dateFrom = getQueryParam(request, 'date_from');      // ISO 날짜 (entry_at >=)
+    const dateTo = getQueryParam(request, 'date_to');          // ISO 날짜 (entry_at <=)
+    const isMonthly = getQueryParam(request, 'is_monthly');    // true/false
+    const isFree = getQueryParam(request, 'is_free');          // true/false
+
+    // 사업장 스코프 결정
+    let targetStoreIds: string[] | null = null;
+    if (storeId) {
+      if (!canAccessStore(ctx, storeId)) {
+        return forbidden('해당 사업장에 대한 접근 권한이 없습니다');
+      }
+      targetStoreIds = [storeId];
+    } else if (ctx.role === 'crew') {
+      targetStoreIds = ctx.storeIds || [];
+      if (targetStoreIds.length === 0) {
+        return ok([], paginationMeta(0, { page, limit, offset }, 0));
+      }
+    }
+    // admin/super_admin 전체 → org_id 필터만
+
+    let query = supabase
+      .from('mepark_tickets')
+      .select(
+        `id, org_id, store_id, plate_number, plate_last4, parking_type, status,
+         entry_at, pre_paid_at, exit_requested_at, completed_at,
+         parking_location, parking_lot_id, visit_place_id,
+         is_monthly, is_free, paid_amount, payment_method, entry_method,
+         monthly_parking_id, entry_crew_id`,
+        { count: 'exact' }
+      )
+      .eq('org_id', ctx.orgId)
+      .order('entry_at', { ascending: false });
+
+    if (targetStoreIds) {
+      query = query.in('store_id', targetStoreIds);
+    }
+
+    if (status) query = query.eq('status', status);
+    if (parkingType) query = query.eq('parking_type', parkingType);
+    if (search) query = query.ilike('plate_number', `%${search}%`);
+    if (dateFrom) query = query.gte('entry_at', dateFrom);
+    if (dateTo) query = query.lte('entry_at', dateTo);
+    if (isMonthly === 'true') query = query.eq('is_monthly', true);
+    else if (isMonthly === 'false') query = query.eq('is_monthly', false);
+    if (isFree === 'true') query = query.eq('is_free', true);
+    else if (isFree === 'false') query = query.eq('is_free', false);
+
+    query = query.range(offset, offset + limit - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('[v1/tickets] 목록 조회 오류:', error.message);
+      return serverError('티켓 목록 조회 중 오류가 발생했습니다');
+    }
+
+    return ok(
+      data || [],
+      paginationMeta(count ?? 0, { page, limit, offset }, (data || []).length)
+    );
+  } catch (err) {
+    console.error('[v1/tickets] 서버 오류:', err);
+    return serverError('티켓 목록 조회 중 오류가 발생했습니다');
+  }
+}
 
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request, 'OPERATE');

@@ -45,6 +45,8 @@ export interface ApiSuccess<T> {
     total?: number;
     page?: number;
     limit?: number;
+    page_size?: number;   // 현재 페이지의 실제 항목 수 (limit과 동일하거나 작음)
+    total_pages?: number; // 전체 페이지 수 = ceil(total / limit)
   };
 }
 
