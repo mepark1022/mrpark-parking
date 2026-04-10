@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.10
-> **마지막 작업:** Part 10A 현장일보 DB + 기본 CRUD 6엔드포인트 완료 → Part 10B 대기
+> **마지막 작업:** Part 10B 현장일보 수정 API 4엔드포인트 완료 → Part 10C(images/export) 대기
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -36,7 +36,8 @@ cat TODO-V2-UNIFIED.md
 | **Part 7** | 연동 테스트 + 충돌 검증 (코드레벨) | ✅ 완료 | 6/7 통과, RLS는 SQL 실행 후 |
 | **Part 8** | Store API (사업장 CRUD + 주차장 + 방문지) | ✅ 완료 | (이번 push) |
 | **Part 9** | Ticket API — GET 목록/상세, PATCH 수동 상태변경(MANAGE) | ✅ 완료 | b5320bf |
-| **Part 10A** | 현장일보 DB(4테이블) + 기본 CRUD 6엔드포인트 | ✅ 완료 | (이번 push) / SQL 실행 대기 🔸 |
+| **Part 10A** | 현장일보 DB(4테이블) + 기본 CRUD 6엔드포인트 | ✅ 완료 | 4d9851e / SQL 실행 대기 🔸 |
+| **Part 10B** | 현장일보 수정 API 4개 (staff/payment/unconfirm/history) | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -169,7 +170,8 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 | 2026.04.10 | Part 2 | SQL 4개 Supabase 실행 완료 (store_members는 기존 51건 보존, ALTER로 v2 컬럼 추가) | ✅ | — |
 | 2026.04.10 | Part 8 | Store API 7라우트 (목록/등록/상세/수정/삭제/복구 + 주차장CRUD + 방문지CRUD), errors.ts STORE_/LOT_/PLACE_ 코드 추가, types.ts StoreRow/ParkingLotRow/VisitPlaceRow 추가, 빌드 성공 | ✅ | (이번 push) |
 | 2026.04.10 | Part 9 | Ticket API — tickets/route.ts에 GET 목록 추가(8필터+페이지네이션, crew는 배정사업장 스코프), tickets/[id]/route.ts 신규(GET 상세 visit_places+stores JOIN / PATCH MANAGE 수동보정 9필드 화이트리스트+상태전환시 타임스탬프 자동셋+audit_logs 기록). types.ts ApiSuccess.meta에 page_size/total_pages 추가, helpers.ts paginationMeta가 계산하도록 시그니처 확장. 빌드 성공 | ✅ | (이번 push) |
-| 2026.04.10 | Part 10A | 현장일보 DB 4테이블(daily_reports/staff/payment/extra) + RLS + updated_at 트리거 SQL, API 4파일 6엔드포인트: GET 목록(필터·스코프·페이지네이션) / POST 작성(staff·payment·extra 일괄 insert, 실패 시 master 롤백) / GET 상세(자식 병렬 JOIN) / PUT 수정(OPERATE 본인·당일·미확정 제약, MANAGE 예외) / PATCH confirm(audit 기록) / POST bulk-confirm(ids 또는 조건 기반). types.ts DailyReport* 4종 타입 추가, errors.ts REPORT_* 5코드 추가, index.ts export 추가. 빌드 성공 | 🔸 SQL 대기 | (이번 push) |
+| 2026.04.10 | Part 10A | 현장일보 DB 4테이블(daily_reports/staff/payment/extra) + RLS + updated_at 트리거 SQL, API 4파일 6엔드포인트: GET 목록(필터·스코프·페이지네이션) / POST 작성(staff·payment·extra 일괄 insert, 실패 시 master 롤백) / GET 상세(자식 병렬 JOIN) / PUT 수정(OPERATE 본인·당일·미확정 제약, MANAGE 예외) / PATCH confirm(audit 기록) / POST bulk-confirm(ids 또는 조건 기반). types.ts DailyReport* 4종 타입 추가, errors.ts REPORT_* 5코드 추가, index.ts export 추가. 빌드 성공 | 🔸 SQL 대기 | 4d9851e |
+| 2026.04.10 | Part 10B | 현장일보 수정 API 4파일: PUT /:id/staff (기존 전체 삭제→재insert, audit 전체 before/after) / PUT /:id/payment (교체 + total_revenue/valet_count 자동 재계산 + audit) / PATCH /:id/unconfirm (status confirmed→submitted, confirmed_at/by null, audit) / GET /:id/history (audit_logs에서 daily_reports/staff/payment 3테이블 record_id=일보id 집계, 페이지네이션). 빌드 성공 8라우트 등록 확인 | ✅ | (이번 push) |
 
 ---
 
