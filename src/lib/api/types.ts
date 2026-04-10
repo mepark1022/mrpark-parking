@@ -200,6 +200,90 @@ export interface VisitPlaceRow {
   updated_at: string;
 }
 
+// ── Daily Report (현장일보 마스터) ──
+export type DailyReportStatus = 'draft' | 'submitted' | 'confirmed';
+
+export interface DailyReportRow {
+  id: string;
+  org_id: string;
+  store_id: string;
+  report_date: string;             // YYYY-MM-DD
+  status: DailyReportStatus;
+  weather?: string;
+  event_flag: boolean;
+  event_name?: string;
+  memo?: string;
+  total_cars: number;
+  valet_count: number;
+  total_revenue: number;
+  created_by: string;
+  submitted_at?: string;
+  confirmed_at?: string;
+  confirmed_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ── Daily Report Staff (근무인원) ──
+export type DailyReportStaffType =
+  | 'regular'      // 해당매장
+  | 'peak'         // 피크타임
+  | 'support'      // 본사지원
+  | 'part_time'    // 알바지원
+  | 'off_duty'     // 비번투입
+  | 'additional';  // 추가
+
+export interface DailyReportStaffRow {
+  id: string;
+  org_id: string;
+  report_id: string;
+  employee_id: string;
+  staff_type: DailyReportStaffType;
+  role?: string;
+  check_in?: string;               // HH:MM or HH:MM:SS
+  check_out?: string;
+  work_hours?: number;
+  memo?: string;
+  created_at: string;
+}
+
+// ── Daily Report Payment (결제 수단별 매출) ──
+export type DailyReportPaymentMethod =
+  | 'card'
+  | 'cash'
+  | 'valet_fee'
+  | 'monthly'
+  | 'free'
+  | 'transfer'
+  | 'other';
+
+export interface DailyReportPaymentRow {
+  id: string;
+  org_id: string;
+  report_id: string;
+  method: DailyReportPaymentMethod;
+  amount: number;
+  count: number;
+  memo?: string;
+  created_at: string;
+}
+
+// ── Daily Report Extra (사진/문서) ──
+export type DailyReportExtraCategory = 'photo' | 'document' | 'note';
+
+export interface DailyReportExtraRow {
+  id: string;
+  org_id: string;
+  report_id: string;
+  category: DailyReportExtraCategory;
+  title?: string;
+  storage_path?: string;
+  url?: string;
+  metadata?: Record<string, unknown>;
+  created_by?: string;
+  created_at: string;
+}
+
 // ── Audit Log ──
 export interface AuditLogRow {
   id: string;

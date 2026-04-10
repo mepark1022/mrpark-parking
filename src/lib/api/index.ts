@@ -22,6 +22,14 @@ export type {
   StoreRow,
   ParkingLotRow,
   VisitPlaceRow,
+  DailyReportStatus,
+  DailyReportRow,
+  DailyReportStaffType,
+  DailyReportStaffRow,
+  DailyReportPaymentMethod,
+  DailyReportPaymentRow,
+  DailyReportExtraCategory,
+  DailyReportExtraRow,
   AuditLogRow,
 } from './types';
 
