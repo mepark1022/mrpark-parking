@@ -127,6 +127,77 @@ export interface StoreMemberRow {
   assigned_by?: string;
 }
 
+// ── Store (사업장) ──
+export interface StoreRow {
+  id: string;
+  org_id: string;
+  name: string;
+  site_code?: string;
+  region_city?: string;
+  region_district?: string;
+  road_address?: string;
+  address?: string;
+  manager_name?: string;
+  contact_name?: string;
+  contact_phone?: string;
+  latitude?: number;
+  longitude?: number;
+  status?: string;             // active / deleted
+  is_active: boolean;
+  is_free_parking?: boolean;
+  has_valet?: boolean;
+  valet_fee?: number;
+  has_kiosk?: boolean;
+  has_toss_kiosk?: boolean;
+  grace_period_minutes?: number;
+  gps_radius_meters?: number;
+  // CREW앱 운영 설정
+  require_entry_photo?: boolean;
+  enable_plate_search?: boolean;
+  enable_valet?: boolean;
+  enable_monthly?: boolean;
+  require_visit_place?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ── Parking Lot (주차장) ──
+export interface ParkingLotRow {
+  id: string;
+  org_id: string;
+  store_id: string;
+  name: string;
+  lot_type: string;            // internal / external
+  parking_type: string[];      // ['self', 'mechanical'] 등
+  road_address?: string;
+  self_spaces: number;
+  mechanical_normal: number;
+  mechanical_suv: number;
+  operating_days?: Record<string, boolean>;
+  open_time?: string;
+  close_time?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ── Visit Place (방문지) ──
+export interface VisitPlaceRow {
+  id: string;
+  org_id: string;
+  store_id: string;
+  name: string;
+  floor?: string;
+  free_minutes: number;
+  base_fee: number;
+  base_minutes: number;
+  extra_fee: number;
+  daily_max: number;
+  valet_fee: number;
+  monthly_fee: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Audit Log ──
 export interface AuditLogRow {
   id: string;

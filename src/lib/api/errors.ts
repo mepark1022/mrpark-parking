@@ -55,6 +55,21 @@ export const ErrorCodes = {
   // ── 재무 (FIN) ──
   FIN_BALANCE_MISMATCH: 'FIN_BALANCE_MISMATCH',  // 잔액 불일치
 
+  // ── 사업장 (STORE) ──
+  STORE_NOT_FOUND:      'STORE_NOT_FOUND',       // 사업장 미존재
+  STORE_DUPLICATE_CODE: 'STORE_DUPLICATE_CODE',  // site_code 중복
+  STORE_HAS_ACTIVE_STAFF:'STORE_HAS_ACTIVE_STAFF',// 활성 직원 존재 (삭제 시)
+  STORE_ALREADY_DELETED:'STORE_ALREADY_DELETED', // 이미 삭제됨
+  STORE_NOT_DELETED:    'STORE_NOT_DELETED',     // 삭제 상태 아님 (복구 시)
+
+  // ── 주차장 (LOT) ──
+  LOT_NOT_FOUND:        'LOT_NOT_FOUND',
+  LOT_STORE_MISMATCH:   'LOT_STORE_MISMATCH',   // 주차장-사업장 불일치
+
+  // ── 방문지 (PLACE) ──
+  PLACE_NOT_FOUND:      'PLACE_NOT_FOUND',
+  PLACE_DUPLICATE_NAME: 'PLACE_DUPLICATE_NAME',  // 동일 사업장 내 이름 중복
+
   // ── 공통 ──
   VALIDATION_ERROR:     'VALIDATION_ERROR',      // 입력값 검증 실패
   NOT_FOUND:            'NOT_FOUND',             // 범용 404

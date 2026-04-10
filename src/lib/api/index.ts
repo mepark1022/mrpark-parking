@@ -19,6 +19,9 @@ export type {
   ProfileRow,
   EmployeeRow,
   StoreMemberRow,
+  StoreRow,
+  ParkingLotRow,
+  VisitPlaceRow,
   AuditLogRow,
 } from './types';
 
