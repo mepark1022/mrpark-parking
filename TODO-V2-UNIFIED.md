@@ -1,8 +1,8 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
 > **작성일:** 2026.04.09
-> **마지막 업데이트:** 2026.04.09
-> **마지막 작업:** Part 1~7 코드 완료 (Part 2 SQL Supabase 실행만 남음)
+> **마지막 업데이트:** 2026.04.10
+> **마지막 작업:** Part 2 SQL Supabase 실행 완료 → Phase 2 시작 대기
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -28,7 +28,7 @@ cat TODO-V2-UNIFIED.md
 | Part | 내용 | 상태 | 비고 |
 |------|------|------|------|
 | **Part 1** | API v1 기반 구조 (타입, 미들웨어 헬퍼, 응답규격) | ✅ 완료 | af1efd1 |
-| **Part 2** | DB 스키마 SQL (employees 확장, profiles 확장, audit_logs 등) | 🔸 SQL 실행 대기 | 코드 push 완료, Supabase 실행 필요 |
+| **Part 2** | DB 스키마 SQL (employees 확장, profiles 확장, audit_logs 등) | ✅ 완료 | Supabase 실행 완료 (2026.04.10) |
 | **Part 3** | Auth API — 통합 로그인 + 비밀번호 시스템 | ✅ 코드 완료 | Part 2 SQL 실행 후 동작 |
 | **Part 4** | 권한 미들웨어 보완 (helpers.ts: SELF헬퍼, audit, pagination, scope) | ✅ 완료 | (이번 push) |
 | **Part 5** | Employee API 5라우트 (목록/상세/수정/삭제/퇴사/복직/일괄) | ✅ 완료 | (이번 push) |
@@ -146,7 +146,7 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 | 2 | profiles 컬럼 추가 → 기존 로그인 영향 없음 | 새 컬럼 NULL 허용, 기존 코드에서 profiles 직접 참조 없음 | ✅ |
 | 3 | /api/v1/* → 기존 /api/* 충돌 없음 | 경로 완전 분리 (api/ 하위에 v1/ 별도 디렉토리) | ✅ |
 | 4 | crew.mepark.kr → 기존 /crew/* 공존 | middleware hostname 분기, mepark.kr의 /crew 경로도 유지 | ✅ |
-| 5 | 새 RLS 정책 → 기존 RLS 충돌 없음 | employees, store_members, audit_logs 모두 신규 테이블 (Part 2 SQL 실행 후 확인) | 🔸 |
+| 5 | 새 RLS 정책 → 기존 RLS 충돌 없음 | employees, store_members, audit_logs 모두 RLS 적용 완료 | ✅ |
 | 6 | npm build 성공 | ✅ Compiled successfully, 타입 에러 없음 | ✅ |
 | 7 | UserRole 타입 충돌 없음 | database.ts(v1)과 api/types.ts(v2) 별도 모듈, import 경로 분리 | ✅ |
 
@@ -163,6 +163,7 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 | 2026.04.09 | Part 5 | Employee API 5라우트 (목록/상세/수정/삭제+퇴사/복직/일괄등록) | ✅ | (이번 push) |
 | 2026.04.09 | Part 6 | middleware.ts에 crew.mepark.kr 분기 추가 (API/CREW/v2/login 허용, 그 외 /crew 리다이렉트) | ✅ | (이번 push) |
 | 2026.04.09 | Part 7 | 연동 테스트: workers충돌0, profiles호환, 경로분리, UserRole분리, 빌드성공 (RLS는 SQL 실행 후) | ✅ | (이번 push) |
+| 2026.04.10 | Part 2 | SQL 4개 Supabase 실행 완료 (store_members는 기존 51건 보존, ALTER로 v2 컬럼 추가) | ✅ | — |
 
 ---
 
