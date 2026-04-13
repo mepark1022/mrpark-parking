@@ -18,6 +18,8 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useCallback } from "react";
 import AttendanceMatrix from "./AttendanceMatrix";
 import ExportButton from "./ExportButton";
+import OverrideModal from "./OverrideModal";
+import HistoryDrawer from "./HistoryDrawer";
 
 // ── 년/월 기본값 = 오늘 기준 ──
 function getDefaultYM() {
@@ -38,6 +40,14 @@ export default function AttendancePage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Part 12B: 수정 모달 / 이력 Drawer ──
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalEmpId, setModalEmpId] = useState<string | null>(null);
+  const [modalEmpName, setModalEmpName] = useState<string>("");
+  const [modalDate, setModalDate] = useState<string | null>(null);
+  const [modalRow, setModalRow] = useState<any | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // ── 사업장 목록 로드 ──
   useEffect(() => {
@@ -90,10 +100,14 @@ export default function AttendancePage() {
   for (let y = def.year - 2; y <= def.year + 1; y++) years.push(y);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-  // ── 셀 클릭 핸들러 (Part 12B에서 모달 연결) ──
+  // ── 셀 클릭 핸들러 → 수정 모달 오픈 ──
   function handleCellClick(empId: string, date: string, row: any) {
-    console.log("[v2/attendance] cell click", { empId, date, row });
-    // Part 12B에서 OverrideModal open 처리
+    const emp = employees.find((e) => e.employee_id === empId);
+    setModalEmpId(empId);
+    setModalEmpName(emp?.name || "");
+    setModalDate(date);
+    setModalRow(row || null);
+    setModalOpen(true);
   }
 
   return (
@@ -108,7 +122,20 @@ export default function AttendancePage() {
             v2 · 월매트릭스 + 직접수정 (Part 12)
           </div>
         </div>
-        <ExportButton year={year} month={month} storeId={storeId} />
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            onClick={() => setHistoryOpen(true)}
+            style={{
+              height: 38, padding: "0 14px", borderRadius: 8,
+              background: "#fff", color: "#1428A0",
+              border: "1.5px solid #1428A0",
+              fontWeight: 700, fontSize: 13, cursor: "pointer",
+            }}
+          >
+            📝 수정이력
+          </button>
+          <ExportButton year={year} month={month} storeId={storeId} />
+        </div>
       </div>
 
       {/* 필터 바 */}
@@ -192,6 +219,24 @@ export default function AttendancePage() {
           총 {employees.length}명
         </div>
       )}
+
+      {/* Part 12B — 수정 모달 */}
+      <OverrideModal
+        open={modalOpen}
+        empId={modalEmpId}
+        empName={modalEmpName}
+        date={modalDate}
+        currentRow={modalRow}
+        stores={stores}
+        onClose={() => setModalOpen(false)}
+        onSaved={() => { loadAttendance(); }}
+      />
+
+      {/* Part 12B — 수정이력 Drawer */}
+      <HistoryDrawer
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+      />
     </div>
   );
 }
