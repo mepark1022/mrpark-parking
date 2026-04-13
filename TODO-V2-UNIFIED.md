@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.13
-> **마지막 작업:** Part 13C 현장일보 v2 UI — 상세+수정+사진+이력 (Part 13 시리즈 마감)
+> **마지막 작업:** Part 15A 월주차 v2 UI — 목록 페이지 (필터+만료임박+페이지네이션)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -49,6 +49,7 @@ cat TODO-V2-UNIFIED.md
 | **Part 13A** | 현장일보 v2 UI — 목록 페이지 (필터+일괄확정+Excel) | ✅ 완료 | b4b2e7f |
 | **Part 13B** | 현장일보 v2 UI — 작성 페이지 (기본정보+근무인원+결제매출) | ✅ 완료 | fa05b01 |
 | **Part 13C** | 현장일보 v2 UI — 상세+수정+확정/해제+사진+이력 (13 시리즈 마감) | ✅ 완료 | (이번 push) |
+| **Part 15A** | 월주차 v2 UI — 목록 페이지 (필터+만료임박 D-N+카드리스트+페이지네이션) | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -246,3 +247,42 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 | POST /api/v1/monthly | ✅ | (14A 완료) | ⏳ |
 | GET/PATCH/DELETE /api/v1/monthly/:id | ✅ | (14A 완료) | ⏳ |
 | POST /api/v1/monthly/:id/renew | ✅ | (14A 완료) | ⏳ |
+
+---
+
+## 📌 작업 로그 (2026.04.13 · Part 15A)
+
+### Part 15A — 월주차 v2 UI 목록 페이지
+
+**신규 파일 2개:**
+- `src/app/v2/monthly/page.tsx` — 메인 페이지
+- `src/app/v2/monthly/MonthlyList.tsx` — 카드 리스트 컴포넌트
+
+**기능:**
+- 필터 6종: 사업장 / 입주사 / 계약상태(active 기본) / 결제상태(all 기본) / 만료임박(D-7/14/30) / 검색(차량번호·고객명)
+- `/api/v1/stores?limit=200` + `/api/v1/tenants?status=active&sort=name&limit=200` 로 드롭다운 채움
+- `/api/v1/monthly?store_id&tenant_id&contract_status&payment_status&expiring_within_days&search&page&limit=20` GET
+- 카드 클릭 → `/v2/monthly/[id]` (Part 15C에서 활성화)
+- 신규 등록 버튼 → `/v2/monthly/new` (Part 15B에서 활성화)
+- 페이지네이션 이전/다음 + `N / M (총 K건)`
+
+**카드 디자인:**
+- 좌측 컬러바 5px: 만료 D-7 이내 빨강 / D-30 이내 골드 / 그 외 회색 / 만료됨 회색
+- 4컬럼 그리드: ①차량번호(Outfit 800 20px 네이비)+차종+D-N뱃지 / ②고객명+입주사(🏢)+전화마스킹(010-****-5678) / ③사업장(📍)+기간(YYYY.MM.DD ~) / ④월요금(Outfit 800 18px ₩)+계약상태뱃지+결제상태뱃지
+- hover 시 box-shadow + translateY(-1px)
+- CONTRACT_BADGE: active 초록/expired 회색/cancelled 빨강
+- PAYMENT_BADGE: paid ✓ 파랑/unpaid 💰 황색/overdue ⚠ 빨강
+
+**정책:**
+- 목록에서 전화번호는 가운데 4자리 마스킹 (`010-****-5678`)으로 표시
+- 원본은 상세 페이지(15C)에서만 노출 (월주차 알림톡 정책 예외)
+- 차량번호는 monospace 폰트(Outfit)로 가독성 강조
+
+**빌드:** `npm run build` ✅ 성공, `/v2/monthly` 라우트 등록 확인 (○ static prerender)
+
+### 완료 여부
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| /v2/monthly 목록 페이지 | ✅ | (14A 완료) | ⏳ 실배포 검증 필요 |
+| /v2/monthly/new 등록 페이지 | ⏳ Part 15B | - | - |
+| /v2/monthly/[id] 상세+수정+갱신 | ⏳ Part 15C | - | - |
