@@ -17,7 +17,6 @@
  *   - customer_phone 평문 저장 (월주차 알림톡 정기 발송 필수 → 정책 예외)
  *   - 알림톡 발송은 별도 cron에서 처리 (이 API에서는 호출 안 함)
  */
-// @ts-nocheck
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import {
@@ -26,7 +25,6 @@ import {
   created,
   badRequest,
   conflict,
-  notFound,
   forbidden,
   serverError,
   ErrorCodes,

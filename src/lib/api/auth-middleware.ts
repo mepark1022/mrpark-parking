@@ -17,7 +17,6 @@ import { createClient } from '@/lib/supabase/server';
 import type { AuthContext, PermissionLevel, UserRole } from './types';
 import { ROLE_HIERARCHY } from './types';
 import { unauthorized, forbidden, serverError, tooMany } from './response';
-import { ErrorCodes } from './errors';
 
 // ── 결과 타입 ──
 type AuthResult =

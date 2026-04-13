@@ -10,8 +10,7 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireAuth, canAccessStore } from '@/lib/api/auth-middleware';
-import { ok, badRequest, forbidden, serverError } from '@/lib/api/response';
-import { ErrorCodes } from '@/lib/api/errors';
+import { ok, forbidden, serverError } from '@/lib/api/response';
 
 export async function GET(request: NextRequest) {
   const auth = await requireAuth(request, 'OPERATE');

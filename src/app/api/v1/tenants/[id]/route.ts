@@ -10,7 +10,6 @@
  *   PATCH : MANAGE
  *   DELETE: super_admin (RLS 강제) + 활성 월주차 존재 시 차단
  */
-// @ts-nocheck
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import {

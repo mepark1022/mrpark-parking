@@ -9,7 +9,6 @@
  *   PATCH : MANAGE
  *   DELETE: MANAGE (soft) / super_admin (hard)
  */
-// @ts-nocheck
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import {

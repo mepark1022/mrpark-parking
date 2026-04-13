@@ -6,7 +6,6 @@
  * 권한: MANAGE (super_admin, admin)
  * 정렬: ?sort=usage (기본, 자주 쓰는 입주사 상단) | name | recent
  */
-// @ts-nocheck
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import {

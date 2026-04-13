@@ -1,6 +1,6 @@
-// @ts-nocheck
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import type { Database } from "@/lib/types/database";
 
 /** 인증 없이 접근 가능한 경로 목록 */
 const PUBLIC_PATHS = [
@@ -24,7 +24,7 @@ function isPublicPath(pathname: string): boolean {
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient(
+  const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {

@@ -11,7 +11,6 @@ import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { AuthContext, AuditLogRow } from './types';
 import { forbidden } from './response';
-import { ErrorCodes } from './errors';
 
 // ── SELF 권한 헬퍼 ──
 

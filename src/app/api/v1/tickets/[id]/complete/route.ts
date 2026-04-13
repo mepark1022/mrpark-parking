@@ -19,7 +19,7 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireAuth, canAccessStore } from '@/lib/api/auth-middleware';
-import { ok, badRequest, forbidden, notFound, conflict, serverError } from '@/lib/api/response';
+import { ok, forbidden, notFound, conflict, serverError } from '@/lib/api/response';
 import { ErrorCodes } from '@/lib/api/errors';
 
 export async function PATCH(

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/lib/types/database";
 
