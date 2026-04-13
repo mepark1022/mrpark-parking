@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.13
-> **마지막 작업:** Part 15A 월주차 v2 UI — 목록 페이지 (필터+만료임박+페이지네이션)
+> **마지막 작업:** Part 15B 월주차 v2 UI — 등록 페이지 (사업장+입주사+11필드+자동계산)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -49,7 +49,8 @@ cat TODO-V2-UNIFIED.md
 | **Part 13A** | 현장일보 v2 UI — 목록 페이지 (필터+일괄확정+Excel) | ✅ 완료 | b4b2e7f |
 | **Part 13B** | 현장일보 v2 UI — 작성 페이지 (기본정보+근무인원+결제매출) | ✅ 완료 | fa05b01 |
 | **Part 13C** | 현장일보 v2 UI — 상세+수정+확정/해제+사진+이력 (13 시리즈 마감) | ✅ 완료 | (이번 push) |
-| **Part 15A** | 월주차 v2 UI — 목록 페이지 (필터+만료임박 D-N+카드리스트+페이지네이션) | ✅ 완료 | (이번 push) |
+| **Part 15A** | 월주차 v2 UI — 목록 페이지 (필터+만료임박 D-N+카드리스트+페이지네이션) | ✅ 완료 | 659e29e |
+| **Part 15B** | 월주차 v2 UI — 등록 페이지 (사업장+입주사+11필드+자동계산) | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -286,3 +287,58 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 | /v2/monthly 목록 페이지 | ✅ | (14A 완료) | ⏳ 실배포 검증 필요 |
 | /v2/monthly/new 등록 페이지 | ⏳ Part 15B | - | - |
 | /v2/monthly/[id] 상세+수정+갱신 | ⏳ Part 15C | - | - |
+
+---
+
+## 📌 작업 로그 (2026.04.13 · Part 15B)
+
+### Part 15B — 월주차 v2 UI 등록 페이지
+
+**신규 파일 1개:**
+- `src/app/v2/monthly/new/page.tsx` — 등록 폼 (싱글 파일)
+
+**폼 구조 (2컬럼 그리드):**
+1. 사업장 (필수, 드롭다운, 1개뿐이면 자동선택) / 입주사 (선택, 드롭다운)
+2. 차량번호 (필수, 공백·하이픈 자동제거 미리보기) / 차종 (선택)
+3. 고객명 (필수) / 연락처 (필수, 평문)
+4. 시작일 (필수, 기본 오늘) / 종료일 (필수, 자동 +1개월 -1일)
+5. 월요금 (필수, 우측정렬 monospace + 천단위 미리보기) / 결제상태 (paid/unpaid 기본/overdue)
+6. 메모 (전체폭 textarea)
+
+**자동 동작:**
+- 시작일 변경 → 종료일 자동 재계산 (`addOneMonth` 사용자가 종료일을 직접 수정한 경우 비활성)
+- 입주사 선택 → `monthly_fee_default` 자동 입력 (월요금 미입력 시만) + `default_store_id` 자동 사업장 선택
+- 차량번호 입력 → 정규화 미리보기 표시 (저장값 ≠ 입력값일 때만)
+- 사업장 1개 → 페이지 진입 시 자동 선택
+
+**날짜 계산 (`addOneMonth`):**
+- 다음달 같은 날, 말일 보정 (1.31 → 2.28/29) 후 -1일
+- 예: 2026.04.13 시작 → 2026.05.12 종료
+- API의 `addMonths(start, 1)`은 +1개월(다음달 같은 날)이라 정확히 같지 않음. 폼 단계에서 -1일 보정으로 "1개월 = 시작일 ~ 같은 일자 -1일" 한국 관행 반영
+
+**검증 (클라):**
+- 사업장/차량번호(4자+)/고객명/연락처/시작일/종료일/월요금(0+)
+- 종료일 < 시작일 차단
+
+**제출:**
+- POST `/api/v1/monthly` body: `{store_id, vehicle_number(정규화), vehicle_type, customer_name, customer_phone, start_date, end_date, monthly_fee, payment_status, contract_status='active', note, tenant_id?}`
+- 409 Conflict → "이미 등록된 활성 월주차 차량번호" 친절 안내
+- 성공 → `alert` + `router.push('/v2/monthly/[id]')` (Part 15C 활성화 시 상세로, 아직은 fallback `/v2/monthly`)
+
+**액션 바:**
+- sticky bottom, 취소(회색)/등록하기(네이비 골드 사용 안 함, 24px padding)
+- 등록 중에는 disabled + "등록 중..." 표시
+
+**디자인:**
+- maxWidth 900px (목록 1400px보다 좁게, 폼 가독성)
+- paddingBottom 100px (sticky 액션바 가림 방지)
+- Field 컴포넌트: 라벨 + required 빨간별 + hint 우측 회색 작은글씨 + children
+- Row 컴포넌트: 1fr 1fr 그리드 + gap 16px
+
+**빌드:** `npm run build` ✅ 성공, `/v2/monthly/new` 라우트 등록 (○ static prerender)
+
+### 완료 여부
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| /v2/monthly/new 등록 페이지 | ✅ | (14A 완료) | ⏳ 실배포 검증 필요 |
+| /v2/monthly/[id] 상세+수정+갱신+취소 | ⏳ Part 15C | - | - |
