@@ -78,6 +78,11 @@ export const ErrorCodes = {
   // ── 근태 ──
   ATT_DUPLICATE_OVERRIDE: 'ATT_DUPLICATE_OVERRIDE', // 근태 오버라이드 중복
 
+  // ── 입주사 (TENANT) ──
+  TENANT_NOT_FOUND:     'TENANT_NOT_FOUND',      // 입주사 미존재
+  TENANT_DUPLICATE_NAME:'TENANT_DUPLICATE_NAME', // 동일 org 내 이름 중복
+  TENANT_HAS_ACTIVE_CONTRACTS:'TENANT_HAS_ACTIVE_CONTRACTS', // 활성 월주차 존재 (삭제 시)
+
   // ── 공통 ──
   VALIDATION_ERROR:     'VALIDATION_ERROR',      // 입력값 검증 실패
   NOT_FOUND:            'NOT_FOUND',             // 범용 404
