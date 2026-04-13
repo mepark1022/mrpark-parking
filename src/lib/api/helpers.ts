@@ -10,6 +10,7 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { AuthContext, AuditLogRow } from './types';
+import type { TablesInsert } from '@/lib/types/database';
 import { forbidden } from './response';
 
 // ── SELF 권한 헬퍼 ──
@@ -57,16 +58,17 @@ export async function writeAuditLog(params: {
 }): Promise<void> {
   try {
     const supabase = await createClient();
-    await supabase.from('audit_logs').insert({
+    const payload: TablesInsert<'audit_logs'> = {
       org_id: params.orgId,
       table_name: params.tableName,
       record_id: params.recordId,
       action: params.action,
       changed_by: params.changedBy,
-      before_data: params.beforeData ?? null,
-      after_data: params.afterData ?? null,
+      before_data: (params.beforeData ?? null) as TablesInsert<'audit_logs'>['before_data'],
+      after_data: (params.afterData ?? null) as TablesInsert<'audit_logs'>['after_data'],
       reason: params.reason ?? null,
-    });
+    };
+    await supabase.from('audit_logs').insert(payload);
   } catch (err) {
     // 감사 로그 실패가 메인 로직을 차단하면 안 됨
     console.error('[AuditLog] 기록 실패:', err);
@@ -119,8 +121,11 @@ export function paginationMeta(total: number, params: PaginationParams, returned
  * @param storeIdColumn - store_id 컬럼 이름 (기본: 'store_id')
  * @returns 필터가 적용된 쿼리 (체이닝용)
  */
-export function applyScopeFilter<T>(
-  query: T & { eq: (col: string, val: string) => T; in: (col: string, vals: string[]) => T },
+export function applyScopeFilter<T extends {
+  eq: (col: string, val: string) => T;
+  in: (col: string, vals: string[]) => T;
+}>(
+  query: T,
   ctx: AuthContext,
   storeIdColumn = 'store_id'
 ): T {

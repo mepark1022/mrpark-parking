@@ -742,6 +742,7 @@ export type Database = {
           additional_fee: number | null
           additional_paid_at: string | null
           calculated_fee: number | null
+          completed_at: string | null
           created_at: string | null
           entry_alimtalk_sent: boolean | null
           entry_at: string
@@ -749,6 +750,7 @@ export type Database = {
           entry_method: string | null
           exit_at: string | null
           exit_crew_id: string | null
+          exit_requested_at: string | null
           id: string
           is_demo: boolean | null
           is_free: boolean | null
@@ -777,6 +779,7 @@ export type Database = {
           additional_fee?: number | null
           additional_paid_at?: string | null
           calculated_fee?: number | null
+          completed_at?: string | null
           created_at?: string | null
           entry_alimtalk_sent?: boolean | null
           entry_at?: string
@@ -784,6 +787,7 @@ export type Database = {
           entry_method?: string | null
           exit_at?: string | null
           exit_crew_id?: string | null
+          exit_requested_at?: string | null
           id?: string
           is_demo?: boolean | null
           is_free?: boolean | null
@@ -812,6 +816,7 @@ export type Database = {
           additional_fee?: number | null
           additional_paid_at?: string | null
           calculated_fee?: number | null
+          completed_at?: string | null
           created_at?: string | null
           entry_alimtalk_sent?: boolean | null
           entry_at?: string
@@ -819,6 +824,7 @@ export type Database = {
           entry_method?: string | null
           exit_at?: string | null
           exit_crew_id?: string | null
+          exit_requested_at?: string | null
           id?: string
           is_demo?: boolean | null
           is_free?: boolean | null
@@ -1800,6 +1806,7 @@ export type Database = {
           require_entry_photo: boolean | null
           require_visit_place: boolean | null
           road_address: string | null
+          site_code: string | null
           updated_at: string | null
           valet_fee: number | null
         }
@@ -1841,6 +1848,7 @@ export type Database = {
           require_entry_photo?: boolean | null
           require_visit_place?: boolean | null
           road_address?: string | null
+          site_code?: string | null
           updated_at?: string | null
           valet_fee?: number | null
         }
@@ -1882,6 +1890,7 @@ export type Database = {
           require_entry_photo?: boolean | null
           require_visit_place?: boolean | null
           road_address?: string | null
+          site_code?: string | null
           updated_at?: string | null
           valet_fee?: number | null
         }

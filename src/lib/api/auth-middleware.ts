@@ -61,6 +61,10 @@ export async function requireAuth(
     if (profileError || !profile) {
       return { error: unauthorized('프로필 정보를 찾을 수 없습니다') };
     }
+    if (!profile.org_id) {
+      return { error: unauthorized('조직 정보가 없습니다') };
+    }
+    const orgId: string = profile.org_id;
 
     const role = profile.role as UserRole;
 
@@ -83,12 +87,12 @@ export async function requireAuth(
     // 사업장 범위 조회 (crew/field만)
     let storeIds: string[] | undefined;
     if (['crew', 'field_member'].includes(role)) {
-      storeIds = await getAssignedStoreIds(supabase, user.id, profile.org_id);
+      storeIds = await getAssignedStoreIds(supabase, user.id, orgId);
     }
 
     const ctx: AuthContext = {
       userId: user.id,
-      orgId: profile.org_id,
+      orgId,
       role,
       empNo: profile.emp_no || undefined,
       employeeId: profile.employee_id || undefined,
@@ -136,7 +140,9 @@ async function getAssignedStoreIds(
     .eq('org_id', orgId)
     .eq('is_active', true);
 
-  return members?.map((m: { store_id: string }) => m.store_id) ?? [];
+  return (members ?? [])
+    .map((m) => m.store_id)
+    .filter((s): s is string => !!s);
 }
 
 /**
