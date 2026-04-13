@@ -232,11 +232,13 @@ export default function AttendancePage() {
         onSaved={() => { loadAttendance(); }}
       />
 
-      {/* Part 12B — 수정이력 Drawer */}
-      <HistoryDrawer
-        open={historyOpen}
-        onClose={() => setHistoryOpen(false)}
-      />
+      {/* Part 12B — 수정이력 Drawer (conditional render: 마운트 시 state 초기화 → 더블 페치 방지) */}
+      {historyOpen && (
+        <HistoryDrawer
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
     </div>
   );
 }

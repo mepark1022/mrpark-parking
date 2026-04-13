@@ -189,16 +189,21 @@ export default function AttendanceMatrix({
 }
 
 // ── 스타일 ──
+// z-index 계층 (좌상단 교차 셀이 모두 가려지지 않도록):
+//   일반 body cell        : z=0 (default)
+//   좌측 고정 body cell    : z=2 (좌측 sticky만)
+//   상단 일반 header       : z=3 (top sticky만, 좌측 body보다 위)
+//   좌상단 고정 header     : z=5 (top+left sticky, 가장 위)
 const stHeader: React.CSSProperties = {
   padding: "8px 4px", textAlign: "center",
   borderBottom: "1px solid #e2e8f0", borderRight: "1px solid #e2e8f0",
-  position: "sticky", top: 0, zIndex: 2,
+  position: "sticky", top: 0, zIndex: 3,
   fontWeight: 700,
 };
 function stHeaderFixed(left: number, width: number, bg: string, z: number): React.CSSProperties {
   return {
     ...stHeader,
-    position: "sticky", top: 0, left, zIndex: z,
+    position: "sticky", top: 0, left, zIndex: 5,
     background: bg, minWidth: width, width, textAlign: "left", paddingLeft: 10,
   };
 }

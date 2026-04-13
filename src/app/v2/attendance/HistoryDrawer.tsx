@@ -110,9 +110,9 @@ export default function HistoryDrawer({
   }, [open, dateFrom, dateTo, action, page, limit]);
 
   // 열릴 때 & 필터 변경 시 자동 조회
+  // (page 초기화 useEffect는 제거됨 — 부모에서 conditional render 하므로
+  //  마운트 시점에 useState 초기값 1로 자연스럽게 시작 → 더블 페치 방지)
   useEffect(() => { load(); }, [load]);
-  // 열릴 때 페이지 초기화
-  useEffect(() => { if (open) setPage(1); }, [open]);
 
   if (!open) return null;
 
