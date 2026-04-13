@@ -1,15 +1,19 @@
 /**
- * 미팍 통합앱 v2 — 사업장 근태 분석 API (Part 11A)
+ * 미팍 통합앱 v2 — 사업장 근태 분석 API (Part 11A → 11C override 병합)
  * GET /api/v1/attendance/site/:storeId?year=2026&month=04
  *
  * 권한: MANAGE
  *
  * 반환:
  *   - 사업장 정보
- *   - 월 일보 제출률 (제출/전체일수)
- *   - 직원별 근무 요약 (본사업장 소속 vs 지원인력 구분)
- *   - 일일 인원 추이 (날짜별 근무인원 수)
- *   - 전체 통계 (평균 인원, 총 근무시간 등)
+ *   - 월 일보 제출률 (제출/전체일수)  ※ override 무관
+ *   - 직원별 근무 요약 (override 병합 후, 이 사업장 소속 근무만)
+ *   - 일일 인원 추이 (override 병합 후)
+ *   - 전체 통계
+ *
+ * Part 11C 변경사항:
+ *   - attendance_overrides 병합 로직 추가
+ *   - store 이동/추가 override 반영 (타 사업장으로 옮겨진 날 제외, 이 사업장으로 들어온 날 포함)
  */
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -21,7 +25,10 @@ import {
   judgeAttendanceStatus,
   monthRange,
   validateYearMonth,
+  applyOverrides,
   type StaffType,
+  type AttendanceRow,
+  type AttendanceOverrideRow,
 } from '@/lib/api/attendance';
 import type { AttendanceStatus } from '@/lib/api/types';
 
@@ -98,43 +105,37 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const reportList = reports ?? [];
 
-    // ── 5. 각 직원별 집계 ──
-    interface EmpAgg {
-      employee_id: string;
-      emp_no: string;
-      name: string;
-      is_primary_here: boolean;
-      days: number;
-      total_hours: number;
-      late_count: number;
-      support_count: number; // 이 사업장에 지원 나온 경우
-      by_status: Partial<Record<AttendanceStatus, number>>;
-    }
-    const empAgg = new Map<string, EmpAgg>();
+    // ── 5. 매트릭스 빌드 (직원별 날짜별, 이 사업장의 일보 기준) ──
+    const matrix: Record<string, Record<string, AttendanceRow>> = {};
+    const empMetaMap = new Map<string, { emp_no: string; name: string }>();
+    const storeNameMap = new Map<string, string>();
+    storeNameMap.set(store.id, store.name);
 
-    // 일별 인원 추이
-    const dailyHeadcount: Record<string, number> = {};
-    // 전체 일보 날짜 set
+    const empIdsFromReports = new Set<string>();
     const submittedDates = new Set<string>();
 
     for (const r of reportList) {
       submittedDates.add(r.report_date);
       const staffArr = (r.daily_report_staff ?? []) as Array<{
+        id: string;
         employee_id: string;
         staff_type: string;
         role: string | null;
         check_in: string | null;
         check_out: string | null;
         work_hours: number | null;
-        employees: { id: string; emp_no: string; name: string } | { id: string; emp_no: string; name: string }[] | null;
+        employees:
+          | { id: string; emp_no: string; name: string }
+          | { id: string; emp_no: string; name: string }[]
+          | null;
       }>;
-
-      dailyHeadcount[r.report_date] =
-        (dailyHeadcount[r.report_date] ?? 0) + staffArr.length;
 
       for (const s of staffArr) {
         const empInfo = Array.isArray(s.employees) ? s.employees[0] : s.employees;
         if (!empInfo) continue;
+
+        empIdsFromReports.add(s.employee_id);
+        empMetaMap.set(s.employee_id, { emp_no: empInfo.emp_no, name: empInfo.name });
 
         const status = judgeAttendanceStatus(
           s.staff_type as StaffType,
@@ -143,12 +144,128 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           s.check_in
         );
 
-        if (!empAgg.has(s.employee_id)) {
-          empAgg.set(s.employee_id, {
-            employee_id: s.employee_id,
-            emp_no: empInfo.emp_no,
-            name: empInfo.name,
-            is_primary_here: primaryEmpIds.has(s.employee_id),
+        if (!matrix[s.employee_id]) matrix[s.employee_id] = {};
+        matrix[s.employee_id][r.report_date] = {
+          employee_id: s.employee_id,
+          emp_no: empInfo.emp_no,
+          name: empInfo.name,
+          date: r.report_date,
+          status,
+          check_in: s.check_in,
+          check_out: s.check_out,
+          report_id: r.id,
+          store_id: storeId,
+          store_name: store.name,
+          work_hours: s.work_hours,
+          staff_type: s.staff_type as StaffType,
+        };
+      }
+    }
+
+    // ── 5.5 override 조회 (이 사업장 관련 직원 전부) ──
+    // (a) 이 사업장으로 배정된 override → 새로 투입되는 직원까지 포함
+    const { data: overridesToThisStore } = await supabase
+      .from('attendance_overrides')
+      .select('employee_id')
+      .eq('org_id', ctx.orgId)
+      .eq('store_id', storeId)
+      .gte('work_date', from)
+      .lte('work_date', to);
+
+    const empIdsFromOverrides = new Set(
+      (overridesToThisStore ?? []).map(o => o.employee_id)
+    );
+    const allRelevantEmpIds = new Set([
+      ...empIdsFromReports,
+      ...empIdsFromOverrides,
+    ]);
+
+    // (b) 해당 직원들의 "이 기간 모든 override" (타 사업장으로 옮긴 것도 포함)
+    let allOverrides: AttendanceOverrideRow[] = [];
+    if (allRelevantEmpIds.size > 0) {
+      const { data: overridesAll } = await supabase
+        .from('attendance_overrides')
+        .select('*')
+        .eq('org_id', ctx.orgId)
+        .in('employee_id', [...allRelevantEmpIds])
+        .gte('work_date', from)
+        .lte('work_date', to);
+      allOverrides = (overridesAll ?? []) as AttendanceOverrideRow[];
+    }
+
+    // (c) override-only 직원 메타 보충
+    const missingEmpIds = [...allRelevantEmpIds].filter(id => !empMetaMap.has(id));
+    if (missingEmpIds.length > 0) {
+      const { data: extraEmps } = await supabase
+        .from('employees')
+        .select('id, emp_no, name')
+        .eq('org_id', ctx.orgId)
+        .in('id', missingEmpIds);
+      for (const e of extraEmps ?? []) {
+        empMetaMap.set(e.id, { emp_no: e.emp_no, name: e.name });
+      }
+    }
+
+    // (d) override의 store_id 이름 보충
+    const missingStoreIds = new Set<string>();
+    for (const ov of allOverrides) {
+      if (ov.store_id && !storeNameMap.has(ov.store_id)) {
+        missingStoreIds.add(ov.store_id);
+      }
+    }
+    if (missingStoreIds.size > 0) {
+      const { data: extraStores } = await supabase
+        .from('stores')
+        .select('id, name')
+        .eq('org_id', ctx.orgId)
+        .in('id', [...missingStoreIds]);
+      for (const s of extraStores ?? []) {
+        if (s.id && s.name) storeNameMap.set(s.id, s.name);
+      }
+    }
+
+    // (e) 병합
+    const merged = applyOverrides(matrix, allOverrides, empMetaMap, storeNameMap);
+
+    // ── 6. 집계 (이 사업장 소속 근무만 카운트) ──
+    interface EmpAgg {
+      employee_id: string;
+      emp_no: string;
+      name: string;
+      is_primary_here: boolean;
+      days: number;
+      total_hours: number;
+      late_count: number;
+      support_count: number;
+      by_status: Partial<Record<AttendanceStatus, number>>;
+    }
+    const empAgg = new Map<string, EmpAgg>();
+    const dailyHeadcount: Record<string, number> = {};
+
+    const workingStatuses = new Set<AttendanceStatus>([
+      'present',
+      'late',
+      'peak',
+      'support',
+      'additional',
+    ]);
+
+    for (const [empId, byDate] of Object.entries(merged)) {
+      const meta = empMetaMap.get(empId);
+      if (!meta) continue;
+
+      for (const row of Object.values(byDate)) {
+        // 이 사업장(storeId) 근무만 반영
+        if (row.store_id !== storeId) continue;
+
+        dailyHeadcount[row.date] = (dailyHeadcount[row.date] ?? 0) + 1;
+
+        if (!empAgg.has(empId)) {
+          empAgg.set(empId, {
+            employee_id: empId,
+            emp_no: meta.emp_no,
+            name: meta.name,
+            is_primary_here: primaryEmpIds.has(empId),
             days: 0,
             total_hours: 0,
             late_count: 0,
@@ -156,47 +273,42 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             by_status: {},
           });
         }
-        const a = empAgg.get(s.employee_id)!;
+        const a = empAgg.get(empId)!;
 
-        // 출근 카운트되는 상태
-        const workingStatuses: AttendanceStatus[] = [
-          'present', 'late', 'peak', 'support', 'additional',
-        ];
-        if (workingStatuses.includes(status)) {
+        if (workingStatuses.has(row.status)) {
           a.days += 1;
-          a.total_hours += Number(s.work_hours ?? 0);
+          a.total_hours += Number(row.work_hours ?? 0);
         }
-        if (status === 'late') a.late_count += 1;
-        if (status === 'support' && !a.is_primary_here) a.support_count += 1;
+        if (row.status === 'late') a.late_count += 1;
+        if (row.status === 'support' && !a.is_primary_here) a.support_count += 1;
 
-        a.by_status[status] = (a.by_status[status] ?? 0) + 1;
+        a.by_status[row.status] = (a.by_status[row.status] ?? 0) + 1;
       }
     }
 
-    // 소수점 정리
+    // 소수점 정리 + 정렬
     const empsOut = [...empAgg.values()]
       .map(a => ({
         ...a,
         total_hours: Math.round(a.total_hours * 100) / 100,
       }))
       .sort((a, b) => {
-        // 본사업장 소속 우선, 그 다음 근무일수 많은 순
         if (a.is_primary_here !== b.is_primary_here) {
           return a.is_primary_here ? -1 : 1;
         }
         return b.days - a.days;
       });
 
-    // ── 6. 전체 통계 ──
+    // ── 7. 전체 통계 ──
     const monthDays = new Date(year, month, 0).getDate();
     const submissionRate =
       monthDays > 0 ? Math.round((submittedDates.size / monthDays) * 1000) / 10 : 0;
 
-    const totalHours =
-      empsOut.reduce((sum, e) => sum + e.total_hours, 0);
+    const totalHours = empsOut.reduce((sum, e) => sum + e.total_hours, 0);
     const totalManDays = empsOut.reduce((sum, e) => sum + e.days, 0);
-    const avgHeadcount = submittedDates.size
-      ? Math.round((totalManDays / submittedDates.size) * 10) / 10
+    const workedDaysCount = Object.keys(dailyHeadcount).length;
+    const avgHeadcount = workedDaysCount
+      ? Math.round((totalManDays / workedDaysCount) * 10) / 10
       : 0;
 
     const missingDates: string[] = [];
@@ -216,7 +328,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       submission: {
         submitted_days: submittedDates.size,
         total_days: monthDays,
-        submission_rate: submissionRate, // %
+        submission_rate: submissionRate,
         missing_dates: missingDates,
       },
       employees: empsOut,
@@ -230,6 +342,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         total_hours: Math.round(totalHours * 100) / 100,
         avg_headcount: avgHeadcount,
       },
+      override_applied: allOverrides.length, // Part 11C: 병합된 override 건수
     });
   } catch (err) {
     console.error('[v1/attendance/site] exception:', err);
