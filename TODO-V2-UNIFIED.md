@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.13
-> **마지막 작업:** Part 16A 입주사 v2 UI — 목록 + 신규 등록 모달
+> **마지막 작업:** Part 16B 입주사 v2 UI — 상세+수정+활성화토글+영구삭제+활성계약목록 (16 시리즈 마감)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -52,7 +52,8 @@ cat TODO-V2-UNIFIED.md
 | **Part 15A** | 월주차 v2 UI — 목록 페이지 (필터+만료임박 D-N+카드리스트+페이지네이션) | ✅ 완료 | 659e29e |
 | **Part 15B** | 월주차 v2 UI — 등록 페이지 (사업장+입주사+11필드+자동계산) | ✅ 완료 | 742e155 |
 | **Part 15C** | 월주차 v2 UI — 상세+수정+갱신+취소 (15 시리즈 마감) | ✅ 완료 | 3876b35 |
-| **Part 16A** | 입주사 v2 UI — 목록 + 신규 등록 모달 (TenantFormModal 공용) | ✅ 완료 | (이번 push) |
+| **Part 16A** | 입주사 v2 UI — 목록 + 신규 등록 모달 (TenantFormModal 공용) | ✅ 완료 | 618faa8 |
+| **Part 16B** | 입주사 v2 UI — 상세+수정+활성화토글+영구삭제+활성계약목록 (16 시리즈 마감) | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -439,3 +440,69 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 |------|------|-----|------|
 | /v2/tenants 목록 + 등록 모달 | ✅ | (14A 완료) | ⏳ 실배포 |
 | /v2/tenants/[id] 상세+수정+비활성화 | ⏳ Part 16B | - | - |
+
+---
+
+## 📌 작업 로그 (2026.04.13 · Part 16B — Part 16 시리즈 마감)
+
+### Part 16B — 입주사 상세+수정+활성화토글+영구삭제+활성계약목록
+
+**신규 파일 1개:**
+- `src/app/v2/tenants/[id]/page.tsx` — 메인 상세 페이지 (싱글 파일, ~640줄)
+
+**페이지 구성:**
+- **상단**: 목록으로 돌아가기 링크
+- **헤더 카드**: 🏢 입주사명(26px Outfit 800 네이비) + 상태뱃지(active/inactive) + 사업자번호(monospace) + 액션 버튼 3종(수정/비활성화·활성화/영구삭제)
+- **통계 카드 3개** (3컬럼 그리드): 활성 월주차(파란색 강조 1건+) / 누적 이용횟수 / 최근 계약일
+- **본문 좌측 (1fr)**: 📋 기본 정보 (담당자/연락처/기본사업장/기본월요금[18px 네이비 강조]/등록일자/최종수정/메모)
+- **본문 우측 (1.2fr)**: 🚗 활성 월주차 계약 (별도 API 호출, GET `/api/v1/monthly?tenant_id=xxx&contract_status=active&limit=100`)
+  - 각 카드: 차량번호(Outfit 800 16px) + 상태뱃지 + 고객명·차종 + 기간 + 월요금(우측) + D-N(D-7 빨강/D-30 골드)
+  - 카드 클릭 → `/v2/monthly/[id]` 이동
+  - hover 시 borderColor 네이비 + background 회색 전환
+  - 빈 상태: dashed 박스 "활성 월주차 계약이 없습니다"
+  - 헤더 우측 "+ 신규 등록" 버튼 → `/v2/monthly/new?tenant_id=xxx` (쿼리 prefill은 추후 15B 개선 필요)
+
+**액션 버튼 동작:**
+- **수정**: TenantFormModal 재사용(Part 16A 공용 모달, `tenant` prop 전달 → 수정 모드 자동 활성화), onSaved → load() 재조회
+- **비활성화/활성화 토글**: PATCH `/api/v1/tenants/:id` body `{status: 'inactive'|'active'}`
+  - 활성 → 비활성 시 활성 계약 N건 있으면 경고 confirm("기존 계약은 유지됩니다")
+  - 활성 계약 0건 시 단순 confirm
+- **영구 삭제**: super_admin + status='inactive' + 활성계약 0건일 때만 노출
+  - prompt로 입주사명 정확히 입력해야 진행 (안전장치)
+  - DELETE `/api/v1/tenants/:id?hard=true`
+  - 성공 시 router.push('/v2/tenants')
+
+**병렬 데이터 로드 (Promise.all 4개):**
+1. GET `/api/v1/tenants/:id` — 상세 + active_contract_count
+2. GET `/api/v1/monthly?tenant_id=:id&contract_status=active&limit=100` — 활성 계약 목록
+3. GET `/api/v1/stores?limit=200` — 사업장 (모달 + 표시명용)
+4. GET `/api/v1/auth/me` — role 확인 (super_admin 영구삭제 버튼 노출)
+
+**디자인 일관성:**
+- 헤더/카드/모달 패턴 monthly/[id] 페이지와 동일 (border-radius 12, padding 20-24px, border #e2e8f0)
+- 색상: 네이비 #1428A0 강조 / 골드 #F5B731 신규등록 버튼 / 활성계약 0건 회색 처리
+- 버튼 4종 스타일 정의: btnPrimary(네이비), btnSuccess(초록), btnWarn(회색+골드테두리), btnDanger(흰배경+빨강테두리)
+- ReadField/StatCard 컴포넌트로 반복 UI 정리
+
+**모바일 대응:**
+- 액션 버튼 영역: flex-wrap (헤더 좁아질 때 줄바꿈)
+- 본문 그리드: 현재 1fr/1.2fr 고정 (좁은 화면 미디어쿼리 미적용 — 추후 보완 후보)
+- 활성 계약 리스트: maxHeight 520px overflowY auto
+
+**연락처 정책 반영:**
+- 담당자 연락처 평문 표시(월주차 알림톡 정책 예외) + hint "월주차 알림톡 정책에 따라 평문 저장" 명시
+
+**빌드:** `npm run build` ✅ 성공, `/v2/tenants/[id]` ƒ dynamic 라우트 등록
+
+### Part 16 시리즈 전체 완료
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| /v2/tenants 목록 + 등록 모달 (Part 16A) | ✅ | (14A 완료) | ⏳ 실배포 |
+| /v2/tenants/[id] 상세+수정+활성화토글+영구삭제+활성계약 (Part 16B) | ✅ | (14A 완료) | ⏳ 실배포 |
+
+**API 연결 완료:** `/api/v1/tenants` 5엔드포인트(목록·등록·상세·수정·삭제) 모두 v2 UI에서 호출 가능
+
+**개선 후보 (다음 세션):**
+- `/v2/monthly/new?tenant_id=xxx` 쿼리 prefill 처리 (15B 개선)
+- 입주사 상세에서 만료된/취소된 계약도 토글로 함께 보기
+- 모바일 좁은 화면용 본문 그리드 1컬럼 전환
