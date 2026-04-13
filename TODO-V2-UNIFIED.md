@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.13
-> **마지막 작업:** Part 16B 입주사 v2 UI — 상세+수정+활성화토글+영구삭제+활성계약목록 (16 시리즈 마감)
+> **마지막 작업:** Part 17A 통계 API 5개 (overview/by-store/by-tenant/by-payment-method/daily-trend)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -53,7 +53,8 @@ cat TODO-V2-UNIFIED.md
 | **Part 15B** | 월주차 v2 UI — 등록 페이지 (사업장+입주사+11필드+자동계산) | ✅ 완료 | 742e155 |
 | **Part 15C** | 월주차 v2 UI — 상세+수정+갱신+취소 (15 시리즈 마감) | ✅ 완료 | 3876b35 |
 | **Part 16A** | 입주사 v2 UI — 목록 + 신규 등록 모달 (TenantFormModal 공용) | ✅ 완료 | 618faa8 |
-| **Part 16B** | 입주사 v2 UI — 상세+수정+활성화토글+영구삭제+활성계약목록 (16 시리즈 마감) | ✅ 완료 | (이번 push) |
+| **Part 16B** | 입주사 v2 UI — 상세+수정+활성화토글+영구삭제+활성계약목록 (16 시리즈 마감) | ✅ 완료 | 0d0f8da |
+| **Part 17A** | 통계 API 5개 (overview/by-store/by-tenant/by-payment-method/daily-trend) + stats.ts 유틸 | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -506,3 +507,100 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 - `/v2/monthly/new?tenant_id=xxx` 쿼리 prefill 처리 (15B 개선)
 - 입주사 상세에서 만료된/취소된 계약도 토글로 함께 보기
 - 모바일 좁은 화면용 본문 그리드 1컬럼 전환
+
+---
+
+## 📌 작업 로그 (2026.04.13 · Part 17A)
+
+### Part 17A — 통계 API 5엔드포인트 + 공용 유틸
+
+**신규 파일 6개:**
+- `src/lib/api/stats.ts` — 공용 유틸
+- `src/app/api/v1/stats/overview/route.ts`
+- `src/app/api/v1/stats/by-store/route.ts`
+- `src/app/api/v1/stats/by-tenant/route.ts`
+- `src/app/api/v1/stats/by-payment-method/route.ts`
+- `src/app/api/v1/stats/daily-trend/route.ts`
+
+### 1. stats.ts 유틸
+
+- `parseDateRange()`: ?date_from/date_to 또는 ?year/month 처리. 둘 다 없으면 이번달 1일 ~ 오늘 기본값. ISO 검증, from > to 차단.
+- `calcCompareRange()`: 동일 길이 직전 기간 자동 계산 (예: 4.1~4.13 → 3.19~3.31)
+- `calcChangeRate()`: 증감률 (소수 1자리, previous=0이면 null로 DIV/0 방지)
+- `PAYMENT_METHOD_LABELS`: 7종 한글 라벨+이모지+컬러 매핑 (card 💳 #1428A0, cash 💵 #16a34a, valet_fee 🚗 #F5B731, monthly 📅 #7c3aed, transfer 🏦 #0891b2, free 🎟 #94a3b8, other 📝 #64748b)
+- `PAYMENT_METHOD_ORDER`: UI 정렬 기준 배열
+
+### 2. GET /api/v1/stats/overview — KPI 4종 + 증감률
+
+**쿼리:** `?date_from&date_to&store_id?` 또는 `?year&month`
+**응답:**
+```json
+{
+  "range": {date_from, date_to, days},
+  "compare": {date_from, date_to},
+  "current": {revenue, total_cars, valet_count, report_count, active_monthly},
+  "previous": {revenue, total_cars, valet_count, report_count},
+  "change": {revenue: %, total_cars: %, valet_count: %, report_count: %}
+}
+```
+- 현재/비교 기간 일보 합산은 `daily_reports` 캐시 컬럼(total_revenue/cars/valet_count) 사용 → 빠름
+- active_monthly는 현재 시점 스냅샷 (기간 무관)
+- crew/field_member 스코프 필터 적용 (storeIds 강제)
+
+### 3. GET /api/v1/stats/by-store — 주차장별 매출
+
+**쿼리:** `?date_from&date_to&sort=revenue|cars|valet`
+**응답:** items[{store_id, store_name, site_code, revenue, total_cars, valet_count, report_count, daily_avg_revenue}] + totals
+- `stores!inner` JOIN으로 한 번에 사업장 메타 포함
+- 메모리 그룹핑 후 sort
+
+### 4. GET /api/v1/stats/by-tenant — 입주사별 활성 월주차
+
+**쿼리:** `?status=active|all&sort=revenue|count|name`
+**응답:** items[{tenant_id, tenant_name, status, contact_*, monthly_fee_default, usage_count, last_contracted_at, active_count, expired_count, cancelled_count, total_monthly_revenue}] + totals
+- 기간 무관 — 현재 시점 스냅샷 (활성 계약 합 = 월 잠재 매출)
+- 입주사 목록 1회 + 월주차 IN 조회 1회 (총 2쿼리)
+
+### 5. GET /api/v1/stats/by-payment-method — 결제수단별 분포
+
+**쿼리:** `?date_from&date_to&store_id?`
+**응답:** items[{method, label, emoji, color, amount, count, ratio}] + totals
+- 7종 method 모두 row 보장 (0건이어도 표시 — 차트 안정성)
+- ratio는 amount 비율 (소수 1자리, 0~100)
+- 일보 ID 추출 → daily_report_payment IN 조회 (2쿼리)
+
+### 6. GET /api/v1/stats/daily-trend — 일별 추이 (차트용)
+
+**쿼리:** `?date_from&date_to&store_id?` (최대 92일 = 3개월)
+**응답:** series[{date, weekday, is_weekend, revenue, total_cars, valet_count, report_count}]
+- 모든 날짜에 대해 row 보장 (빈 날짜 = 0) → 차트 X축 누락 방지
+- 같은 날짜 여러 사업장이면 합산
+- weekday 한글 ('일'~'토'), is_weekend boolean
+- 92일 초과 시 VALIDATION_ERROR (서버 부담 + 차트 가독성)
+
+### 권한
+- 모두 MANAGE (super_admin/admin)
+- crew/field_member도 호출 가능 — 단 ctx.storeIds 강제 필터, 빈 배열이면 빈 결과
+- store_id 명시 시 canAccessStore 체크
+
+### 멀티테넌시 강제
+- daily_reports/tenants는 org_id 직접 컬럼 보유 → `.eq('org_id', ctx.orgId)`
+- monthly_parking은 org_id 컬럼 없음 → `stores!inner(org_id)` JOIN으로 강제
+
+### 빌드
+- `npm run build` ✅ 성공 76s
+- 라우트 등록 확인: `/api/v1/stats/{overview, by-store, by-tenant, by-payment-method, daily-trend}` 5개 ƒ dynamic
+
+### 완료 여부
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| stats.ts 공용 유틸 | ✅ | - | ⏳ |
+| GET /api/v1/stats/overview | ✅ | - | ⏳ 실배포 |
+| GET /api/v1/stats/by-store | ✅ | - | ⏳ |
+| GET /api/v1/stats/by-tenant | ✅ | - | ⏳ |
+| GET /api/v1/stats/by-payment-method | ✅ | - | ⏳ |
+| GET /api/v1/stats/daily-trend | ✅ | - | ⏳ |
+| 대시보드 UI (Part 17B) | ⏳ 다음 | - | - |
+
+### 다음 단계
+- Part 17B: `/v2/dashboard` 페이지 신규 — KPI 4카드 + 일별 추이 차트(SVG 또는 recharts) + 사업장별 테이블 + 결제수단 도넛 + 입주사별 테이블
