@@ -480,6 +480,222 @@ export type Database = {
           },
         ]
       }
+      daily_report_extra: {
+        Row: {
+          category: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          metadata: Json | null
+          org_id: string
+          report_id: string
+          storage_path: string | null
+          title: string | null
+          url: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          org_id: string
+          report_id: string
+          storage_path?: string | null
+          title?: string | null
+          url?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          org_id?: string
+          report_id?: string
+          storage_path?: string | null
+          title?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_report_extra_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "daily_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_report_payment: {
+        Row: {
+          amount: number
+          count: number | null
+          created_at: string | null
+          id: string
+          memo: string | null
+          method: string
+          org_id: string
+          report_id: string
+        }
+        Insert: {
+          amount?: number
+          count?: number | null
+          created_at?: string | null
+          id?: string
+          memo?: string | null
+          method: string
+          org_id: string
+          report_id: string
+        }
+        Update: {
+          amount?: number
+          count?: number | null
+          created_at?: string | null
+          id?: string
+          memo?: string | null
+          method?: string
+          org_id?: string
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_report_payment_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "daily_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_report_staff: {
+        Row: {
+          check_in: string | null
+          check_out: string | null
+          created_at: string | null
+          employee_id: string
+          id: string
+          memo: string | null
+          org_id: string
+          report_id: string
+          role: string | null
+          staff_type: string
+          work_hours: number | null
+        }
+        Insert: {
+          check_in?: string | null
+          check_out?: string | null
+          created_at?: string | null
+          employee_id: string
+          id?: string
+          memo?: string | null
+          org_id: string
+          report_id: string
+          role?: string | null
+          staff_type: string
+          work_hours?: number | null
+        }
+        Update: {
+          check_in?: string | null
+          check_out?: string | null
+          created_at?: string | null
+          employee_id?: string
+          id?: string
+          memo?: string | null
+          org_id?: string
+          report_id?: string
+          role?: string | null
+          staff_type?: string
+          work_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_report_staff_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_report_staff_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "daily_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_reports: {
+        Row: {
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string | null
+          created_by: string
+          event_flag: boolean | null
+          event_name: string | null
+          id: string
+          memo: string | null
+          org_id: string
+          report_date: string
+          status: string
+          store_id: string
+          submitted_at: string | null
+          total_cars: number | null
+          total_revenue: number | null
+          updated_at: string | null
+          valet_count: number | null
+          weather: string | null
+        }
+        Insert: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string | null
+          created_by: string
+          event_flag?: boolean | null
+          event_name?: string | null
+          id?: string
+          memo?: string | null
+          org_id: string
+          report_date: string
+          status?: string
+          store_id: string
+          submitted_at?: string | null
+          total_cars?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+          valet_count?: number | null
+          weather?: string | null
+        }
+        Update: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string | null
+          created_by?: string
+          event_flag?: boolean | null
+          event_name?: string | null
+          id?: string
+          memo?: string | null
+          org_id?: string
+          report_date?: string
+          status?: string
+          store_id?: string
+          submitted_at?: string | null
+          total_cars?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+          valet_count?: number | null
+          weather?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_reports_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           bank_account: string | null

@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
 
     const primaryStoreMap = new Map<string, string>();
     for (const m of memberships ?? []) {
-      if (m.is_primary) primaryStoreMap.set(m.employee_id, m.store_id);
+      if (m.is_primary && m.store_id) primaryStoreMap.set(m.employee_id, m.store_id);
     }
 
     // ── 4. 해당 월 일보+근무인원 조회 ──

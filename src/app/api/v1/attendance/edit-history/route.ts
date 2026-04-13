@@ -38,7 +38,7 @@ interface AuditLogMini {
   reason: string | null;
   before_data: Record<string, unknown> | null;
   after_data: Record<string, unknown> | null;
-  created_at: string;
+  changed_at: string | null;
 }
 
 // JSON data에서 employee_id, work_date 추출
@@ -83,10 +83,10 @@ export async function GET(request: NextRequest) {
     // ── audit_logs 조회 ──
     let q = supabase
       .from('audit_logs')
-      .select('id, record_id, action, changed_by, reason, before_data, after_data, created_at', { count: 'exact' })
+      .select('id, record_id, action, changed_by, reason, before_data, after_data, changed_at', { count: 'exact' })
       .eq('org_id', ctx.orgId)
       .eq('table_name', 'attendance_overrides')
-      .order('created_at', { ascending: false });
+      .order('changed_at', { ascending: false });
 
     if (actionParam) q = q.eq('action', actionParam);
 
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
       return {
         id: log.id,
         action: log.action,
-        changed_at: log.created_at,
+        changed_at: log.changed_at,
         reason: log.reason,
         changed_by: log.changed_by,
         changed_by_name: userMap.get(log.changed_by) ?? null,

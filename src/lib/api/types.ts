@@ -290,7 +290,7 @@ export interface AuditLogRow {
   org_id: string;
   table_name: string;
   record_id: string;
-  action: 'insert' | 'update' | 'delete';
+  action: string; // 'insert' | 'update' | 'delete' | 'soft_delete' | 'renew_*' 등 자유롭게
   changed_by: string;
   changed_at: string;
   before_data?: unknown;
