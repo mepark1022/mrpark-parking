@@ -17,6 +17,7 @@ import {
   ErrorCodes,
 } from '@/lib/api';
 import { writeAuditLog } from '@/lib/api/helpers';
+import type { TablesInsert } from '@/lib/database.types';
 
 interface BulkEmployeeInput {
   emp_no: string;
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
     const existingSet = new Set(existingEmps?.map(e => e.emp_no.toUpperCase()) ?? []);
 
     const results: BulkResult[] = [];
-    const toInsert: Array<Record<string, unknown>> = [];
+    const toInsert: TablesInsert<'employees'>[] = [];
     const storeAssignments: Array<{ employee_index: number; store_id: string }> = [];
 
     // 검증 패스
@@ -174,7 +175,7 @@ export async function POST(request: NextRequest) {
         // 사업장 배정
         if (storeAssignments.length > 0) {
           const smInserts = storeAssignments
-            .map(sa => {
+            .map((sa): TablesInsert<'store_members'> | null => {
               const emp = inserted[sa.employee_index];
               if (!emp) return null;
               return {
@@ -186,7 +187,7 @@ export async function POST(request: NextRequest) {
                 assigned_by: ctx.userId,
               };
             })
-            .filter(Boolean);
+            .filter((x): x is TablesInsert<'store_members'> => x !== null);
 
           if (smInserts.length > 0) {
             await supabase.from('store_members').insert(smInserts);

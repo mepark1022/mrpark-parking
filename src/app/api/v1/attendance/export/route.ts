@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       .eq('is_active', true);
     const primaryStoreMap = new Map<string, string>();
     for (const m of memberships ?? []) {
-      if (m.is_primary && m.store_id) primaryStoreMap.set(m.employee_id, m.store_id);
+      if (m.is_primary && m.store_id && m.employee_id) primaryStoreMap.set(m.employee_id, m.store_id);
     }
 
     // ── 3. 일보 + staff ──

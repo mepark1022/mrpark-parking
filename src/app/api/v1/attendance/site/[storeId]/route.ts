@@ -275,6 +275,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
         const a = empAgg.get(empId)!;
 
+        if (!row.status) continue;
         if (workingStatuses.has(row.status)) {
           a.days += 1;
           a.total_hours += Number(row.work_hours ?? 0);

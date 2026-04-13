@@ -97,7 +97,7 @@ async function handleEmailLogin(
     role: profile?.role || 'crew',
     emp_no: profile?.emp_no,
     password_changed: profile?.password_changed ?? false,
-    redirect: getRedirectPath(profile?.role),
+    redirect: getRedirectPath(profile?.role ?? undefined),
   });
 }
 

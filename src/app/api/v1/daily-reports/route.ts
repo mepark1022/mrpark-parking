@@ -35,6 +35,7 @@ import type {
   DailyReportStaffType,
   DailyReportPaymentMethod,
 } from '@/lib/api/types';
+import type { TablesInsert, Json } from '@/lib/database.types';
 
 // ──────────────────────────────────────────────
 // GET /api/v1/daily-reports
@@ -308,14 +309,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (extraList.length > 0) {
-      const rows = extraList.map(e => ({
+      const rows: TablesInsert<'daily_report_extra'>[] = extraList.map(e => ({
         org_id: ctx.orgId,
         report_id: master.id,
         category: e.category,
         title: e.title ?? null,
         storage_path: e.storage_path ?? null,
         url: e.url ?? null,
-        metadata: e.metadata ?? null,
+        metadata: (e.metadata ?? null) as Json | null,
         created_by: ctx.userId,
       }));
       const { error: extraErr } = await supabase.from('daily_report_extra').insert(rows);

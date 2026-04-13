@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         .eq('store_id', storeId)
         .eq('is_active', true);
 
-      const empIds = members?.map(m => m.employee_id) ?? [];
+      const empIds = (members ?? []).map(m => m.employee_id).filter((x): x is string => !!x);
       if (empIds.length === 0) {
         return ok([], paginationMeta(0, { page, limit, offset }));
       }
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
         .eq('org_id', ctx.orgId)
         .not('employee_id', 'is', null);
 
-      const accountEmpIds = new Set(profiles?.map(p => p.employee_id) ?? []);
+      const accountEmpIds = new Set((profiles ?? []).map(p => p.employee_id).filter((x): x is string => !!x));
 
       // has_account 필터는 결과에서 클라이언트 필터로 처리하기엔 비효율 →
       // employee_id 목록으로 in/not-in 필터
