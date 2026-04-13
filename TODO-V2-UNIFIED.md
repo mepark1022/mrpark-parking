@@ -203,3 +203,36 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 | Supabase | @supabase/ssr 0.8, @supabase/supabase-js 2.95 |
 | 배포 | Vercel (push시 자동 배포) |
 | 도메인 | admin.mepark.kr / ticket.mepark.kr / mepark.kr / (신규) crew.mepark.kr |
+
+---
+
+## 📌 작업 로그 (2026.04.13 · Part 14C)
+
+### Part 14C — 월주차 v2 API (3엔드포인트)
+- `src/app/api/v1/monthly/route.ts` — GET 목록(필터: tenant/store/contract_status/payment_status/expiring_within_days/search) + POST 등록
+- `src/app/api/v1/monthly/[id]/route.ts` — GET 상세(renewed_from 동봉) / PATCH 부분수정 / DELETE soft(cancelled)+hard(super_admin)
+- `src/app/api/v1/monthly/[id]/renew/route.ts` — POST 갱신 (기존 expired + 신규 row + renewed_from_id 연결 + tenant usage_count++)
+
+### 핵심 설계
+- monthly_parking은 org_id 컬럼 없음 → `stores!inner(org_id)` 조인으로 멀티테넌시 강제
+- crew/field_member는 ctx.storeIds 내 사업장만 접근 가능 (모든 메서드)
+- 활성 차량번호 중복 검사 (같은 store + active)
+- 갱신 시 기본값: start_date = 기존 end_date + 1일, end_date = start_date + 1개월(말일 보정)
+- 갱신 실패 시 best-effort 롤백 (기존 row 상태 복원)
+- 알림톡(월주차갱신완료)은 별도 cron에서 처리, 이 API는 호출하지 않음
+
+### 빌드
+- `npm run build` ✅ 통과
+- 라우트 등록 확인: `/api/v1/monthly`, `/api/v1/monthly/[id]`, `/api/v1/monthly/[id]/renew`
+
+### 호환성
+- 기존 monthly_parking 테이블/v1 페이지(/monthly, /crew/monthly)/cron(monthly-remind, monthly-leave) 모두 무영향
+- tenant_id, renewed_from_id는 nullable이라 기존 row와 자연 호환
+
+### 완료 여부
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| GET /api/v1/monthly | ✅ | (14A 완료) | ⏳ 실배포 검증 필요 |
+| POST /api/v1/monthly | ✅ | (14A 완료) | ⏳ |
+| GET/PATCH/DELETE /api/v1/monthly/:id | ✅ | (14A 완료) | ⏳ |
+| POST /api/v1/monthly/:id/renew | ✅ | (14A 완료) | ⏳ |
