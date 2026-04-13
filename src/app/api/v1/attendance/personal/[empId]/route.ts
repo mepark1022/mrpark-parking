@@ -30,8 +30,10 @@ import {
   buildSummary,
   monthRange,
   validateYearMonth,
+  applyOverrides,
   type AttendanceRow,
   type StaffType,
+  type AttendanceOverrideRow,
 } from '@/lib/api/attendance';
 
 interface RouteParams {
@@ -203,11 +205,76 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // ── 6.5 override 조회 + 병합 ──
+    const { data: overrides } = await supabase
+      .from('attendance_overrides')
+      .select('*')
+      .eq('org_id', ctx.orgId)
+      .eq('employee_id', empId)
+      .gte('work_date', from)
+      .lte('work_date', to);
+    const overrideList = (overrides ?? []) as AttendanceOverrideRow[];
+
+    // override-only store_id 이름 보충
+    const storeNameMap = new Map<string, string>();
+    for (const r of rows) {
+      if (r.store_id && r.store_name) storeNameMap.set(r.store_id, r.store_name);
+    }
+    const missingStoreIds = new Set<string>();
+    for (const ov of overrideList) {
+      if (ov.store_id && !storeNameMap.has(ov.store_id)) missingStoreIds.add(ov.store_id);
+    }
+    if (missingStoreIds.size > 0) {
+      const { data: extraStores } = await supabase
+        .from('stores')
+        .select('id, name')
+        .eq('org_id', ctx.orgId)
+        .in('id', [...missingStoreIds]);
+      for (const s of extraStores ?? []) {
+        if (s.id && s.name) storeNameMap.set(s.id, s.name);
+      }
+    }
+
+    // 현재 rows를 matrix 구조로 변환 후 applyOverrides
+    const matrixIn: Record<string, Record<string, AttendanceRow>> = { [empId]: {} };
+    for (const r of rows) matrixIn[empId][r.date] = r;
+    const empMetaMap = new Map<string, { emp_no: string; name: string }>();
+    empMetaMap.set(empId, { emp_no: emp.emp_no, name: emp.name });
+    const merged = applyOverrides(matrixIn, overrideList, empMetaMap, storeNameMap);
+
+    // rows/storeDistribution 재구성
+    const mergedRows: AttendanceRow[] = Object.values(merged[empId] ?? {})
+      .filter(r => isInEmploymentPeriod(r.date, emp.hire_date, emp.resign_date))
+      .sort((a, b) => (a.date < b.date ? -1 : 1));
+
+    storeDistribution.clear();
+    for (const r of mergedRows) {
+      if (
+        r.status === 'present' || r.status === 'late' ||
+        r.status === 'peak' || r.status === 'support' ||
+        r.status === 'additional'
+      ) {
+        if (!r.store_id) continue;
+        const key = r.store_id;
+        if (!storeDistribution.has(key)) {
+          storeDistribution.set(key, {
+            store_id: key,
+            store_name: r.store_name,
+            count: 0,
+            hours: 0,
+          });
+        }
+        const d = storeDistribution.get(key)!;
+        d.count += 1;
+        d.hours += Number(r.work_hours ?? 0);
+      }
+    }
+
     // ── 7. 집계 ──
-    const sum = buildSummary(rows);
+    const sum = buildSummary(mergedRows);
 
     // 근무시간 통계
-    const hoursArr = rows
+    const hoursArr = mergedRows
       .map(r => Number(r.work_hours ?? 0))
       .filter(h => h > 0);
     const avgHours = hoursArr.length
@@ -231,7 +298,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         resign_date: emp.resign_date,
         primary_store_id: primaryStore,
       },
-      rows,
+      rows: mergedRows,
       summary: sum,
       store_distribution: [...storeDistribution.values()].sort(
         (a, b) => b.count - a.count

@@ -75,6 +75,9 @@ export const ErrorCodes = {
   PLACE_NOT_FOUND:      'PLACE_NOT_FOUND',
   PLACE_DUPLICATE_NAME: 'PLACE_DUPLICATE_NAME',  // 동일 사업장 내 이름 중복
 
+  // ── 근태 ──
+  ATT_DUPLICATE_OVERRIDE: 'ATT_DUPLICATE_OVERRIDE', // 근태 오버라이드 중복
+
   // ── 공통 ──
   VALIDATION_ERROR:     'VALIDATION_ERROR',      // 입력값 검증 실패
   NOT_FOUND:            'NOT_FOUND',             // 범용 404

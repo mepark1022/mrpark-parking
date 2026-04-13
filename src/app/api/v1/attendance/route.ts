@@ -33,9 +33,11 @@ import {
   buildSummary,
   monthRange,
   validateYearMonth,
+  applyOverrides,
   type AttendanceRow,
   type AttendanceSummary,
   type StaffType,
+  type AttendanceOverrideRow,
 } from '@/lib/api/attendance';
 
 export async function GET(request: NextRequest) {
@@ -145,9 +147,11 @@ export async function GET(request: NextRequest) {
     // emp_id → date → entries[]
     const rawMap = new Map<string, Map<string, RawEntry[]>>();
     const empIdSet = new Set(empIds);
+    const storeNameMap = new Map<string, string>();
 
     for (const r of reports ?? []) {
       const store = Array.isArray(r.stores) ? r.stores[0] : r.stores;
+      if (store?.id && store?.name) storeNameMap.set(store.id, store.name);
       const staffArr = (r.daily_report_staff ?? []) as Array<{
         employee_id: string;
         staff_type: string;
@@ -203,7 +207,6 @@ export async function GET(request: NextRequest) {
 
       const empMatrix: Record<string, AttendanceRow> = {};
       const byDate = rawMap.get(emp.id);
-      const rowsForSummary: AttendanceRow[] = [];
 
       if (byDate) {
         for (const [date, entries] of byDate.entries()) {
@@ -235,11 +238,51 @@ export async function GET(request: NextRequest) {
             staff_type: rep.staff_type,
           };
           empMatrix[date] = row;
-          rowsForSummary.push(row);
         }
       }
 
       matrix[emp.id] = empMatrix;
+    }
+
+    // ── 6.5 override 조회 + 병합 ──
+    let ovQ = supabase
+      .from('attendance_overrides')
+      .select('*')
+      .eq('org_id', ctx.orgId)
+      .gte('work_date', from)
+      .lte('work_date', to)
+      .in('employee_id', empIds);
+    if (storeId) ovQ = ovQ.eq('store_id', storeId);
+    const { data: overrides } = await ovQ;
+    const overrideList = (overrides ?? []) as AttendanceOverrideRow[];
+
+    // override-only store_id 이름 보충
+    const missingStoreIds = new Set<string>();
+    for (const ov of overrideList) {
+      if (ov.store_id && !storeNameMap.has(ov.store_id)) missingStoreIds.add(ov.store_id);
+    }
+    if (missingStoreIds.size > 0) {
+      const { data: extraStores } = await supabase
+        .from('stores')
+        .select('id, name')
+        .eq('org_id', ctx.orgId)
+        .in('id', [...missingStoreIds]);
+      for (const s of extraStores ?? []) {
+        if (s.id && s.name) storeNameMap.set(s.id, s.name);
+      }
+    }
+
+    const empMeta = new Map<string, { emp_no: string; name: string }>();
+    for (const e of empList) empMeta.set(e.id, { emp_no: e.emp_no, name: e.name });
+
+    const mergedMatrix = applyOverrides(matrix, overrideList, empMeta, storeNameMap);
+
+    // ── 7. 병합 후 일괄 summary 재계산 ──
+    for (const emp of empList) {
+      const byDate = mergedMatrix[emp.id] ?? {};
+      const rowsForSummary = Object.values(byDate).filter(r =>
+        isInEmploymentPeriod(r.date, emp.hire_date, emp.resign_date)
+      );
       summary[emp.id] = buildSummary(rowsForSummary);
     }
 
@@ -249,7 +292,7 @@ export async function GET(request: NextRequest) {
       date_from: from,
       date_to: to,
       employees: empOut,
-      matrix,
+      matrix: mergedMatrix,
       summary,
     });
   } catch (err) {

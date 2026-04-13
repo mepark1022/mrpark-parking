@@ -281,3 +281,107 @@ export function validateYearMonth(
   }
   return { valid: true, year, month };
 }
+
+// ============================================================
+// Part 11B — Override 병합 유틸
+// ============================================================
+
+/**
+ * 근태 오버라이드 행 (attendance_overrides 테이블)
+ */
+export interface AttendanceOverrideRow {
+  id: string;
+  org_id: string;
+  employee_id: string;
+  work_date: string;          // YYYY-MM-DD
+  status: AttendanceStatus;
+  store_id: string | null;
+  check_in: string | null;    // HH:MM:SS
+  check_out: string | null;
+  work_hours: number | null;
+  reason: string | null;
+  memo: string | null;
+  created_by: string;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * 매트릭스에 override를 덮어쓴다
+ *
+ * @param matrix - 직원별 날짜별 근태 행 (daily_reports 기반)
+ * @param overrides - attendance_overrides 행 배열
+ * @param empMeta - 직원 메타 (emp_no, name) — override만 있고 일보 없을 때 채우기용
+ * @param storeNameMap - store_id → store_name (override의 store_id 라벨링용)
+ * @returns 덮어쓴 매트릭스 (원본 미변형, 얕은 복제)
+ */
+export function applyOverrides(
+  matrix: Record<string, Record<string, AttendanceRow>>,
+  overrides: AttendanceOverrideRow[],
+  empMeta: Map<string, { emp_no: string; name: string }>,
+  storeNameMap: Map<string, string>
+): Record<string, Record<string, AttendanceRow>> {
+  // 얕은 복제
+  const result: Record<string, Record<string, AttendanceRow>> = {};
+  for (const [empId, byDate] of Object.entries(matrix)) {
+    result[empId] = { ...byDate };
+  }
+
+  for (const ov of overrides) {
+    const meta = empMeta.get(ov.employee_id);
+    if (!result[ov.employee_id]) result[ov.employee_id] = {};
+
+    const existing = result[ov.employee_id][ov.work_date];
+    const storeName = ov.store_id ? (storeNameMap.get(ov.store_id) ?? null) : null;
+
+    result[ov.employee_id][ov.work_date] = {
+      employee_id: ov.employee_id,
+      emp_no: meta?.emp_no ?? existing?.emp_no ?? '',
+      name: meta?.name ?? existing?.name ?? '',
+      date: ov.work_date,
+      status: ov.status,
+      check_in: ov.check_in ?? existing?.check_in ?? null,
+      check_out: ov.check_out ?? existing?.check_out ?? null,
+      report_id: existing?.report_id ?? null,
+      store_id: ov.store_id ?? existing?.store_id ?? null,
+      store_name: storeName ?? existing?.store_name ?? null,
+      work_hours: ov.work_hours ?? existing?.work_hours ?? null,
+      staff_type: existing?.staff_type ?? null,
+    };
+  }
+
+  return result;
+}
+
+/**
+ * 근태 상태 코드 유효성 검사
+ */
+export function isValidAttendanceStatus(s: unknown): s is AttendanceStatus {
+  return (
+    typeof s === 'string' &&
+    ['present','late','peak','support','additional','leave','off','absent'].includes(s)
+  );
+}
+
+/**
+ * 시간 정규화 HH:MM → HH:MM:SS (이미 HH:MM:SS면 그대로)
+ * 유효하지 않으면 null
+ */
+export function normalizeTime(t: string | null | undefined): string | null {
+  if (!t) return null;
+  const s = t.trim();
+  if (/^\d{2}:\d{2}$/.test(s)) return `${s}:00`;
+  if (/^\d{2}:\d{2}:\d{2}$/.test(s)) return s;
+  return null;
+}
+
+/**
+ * YYYY-MM-DD 형식 검증
+ */
+export function isValidDate(d: unknown): d is string {
+  if (typeof d !== 'string') return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  const dt = new Date(d + 'T00:00:00');
+  return !isNaN(dt.getTime());
+}
