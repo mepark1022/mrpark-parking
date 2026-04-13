@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.13
-> **마지막 작업:** Part 15B 월주차 v2 UI — 등록 페이지 (사업장+입주사+11필드+자동계산)
+> **마지막 작업:** Part 15C 월주차 v2 UI — 상세+수정+갱신+취소 (Part 15 시리즈 마감)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -50,7 +50,8 @@ cat TODO-V2-UNIFIED.md
 | **Part 13B** | 현장일보 v2 UI — 작성 페이지 (기본정보+근무인원+결제매출) | ✅ 완료 | fa05b01 |
 | **Part 13C** | 현장일보 v2 UI — 상세+수정+확정/해제+사진+이력 (13 시리즈 마감) | ✅ 완료 | (이번 push) |
 | **Part 15A** | 월주차 v2 UI — 목록 페이지 (필터+만료임박 D-N+카드리스트+페이지네이션) | ✅ 완료 | 659e29e |
-| **Part 15B** | 월주차 v2 UI — 등록 페이지 (사업장+입주사+11필드+자동계산) | ✅ 완료 | (이번 push) |
+| **Part 15B** | 월주차 v2 UI — 등록 페이지 (사업장+입주사+11필드+자동계산) | ✅ 완료 | 742e155 |
+| **Part 15C** | 월주차 v2 UI — 상세+수정+갱신+취소 (15 시리즈 마감) | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -342,3 +343,58 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 |------|------|-----|------|
 | /v2/monthly/new 등록 페이지 | ✅ | (14A 완료) | ⏳ 실배포 검증 필요 |
 | /v2/monthly/[id] 상세+수정+갱신+취소 | ⏳ Part 15C | - | - |
+
+---
+
+## 📌 작업 로그 (2026.04.13 · Part 15C — Part 15 시리즈 마감)
+
+### Part 15C — 월주차 v2 UI 상세+수정+갱신+취소
+
+**신규 파일 2개:**
+- `src/app/v2/monthly/[id]/page.tsx` — 메인 상세 (읽기/편집 토글)
+- `src/app/v2/monthly/[id]/RenewModal.tsx` — 갱신 모달
+
+**메인 페이지 구성:**
+- 헤더: 차량번호(Outfit 800 32px 네이비) + 계약상태/결제상태 뱃지 + D-N 만료표시
+- 액션 버튼 (편집모드 아닐 때): 수정(회색) / 갱신(골드) / 계약취소(빨강 outline) — cancelled는 갱신/취소 숨김
+- 본문: "📋 계약 정보" 섹션 (사업장/입주사/차종/고객명/연락처/계약기간/월요금/등록일자/메모)
+- 갱신 이력: `data.renewed_from` 있으면 별도 카드로 "🔄 이전 계약" 표시 + 이전 계약 ID로 이동 버튼
+
+**읽기/편집 토글:**
+- ReadField: 라벨 11px 회색 + 값 14px (highlight=16px), 월요금만 22px Outfit 800 네이비 강조
+- EditField: 라벨 12px + required 빨간별 + hint 우측 회색 + input
+- 사업장은 변경 불가 (필요 시 취소 후 신규 등록 안내 — 노란 박스)
+- 11필드 PATCH: vehicle_number(공백/하이픈 자동제거)/vehicle_type/customer_name/customer_phone/start_date/end_date/monthly_fee/payment_status/contract_status/note/tenant_id
+- 검증: 차량번호 4자+/고객명/연락처/날짜순서/월요금 0+
+
+**계약취소 (DELETE soft):**
+- confirm() 모달: "차량/사업장" 표시 후 사용자 확인
+- 이미 cancelled면 alert 후 무동작
+- 성공 시 alert + load() 재조회 → contract_status='cancelled' 반영, 액션 버튼 자동 숨김
+
+**갱신 모달 (RenewModal.tsx):**
+- 헤더: 네이비 배경, "🔄 월주차 갱신" + "기존 계약은 'expired' 처리됩니다" 안내
+- 기존 계약 요약 카드: 차량번호/고객명/기간/월요금
+- 신규 입력 4필드: 시작일(기본 기존 end+1일) / 종료일(자동 +1개월 -1일, 수동 변경 시 추적) / 월요금(기본 기존, 변경 시 골드 테두리+"변경됨" 표시) / 결제상태(기본 unpaid) / 메모(기본 기존)
+- POST `/api/v1/monthly/:id/renew` body: `{start_date, end_date, monthly_fee, payment_status, note}`
+- 성공 응답: `{renewed:true, previous, current}` → `current.id`로 부모가 router.push 이동
+
+**날짜 계산 일관성:**
+- 등록 폼(15B)과 갱신 모달(15C) 모두 `endFromStart`: 시작일 + 1개월 → 같은 일자 -1일 (한국 관행: 4.13~5.12)
+- API의 `addMonths(start, 1)`은 같은 일자(4.13→5.13)지만 사용자가 수동 입력으로 덮어쓰므로 충돌 없음. 기본값만 다름
+
+**디자인 일관성:**
+- 모달: 위에 네이비 헤더 / 본문 흰색 / 하단 회색 액션바
+- 클릭 외부 영역 → onClose (e.stopPropagation으로 모달 본문은 보존)
+- 갱신 버튼은 골드 (브랜드 강조), 일반 액션은 네이비
+
+**빌드:** `npm run build` ✅ 성공, `/v2/monthly/[id]` ƒ dynamic 라우트 등록
+
+### Part 15 시리즈 전체 완료
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| /v2/monthly 목록 (Part 15A) | ✅ | (14A 완료) | ⏳ 실배포 |
+| /v2/monthly/new 등록 (Part 15B) | ✅ | (14A 완료) | ⏳ 실배포 |
+| /v2/monthly/[id] 상세+수정+갱신+취소 (Part 15C) | ✅ | (14A 완료) | ⏳ 실배포 |
+
+**API 연결 완료:** `/api/v1/monthly` 4엔드포인트(목록·등록·상세·수정·삭제·갱신) 모두 v2 UI에서 호출 가능
