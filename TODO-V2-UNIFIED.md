@@ -1,8 +1,8 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
 > **작성일:** 2026.04.09
-> **마지막 업데이트:** 2026.04.10
-> **마지막 작업:** Part 10C 사진 업로드 + Excel 내보내기 완료 → Part 10A SQL 실행 대기 🔸 + Storage 버킷 생성 대기 🔸
+> **마지막 업데이트:** 2026.04.13
+> **마지막 작업:** Part 11A 근태 조회 API 4개 라우트 + 판정 유틸 완료 (10A SQL ✅ / Storage 버킷 ✅ / RLS 정책 4개 ✅)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -36,9 +36,10 @@ cat TODO-V2-UNIFIED.md
 | **Part 7** | 연동 테스트 + 충돌 검증 (코드레벨) | ✅ 완료 | 6/7 통과, RLS는 SQL 실행 후 |
 | **Part 8** | Store API (사업장 CRUD + 주차장 + 방문지) | ✅ 완료 | (이번 push) |
 | **Part 9** | Ticket API — GET 목록/상세, PATCH 수동 상태변경(MANAGE) | ✅ 완료 | b5320bf |
-| **Part 10A** | 현장일보 DB(4테이블) + 기본 CRUD 6엔드포인트 | ✅ 완료 | 4d9851e / SQL 실행 대기 🔸 |
+| **Part 10A** | 현장일보 DB(4테이블) + 기본 CRUD 6엔드포인트 | ✅ 완료 | 4d9851e / SQL 실행 완료 ✅ |
 | **Part 10B** | 현장일보 수정 API 4개 (staff/payment/unconfirm/history) | ✅ 완료 | 8678b40 |
-| **Part 10C** | 현장일보 사진 업로드 + Excel 내보내기 | ✅ 완료 | (이번 push) / Storage 버킷 🔸 |
+| **Part 10C** | 현장일보 사진 업로드 + Excel 내보내기 | ✅ 완료 | 2d17fb8 / Storage 버킷 ✅ + RLS 4개 ✅ |
+| **Part 11A** | 근태 조회 API 4개 (월매트릭스/개인/사업장/이상감지) + 판정 유틸 | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -173,7 +174,8 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 | 2026.04.10 | Part 9 | Ticket API — tickets/route.ts에 GET 목록 추가(8필터+페이지네이션, crew는 배정사업장 스코프), tickets/[id]/route.ts 신규(GET 상세 visit_places+stores JOIN / PATCH MANAGE 수동보정 9필드 화이트리스트+상태전환시 타임스탬프 자동셋+audit_logs 기록). types.ts ApiSuccess.meta에 page_size/total_pages 추가, helpers.ts paginationMeta가 계산하도록 시그니처 확장. 빌드 성공 | ✅ | (이번 push) |
 | 2026.04.10 | Part 10A | 현장일보 DB 4테이블(daily_reports/staff/payment/extra) + RLS + updated_at 트리거 SQL, API 4파일 6엔드포인트: GET 목록(필터·스코프·페이지네이션) / POST 작성(staff·payment·extra 일괄 insert, 실패 시 master 롤백) / GET 상세(자식 병렬 JOIN) / PUT 수정(OPERATE 본인·당일·미확정 제약, MANAGE 예외) / PATCH confirm(audit 기록) / POST bulk-confirm(ids 또는 조건 기반). types.ts DailyReport* 4종 타입 추가, errors.ts REPORT_* 5코드 추가, index.ts export 추가. 빌드 성공 | 🔸 SQL 대기 | 4d9851e |
 | 2026.04.10 | Part 10B | 현장일보 수정 API 4파일: PUT /:id/staff (기존 전체 삭제→재insert, audit 전체 before/after) / PUT /:id/payment (교체 + total_revenue/valet_count 자동 재계산 + audit) / PATCH /:id/unconfirm (status confirmed→submitted, confirmed_at/by null, audit) / GET /:id/history (audit_logs에서 daily_reports/staff/payment 3테이블 record_id=일보id 집계, 페이지네이션). 빌드 성공 8라우트 등록 확인 | ✅ | 8678b40 |
-| 2026.04.10 | Part 10C | 현장일보 사진 업로드 + Excel 내보내기 2파일: POST /:id/images (multipart/form-data, OPERATE + canAccessStore, confirmed는 MANAGE만, 파일검증 20개·10MB·jpeg/png/webp/heic, Storage 'daily-report-photos' 버킷 {org_id}/{report_id}/{ts}_{i}.{ext} 업로드, daily_report_extra category='photo' 일괄 insert, insert 실패 시 Storage 롤백, audit 기록) / GET /export (MANAGE, date_from/date_to 필수·store_id 선택, reports+staff(employees JOIN)+payment 조회, XLSX 3시트 '일보요약'/'근무인원'/'결제매출' 한글 헤더+enum 한글변환, 빈 데이터도 헤더행 보장, Content-Disposition attachment). 빌드 성공 10라우트 등록 확인 | 🔸 Storage 버킷+10A SQL 대기 | (이번 push) |
+| 2026.04.10 | Part 10C | 현장일보 사진 업로드 + Excel 내보내기 2파일: POST /:id/images (multipart/form-data, OPERATE + canAccessStore, confirmed는 MANAGE만, 파일검증 20개·10MB·jpeg/png/webp/heic, Storage 'daily-report-photos' 버킷 {org_id}/{report_id}/{ts}_{i}.{ext} 업로드, daily_report_extra category='photo' 일괄 insert, insert 실패 시 Storage 롤백, audit 기록) / GET /export (MANAGE, date_from/date_to 필수·store_id 선택, reports+staff(employees JOIN)+payment 조회, XLSX 3시트 '일보요약'/'근무인원'/'결제매출' 한글 헤더+enum 한글변환, 빈 데이터도 헤더행 보장, Content-Disposition attachment). 빌드 성공 10라우트 등록 확인 | ✅ Storage 버킷+10A SQL 완료 (2026.04.13) | 2d17fb8 |
+| 2026.04.13 | Part 11A | 근태 조회 API 5파일: src/lib/api/attendance.ts (판정 유틸: staff_type→8종 매핑, regular+타사업장→support 자동감지, 지각 판정 LATE_THRESHOLD='09:30:00', mergeByPriority 우선순위 병합 출근>피크>지원>추가, isInEmploymentPeriod hire_date/resign_date 범위 체크, buildSummary 월집계 평일/주말/추가/피크/지원/공휴/지각/결근/연차/휴무/합계/총근무시간, monthRange/validateYearMonth 헬퍼) / GET /api/v1/attendance (SELF, year+month+store_id?, crew/field는 ctx.employeeId만, employees+store_members(primary)+daily_reports+daily_report_staff JOIN, 매트릭스 {emp_id:{date:row}} + summary) / GET /attendance/personal/:empId (SELF+canAccessSelfOrManage, employee+rows+summary+store_distribution+hours_stats avg/max/min/total) / GET /attendance/site/:storeId (MANAGE, submission{submitted/total/rate/missing_dates}+employees{is_primary_here,days,late_count,support_count,by_status}+daily_headcount+stats) / GET /attendance/anomaly (MANAGE, 7종 감지: MISSING_REPORT/ZERO_STAFF/DUPLICATE_STORE/LATE/NO_CHECKOUT/LONG_HOURS>12h/ABNORMAL_HOURS≤0, 각 타입 최대 100건). 빌드 성공 4라우트 등록 확인 (/api/v1/attendance, /anomaly, /personal/[empId], /site/[storeId]) | ✅ 완료 | (이번 push) |
 
 ---
 
