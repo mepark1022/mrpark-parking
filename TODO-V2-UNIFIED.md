@@ -56,7 +56,7 @@ cat TODO-V2-UNIFIED.md
 | **Part 16B** | 입주사 v2 UI — 상세+수정+활성화토글+영구삭제+활성계약목록 (16 시리즈 마감) | ✅ 완료 | 0d0f8da |
 | **Part 17A** | 통계 API 5개 (overview/by-store/by-tenant/by-payment-method/daily-trend) + stats.ts 유틸 | ✅ 완료 | 813abac |
 | **Part 17B** | 대시보드 UI `/v2/dashboard` — KPI 4카드 + 추이차트(ComposedChart) + 결제수단 도넛 + 사업장/입주사 테이블 (17 시리즈 마감) | ✅ 완료 | (이번 push) |
-| **Part 18A** | 월주차 알림톡 v2 훅 — renew API에 renewal_complete 발송 + monthly-expire 크론 신설 + SQL 12 (플래그 컬럼) | ✅ 완료 | (이번 push) / SQL 12 실행 필요 🔸 |
+| **Part 18A** | 월주차 알림톡 v2 훅 — renew API에 renewal_complete 발송 + monthly-expire 크론 신설 + SQL 12 (플래그 컬럼) | ✅ 완료 | 13552f3 / SQL 12 실행 완료 ✅ 2026.04.14 |
 
 ---
 
@@ -722,7 +722,7 @@ CRON_SECRET                       = (임의 문자열)
 ### 완료 여부
 | 항목 | Code | DB | Test |
 |------|------|-----|------|
-| SQL 12 (monthly_parking 플래그 4컬럼 + 인덱스) | ✅ | 🔸 실행 필요 | - |
+| SQL 12 (monthly_parking 플래그 4컬럼 + 인덱스) | ✅ | ✅ 실행 완료 2026.04.14 | - |
 | renew API → renewal_complete 발송 훅 | ✅ | - | ⏳ 실운영 |
 | monthly-expire 크론 신설 | ✅ | - | ⏳ 실운영 |
 | vercel.json 크론 등록 | ✅ | - | ⏳ |
