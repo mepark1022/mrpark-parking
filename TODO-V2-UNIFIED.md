@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.14
-> **마지막 작업:** Part 17B 대시보드 UI `/v2/dashboard` — KPI+추이차트+도넛+사업장/입주사 테이블 (17 시리즈 마감)
+> **마지막 작업:** Part 18A — 월주차 알림톡 v2 훅 (renew → renewal_complete + monthly-expire 크론 + SQL 12 플래그)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -56,6 +56,7 @@ cat TODO-V2-UNIFIED.md
 | **Part 16B** | 입주사 v2 UI — 상세+수정+활성화토글+영구삭제+활성계약목록 (16 시리즈 마감) | ✅ 완료 | 0d0f8da |
 | **Part 17A** | 통계 API 5개 (overview/by-store/by-tenant/by-payment-method/daily-trend) + stats.ts 유틸 | ✅ 완료 | 813abac |
 | **Part 17B** | 대시보드 UI `/v2/dashboard` — KPI 4카드 + 추이차트(ComposedChart) + 결제수단 도넛 + 사업장/입주사 테이블 (17 시리즈 마감) | ✅ 완료 | (이번 push) |
+| **Part 18A** | 월주차 알림톡 v2 훅 — renew API에 renewal_complete 발송 + monthly-expire 크론 신설 + SQL 12 (플래그 컬럼) | ✅ 완료 | (이번 push) / SQL 12 실행 필요 🔸 |
 
 ---
 
@@ -669,3 +670,65 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 
 ### 다음 단계
 - Part 17 시리즈 마감. 다음 Part는 신규 기획 필요 (모바일 CREW 앱 / 알림톡 연동 / 월주차 만기 자동 알림 등)
+
+## Part 18A — 월주차 알림톡 v2 훅 (2026.04.14)
+
+### 작업 내용
+- **SQL `sql/v2/12-monthly-alimtalk-flags.sql`** 신규
+  - `monthly_parking` 테이블에 4개 컬럼 추가:
+    - `renewal_alimtalk_sent` BOOLEAN (갱신 완료 알림톡 발송 여부)
+    - `renewal_alimtalk_sent_at` TIMESTAMPTZ
+    - `expire_alimtalk_sent` BOOLEAN (만료 안내 알림톡 발송 여부)
+    - `expire_alimtalk_sent_at` TIMESTAMPTZ
+  - `idx_monthly_parking_expire_scan` 부분 인덱스 (active + 미발송 + end_date)
+- **`src/app/api/v1/monthly/[id]/renew/route.ts`** 수정
+  - audit 2건 기록 후, `inserted.customer_phone` 유효 시 `/api/alimtalk/monthly` (templateType=`renewal_complete`) fire-and-forget 호출
+  - 발송 성공 응답 수신 시 `renewal_alimtalk_sent=true`, `renewal_alimtalk_sent_at` 업데이트 (best-effort)
+  - 응답에 `alimtalk_requested` 필드 추가
+- **`src/app/api/cron/monthly-expire/route.ts`** 신규 크론
+  - 매일 09:00 KST (UTC 00:00), `CRON_SECRET` Bearer 인증
+  - `end_date=오늘 + contract_status='active' + expire_alimtalk_sent=false` 조회
+  - 템플릿 `monthly_expire` 발송 → `alimtalk_send_logs` 기록 → 성공 시 플래그 업데이트
+  - contract_status 는 그대로 `active` 유지 (상태 전이는 별도 정책)
+- **`vercel.json`** 업데이트
+  - `monthly-expire` 크론 등록 (schedule: `0 0 * * *`)
+
+### Solapi 환경변수 (Vercel 설정 필요 — 사용자 확인)
+```
+SOLAPI_API_KEY
+SOLAPI_API_SECRET
+SOLAPI_PF_ID                      = KA01PF2602181223374948VgQEw1w3yH
+SOLAPI_SENDER_NUMBER              = 18991871 (또는 발신번호)
+SOLAPI_TEMPLATE_ENTRY             = KA01TP260222021359686qE3A8KaLqAW
+SOLAPI_TEMPLATE_READY             = KA01TP260222021621089q9OGashc4Qb
+SOLAPI_TEMPLATE_MONTHLY_REMIND    = KA01TP260222022308481aARRiLNr2QY
+SOLAPI_TEMPLATE_MONTHLY_EXPIRE    = KA01TP260222022720623dV0RznZeffT
+SOLAPI_TEMPLATE_MONTHLY_RENEW     = KA01TP260222022756100gTRmdzWTSI5
+CRON_SECRET                       = (임의 문자열)
+```
+환경변수 미설정 시 `sendAlimtalk`는 자동으로 시뮬레이션 모드(`simulated:true`)로 동작 → 운영 전까지 안전.
+
+### 기술 포인트
+- fire-and-forget 패턴으로 renew 응답 지연 방지 (기존 tickets/entry 패턴 동일)
+- 플래그 업데이트는 발송 성공 응답 받은 후에만 수행 → 중복 발송 차단
+- 크론은 상태 전이를 하지 않음 (관리자/갱신 API의 영역)
+- `toKSTDateStr()` 재사용으로 timezone 일관성
+- `@ts-nocheck` + `export const dynamic = "force-dynamic"` 표준 준수
+
+### 빌드
+- `npm run build` ✅ 성공
+- `/api/cron/monthly-expire` 동적 라우트(ƒ) 등록 확인
+
+### 완료 여부
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| SQL 12 (monthly_parking 플래그 4컬럼 + 인덱스) | ✅ | 🔸 실행 필요 | - |
+| renew API → renewal_complete 발송 훅 | ✅ | - | ⏳ 실운영 |
+| monthly-expire 크론 신설 | ✅ | - | ⏳ 실운영 |
+| vercel.json 크론 등록 | ✅ | - | ⏳ |
+
+### 다음 단계
+- **SQL 12 실행** (Supabase SQL Editor) → 실행 후 ✅ 공유 부탁
+- **Vercel 환경변수 설정** (Solapi 키 + CRON_SECRET) → 설정 완료 시 시뮬레이션 → 실발송 전환
+- **Part 18B** — 관리자 알림톡 페이지 `/v2/alimtalk` (발송 로그 조회 + 필터 + CSV)
+- **Part 18C** — 월주차 상세에서 수동 발송 버튼 (D-7/만료/갱신 재발송)

@@ -15,7 +15,9 @@
  *
  * 주의:
  *   - Supabase는 진짜 트랜잭션 미지원 → 순차 처리 + 실패 시 best-effort 롤백
- *   - 알림톡(월주차갱신완료)은 이 API에서 호출 안 함, 별도 cron/큐에서 처리
+ *   - 알림톡(renewal_complete)은 insert 성공 후 fire-and-forget으로 발송
+ *     → /api/alimtalk/monthly 호출 (실패해도 갱신 성공 응답 유지)
+ *     → 발송 직후 renewal_alimtalk_sent=true 업데이트 (best-effort)
  *
  * Body (모두 optional):
  *   {
@@ -259,10 +261,60 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       afterData: inserted,
     });
 
+    // 10. 알림톡(renewal_complete) fire-and-forget 발송
+    //     - phone이 유효할 때만
+    //     - 발송 성공 시 renewal_alimtalk_sent 플래그 업데이트
+    //     - 어떤 실패도 갱신 응답에 영향 없음
+    const phoneForSend = (inserted.customer_phone || '').replace(/-/g, '');
+    if (phoneForSend.length >= 10) {
+      const baseUrl =
+        request.headers.get('origin') ||
+        process.env.NEXT_PUBLIC_BASE_URL ||
+        '';
+      if (baseUrl) {
+        // 비동기 발송 (await 안 함) — 응답 지연 방지
+        void (async () => {
+          try {
+            const res = await fetch(`${baseUrl}/api/alimtalk/monthly`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                phone: inserted.customer_phone,
+                customerName: inserted.customer_name,
+                vehicleNumber: inserted.vehicle_number,
+                storeName: inserted.stores?.name ?? '',
+                startDate: inserted.start_date,
+                endDate: inserted.end_date,
+                fee: inserted.monthly_fee,
+                templateType: 'renewal_complete',
+                contractId: inserted.id,
+                orgId: ctx.orgId,
+              }),
+            });
+            const body = await res.json().catch(() => ({}));
+            if (body?.success) {
+              // 플래그 업데이트 (best-effort)
+              const s2 = await createClient();
+              await s2
+                .from('monthly_parking')
+                .update({
+                  renewal_alimtalk_sent: true,
+                  renewal_alimtalk_sent_at: new Date().toISOString(),
+                })
+                .eq('id', inserted.id);
+            }
+          } catch {
+            // 무시
+          }
+        })();
+      }
+    }
+
     return created({
       renewed: true,
       previous: prevUpdated,
       current: inserted,
+      alimtalk_requested: phoneForSend.length >= 10,
     });
   } catch (err) {
     console.error('[v1/monthly/:id/renew POST] 예외:', err);
