@@ -58,7 +58,8 @@ cat TODO-V2-UNIFIED.md
 | **Part 17B** | 대시보드 UI `/v2/dashboard` — KPI 4카드 + 추이차트(ComposedChart) + 결제수단 도넛 + 사업장/입주사 테이블 (17 시리즈 마감) | ✅ 완료 | (이번 push) |
 | **Part 18A** | 월주차 알림톡 v2 훅 — renew API에 renewal_complete 발송 + monthly-expire 크론 신설 + SQL 12 (플래그 컬럼) | ✅ 완료 | 13552f3 / SQL 12 실행 완료 ✅ 2026.04.14 |
 | **Part 18B** | 관리자 알림톡 로그 페이지 `/v2/alimtalk` — 필터+KPI+템플릿별 요약+상세 테이블+CSV | ✅ 완료 | 5079bba |
-| **Part 18C** | 월주차 상세 수동발송 모달(3종 템플릿) + Sidebar 알림톡 로그 메뉴 추가 (18 시리즈 마감) | ✅ 완료 | (이번 push) |
+| **Part 18C** | 월주차 상세 수동발송 모달(3종 템플릿) + Sidebar 알림톡 로그 메뉴 추가 (18 시리즈 마감) | ✅ 완료 | b2be497 |
+| **Part 19D** | 알림톡 실배포 QA 도구 — 헬스체크 API/페이지 + 테스트발송 API/페이지 + QA 체크리스트 문서 | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -836,4 +837,77 @@ CRON_SECRET                       = (임의 문자열)
 - **Part 19 A**: 정산완료 알림톡 (ticket complete 훅) — 신규 Solapi 템플릿 승인 필요
 - **Part 19 B**: CREW 앱 v2 개선 (입차/출차/알림 플로우)
 - **Part 19 C**: 미팍티켓 고객 플로우 (ticket.mepark.kr 재정비)
-- **Part 19 D**: 실배포 QA — 알림톡 전체 플로우 시뮬레이션 → 실발송 전환
+- **Part 19 D**: 실배포 QA — 알림톡 전체 플로우 시뮬레이션 → 실발송 전환 ✅ **완료 (2026.04.14)**
+
+## Part 19D — 알림톡 실배포 QA 도구 (2026.04.14)
+
+### 작업 내용
+- **`src/app/api/v1/alimtalk/health/route.ts`** 신규 (GET, MANAGE)
+  - 9개 Solapi env 설정 여부 검증 (API_KEY/SECRET/PF_ID/SENDER + 5 템플릿)
+  - 민감 키(API_KEY/SECRET)는 `{set, length}`만 노출, 비민감 키는 `{set, preview:8자}`
+  - 핵심 3종(API_KEY/SECRET/PF_ID) 세팅 여부로 `mode: "live" | "simulation"` 판정
+  - core 세팅 시 `GET https://api.solapi.com/cash/v1/balance` 실시간 호출 → 잔액/포인트 반환
+  - 템플릿별 `ready` 여부 (core + 해당 템플릿 env 모두 설정됐는지)
+- **`src/app/api/v1/alimtalk/test-send/route.ts`** 신규 (POST, MANAGE)
+  - Body: `{templateKey, to, variables, dryRun}`
+  - 템플릿 5종 각각 필수 변수 목록 정의 → `missing_vars` 배열로 응답
+  - `dryRun: true` → Solapi 호출 안 함, `messageId: DRYRUN_{timestamp}` 반환, 로그 미기록
+  - `dryRun: false` → `sendAlimtalk` 실발송 + `logAlimtalk`로 기록
+  - 로그 저장 시 `template_type = "test_${templateKey}"` — **운영 로그와 구분**
+  - 전화번호 검증 (숫자 10~11자), DB 저장 금지 원칙 준수 (phone_masked만 기록)
+- **`src/app/v2/alimtalk/health/page.tsx`** 신규
+  - 모드 뱃지 (녹색 실발송 / 황색 시뮬레이션)
+  - 9개 env 상태 카드 (인증 4개 + 템플릿 5개 그룹)
+  - Solapi 잔액/포인트 카드 (Outfit monospace)
+  - 템플릿 5종 ready 카드
+  - 🔄 새로고침 버튼 + 조회 시각 표시
+- **`src/app/v2/alimtalk/test/page.tsx`** 신규
+  - 템플릿 5종 라디오 (설명문 포함)
+  - 수신번호 입력 (하이픈 자동 필터)
+  - 템플릿별 변수 입력 폼 자동 생성 + 합리적 기본값 프리필
+  - **DryRun 기본 ON** (안전) — 토글로 실발송 모드 전환
+  - 실발송 시 확인 모달 (수신번호 + 템플릿명 + 비용 경고)
+  - 결과 JSON 전체 표시 (messageId, simulated, missing_vars, error 등)
+- **`src/app/v2/alimtalk/page.tsx`** 수정
+  - 헤더 아래 탭 네비 3개 추가: `[로그 | 환경 상태 | 테스트 발송]`
+- **`docs/alimtalk-qa-checklist.md`** 신규
+  - 6단계 체크리스트: env 세팅 → 헬스체크 → dryRun 5회 → 실발송 5회 → 로그 검증 → 운영전환
+  - 부록: 주요 파일 맵 + 알림톡 운영 정책 (차량당 2건, 번호 저장금지 등)
+  - 롤백 절차 (긴급시 API_KEY 제거 → Redeploy → 자동 시뮬레이션 전환)
+
+### 기술 포인트
+- `SOLAPI_TEMPLATES` export (solapi.ts) 재사용 — 템플릿 코드 매핑 중앙화
+- `crypto.createHmac("sha256", ...)` HMAC 인증 — Solapi balance API 호출용 (기존 send 로직 복제)
+- 민감 키 preview 정책: API_KEY/SECRET은 길이만, PF_ID/템플릿 코드는 앞 8자 + "..."
+- `test_` 접두 로그 → 운영 로그 집계(/v2/alimtalk)에서 필터로 걸러낼 수 있음
+- UI: PC 기준 레이아웃 (maxWidth 900~1100), 반응형 grid (`repeat(auto-fit, minmax(...))`)
+
+### 빌드
+- `npm run build` ✅ 성공
+- 신규 라우트 3개 등록 확인:
+  - `ƒ /api/v1/alimtalk/health` (dynamic)
+  - `ƒ /api/v1/alimtalk/test-send` (dynamic)
+  - `○ /v2/alimtalk/health` (static)
+  - `○ /v2/alimtalk/test` (static)
+
+### 완료 여부
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| 헬스체크 API (env + balance + mode) | ✅ | - | ⏳ 실배포 env 세팅 후 |
+| 테스트 발송 API (dryRun + test_ 접두) | ✅ | - | ⏳ |
+| 헬스체크 UI (`/v2/alimtalk/health`) | ✅ | - | ⏳ |
+| 테스트 발송 UI (`/v2/alimtalk/test`) | ✅ | - | ⏳ |
+| 탭 네비 (로그/환경/테스트) | ✅ | - | ⏳ |
+| QA 체크리스트 문서 | ✅ | - | - |
+
+### 다음 단계 (실제 QA 실행 — 대표님 작업)
+1. Vercel env 9개 세팅 + Redeploy
+2. `/v2/alimtalk/health` 접속 → 모드 "실발송" + 잔액 확인
+3. `/v2/alimtalk/test` → 5종 DryRun 5회 → 5종 실발송 5회 (대표님 번호)
+4. 로그 페이지에서 `test_` 접두 이력 확인
+5. 체크리스트 완료 후 → Part 19 A/B/C 중 다음 선택
+
+### 19 시리즈 진행 상황
+- **Part 19D** ✅ 완료 (실배포 QA 도구)
+- Part 19A/B/C는 19D QA 완료 후 이어서 진행
+

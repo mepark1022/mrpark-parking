@@ -308,6 +308,25 @@ export default function AlimtalkLogsPage() {
         </button>
       </div>
 
+      {/* 탭 네비게이션 (Part 19D) */}
+      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #E5E7EB", marginBottom: 20 }}>
+        <a href="/v2/alimtalk" style={{
+          padding: "10px 18px", fontSize: 13, fontWeight: 600,
+          color: NAVY, borderBottom: `2px solid ${NAVY}`,
+          textDecoration: "none", marginBottom: -1,
+        }}>로그</a>
+        <a href="/v2/alimtalk/health" style={{
+          padding: "10px 18px", fontSize: 13, fontWeight: 600,
+          color: "#6B7280", borderBottom: "2px solid transparent",
+          textDecoration: "none", marginBottom: -1,
+        }}>환경 상태</a>
+        <a href="/v2/alimtalk/test" style={{
+          padding: "10px 18px", fontSize: 13, fontWeight: 600,
+          color: "#6B7280", borderBottom: "2px solid transparent",
+          textDecoration: "none", marginBottom: -1,
+        }}>테스트 발송</a>
+      </div>
+
       {/* 필터 */}
       <div
         style={{
