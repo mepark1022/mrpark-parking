@@ -22,6 +22,7 @@ import { useState, useEffect, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import RenewModal from "./RenewModal";
+import AlimtalkSendModal from "./AlimtalkSendModal";
 
 const PAYMENT_STATUS_OPTIONS = [
   { value: "unpaid", label: "미결제" },
@@ -85,6 +86,7 @@ export default function MonthlyDetailPage({ params }: { params: Promise<{ id: st
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [renewOpen, setRenewOpen] = useState(false);
+  const [alimtalkOpen, setAlimtalkOpen] = useState(false);
 
   // 편집 폼 상태
   const [form, setForm] = useState<any>({});
@@ -343,6 +345,18 @@ export default function MonthlyDetailPage({ params }: { params: Promise<{ id: st
                   style={btnGold}
                 >
                   🔄 갱신
+                </button>
+                <button
+                  onClick={() => setAlimtalkOpen(true)}
+                  disabled={saving || !(data?.customer_phone || "").replace(/-/g, "").match(/^\d{10,}$/)}
+                  style={btnAlimtalk}
+                  title={
+                    !(data?.customer_phone || "").replace(/-/g, "").match(/^\d{10,}$/)
+                      ? "고객 전화번호가 없거나 유효하지 않습니다"
+                      : "알림톡 수동 발송"
+                  }
+                >
+                  📨 알림톡
                 </button>
                 <button onClick={onCancel} disabled={saving} style={btnDanger}>
                   ✕ 계약취소
@@ -741,6 +755,15 @@ export default function MonthlyDetailPage({ params }: { params: Promise<{ id: st
           onRenewed={onRenewed}
         />
       )}
+
+      {/* 알림톡 수동 발송 모달 */}
+      {alimtalkOpen && data && (
+        <AlimtalkSendModal
+          monthly={data}
+          orgId={data?.stores?.org_id || ""}
+          onClose={() => setAlimtalkOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -884,6 +907,17 @@ const btnGold: React.CSSProperties = {
   borderRadius: 8,
   fontSize: 13,
   fontWeight: 800,
+  cursor: "pointer",
+};
+
+const btnAlimtalk: React.CSSProperties = {
+  padding: "10px 18px",
+  background: "#fff",
+  color: "#1428A0",
+  border: "1px solid #1428A0",
+  borderRadius: 8,
+  fontSize: 13,
+  fontWeight: 700,
   cursor: "pointer",
 };
 

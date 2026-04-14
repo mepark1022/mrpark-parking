@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.14
-> **마지막 작업:** Part 18B — 관리자 알림톡 로그 페이지 `/v2/alimtalk` (필터+KPI+템플릿별 요약+CSV)
+> **마지막 작업:** Part 18C — 월주차 상세 알림톡 수동발송 모달 + Sidebar 메뉴 추가 (18 시리즈 마감)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -57,7 +57,8 @@ cat TODO-V2-UNIFIED.md
 | **Part 17A** | 통계 API 5개 (overview/by-store/by-tenant/by-payment-method/daily-trend) + stats.ts 유틸 | ✅ 완료 | 813abac |
 | **Part 17B** | 대시보드 UI `/v2/dashboard` — KPI 4카드 + 추이차트(ComposedChart) + 결제수단 도넛 + 사업장/입주사 테이블 (17 시리즈 마감) | ✅ 완료 | (이번 push) |
 | **Part 18A** | 월주차 알림톡 v2 훅 — renew API에 renewal_complete 발송 + monthly-expire 크론 신설 + SQL 12 (플래그 컬럼) | ✅ 완료 | 13552f3 / SQL 12 실행 완료 ✅ 2026.04.14 |
-| **Part 18B** | 관리자 알림톡 로그 페이지 `/v2/alimtalk` — 필터+KPI+템플릿별 요약+상세 테이블+CSV | ✅ 완료 | (이번 push) |
+| **Part 18B** | 관리자 알림톡 로그 페이지 `/v2/alimtalk` — 필터+KPI+템플릿별 요약+상세 테이블+CSV | ✅ 완료 | 5079bba |
+| **Part 18C** | 월주차 상세 수동발송 모달(3종 템플릿) + Sidebar 알림톡 로그 메뉴 추가 (18 시리즈 마감) | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -783,3 +784,56 @@ CRON_SECRET                       = (임의 문자열)
 - **접근 경로** — 현재 Sidebar 메뉴에 추가되지 않음. `/v2/alimtalk` 직접 URL 접근 또는 대시보드/월주차 상세에서 링크 필요 (Part 18C 또는 후속 작업에서)
 - **Part 18C** — 월주차 상세에서 수동 발송 버튼 (D-7/만료/갱신 재발송) + 확인 모달
 - **Part 18D 후보** — 정산완료 알림톡 (ticket complete 훅) — 신규 템플릿 승인 여부 확인 필요
+
+## Part 18C — 월주차 상세 알림톡 수동발송 + Sidebar 메뉴 (2026.04.14)
+
+### 작업 내용
+- **`src/app/v2/monthly/[id]/AlimtalkSendModal.tsx`** 신규
+  - 3종 템플릿 라디오 선택: `renewal_remind` / `monthly_expire` / `renewal_complete`
+  - 수신자 정보 카드 (고객명, 차량, 마스킹 번호)
+  - 템플릿별 **미리보기** (고객명/매장/차량/날짜/금액 합성 문구) — 실제 발송은 카카오 승인 원문
+  - confirm 다이얼로그 → `POST /api/alimtalk/monthly`
+  - 시뮬레이션 모드 구분 표시 (Solapi 키 미설정 시)
+- **`src/app/v2/monthly/[id]/page.tsx`** 수정
+  - `alimtalkOpen` state 추가
+  - 액션 버튼 영역에 📨 **알림톡** 버튼 (수정/갱신/계약취소 사이)
+  - phone 정규식 검증 (`^\d{10,}$`)으로 비활성화 처리 + tooltip
+  - `btnAlimtalk` 스타일 신규 (흰 배경 + NAVY 테두리/글자)
+  - 모달에 `orgId={data?.stores?.org_id}` 전달 (GET 응답에 동봉)
+- **`src/components/layout/Sidebar.tsx`** 수정
+  - 관리 섹션 `accident` 다음, `settings` 이전에 **알림톡 로그** 메뉴 추가
+  - `/v2/alimtalk` 링크, 메시지 아이콘 (MessageSquare 스타일 SVG)
+
+### UX 정책
+- 전화번호 무효 시: 버튼 비활성 + tooltip 안내 ("고객 전화번호가 없거나 유효하지 않습니다")
+- 발송 전 confirm 1회 → 실수 방지
+- 발송 성공 후: 모달 내부 피드백 + 취소 버튼 → "닫기"로 변경
+- 발송 실패 시: 모달 유지 + 에러 메시지 → 재시도 가능
+- 미리보기 문구는 실제 템플릿이 아닌 "대략적 안내"임을 명시
+
+### 기술 포인트
+- 기존 `/api/alimtalk/monthly` 라우트 그대로 재사용 — 신규 API 0개
+- orgId는 detail API 응답의 `stores.org_id` 활용 → 별도 조회 불필요
+- `@ts-nocheck` 표준, 모달은 오버레이 클릭 시 닫힘, 내부 클릭은 propagation 차단
+
+### 빌드
+- `npm run build` ✅ 성공
+- 기존 경고 2건(tosspayments SDK 미설치)은 본 작업과 무관
+
+### 완료 여부
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| AlimtalkSendModal (3종 템플릿 + 미리보기 + 발송) | ✅ | - | ⏳ 실배포 |
+| 월주차 상세 📨 알림톡 버튼 (phone 검증) | ✅ | - | ⏳ |
+| Sidebar 알림톡 로그 메뉴 | ✅ | - | ⏳ |
+
+### 18 시리즈 마감 요약
+- **Part 18A**: renew API 훅 + monthly-expire 크론 + SQL 12 플래그
+- **Part 18B**: 관리자 로그 페이지 + API + CSV
+- **Part 18C**: 월주차 상세 수동발송 UI + Sidebar 메뉴
+
+### 다음 단계 후보
+- **Part 19 A**: 정산완료 알림톡 (ticket complete 훅) — 신규 Solapi 템플릿 승인 필요
+- **Part 19 B**: CREW 앱 v2 개선 (입차/출차/알림 플로우)
+- **Part 19 C**: 미팍티켓 고객 플로우 (ticket.mepark.kr 재정비)
+- **Part 19 D**: 실배포 QA — 알림톡 전체 플로우 시뮬레이션 → 실발송 전환
