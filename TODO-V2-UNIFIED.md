@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.14
-> **마지막 작업:** CREW앱 OCR 실사용 버그 전수 수정 + 한글↔* 호환 DB 전환 (plate_digits / vehicle_digits generated columns)
+> **마지막 작업:** Part 17B 대시보드 UI `/v2/dashboard` — KPI+추이차트+도넛+사업장/입주사 테이블 (17 시리즈 마감)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -54,7 +54,8 @@ cat TODO-V2-UNIFIED.md
 | **Part 15C** | 월주차 v2 UI — 상세+수정+갱신+취소 (15 시리즈 마감) | ✅ 완료 | 3876b35 |
 | **Part 16A** | 입주사 v2 UI — 목록 + 신규 등록 모달 (TenantFormModal 공용) | ✅ 완료 | 618faa8 |
 | **Part 16B** | 입주사 v2 UI — 상세+수정+활성화토글+영구삭제+활성계약목록 (16 시리즈 마감) | ✅ 완료 | 0d0f8da |
-| **Part 17A** | 통계 API 5개 (overview/by-store/by-tenant/by-payment-method/daily-trend) + stats.ts 유틸 | ✅ 완료 | (이번 push) |
+| **Part 17A** | 통계 API 5개 (overview/by-store/by-tenant/by-payment-method/daily-trend) + stats.ts 유틸 | ✅ 완료 | 813abac |
+| **Part 17B** | 대시보드 UI `/v2/dashboard` — KPI 4카드 + 추이차트(ComposedChart) + 결제수단 도넛 + 사업장/입주사 테이블 (17 시리즈 마감) | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -605,3 +606,66 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 
 ### 다음 단계
 - Part 17B: `/v2/dashboard` 페이지 신규 — KPI 4카드 + 일별 추이 차트(SVG 또는 recharts) + 사업장별 테이블 + 결제수단 도넛 + 입주사별 테이블
+
+---
+
+## 📌 작업 로그 (2026.04.14 · Part 17B)
+
+### Part 17B — 대시보드 UI `/v2/dashboard` (17 시리즈 마감)
+
+**신규 파일 1개:**
+- `src/app/v2/dashboard/page.tsx` (약 600줄)
+
+### 구성
+
+**① 필터 바**
+- 프리셋 4개: 이번달(기본) / 지난달 / 최근 7일 / 최근 30일
+- 직접 입력: date_from ~ date_to (변경 시 프리셋 `custom` 전환)
+- 사업장 드롭다운 (전체 또는 개별)
+- 🔄 새로고침 버튼 (로딩 중 disabled)
+
+**② KPI 4카드** — 매출 💰 / 차량 🚗 / 발렛 🅿️ / 일보수 📋
+- 직전 동일기간 대비 증감률 (▲초록 / ▼빨강 / • 신규·0%)
+- 일보수 카드 하단에 "활성 월주차 N건" 골드색 서브정보
+
+**③ 일별 추이 차트** (recharts `ComposedChart`)
+- Area(매출, NAVY gradient) + Line(차량, GOLD) 이중축
+- Tooltip: `YYYY-MM-DD (요일) · 주말` 표시
+- Y축 자동 포맷 (1M/1K)
+
+**④ 결제수단 도넛** (PieChart)
+- 0건 제외하고 차트 렌더, 범례는 7종 모두 (0건은 opacity 45%)
+- amount/ratio 모노스페이스 정렬
+
+**⑤ 사업장별 테이블**
+- 정렬 토글 3종 (매출순/차량순/발렛순) — 토글 시 해당 API만 재조회
+- 합계 row 포함 (NAVY 강조)
+
+**⑥ 입주사별 테이블**
+- 활성(초록) / 만료(회색) / 취소(연회색) 카운트
+- 월 잠재매출 합, `status: active` 기본 (sort=revenue)
+
+### 기술 포인트
+- 5개 API `Promise.all` 병렬 호출 (overview/by-store/by-tenant/by-payment/daily-trend)
+- `credentials: "include"` 일괄 적용
+- `@ts-nocheck` + `export const dynamic = "force-dynamic"` v2 표준 준수
+- 반응형: 2컬럼 섹션(결제수단+사업장) → 900px 이하 1컬럼 (`<style jsx>` 글로벌 쿼리)
+- recharts 3.7.0 (기존 설치됨, v2에서 최초 사용)
+- `useMemo`로 파이/추이 데이터 가공 캐시
+
+### 빌드
+- `npm run build` ✅ 80s 성공
+- `/v2/dashboard` 정적 페이지(○)로 등록 확인
+
+### 완료 여부
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| 필터 바 (프리셋+날짜+사업장) | ✅ | - | ⏳ 실배포 |
+| KPI 4카드 + 증감률 | ✅ | - | ⏳ |
+| 일별 추이 ComposedChart | ✅ | - | ⏳ |
+| 결제수단 도넛 PieChart | ✅ | - | ⏳ |
+| 사업장별 테이블 (정렬 토글) | ✅ | - | ⏳ |
+| 입주사별 테이블 | ✅ | - | ⏳ |
+
+### 다음 단계
+- Part 17 시리즈 마감. 다음 Part는 신규 기획 필요 (모바일 CREW 앱 / 알림톡 연동 / 월주차 만기 자동 알림 등)
