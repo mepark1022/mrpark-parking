@@ -25,7 +25,7 @@ ALTER TABLE monthly_parking
   GENERATED ALWAYS AS (regexp_replace(COALESCE(vehicle_number, ''), '[^0-9]', '', 'g')) STORED;
 
 CREATE INDEX IF NOT EXISTS idx_monthly_parking_vehicle_digits
-  ON monthly_parking (store_id, vehicle_digits, status);
+  ON monthly_parking (store_id, vehicle_digits, contract_status);
 
 -- ─────────────────────────────────────────────
 -- 3) 확인 쿼리 (실행 후 검증용)

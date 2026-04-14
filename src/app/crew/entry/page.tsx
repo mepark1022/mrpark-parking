@@ -345,7 +345,7 @@ export default function CrewEntryPage() {
       .eq("store_id", storeId)
       .eq("vehicle_digits", digits)
       .gte("end_date", today)
-      .eq("status", "active")
+      .eq("contract_status", "active")
       .maybeSingle();
     setMonthlyChecking(false);
     setIsFree(false); // 번호판 변경 시 무료처리 항상 OFF 초기화
