@@ -443,7 +443,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
           <div style={{ width: "100%", background: "#1a1a2e", borderRadius: "20px 20px 0 0", padding: "28px 24px 48px", border: "1.5px solid rgba(255,255,255,0.12)", boxSizing: "border-box" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <span style={{ color: "#fff", fontWeight: 800, fontSize: 17 }}>번호판 직접 입력</span>
-              <button onClick={() => setManualInput(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 20, cursor: "pointer" }}>✕</button>
+              <button onClick={() => { setManualInput(false); setDetected(null); setCandidates([]); }} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 20, cursor: "pointer" }}>✕</button>
             </div>
             <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, margin: "0 0 14px" }}>
               숫자만 입력하세요. 한글은 *로 표시됩니다. 예) 123* 4567

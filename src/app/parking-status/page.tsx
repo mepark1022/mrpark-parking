@@ -273,7 +273,15 @@ export default function ParkingStatusPage() {
     if(typeFilter!=="all"&&e.parking_type!==typeFilter) return false;
     if(statusFilter!=="all"&&e.status!==statusFilter) return false;
     if(workerFilter&&e.worker_id!==workerFilter) return false;
-    if(search){const q=search.replace(/\s/g,"").toLowerCase();const p=(e.plate_number||"").replace(/\s/g,"").toLowerCase();if(!p.includes(q)) return false;}
+    if(search){
+      const q=search.replace(/\s/g,"").toLowerCase();
+      const p=(e.plate_number||"").replace(/\s/g,"").toLowerCase();
+      // 한글/* 마스킹 차이 호환: 숫자만 비교도 병행
+      const qDigits=q.replace(/[^0-9]/g,"");
+      const pDigits=p.replace(/[^0-9]/g,"");
+      const matched = p.includes(q) || (qDigits.length>=3 && pDigits.includes(qDigits));
+      if(!matched) return false;
+    }
     return true;
   }),[entries,typeFilter,statusFilter,workerFilter,search]);
 

@@ -8,6 +8,7 @@ import CrewHeader from "@/components/crew/CrewHeader";
 import { useCrewToast } from "@/components/crew/CrewToast";
 import CameraOcr from "@/components/crew/CameraOcr";
 import { getToday } from "@/lib/utils/date";
+import { extractDigits } from "@/lib/plate";
 
 const CSS = `
   .entry-page {
@@ -336,14 +337,16 @@ export default function CrewEntryPage() {
   const checkMonthly = async (plate) => {
     if (!storeId) { setMonthlyChecking(false); return; }
     const today = getToday();
+    const digits = extractDigits(plate);
+    if (digits.length < 6) { setMonthlyChecking(false); setMonthlyInfo(null); return; }
     const { data } = await supabase
       .from("monthly_parking")
       .select("id, customer_name, end_date")
       .eq("store_id", storeId)
-      .eq("vehicle_number", plate)
+      .eq("vehicle_digits", digits)
       .gte("end_date", today)
       .eq("status", "active")
-      .single();
+      .maybeSingle();
     setMonthlyChecking(false);
     setIsFree(false); // 번호판 변경 시 무료처리 항상 OFF 초기화
     if (data) {
@@ -358,12 +361,13 @@ export default function CrewEntryPage() {
     if (!storeId || !orgId || !userId) return;
     setLoading(true);
     try {
-      // ── 중복 차량 체크 ──
+      // ── 중복 차량 체크 (숫자 기반: 기존 "123가 4567" ↔ 신규 "123* 4567" 호환) ──
+      const plateDigits = extractDigits(plateNumber);
       const { data: existing } = await supabase
         .from("mepark_tickets")
         .select("id, plate_number, entry_at, status")
         .eq("store_id", storeId)
-        .eq("plate_number", plateNumber)
+        .eq("plate_digits", plateDigits)
         .not("status", "eq", "completed")
         .maybeSingle();
 
