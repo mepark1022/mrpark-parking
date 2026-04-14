@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.14
-> **마지막 작업:** Part 18A — 월주차 알림톡 v2 훅 (renew → renewal_complete + monthly-expire 크론 + SQL 12 플래그)
+> **마지막 작업:** Part 18B — 관리자 알림톡 로그 페이지 `/v2/alimtalk` (필터+KPI+템플릿별 요약+CSV)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -57,6 +57,7 @@ cat TODO-V2-UNIFIED.md
 | **Part 17A** | 통계 API 5개 (overview/by-store/by-tenant/by-payment-method/daily-trend) + stats.ts 유틸 | ✅ 완료 | 813abac |
 | **Part 17B** | 대시보드 UI `/v2/dashboard` — KPI 4카드 + 추이차트(ComposedChart) + 결제수단 도넛 + 사업장/입주사 테이블 (17 시리즈 마감) | ✅ 완료 | (이번 push) |
 | **Part 18A** | 월주차 알림톡 v2 훅 — renew API에 renewal_complete 발송 + monthly-expire 크론 신설 + SQL 12 (플래그 컬럼) | ✅ 완료 | 13552f3 / SQL 12 실행 완료 ✅ 2026.04.14 |
+| **Part 18B** | 관리자 알림톡 로그 페이지 `/v2/alimtalk` — 필터+KPI+템플릿별 요약+상세 테이블+CSV | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -732,3 +733,53 @@ CRON_SECRET                       = (임의 문자열)
 - **Vercel 환경변수 설정** (Solapi 키 + CRON_SECRET) → 설정 완료 시 시뮬레이션 → 실발송 전환
 - **Part 18B** — 관리자 알림톡 페이지 `/v2/alimtalk` (발송 로그 조회 + 필터 + CSV)
 - **Part 18C** — 월주차 상세에서 수동 발송 버튼 (D-7/만료/갱신 재발송)
+
+## Part 18B — 관리자 알림톡 로그 페이지 (2026.04.14)
+
+### 작업 내용
+- **`src/app/api/v1/alimtalk/logs/route.ts`** 신규 (GET)
+  - 파라미터: `date_from` / `date_to` (기본 7일), `template` (7종+all), `status` (success/failed/all), `search` (phone_masked/message_id 부분일치), `page`, `limit`
+  - 기간은 KST 기준 (`+09:00`) → UTC ISO 변환
+  - 데이터: `alimtalk_send_logs` org_id 스코프, sent_at DESC
+  - 응답에 `summary.by_template` 포함 (전체 기간 집계, 페이지네이션 무관)
+  - 권한: MANAGE
+- **`src/app/v2/alimtalk/page.tsx`** 신규
+  - 기간 프리셋 4종 (오늘/7일/30일/이번달) + 커스텀 date range
+  - 템플릿/상태/검색 필터
+  - KPI 4카드: 총발송 / 성공 / 실패 / 성공률
+  - 템플릿별 현황 테이블 (이름+총+성공+실패+성공률, total DESC)
+  - 상세 로그 테이블 (발송일시/템플릿/상태 뱃지/수신번호/메시지ID/에러/연결 리소스)
+  - 페이지네이션 (처음/이전/다음/끝)
+  - **CSV 내보내기** (UTF-8 BOM, 현재 필터 기준, 페이지 순회 최대 5000건)
+
+### 템플릿 라벨 매핑 (7종)
+- `entry` → 입차확인
+- `ready` → 차량준비완료
+- `renewal_remind` → 월주차 D-7 (수동)
+- `d7_auto_remind` → 월주차 D-7 (자동)
+- `monthly_expire` → 월주차 만료 (수동)
+- `monthly_expire_auto` → 월주차 만료 (자동)
+- `renewal_complete` → 월주차 갱신완료
+
+### 기술 포인트
+- phone_masked는 이미 `010****1234` 형태로 저장되어 있어 그대로 표시
+- KST 경계 변환 시 `+09:00` offset 문자열 사용 → 이중변환 없이 정확
+- 요약 통계는 필터 적용 후 전체 범위(최대 5000 row scan 방지)로 계산
+- CSV 다운로드는 클라이언트 Blob + BOM으로 엑셀 한글 호환
+- `@ts-nocheck` + `export const dynamic = "force-dynamic"` v2 표준
+
+### 빌드
+- `npm run build` ✅ 성공
+- `/api/v1/alimtalk/logs` 동적(ƒ), `/v2/alimtalk` 정적(○) 등록 확인
+
+### 완료 여부
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| 로그 조회 API (필터 5종 + summary) | ✅ | - | ⏳ 실배포 |
+| 관리자 페이지 (필터/KPI/템플릿별/상세) | ✅ | - | ⏳ |
+| CSV 내보내기 | ✅ | - | ⏳ |
+
+### 다음 단계
+- **접근 경로** — 현재 Sidebar 메뉴에 추가되지 않음. `/v2/alimtalk` 직접 URL 접근 또는 대시보드/월주차 상세에서 링크 필요 (Part 18C 또는 후속 작업에서)
+- **Part 18C** — 월주차 상세에서 수동 발송 버튼 (D-7/만료/갱신 재발송) + 확인 모달
+- **Part 18D 후보** — 정산완료 알림톡 (ticket complete 훅) — 신규 템플릿 승인 여부 확인 필요
