@@ -112,57 +112,72 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     return res.json();
   }, []);
 
+  // ── 카메라 준비 대기 (readyState 폴링) ──────
+  // 1.5초 하드코딩 → 카메라 준비되면 즉시 진행, 최대 5초까지 대기
+  const waitForVideoReady = useCallback(async (): Promise<boolean> => {
+    const video = videoRef.current;
+    if (!video) return false;
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline) {
+      if (video.videoWidth > 0 && video.readyState >= 2) return true;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    return false;
+  }, []);
+
   // ── 스캔 시작 (1장 촬영) ────────────────────
   const startScan = useCallback(async () => {
     setPhase(STATES.SCANNING);
     setDetected(null);
     setConfirmed(null);
+    setCandidates([]); // ★ 이전 후보 초기화 (재스캔 시 잔존 방지)
     setErrorMsg(null);
     setManualInput(false);
     setManualVal("");
 
     await startCamera();
 
-    // 1.5초 대기 (카메라 안정화) → 1장 캡처
-    timerRef.current = setTimeout(async () => {
-      const video = videoRef.current;
-      if (!video || video.videoWidth === 0 || video.readyState < 2) {
-        setErrorMsg("카메라가 준비되지 않았습니다. 다시 시도해주세요.");
-        setPhase(STATES.IDLE);
-        stopCamera();
-        return;
-      }
+    // 카메라 준비 대기 (최대 5초 폴링)
+    const ready = await waitForVideoReady();
+    if (!ready) {
+      setErrorMsg("카메라가 준비되지 않았습니다. 다시 시도해주세요.");
+      setPhase(STATES.IDLE);
+      stopCamera();
+      return;
+    }
 
-      setPhase(STATES.DETECTING);
-      setShakeBox(true);
-      setTimeout(() => setShakeBox(false), 600);
+    // 카메라 안정화 500ms (노출 조정)
+    await new Promise((r) => setTimeout(r, 500));
 
-      // 1장 캡처
-      const frame = captureFrame();
-      if (!frame) {
-        setErrorMsg("카메라 프레임을 가져올 수 없습니다.");
-        setPhase(STATES.IDLE);
-        stopCamera();
-        return;
-      }
+    setPhase(STATES.DETECTING);
+    setShakeBox(true);
+    setTimeout(() => setShakeBox(false), 600);
 
-      // API 호출
-      const result = await callOcrApi(frame).catch(() => ({ success: false } as OcrResult));
+    // 1장 캡처
+    const frame = captureFrame();
+    if (!frame) {
+      setErrorMsg("카메라 프레임을 가져올 수 없습니다.");
+      setPhase(STATES.IDLE);
+      stopCamera();
+      return;
+    }
 
-      if (result.success && result.plate) {
-        setDetected(result.plate);
-        setCandidates(result.candidates || []);
-        stopCamera();
-        navigator.vibrate?.([100, 50, 100]);
-        setPhase(STATES.CONFIRMING);
-      } else {
-        navigator.vibrate?.([300]);
-        setErrorMsg(result.error || "번호판을 인식하지 못했습니다. 다시 시도하거나 직접 입력해주세요.");
-        setPhase(STATES.IDLE);
-        stopCamera();
-      }
-    }, 1500);
-  }, [startCamera, stopCamera, captureFrame, callOcrApi]);
+    // API 호출
+    const result = await callOcrApi(frame).catch(() => ({ success: false } as OcrResult));
+
+    if (result.success && result.plate) {
+      setDetected(result.plate);
+      setCandidates(result.candidates || []);
+      stopCamera();
+      navigator.vibrate?.([100, 50, 100]);
+      setPhase(STATES.CONFIRMING);
+    } else {
+      navigator.vibrate?.([300]);
+      setErrorMsg(result.error || "번호판을 인식하지 못했습니다. 다시 시도하거나 직접 입력해주세요.");
+      setPhase(STATES.IDLE);
+      stopCamera();
+    }
+  }, [startCamera, stopCamera, captureFrame, callOcrApi, waitForVideoReady]);
 
   // ── 확정 ─────────────────────────────────────
   const confirm = useCallback((plate: string) => {
@@ -177,6 +192,8 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
     setPhase(STATES.IDLE);
     setScanLine(0);
     setDetected(null);
+    setConfirmed(null); // ★ 잔존 방지
+    setCandidates([]);  // ★ 잔존 방지
     setErrorMsg(null);
   }, [stopCamera]);
 
@@ -344,7 +361,7 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
         {phase === STATES.IDLE && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
             <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, margin: 0, textAlign: "center" }}>
-              번호판을 박스 안에 맞추면 자동 인식합니다
+              번호판을 박스 안에 맞추고 아래 버튼을 눌러주세요
             </p>
             <button onClick={startScan} style={{ width: "100%", padding: "16px 0", background: "#F5B731", border: "none", borderRadius: 12, fontSize: 17, fontWeight: 800, color: "#1A1D2B", cursor: "pointer" }}>
               📷 번호판 스캔
@@ -442,7 +459,12 @@ export default function CameraOcr({ onConfirm, onCancel }: CameraOcrProps) {
             )}
             <input
               value={manualVal}
-              onChange={(e) => setManualVal(e.target.value)}
+              onChange={(e) => {
+                // ★ 정책: 숫자, 공백, * 만 허용 (한글/영문 차단)
+                const filtered = e.target.value.replace(/[^0-9\s*]/g, "");
+                setManualVal(filtered);
+              }}
+              inputMode="numeric"
               placeholder="예) 123* 4567"
               autoFocus
               style={{ width: "100%", padding: "14px 16px", fontSize: 20, background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(245,183,49,0.6)", borderRadius: 12, color: "#fff", outline: "none", boxSizing: "border-box", letterSpacing: 3, fontFamily: "monospace", fontWeight: 700, textAlign: "center" }}
