@@ -240,11 +240,12 @@ export default function CrewEntryPage() {
 
   const applyOcrPlate = (plate) => {
     const n = plate.replace(/\s/g, "");
-    const korMatch = n.match(/[가-힣]/);
-    if (korMatch) {
-      const idx = n.indexOf(korMatch[0]);
+    // Plate Recognizer 정책: 한글이 '*'로 마스킹됨. 한글 또는 '*' 모두 인식
+    const markMatch = n.match(/[가-힣*]/);
+    if (markMatch) {
+      const idx = n.indexOf(markMatch[0]);
       setPlatePart1(n.slice(0, idx));
-      setPlateKor(korMatch[0]);
+      setPlateKor(markMatch[0]);
       setPlatePart2(n.slice(idx + 1));
     }
     setPlateNumber(n);
@@ -256,12 +257,12 @@ export default function CrewEntryPage() {
   const plateTimer = useRef(null);
   const [plateError, setPlateError] = useState("");
 
-  // 한국 차량번호 유효성 검사
+  // 한국 차량번호 유효성 검사 (한글 또는 * 마스킹 허용)
   const validatePlate = (plate) => {
     const n = plate.replace(/\s/g, "");
-    const hasKorean = /[가-힣]/.test(n);
+    const hasKorOrMask = /[가-힣*]/.test(n);
     const digitCount = (n.match(/\d/g) || []).length;
-    return n.length >= 6 && hasKorean && digitCount >= 4;
+    return n.length >= 6 && hasKorOrMask && digitCount >= 4;
   };
 
   // Step 2
@@ -600,7 +601,7 @@ export default function CrewEntryPage() {
                     value={plateKor}
                     onChange={(e) => setPlateKor(e.target.value)}
                     onCompositionEnd={(e) => {
-                      const kor = (e.target as HTMLInputElement).value.replace(/[^가-힣]/g, "").slice(-1);
+                      const kor = (e.target as HTMLInputElement).value.replace(/[^가-힣*]/g, "").slice(-1);
                       setPlateKor(kor);
                       const combined = combinePlate(platePart1, kor, platePart2);
                       setPlateNumber(combined);
@@ -611,7 +612,7 @@ export default function CrewEntryPage() {
                     autoComplete="off"
                     onFocus={() => setSplitFocused(true)}
                     onBlur={() => {
-                      const kor = plateKor.replace(/[^가-힣]/g, "").slice(-1);
+                      const kor = plateKor.replace(/[^가-힣*]/g, "").slice(-1);
                       setPlateKor(kor);
                       if (kor) {
                         const combined = combinePlate(platePart1, kor, platePart2);
