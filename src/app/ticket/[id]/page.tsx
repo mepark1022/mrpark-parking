@@ -3,7 +3,6 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 /* ─── 상태별 테마 ─── */
 const STATUS_THEME = {
@@ -79,28 +78,54 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
   const [hasKiosk, setHasKiosk] = useState(false);
   const [liveFee, setLiveFee] = useState(0); // 실시간 예상 요금
 
-  /* ─── 티켓 로드 ─── */
+  /* ─── 티켓 로드 (v1 public API 사용 — RLS 우회) ─── */
   const loadTicket = useCallback(async () => {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("mepark_tickets")
-      .select(`
-        *,
-        stores:store_id(name, road_address),
-        parking_lots:parking_lot_id(name),
-        visit_places:visit_place_id(name, extra_fee, free_minutes, base_minutes, base_fee, daily_max, valet_fee)
-      `)
-      .eq("id", ticketId)
-      .single();
+    if (!ticketId) return;
+    try {
+      const res = await fetch(`/api/v1/tickets/${ticketId}/public`, {
+        cache: "no-store",
+      });
 
-    console.log("[ticket] data:", data, "error:", error);
+      if (!res.ok) {
+        // 404 → ticket이 null로 유지되어 "찾을 수 없습니다" 표시
+        setLoading(false);
+        return;
+      }
 
-    if (data) {
-      setTicket(data);
-      setStore(data.stores);
-      setAdditionalFee(data.additional_fee ?? 0);
+      const json = await res.json();
+      const apiData = json?.data;
+      if (!apiData?.ticket) {
+        setLoading(false);
+        return;
+      }
+
+      // API 응답을 기존 페이지가 기대하는 shape으로 재구성
+      // (직접 Supabase 쿼리 결과와 호환되도록)
+      const t = apiData.ticket;
+      const fee = apiData.fee_structure || {};
+      const visit = apiData.visit_place || null;
+      const reshaped: Record<string, unknown> = {
+        ...t,
+        stores: apiData.store
+          ? { name: apiData.store.name, road_address: apiData.store.address }
+          : null,
+        parking_lots: apiData.parking_lot
+          ? { name: apiData.parking_lot.name }
+          : null,
+        // visit_places: 방문지 이름 + 요금구조 통합 (페이지가 ticket.visit_places.extra_fee 등 직접 접근)
+        visit_places: visit
+          ? { ...visit, ...fee }
+          : (Object.keys(fee).length > 0 ? fee : null),
+      };
+
+      setTicket(reshaped);
+      setStore(reshaped.stores);
+      setAdditionalFee((t.additional_fee as number) ?? 0);
+    } catch (e) {
+      console.error("[ticket] load error:", e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [ticketId]);
 
   /* ─── overdue 자동 감지 ─── */
@@ -120,24 +145,13 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
     }
   }, [ticket, ticketId]);
 
-  /* ─── 실시간 업데이트 ─── */
+  /* ─── 티켓 폴링 (Realtime 대체 — RLS 우회 위해 v1 API 폴링) ─── */
   useEffect(() => {
-    if (!ticketId) return;  // ticketId 없으면 실행 안 함
+    if (!ticketId) return;
     loadTicket();
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`ticket-${ticketId}`)
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "mepark_tickets",
-        filter: `id=eq.${ticketId}`,
-      }, (payload) => {
-        setTicket((prev) => ({ ...prev, ...payload.new }));
-        setAdditionalFee((payload.new as Record<string, unknown>).additional_fee as number ?? 0);
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    // 4초마다 갱신 — 출차완료/차량준비 상태 변경 감지
+    const interval = setInterval(loadTicket, 4000);
+    return () => clearInterval(interval);
   }, [ticketId, loadTicket]);
 
   /* ─── 카운트다운 & overdue 감지 타이머 ─── */
@@ -440,22 +454,20 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
             onClick={async () => {
               setExitLoading(true);
               try {
-                const supabase = createClient();
-                // exit_requests 테이블에 출차요청 생성
-                await supabase.from("exit_requests").insert({
-                  ticket_id: ticketId,
-                  org_id: ticket.org_id,
-                  store_id: ticket.store_id,
-                  plate_number: ticket.plate_number,
-                  parking_location: ticket.parking_location ?? "",
-                  status: "requested",
+                // v1 exit-request API (service role로 RLS 우회 + org_id/store_id 서버 측 처리)
+                const res = await fetch(`/api/v1/tickets/${ticketId}/exit-request`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
                 });
-                // 티켓 상태 → exit_requested
-                await supabase.from("mepark_tickets")
-                  .update({ status: "exit_requested" })
-                  .eq("id", ticketId);
+                if (!res.ok) {
+                  const json = await res.json().catch(() => ({}));
+                  alert(json?.error?.message || "출차요청 중 오류가 발생했습니다. 다시 시도해주세요.");
+                  setExitLoading(false);
+                  return;
+                }
+                // 즉시 UI 업데이트 (다음 폴링에서 서버 상태와 동기화)
                 setTicket((prev) => ({ ...prev!, status: "exit_requested" }));
-              } catch (e) {
+              } catch {
                 alert("출차요청 중 오류가 발생했습니다. 다시 시도해주세요.");
               } finally {
                 setExitLoading(false);

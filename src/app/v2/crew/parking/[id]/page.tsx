@@ -228,6 +228,10 @@ export default function CrewV2ParkingDetailPage() {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [payMethod, setPayMethod] = useState("card");
 
+  // 차량준비 모달
+  const [showReadyModal, setShowReadyModal] = useState(false);
+  const [readyPhone, setReadyPhone] = useState("");
+
   // 초기 로드
   useEffect(() => {
     fetchTicket();
@@ -302,6 +306,41 @@ export default function CrewV2ParkingDetailPage() {
       router.replace("/v2/crew/parking");
     } catch (err) {
       console.error("checkout error:", err);
+      alert("네트워크 오류가 발생했습니다");
+      setActionLoading(false);
+    }
+  };
+
+  // 차량준비 처리 실행
+  const handleCarReady = async () => {
+    if (!ticket) return;
+    setActionLoading(true);
+    try {
+      const cleanedPhone = readyPhone.replace(/[^0-9]/g, "");
+      const body: any = {};
+      if (cleanedPhone.length >= 10) body.phone = cleanedPhone;
+
+      const res = await fetch(`/api/v1/tickets/${id}/ready`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        alert(json?.error?.message || "차량준비 처리에 실패했습니다");
+        setActionLoading(false);
+        return;
+      }
+
+      setShowReadyModal(false);
+      setReadyPhone("");
+      // 상세 다시 로드 → status: car_ready로 갱신
+      await fetchTicket();
+      setActionLoading(false);
+    } catch (err) {
+      console.error("car-ready error:", err);
       alert("네트워크 오류가 발생했습니다");
       setActionLoading(false);
     }
@@ -511,29 +550,26 @@ export default function CrewV2ParkingDetailPage() {
           </div>
         </div>
 
-        {/* 안내: 19B-4에서 추가될 액션 */}
-        {!isCompleted && ticket.parking_type === "valet" && ticket.status !== "car_ready" && (
-          <div style={{
-            margin: "14px 16px 0",
-            padding: "12px 14px",
-            background: "#FEF3C7",
-            border: "1px solid #FDE68A",
-            borderRadius: 10,
-            fontSize: 12, color: "#92400E", textAlign: "center",
-          }}>
-            ⚠️ 차량준비 · 번호판 수정 · 타입 변경은 Part 19B-4에서 추가됩니다
-          </div>
-        )}
-
         {/* 하단 고정 액션 */}
         {!isCompleted && (
           <div className="cv2-detail-footer">
+            {/* 발렛 + (parking|exit_requested|pre_paid) 상태일 때만 차량준비 버튼 */}
+            {ticket.parking_type === "valet" &&
+             ["parking", "exit_requested", "pre_paid"].includes(ticket.status) && (
+              <button
+                className="cv2-btn cv2-btn-warning"
+                onClick={() => setShowReadyModal(true)}
+                disabled={actionLoading}
+              >
+                🔔 차량 준비 완료
+              </button>
+            )}
             <button
               className="cv2-btn cv2-btn-primary"
               onClick={() => setShowCheckoutModal(true)}
               disabled={actionLoading}
             >
-              {ticket.is_monthly ? "출차 완료" : `출차 처리 · ₩${currentFee.toLocaleString()}`}
+              {ticket.is_monthly ? "출차 완료" : `출차 · ₩${currentFee.toLocaleString()}`}
             </button>
           </div>
         )}
@@ -592,6 +628,67 @@ export default function CrewV2ParkingDetailPage() {
               <button
                 className="cv2-modal-btn cancel"
                 onClick={() => setShowCheckoutModal(false)}
+                disabled={actionLoading}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 차량준비 모달 */}
+        {showReadyModal && (
+          <div className="cv2-modal-overlay" onClick={() => setShowReadyModal(false)}>
+            <div className="cv2-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="cv2-modal-handle" />
+              <div className="cv2-modal-title">🔔 차량 준비 완료</div>
+              <div className="cv2-modal-desc">
+                고객 전화번호를 입력하면 알림톡이 발송됩니다 (선택)
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>
+                  고객 전화번호 (선택)
+                </label>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={readyPhone}
+                  onChange={(e) => setReadyPhone(e.target.value)}
+                  placeholder="010-1234-5678"
+                  style={{
+                    width: "100%", height: 48, padding: "0 14px",
+                    border: "1.5px solid #E2E8F0", borderRadius: 10,
+                    fontSize: 15, color: "#1A1D2B", outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+                <div style={{
+                  marginTop: 8, padding: "8px 12px",
+                  background: "#FFF7ED", borderRadius: 8,
+                  fontSize: 11, color: "#92400E", lineHeight: 1.5,
+                }}>
+                  ⚠️ 알림톡 발송 즉시 삭제됩니다 (DB 미저장)
+                  {ticket.parking_location && (
+                    <><br />📍 주차위치: {ticket.parking_location}</>
+                  )}
+                </div>
+              </div>
+
+              <button
+                className="cv2-modal-btn confirm"
+                onClick={handleCarReady}
+                disabled={actionLoading}
+                style={{ background: "#F5B731", color: "#1A1D2B" }}
+              >
+                {actionLoading ? "처리 중..." :
+                 readyPhone.replace(/[^0-9]/g, "").length >= 10
+                   ? "🔔 알림톡 발송 + 차량준비 완료"
+                   : "차량준비 완료 (알림톡 없음)"}
+              </button>
+              <button
+                className="cv2-modal-btn cancel"
+                onClick={() => setShowReadyModal(false)}
                 disabled={actionLoading}
               >
                 취소

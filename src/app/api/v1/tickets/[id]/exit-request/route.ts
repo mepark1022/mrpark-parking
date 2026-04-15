@@ -8,9 +8,11 @@
  *   1. exit_requests 테이블에 요청 생성
  *   2. mepark_tickets.status → exit_requested
  *   3. 중복 요청 시 기존 상태 반환 (멱등성)
+ *
+ * RLS 우회: SUPABASE_SERVICE_ROLE_KEY 사용 (고객은 anon)
  */
 import { NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { ok, badRequest, notFound, conflict, serverError } from '@/lib/api/response';
 import { ErrorCodes } from '@/lib/api/errors';
 
@@ -20,14 +22,19 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+
+    // service role로 RLS 우회 (고객은 익명)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     // 티켓 조회
     const { data: ticket, error: fetchError } = await supabase
       .from('mepark_tickets')
       .select('id, org_id, store_id, plate_number, parking_type, status, parking_location')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (fetchError || !ticket) {
       return notFound('티켓을 찾을 수 없습니다');

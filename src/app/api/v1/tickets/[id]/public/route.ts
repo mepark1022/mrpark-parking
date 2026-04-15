@@ -6,9 +6,14 @@
  * 
  * 제외 항목: entry_crew_id, exit_crew_id, org_id, is_demo
  * 만료 티켓 → 완료 화면 표시 (에러 아님)
+ *
+ * RLS 우회: SUPABASE_SERVICE_ROLE_KEY 사용
+ *  - mepark_tickets에 익명 SELECT 정책이 없거나 status 필터링 시
+ *    고객(anon)이 자신의 티켓을 못 읽는 문제 해결
+ *  - 응답에서 민감정보(crew_id, org_id 등) 명시적으로 제외하여 안전성 확보
  */
 import { NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { ok, notFound, serverError } from '@/lib/api/response';
 
 export async function GET(
@@ -17,13 +22,18 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+
+    // service role로 직접 조회 (RLS 우회)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     const { data: ticket, error } = await supabase
       .from('mepark_tickets')
       .select(`
         id, plate_number, plate_last4, parking_type, status,
-        entry_at, pre_paid_at, exit_at,
+        entry_at, pre_paid_at, pre_paid_deadline, exit_at,
         parking_location, is_monthly, is_free,
         paid_amount, calculated_fee, additional_fee, payment_method,
         store_id, visit_place_id, parking_lot_id,
@@ -35,9 +45,14 @@ export async function GET(
         )
       `)
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
-    if (error || !ticket) {
+    if (error) {
+      console.error('[v1/tickets/public] 조회 오류:', error.message);
+      return serverError('티켓 조회 중 오류가 발생했습니다');
+    }
+
+    if (!ticket) {
       return notFound('티켓을 찾을 수 없습니다');
     }
 
@@ -53,6 +68,7 @@ export async function GET(
         status: ticket.status,
         entry_at: ticket.entry_at,
         pre_paid_at: ticket.pre_paid_at,
+        pre_paid_deadline: ticket.pre_paid_deadline,
         exit_at: ticket.exit_at,
         parking_location: ticket.parking_location,
         is_monthly: ticket.is_monthly,
