@@ -361,17 +361,27 @@ export default function CrewV2EntryPage() {
   };
 
   const handleKorChange = (v: string) => {
-    // 한글 1자 또는 * 1자 허용
-    const filtered = v.replace(/[^가-힣*]/g, "").slice(0, 1);
-    setPlateKor(filtered);
-    if (filtered) {
-      setTimeout(() => part2Ref.current?.focus(), 50);
-    }
+    // deprecated: handleKorRaw + handleKorFilter 사용
+    handleKorRaw(v);
   };
 
   const handlePart2Change = (v: string) => {
     const digits = v.replace(/\D/g, "").slice(0, 4);
     setPlatePart2(digits);
+  };
+
+  // 한글 IME 호환: onChange는 raw 값만 저장 (1자 제한),
+  // 필터는 onCompositionEnd / onBlur에서 적용
+  const handleKorRaw = (v: string) => {
+    setPlateKor(v.slice(0, 1));
+  };
+  const handleKorFilter = (v: string) => {
+    // 한글 1자 또는 * 1자만 허용 (alphanumeric, 공백 등 제거)
+    const filtered = v.replace(/[^가-힣*]/g, "").slice(0, 1);
+    setPlateKor(filtered);
+    if (filtered) {
+      setTimeout(() => part2Ref.current?.focus(), 50);
+    }
   };
 
   // ── OCR 결과 적용 ──
@@ -527,10 +537,10 @@ export default function CrewV2EntryPage() {
                 ref={korRef}
                 className="cv2-plate-split-kor"
                 value={plateKor}
-                onChange={(e) => handleKorChange(e.target.value)}
-                onCompositionEnd={(e: any) => handleKorChange(e.target.value)}
+                onChange={(e) => handleKorRaw(e.target.value)}
+                onCompositionEnd={(e: any) => handleKorFilter(e.target.value)}
+                onBlur={(e) => { handleKorFilter(e.target.value); setSplitFocused(false); }}
                 onFocus={() => setSplitFocused(true)}
-                onBlur={() => setSplitFocused(false)}
                 placeholder="*"
                 maxLength={1}
               />
@@ -704,7 +714,8 @@ export default function CrewV2EntryPage() {
             onClick={handleSubmit}
           >
             {submitting ? "등록 중..." :
-             !isValidPlate() ? "차량번호를 입력하세요" :
+             extractDigits(plateNumber).length < 6 ? "차량번호 숫자를 입력하세요" :
+             plateKor.length !== 1 ? "한글 또는 * 1자를 입력하세요" :
              monthlyInfo?.is_monthly ? "월주차 입차 등록" :
              "입차 등록"}
           </button>
