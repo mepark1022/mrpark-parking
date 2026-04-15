@@ -3,7 +3,7 @@
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.15
 > **마지막 작업:** Part 19B-5A — DB 컬럼(car_type/car_color) + 충돌 인덱스 + OCR API mode=last4 옵션 (sql/v2/13-tickets-car-info.sql 실행 완료)
-> **다음 작업:** Part 19B-5B — 충돌 검색 API (`GET /api/v1/tickets/check-collision?store_id&plate_last4`)
+> **다음 작업:** ⚠️ **선결 점검** — 기존 UI vs v2 통합앱 UI 불완요소(누락 기능/페이지/필드) 갭 분석 → 그 다음 Part 19B-5B (충돌 검색 API)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -23,6 +23,13 @@ cat TODO-V2-UNIFIED.md
 3. **crew.mepark.kr** — 새 도메인, middleware.ts에 마지막에 추가 (Part 6에서)
 4. **DB 변경** — SQL만 제공 → 대표님이 Supabase SQL Editor에서 실행 → 확인 후 ✅
 5. **빌드 확인** — `npm run build` 성공 확인 후 push
+
+### ⚠️ 다음 세션 선결 점검 (2026.04.15 추가)
+**Part 19B-5B 착수 전 반드시 수행**: 기존 UI(레거시 admin/v1 페이지) ↔ v2 통합앱 UI 갭 분석
+- 기존 `/dashboard`, `/stores`, `/team`, `/workers` 등 레거시 페이지의 기능/필드/액션 목록화
+- v2 대응 페이지(`/v2/dashboard`, `/v2/crew/*`, `/v2/monthly`, `/v2/tenants`, `/v2/daily-reports`)와 비교
+- 누락된 기능/필드/버튼/엣지케이스 리스트업 → TODO에 별도 섹션 추가
+- 우선순위 판정(P0=즉시 / P1=Part 19 끝나면 / P2=Phase 2): 신규 기능 작업 전에 보강 결정
 
 ### 현재 진행 상태
 
