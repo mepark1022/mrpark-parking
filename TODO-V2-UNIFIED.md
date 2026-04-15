@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.15
-> **마지막 작업:** Part 19B-2 — CREW v2 주차 목록 + 상세 (v1 tickets/active + tickets/[id]/complete 연결)
+> **마지막 작업:** Part 19B-3 — CREW v2 입차 등록 (POST tickets + OCR + 월주차 자동감지) + monthly_parking.contract_status 버그 수정
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -61,7 +61,8 @@ cat TODO-V2-UNIFIED.md
 | **Part 18C** | 월주차 상세 수동발송 모달(3종 템플릿) + Sidebar 알림톡 로그 메뉴 추가 (18 시리즈 마감) | ✅ 완료 | b2be497 |
 | **Part 19D** | 알림톡 실배포 QA 도구 — 헬스체크 API/페이지 + 테스트발송 API/페이지 + QA 체크리스트 문서 | ✅ 완료 | (이번 push) |
 | **Part 19B-1** | CREW v2 기반 구조 — layout(BottomNav v2 경로) + login(통합 identifier) + select-store + 홈 대시보드 | ✅ 완료 | e6b20c1 |
-| **Part 19B-2** | CREW v2 주차 목록 + 상세 — tickets/active + tickets/[id] + /complete 출차처리 | ✅ 완료 | (이번 push) |
+| **Part 19B-2** | CREW v2 주차 목록 + 상세 — tickets/active + tickets/[id] + /complete 출차처리 | ✅ 완료 | 7708d7a |
+| **Part 19B-3** | CREW v2 입차 등록 — POST tickets + OCR + 월주차 자동감지 + contract_status 버그 수정 + 신규 API 2개 | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -1053,4 +1054,86 @@ v1 `/api/v1/tickets/active`(OPERATE), `/api/v1/tickets`(completed 필터), `/api
 - `PATCH /api/v1/tickets/:id/plate` (OPERATE) — 번호판 + plate_last4 수정 (audit 기록)
 - `PATCH /api/v1/tickets/:id/type` (OPERATE) — parking_type 변경 (audit 기록)
 - 또는 기존 `/api/v1/tickets/:id` PATCH에 OPERATE 전용 필드 화이트리스트 추가
+
+## Part 19B-3 — CREW v2 입차 등록 (2026.04.15)
+
+### 전략
+v1 `POST /api/v1/tickets`(OPERATE) 활용 + CREW 입차 폼에 필요한 사업장/방문지/주차장 통합 조회 API와 월주차 사전 감지 API 2개 신설. CameraOcr 컴포넌트는 기존 그대로 재사용. monthly_parking 컬럼명 버그(status → contract_status) 동시 수정.
+
+### 신규 API 2개
+- **`GET /api/v1/stores/:id/operation`** (OPERATE)
+  - CREW 입차 폼 1회 호출로 모든 정보 획득
+  - `Promise.all` 3쿼리 병렬: store(요금 8필드 + has_valet) / visit_places(층/이름/요금구조) / parking_lots(이름/면수)
+  - canAccessStore + org_id 강제, field_member 차단
+  - 주차장 1개면 자동 선택 가능
+
+- **`GET /api/v1/monthly/check?store_id&plate`** (OPERATE)
+  - CREW 입차 폼에서 차량번호 입력 시 실시간 월주차 여부 확인
+  - 매칭 방식: 숫자만 추출 후 비교 (한글 ↔ * 마스킹 호환) — `vehicle_digits` generated column 우선, fallback 인라인 추출
+  - 응답: `{is_monthly, monthly_parking_id?, customer_name?, end_date?, days_remaining?, contract_status?}`
+  - 만료까지 D-N 자동 계산 (음수면 "만료")
+  - canAccessStore + field_member 차단, 4자리 미만이면 즉시 false 응답
+
+### 신규 페이지 1개
+- **`src/app/v2/crew/entry/page.tsx`** (~570줄)
+  - 헤더: 뒤로가기 + 사업장명
+  - **1. 차량 번호판 섹션**:
+    - 3-칸 분할 input: 앞숫자(3) · 한글|*(1) · 뒷숫자(4) — Outfit 800 28px monospace
+    - 자동 포커스 이동 (앞 3자 → 한글, 한글 1자 → 뒷자)
+    - 한글 입력 필터링: `/[^가-힣*]/g` (한글 + * 마스킹만 허용)
+    - 카메라 OCR 버튼 (CameraOcr 컴포넌트 모달 호출, 기존 그대로 재사용)
+    - OCR 결과 적용: 한글/* 분리 후 3칸에 자동 분배
+    - 월주차 자동 감지: 500ms debounce → `GET /api/v1/monthly/check`
+    - 월주차 뱃지: 일반(회색) / 월주차(녹색) / D-7 이내(주황) / 만료(주황)
+  - **2. 주차 유형 섹션**: 발렛/자주식 토글 (월주차면 자주식 disabled)
+  - **3. 상세 정보 섹션**:
+    - 방문지 드롭다운 (visit_places 1개+ 시 노출, 첫 옵션 "사업장 기본 요금")
+    - 주차장 드롭다운 (parking_lots 2개+ 시 노출, 1개는 자동 선택)
+    - 주차 위치 텍스트 (선택)
+    - 전화번호 input (tel + numeric inputMode) + ⚠️ "발송 즉시 삭제" 안내
+    - 무료 처리 체크박스 (월주차 아닐 때만 노출, 월주차는 자동 무료)
+  - 검증: 숫자 6자리+ + 한글/마스킹 1자 → `canSubmit`
+  - 제출: `POST /api/v1/tickets` body에 검증된 데이터만 포함
+    - 빈 값은 body에서 제외 (visit_place_id, parking_lot_id, parking_location, phone)
+    - phone 10자리+ 시에만 알림톡 발송 (서버에서 자동)
+  - 중복 차량 (`TICKET_OVERDUE`) → 기존 티켓으로 이동 옵션 confirm
+  - 성공 토스트: 체크마크 + 번호판 + 월주차/알림톡 표시 → 1.5초 후 `/v2/crew/parking` 이동
+
+### 버그 수정
+- **`src/app/api/v1/tickets/route.ts`** L175: `monthly_parking.status` → `contract_status`
+  - 메모리 기록(2026.04.14 CREW OCR 핫픽스)에서 발견된 동일 버그가 v1 POST API에도 잔존
+  - 이 버그로 v1 API로 입차 시 월주차 차량이 일반 차량으로 잘못 등록됨
+  - 1줄 수정으로 해소
+
+### 기술 포인트
+- **debounce 활용**: 번호판 입력 중 매 키 입력마다 API 호출하지 않도록 500ms debounce, 4자리 미만이면 즉시 reset
+- **API-first 일관성**: 모든 데이터 흐름이 v1 API 호출, Supabase 직접 호출 0건
+- **CameraOcr 재사용**: 기존 `src/components/crew/CameraOcr.tsx` (485줄) 컴포넌트 그대로 import — `onConfirm(plate)` / `onCancel()` 콜백 인터페이스
+- **POST body 최적화**: 빈 값은 본문에서 제외하여 서버 측 null 처리 일관성 확보
+- **알림톡 정책 준수**: 전화번호는 서버에서 알림톡 발송 즉시 휘발 (mepark_tickets 미저장), 마스킹 로그만 alimtalk_send_logs에 기록
+- **vehicle_digits generated column 활용**: SQL 11에서 추가된 generated column으로 인덱스 기반 빠른 매칭
+- @ts-nocheck + `export const dynamic = "force-dynamic"` v2 표준 준수
+
+### 빌드
+- `npm run build` ✅ 성공
+- 신규 라우트 3개 등록 확인:
+  - `ƒ /api/v1/monthly/check` (dynamic)
+  - `ƒ /api/v1/stores/[id]/operation` (dynamic)
+  - `○ /v2/crew/entry` (static)
+
+### 완료 여부
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| GET /api/v1/stores/:id/operation | ✅ | (기존 테이블) | ⏳ 실배포 |
+| GET /api/v1/monthly/check | ✅ | (기존 테이블) | ⏳ |
+| 입차 폼 (3칸 plate + OCR + 월주차 자동감지) | ✅ | - | ⏳ |
+| POST /api/v1/tickets contract_status 버그 수정 | ✅ | - | ⏳ |
+| 알림톡 자동 훅 (phone 입력 시) | ✅ | - | ⏳ 실배포 |
+
+### 다음 단계 (Part 19B-4)
+- **차량준비** 액션 — `POST /api/v1/tickets/:id/ready` (OPERATE) 신설 + 알림톡 발송 (`/api/alimtalk/ready` 훅)
+- **번호판 수정** — `PATCH /api/v1/tickets/:id/plate` (OPERATE) 신설 + audit 기록
+- **타입 변경** — `PATCH /api/v1/tickets/:id/type` (OPERATE) 신설 + audit 기록
+- 상세 페이지 액션 버튼 추가 + 19B-2에서 노출한 안내 박스 제거
+- 대안: 기존 `PATCH /api/v1/tickets/:id` (MANAGE)에 OPERATE 전용 필드 화이트리스트 분기 추가
 

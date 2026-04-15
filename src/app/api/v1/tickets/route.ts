@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
         .from('monthly_parking')
         .select('id, vehicle_number, end_date')
         .eq('store_id', store_id)
-        .eq('status', 'active');
+        .eq('contract_status', 'active');
 
       if (monthlyList && monthlyList.length > 0) {
         const match = monthlyList.find((m: any) => {
