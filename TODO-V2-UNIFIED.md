@@ -1,8 +1,8 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
 > **작성일:** 2026.04.09
-> **마지막 업데이트:** 2026.04.14
-> **마지막 작업:** Part 18C — 월주차 상세 알림톡 수동발송 모달 + Sidebar 메뉴 추가 (18 시리즈 마감)
+> **마지막 업데이트:** 2026.04.15
+> **마지막 작업:** Part 19B-1 — CREW v2 기반 구조 (layout + login + select-store + 홈)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -60,6 +60,7 @@ cat TODO-V2-UNIFIED.md
 | **Part 18B** | 관리자 알림톡 로그 페이지 `/v2/alimtalk` — 필터+KPI+템플릿별 요약+상세 테이블+CSV | ✅ 완료 | 5079bba |
 | **Part 18C** | 월주차 상세 수동발송 모달(3종 템플릿) + Sidebar 알림톡 로그 메뉴 추가 (18 시리즈 마감) | ✅ 완료 | b2be497 |
 | **Part 19D** | 알림톡 실배포 QA 도구 — 헬스체크 API/페이지 + 테스트발송 API/페이지 + QA 체크리스트 문서 | ✅ 완료 | (이번 push) |
+| **Part 19B-1** | CREW v2 기반 구조 — layout(BottomNav v2 경로) + login(통합 identifier) + select-store + 홈 대시보드 | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -910,4 +911,73 @@ CRON_SECRET                       = (임의 문자열)
 ### 19 시리즈 진행 상황
 - **Part 19D** ✅ 완료 (실배포 QA 도구)
 - Part 19A/B/C는 19D QA 완료 후 이어서 진행
+
+## Part 19B-1 — CREW v2 기반 구조 (2026.04.15)
+
+### 전략
+기존 CREW 앱(`/crew/*`)은 Supabase 클라이언트 직접 호출 방식 → API-first 원칙 위반 + 네이티브 전환 시 전부 재작성 필요. 신규 CREW v2를 `/v2/crew/*`에 구축하여 **v1 API만 사용** (fetch + credentials: include). 기존 코드 0건 수정, middleware.ts 이미 `/v2/*` 분기 있어서 수정 불필요.
+
+### 신규 파일 4개
+- **`src/app/v2/crew/layout.tsx`** — CREW v2 전용 레이아웃
+  - BottomNav 인라인 구현 (v2 경로: `/v2/crew`, `/v2/crew/parking`, `/v2/crew/attendance`, `/v2/crew/settings`)
+  - 출차요청 폴링 5초마다 `GET /api/v1/tickets/active?store_id=xxx` → exit_requested 카운트 표시, 브라우저 Notification + 진동(200ms 3번)
+  - `/v2/crew/login`, `/v2/crew/select-store` 경로에서는 BottomNav 숨김 (HIDE_NAV_PATHS 배열)
+
+- **`src/app/v2/crew/login/page.tsx`** — 통합 로그인
+  - `POST /api/v1/auth/login` 사용 → identifier 자동 판별 (EMAIL/PHONE/EMPNO)
+  - 입력 중 실시간 타입 감지 라벨 표시 (이메일/전화번호/사번 중 하나)
+  - `GET /api/v1/auth/me`로 로그인 상태 선체크 → 이미 로그인 시 매장 유무에 따라 홈/매장선택으로 이동
+  - 로그인 후 `stores.length === 1`이면 자동 선택하여 홈으로, 여러 개면 매장선택으로
+  - 에러 분기: `no_access`, `session_expired` 파라미터 처리
+  - localStorage key: `crew_v2_saved_id`, `crew_store_id`, `crew_store_name`
+
+- **`src/app/v2/crew/select-store/page.tsx`** — 매장 선택
+  - `GET /api/v1/auth/me` → data.stores 배열 사용 (v1 stores API는 MANAGE 전용이라 CREW 접근 불가)
+  - is_primary=true 매장에 "주" 뱃지 표시
+  - 단일 매장 자동 선택 → 홈 이동
+  - 접근 가능 매장 0건 시 에러 화면 + 새로고침 버튼
+
+- **`src/app/v2/crew/page.tsx`** — 홈 대시보드
+  - `Promise.all([auth/me, tickets/active])` 병렬 호출
+  - 헤더: 사용자명 + 역할 뱃지(슈퍼관리자/관리자/크루 등) + 📍 매장명 + 시간/날짜 + 매장변경 버튼
+  - 비밀번호 미변경(`password_changed=false`) 시 주의 배너 표시
+  - 주차 현황 카드: 총 대수(48px Outfit) + 4칸 그리드(발렛/자주식/출차요청/차량준비)
+  - 출차요청/차량준비 건 수가 0 초과 시 해당 카드 배경색 변경(빨강/초록)
+  - 빠른 액션 2버튼: 입차 등록(네이비, `/v2/crew/entry`) / 주차 현황(흰배경, `/v2/crew/parking`) — 주차 현황 버튼에 출차요청 카운트 서브텍스트
+  - 출차요청 1건+이면 상단 알림 박스(빨간 배경 + 펄스 애니메이션) 추가 노출
+  - 새로고침 버튼 🔄 클릭 시 loadData 재호출
+
+### 라우팅
+- middleware.ts는 이미 Part 6에서 `crew.mepark.kr`의 `/v2/` 경로 분기 준비됨 → 수정 없이 동작
+- 접근 경로:
+  - `crew.mepark.kr/v2/crew/login` (프로덕션 배포 후)
+  - `admin.mepark.kr/v2/crew` (개발/테스트용, 동일 도메인으로도 접근 가능)
+- 기존 `/crew/*` 페이지는 그대로 보존 (admin.mepark.kr/crew, crew.mepark.kr/crew 모두 계속 동작)
+
+### 기술 포인트
+- 모든 API 호출에 `credentials: "include"` — 세션 쿠키 자동 전송
+- v1 `POST /api/v1/auth/login`은 서버사이드 `signInWithPassword` + Set-Cookie → 클라이언트 Supabase 불필요
+- @ts-nocheck + `export const dynamic = "force-dynamic"` v2 표준 준수
+- 기존 `CrewBottomNav`(`/crew/*` 경로 하드코딩) 재사용 불가 → layout.tsx에 인라인 구현
+- 폴링 기반(5초), 네이티브 전환 시 Push Notification으로 교체 예정
+
+### 빌드
+- `npm run build` ✅ 성공
+- 신규 라우트 3개 등록 확인:
+  - `○ /v2/crew` (static)
+  - `○ /v2/crew/login` (static)
+  - `○ /v2/crew/select-store` (static)
+
+### 완료 여부
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| layout + BottomNav v2 경로 + 출차요청 폴링 | ✅ | - | ⏳ 실배포 |
+| 통합 로그인 (이메일/전화/사번) | ✅ | - | ⏳ |
+| 매장 선택 (auth/me 기반) | ✅ | - | ⏳ |
+| 홈 대시보드 (주차 현황 + 빠른 액션) | ✅ | - | ⏳ |
+
+### 다음 단계
+- **Part 19B-2** — 주차 목록 `/v2/crew/parking` + 상세 `/v2/crew/parking/[id]` (GET tickets/active, 탭 필터, 실시간 갱신)
+- **Part 19B-3** — 입차 등록 `/v2/crew/entry` (POST tickets, OCR 재사용, 알림톡 훅 자동)
+- **Part 19B-4** — 주차 상세 액션 (차량준비, 출차 완료, PATCH tickets/[id]/complete)
 
