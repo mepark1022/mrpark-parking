@@ -42,9 +42,30 @@ export default function CrewV2SelectStorePage() {
           return;
         }
 
-        const list: StoreItem[] = data?.stores || [];
+        // admin/owner/super_admin은 org 전체 매장, crew는 배정 매장만
+        const isAdmin = ["admin", "owner", "super_admin"].includes(data?.role);
+        let list: StoreItem[] = [];
+
+        if (isAdmin) {
+          // 전체 매장 조회 (admin은 MANAGE 권한이라 가능)
+          const storesRes = await fetch("/api/v1/stores?limit=200", { credentials: "include" });
+          if (storesRes.ok) {
+            const json = await storesRes.json();
+            list = (json?.data || []).map((s: any) => ({
+              store_id: s.id,
+              store_name: s.name,
+              is_primary: false,
+            }));
+          }
+        } else {
+          // crew: 배정된 매장만
+          list = data?.stores || [];
+        }
+
         if (list.length === 0) {
-          setError("배정된 매장이 없습니다. 관리자에게 문의하세요.");
+          setError(isAdmin
+            ? "등록된 매장이 없습니다. 매장을 먼저 등록해주세요."
+            : "배정된 매장이 없습니다. 관리자에게 문의하세요.");
           setLoading(false);
           return;
         }

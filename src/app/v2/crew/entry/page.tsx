@@ -663,12 +663,19 @@ export default function CrewV2EntryPage() {
           </button>
         </div>
 
-        {/* OCR 카메라 모달 */}
+        {/* OCR 카메라 모달 (fixed overlay로 페이지 늘어남 방지) */}
         {showCamera && (
-          <CameraOcr
-            onConfirm={handleOcrConfirm}
-            onCancel={() => setShowCamera(false)}
-          />
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            background: "#0d0d0d",
+          }}>
+            <CameraOcr
+              onConfirm={handleOcrConfirm}
+              onCancel={() => setShowCamera(false)}
+            />
+          </div>
         )}
 
         {/* 성공 토스트 */}

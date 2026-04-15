@@ -150,20 +150,24 @@ function LoginContent() {
           return;
         }
 
-        // 배정 사업장 확인
+        // admin/owner/super_admin은 select-store에서 전체 매장 조회
+        // crew는 auth/me.stores 사용
+        const isAdmin = ["admin", "owner", "super_admin"].includes(me?.role);
         const stores = me?.stores || [];
-        if (stores.length === 0) {
+
+        if (!isAdmin && stores.length === 0) {
           setError("배정된 매장이 없습니다. 관리자에게 문의하세요.");
           setLoading(false);
           return;
         }
 
-        // 사업장 1개면 자동 선택
-        if (stores.length === 1) {
+        // crew + 매장 1개 → 자동 선택
+        if (!isAdmin && stores.length === 1) {
           localStorage.setItem("crew_store_id", stores[0].store_id);
           localStorage.setItem("crew_store_name", stores[0].store_name);
           router.replace("/v2/crew");
         } else {
+          // admin이거나 crew + 매장 다수 → 매장 선택
           router.replace("/v2/crew/select-store");
         }
       } else {
