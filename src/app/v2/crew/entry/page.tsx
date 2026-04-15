@@ -52,28 +52,44 @@ const CSS = `
   }
   .cv2-entry-section-body { padding: 16px; }
 
-  /* ── 번호판 입력 ── */
+  /* ── 번호판 입력 (3칸 분할) ── */
   .cv2-plate-split-wrap {
-    display: flex; align-items: center; gap: 6px;
-    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: 1fr 50px 1.5fr;
+    gap: 8px;
+    padding: 8px;
     border: 2.5px solid #E2E8F0; border-radius: 12px;
     background: #fff; transition: border-color 0.2s;
   }
   .cv2-plate-split-wrap.focused { border-color: #1428A0; }
   .cv2-plate-split-wrap.monthly { border-color: #16A34A; background: #F0FDF4; }
   .cv2-plate-split-num {
-    flex: 1; height: 48px; border: none; outline: none;
-    font-size: 28px; font-weight: 800; color: #1A1D2B;
-    text-align: center; letter-spacing: 2px; background: transparent;
-    font-family: 'Outfit', sans-serif;
-  }
-  .cv2-plate-split-kor {
-    width: 50px; height: 48px; border: none; outline: none;
+    width: 100%; height: 52px;
+    border: 1.5px solid #F1F5F9; border-radius: 8px;
+    background: #F8FAFC; outline: none;
     font-size: 24px; font-weight: 800; color: #1A1D2B;
-    text-align: center; background: transparent;
+    text-align: center; letter-spacing: 1px;
+    font-family: 'Outfit', sans-serif;
+    box-sizing: border-box;
+    padding: 0 4px;
   }
-  .cv2-plate-split-sep {
-    font-size: 24px; color: #CBD5E1; font-weight: 300;
+  .cv2-plate-split-num:focus { border-color: #1428A0; background: #fff; }
+  .cv2-plate-split-num::placeholder { color: #CBD5E1; font-weight: 600; }
+  .cv2-plate-split-kor {
+    width: 100%; height: 52px;
+    border: 1.5px solid #F1F5F9; border-radius: 8px;
+    background: #F8FAFC; outline: none;
+    font-size: 22px; font-weight: 800; color: #1A1D2B;
+    text-align: center;
+    box-sizing: border-box;
+    padding: 0;
+  }
+  .cv2-plate-split-kor:focus { border-color: #1428A0; background: #fff; }
+  .cv2-plate-split-kor::placeholder { color: #CBD5E1; font-weight: 600; }
+  .cv2-plate-hint {
+    margin-top: 8px;
+    font-size: 11px; color: #94A3B8;
+    text-align: center;
   }
 
   /* ── OCR 버튼 ── */
@@ -477,7 +493,6 @@ export default function CrewV2EntryPage() {
                 inputMode="numeric"
                 maxLength={3}
               />
-              <span className="cv2-plate-split-sep">·</span>
               <input
                 ref={korRef}
                 className="cv2-plate-split-kor"
@@ -489,7 +504,6 @@ export default function CrewV2EntryPage() {
                 placeholder="*"
                 maxLength={1}
               />
-              <span className="cv2-plate-split-sep">·</span>
               <input
                 ref={part2Ref}
                 className="cv2-plate-split-num"
@@ -501,6 +515,9 @@ export default function CrewV2EntryPage() {
                 inputMode="numeric"
                 maxLength={4}
               />
+            </div>
+            <div className="cv2-plate-hint">
+              앞 숫자 · 한글(또는 *) · 뒤 4자리
             </div>
 
             {/* OCR 버튼 */}
