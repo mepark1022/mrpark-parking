@@ -2,8 +2,8 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.15
-> **마지막 작업:** Part 19B-4 — 차량준비 액션(POST tickets/:id/ready) + 고객 페이지 RLS 우회(public/exit-request service role) + 4초 폴링 (commit 4249d42)
-> **다음 작업:** Part 19B-5 — **4자리 OCR 전용 모드** (입차/출차 워크플로 단순화 + 충돌 시 차종/컬러 모달)
+> **마지막 작업:** Part 19B-5A — DB 컬럼(car_type/car_color) + 충돌 인덱스 + OCR API mode=last4 옵션 (sql/v2/13-tickets-car-info.sql 실행 완료)
+> **다음 작업:** Part 19B-5B — 충돌 검색 API (`GET /api/v1/tickets/check-collision?store_id&plate_last4`)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -65,7 +65,7 @@ cat TODO-V2-UNIFIED.md
 | **Part 19B-2** | CREW v2 주차 목록 + 상세 — tickets/active + tickets/[id] + /complete 출차처리 | ✅ 완료 | 7708d7a |
 | **Part 19B-3** | CREW v2 입차 등록 — POST tickets + OCR + 월주차 자동감지 + contract_status 버그 수정 + 신규 API 2개 | ✅ 완료 | (이번 push) |
 | **Part 19B-4** | 차량준비 액션(POST /api/v1/tickets/:id/ready) + 고객 페이지 RLS 우회(public/exit-request service role) + 출차완료 화면 4초 폴링 + 알림톡 자동 훅 | ✅ 완료 | 4249d42 / SQL: mepark_tickets·visit_places 컬럼 보강 + exit_requests 테이블 생성 (✅ 실행 완료) |
-| **Part 19B-5** | **4자리 OCR 전용 모드** — CREW 입차/출차 워크플로 단순화 + 동일 4자리 충돌 시 차종/컬러 모달 (월주차 제외) | ⏳ 다음 | - |
+| **Part 19B-5** | **4자리 OCR 전용 모드** — CREW 입차/출차 워크플로 단순화 + 동일 4자리 충돌 시 차종/컬러 모달 (월주차 제외) | 🚧 진행 중 (A 완료) | 19B-5A: SQL 실행 완료 + OCR mode=last4 |
 
 ---
 
@@ -1169,10 +1169,22 @@ CREATE INDEX IF NOT EXISTS idx_tickets_collision
 ```
 
 ### 작업 분해
-- **Part 19B-5A** — DB 컬럼 추가 + OCR API 4자리 모드 (`/api/ocr/plate`에 `mode=last4` 옵션 추가)
-- **Part 19B-5B** — 충돌 검색 API (`GET /api/v1/tickets/check-collision?store_id&plate_last4`)
-- **Part 19B-5C** — CREW v2 입차 페이지 단일 4자리 입력 + 충돌 모달 + 차량 사진 자동 저장(선택)
-- **Part 19B-5D** — CREW v2 출차 검색 — N건 매칭 시 카드 리스트 (시간 + 위치 + 차종/컬러)
+- **Part 19B-5A** ✅ — DB 컬럼 추가 + OCR API 4자리 모드 (`/api/ocr/plate`에 `mode=last4` 옵션 추가)
+- **Part 19B-5B** ⏳ — 충돌 검색 API (`GET /api/v1/tickets/check-collision?store_id&plate_last4`)
+- **Part 19B-5C** ⏳ — CREW v2 입차 페이지 단일 4자리 입력 + 충돌 모달 + 차량 사진 자동 저장(선택)
+- **Part 19B-5D** ⏳ — CREW v2 출차 검색 — N건 매칭 시 카드 리스트 (시간 + 위치 + 차종/컬러)
+
+### Part 19B-5A 완료 기록 (2026.04.15)
+- **SQL** (`sql/v2/13-tickets-car-info.sql` · Supabase 실행 완료)
+  - `mepark_tickets.car_type` (text, nullable) 추가
+  - `mepark_tickets.car_color` (text, nullable) 추가
+  - `idx_tickets_collision` 부분 인덱스 (org_id, store_id, plate_last4, status) WHERE 활성 상태 5종
+- **코드** (`src/app/api/ocr/plate/route.ts`)
+  - `body.mode` 파싱 추가 (`"full"` 기본 / `"last4"`)
+  - `mode === "last4"`일 때 응답에 `candidates_last4: string[]` 채움 (best + 후보의 last4를 dedup, 최대 5개)
+  - 응답에 `mode` echo back (클라이언트가 모드 확인 가능)
+  - 기존 호출부(파라미터 미전달) 100% 호환 — `candidates_last4`는 빈 배열로 응답
+- **빌드 검증**: `npm run build` ✅ Compiled successfully (2.1min)
 
 ### 알림톡 영향
 - 월주차 3개 템플릿: 무영향

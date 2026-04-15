@@ -4,6 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 // ─────────────────────────────────────────────
 // Plate Recognizer API 기반 차량번호 인식
 // 핵심: 숫자만 추출 + 한글(알파벳) → * 치환
+//
+// mode 옵션 (Part 19B-5A · 2026.04.15):
+//   - "full" (기본) : 풀번호 + last4 모두 반환 (기존 동작 유지)
+//   - "last4"       : 4자리 식별자 + 후보 4자리 배열 우선 반환
+//                     (CREW v2 입차/출차 워크플로 단순화용)
 // ─────────────────────────────────────────────
 
 /**
@@ -56,7 +61,10 @@ function extractLast4(plate: string): string {
 
 // ─────────────────────────────────────────────
 // POST /api/ocr/plate
-// Body: { image: string }  ← base64 (data URL 또는 순수 base64)
+// Body:
+//   { image: string, mode?: "full" | "last4" }
+//   - image: base64 (data URL 또는 순수 base64)
+//   - mode : 응답 형식 옵션 (기본 "full", 4자리 모드는 "last4")
 // ─────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
@@ -68,6 +76,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // mode 파싱 (기본 full · 알 수 없는 값은 모두 full 처리)
+    const mode: "full" | "last4" = body.mode === "last4" ? "last4" : "full";
 
     // data URL → 순수 base64 추출
     const base64 = body.image.replace(/^data:image\/\w+;base64,/, "");
@@ -142,19 +153,39 @@ export async function POST(req: NextRequest) {
     const plate = extractAndMask(rawPlate);
     const last4 = extractLast4(plate);
 
-    // 후보 결과
+    // 후보 결과 (마스킹된 풀번호)
     const candidates = results
       .filter((r: any) => r.plate !== best.plate)
       .map((r: any) => extractAndMask((r.plate || "").toUpperCase()))
       .filter((p: string) => p.length >= 5);
 
-    console.log("[OCR] 최종:", plate, "| last4:", last4, "| 후보:", candidates);
+    // last4 모드 후보 — 모든 결과(최고점 포함)에서 4자리만 추출 + dedup
+    let candidates_last4: string[] = [];
+    if (mode === "last4") {
+      const allLast4 = [last4, ...candidates.map((c: string) => extractLast4(c))]
+        .filter((p) => p.length === 4);
+      candidates_last4 = Array.from(new Set(allLast4)).slice(0, 5);
+    }
+
+    console.log(
+      "[OCR] 최종:",
+      plate,
+      "| last4:",
+      last4,
+      "| 후보:",
+      candidates,
+      "| mode:",
+      mode,
+      mode === "last4" ? `| last4 후보: ${JSON.stringify(candidates_last4)}` : ""
+    );
 
     return NextResponse.json({
       success: true,
+      mode,
       plate,
       last4,
       candidates: candidates.slice(0, 3),
+      candidates_last4, // mode === "last4"일 때만 채워짐 (full 모드는 빈 배열)
       score: best.score,
     });
   } catch (err: any) {
