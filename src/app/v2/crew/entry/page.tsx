@@ -272,14 +272,44 @@ export default function CrewV2EntryPage() {
       const { data } = await res.json();
       setOpData(data);
 
-      // 주차장 1개면 자동 선택
-      if (data?.parking_lots?.length === 1) {
+      // 방문지 — 마지막 선택 복원 (매장별)
+      const savedVisit = localStorage.getItem(`crew_v2_last_visit_${sid}`);
+      if (savedVisit && data?.visit_places?.some((vp: any) => vp.id === savedVisit)) {
+        setVisitPlaceId(savedVisit);
+      }
+
+      // 주차장 — 마지막 선택 복원 또는 1개면 자동
+      const savedLot = localStorage.getItem(`crew_v2_last_lot_${sid}`);
+      if (savedLot && data?.parking_lots?.some((lot: any) => lot.id === savedLot)) {
+        setParkingLotId(savedLot);
+      } else if (data?.parking_lots?.length === 1) {
         setParkingLotId(data.parking_lots[0].id);
       }
     } catch (err) {
       console.error("loadOperation error:", err);
     } finally {
       setOpLoading(false);
+    }
+  };
+
+  // 방문지 변경 시 저장
+  const handleVisitPlaceChange = (id: string) => {
+    setVisitPlaceId(id);
+    if (storeId) {
+      if (id) {
+        localStorage.setItem(`crew_v2_last_visit_${storeId}`, id);
+      } else {
+        // "사업장 기본 요금" 선택 시 저장 제거
+        localStorage.removeItem(`crew_v2_last_visit_${storeId}`);
+      }
+    }
+  };
+
+  // 주차장 변경 시 저장
+  const handleParkingLotChange = (id: string) => {
+    setParkingLotId(id);
+    if (storeId && id) {
+      localStorage.setItem(`crew_v2_last_lot_${storeId}`, id);
     }
   };
 
@@ -585,7 +615,7 @@ export default function CrewV2EntryPage() {
                 <select
                   className="cv2-form-select"
                   value={visitPlaceId}
-                  onChange={(e) => setVisitPlaceId(e.target.value)}
+                  onChange={(e) => handleVisitPlaceChange(e.target.value)}
                 >
                   <option value="">-- 사업장 기본 요금 --</option>
                   {opData.visit_places.map((vp: any) => (
@@ -604,7 +634,7 @@ export default function CrewV2EntryPage() {
                 <select
                   className="cv2-form-select"
                   value={parkingLotId}
-                  onChange={(e) => setParkingLotId(e.target.value)}
+                  onChange={(e) => handleParkingLotChange(e.target.value)}
                 >
                   <option value="">-- 선택 --</option>
                   {opData.parking_lots.map((lot: any) => (
