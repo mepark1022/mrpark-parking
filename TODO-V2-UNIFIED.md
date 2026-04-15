@@ -2,7 +2,7 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.15
-> **마지막 작업:** Part 19B-1 — CREW v2 기반 구조 (layout + login + select-store + 홈)
+> **마지막 작업:** Part 19B-2 — CREW v2 주차 목록 + 상세 (v1 tickets/active + tickets/[id]/complete 연결)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -60,7 +60,8 @@ cat TODO-V2-UNIFIED.md
 | **Part 18B** | 관리자 알림톡 로그 페이지 `/v2/alimtalk` — 필터+KPI+템플릿별 요약+상세 테이블+CSV | ✅ 완료 | 5079bba |
 | **Part 18C** | 월주차 상세 수동발송 모달(3종 템플릿) + Sidebar 알림톡 로그 메뉴 추가 (18 시리즈 마감) | ✅ 완료 | b2be497 |
 | **Part 19D** | 알림톡 실배포 QA 도구 — 헬스체크 API/페이지 + 테스트발송 API/페이지 + QA 체크리스트 문서 | ✅ 완료 | (이번 push) |
-| **Part 19B-1** | CREW v2 기반 구조 — layout(BottomNav v2 경로) + login(통합 identifier) + select-store + 홈 대시보드 | ✅ 완료 | (이번 push) |
+| **Part 19B-1** | CREW v2 기반 구조 — layout(BottomNav v2 경로) + login(통합 identifier) + select-store + 홈 대시보드 | ✅ 완료 | e6b20c1 |
+| **Part 19B-2** | CREW v2 주차 목록 + 상세 — tickets/active + tickets/[id] + /complete 출차처리 | ✅ 완료 | (이번 push) |
 
 ---
 
@@ -980,4 +981,76 @@ CRON_SECRET                       = (임의 문자열)
 - **Part 19B-2** — 주차 목록 `/v2/crew/parking` + 상세 `/v2/crew/parking/[id]` (GET tickets/active, 탭 필터, 실시간 갱신)
 - **Part 19B-3** — 입차 등록 `/v2/crew/entry` (POST tickets, OCR 재사용, 알림톡 훅 자동)
 - **Part 19B-4** — 주차 상세 액션 (차량준비, 출차 완료, PATCH tickets/[id]/complete)
+
+## Part 19B-2 — CREW v2 주차 목록 + 상세 (2026.04.15)
+
+### 전략
+v1 `/api/v1/tickets/active`(OPERATE), `/api/v1/tickets`(completed 필터), `/api/v1/tickets/[id]`(OPERATE), `/api/v1/tickets/[id]/complete`(OPERATE) 4개 엔드포인트를 연결해 읽기 + 출차처리까지 완결. 차량준비/번호판 수정/타입 변경은 v1 API 신설 필요하여 Part 19B-4로 분리.
+
+### 신규 파일 2개
+- **`src/app/v2/crew/parking/page.tsx`** — 주차 목록 (~420줄)
+  - 탭 4종: 🔑 발렛 / 🏢 자주식 / 📅 월주차 / 🚗 출차완료
+  - 현재 주차: `GET /api/v1/tickets/active?store_id=xxx` — 5초 폴링 (silent refetch)
+  - 출차완료: `GET /api/v1/tickets?store_id&status=completed&date_from=YYYY-MM-DDT00:00:00+09:00&date_to=...` — 날짜 선택 input 연동
+  - 검색: 2자리 이상 숫자면 `extractDigits` 비교 (한글/* 마스킹 공존 호환), 그 외는 대문자 변환 후 includes
+  - 통계 4칸: 주차중 탭별 `총/발렛/월주차/출차요청(컬러)` 또는 출차탭 `출차완료/발렛/월주차/매출합계`
+  - 출차요청 고정 배너 (주차탭에서만, 클릭 시 첫 출차요청 티켓으로 이동)
+  - 카드: 번호판(Outfit 800), 상태 뱃지, 타입 뱃지(발렛/자주식/월주차 컬러), 무료 뱃지, 경과시간(2h/4h 기준 ok/caution/warn 컬러), 주차위치, 현재요금(실시간 계산)
+  - 경과시간 상태별 카드 강조: exit_requested(오렌지 2.5px border + 펄스 애니메이션), car_ready(그린 2px border)
+  - 1분마다 `setTick` → 경과시간 재렌더
+  - 요금 계산: `calcFee(entry_at, visit_places || stores, parking_type)` — free_minutes → base_fee → extra_fee(10분 단위) → daily_max 캡 → valet_fee 가산 (기존 로직 동일)
+
+- **`src/app/v2/crew/parking/[id]/page.tsx`** — 주차 상세 (~450줄)
+  - 헤더: 뒤로가기 + 제목
+  - 상태 헤더: 번호판(32px Outfit 800) + 상태 뱃지 + 경과시간(28px)
+  - 출차요청 시 오렌지 알림 박스 (차량 준비 후 출차 처리 안내)
+  - 요금 카드(네이비 배경): 예상요금/사전정산 완료금액/추가요금, 30분 초과 시 빨간 경고 (⚠️ 사전정산 후 30분 초과 — 추가요금 발생)
+  - 차량 정보 카드: 차량번호, 주차유형, 주차위치, 방문지(층+이름), 입차시각, 사전정산시각, 출차요청시각, 출차시각
+  - 출차 처리: 하단 고정 footer 버튼 → 모달 → 결제수단 선택(카드/현금/무료, 사전정산 완료 시 숨김) → `PATCH /api/v1/tickets/:id/complete` body `{calculated_fee, payment_method}` → 성공 시 목록으로 `router.replace`
+  - 월주차는 `payment_method='monthly'` 자동 지정, 요금 0원
+  - 19B-4 안내 박스: "⚠️ 차량준비 · 번호판 수정 · 타입 변경은 Part 19B-4에서 추가됩니다" (발렛 + 비 car_ready 상태일 때만 노출)
+
+### 기술 포인트
+- 모든 fetch `credentials: "include"` — 세션 쿠키 자동 전송
+- 401 응답 → `/v2/crew/login?error=session_expired` 자동 리다이렉트
+- 404/에러 → 에러 화면 분기
+- `useMemo`로 필터링/통계 캐싱 (tickets 배열 변경 시에만 재계산)
+- 검색 `extractDigits` 활용 — 한글 차량 "57주1331" ↔ * 마스킹 "57*1331" 모두 "571331" 매칭
+- 출차완료 탭 날짜 쿼리는 KST offset `+09:00` 명시 → UTC/KST 경계 이슈 차단
+- 결제수단 선택 UI: 사전정산 `paid_amount > 0`일 때 숨김 (이미 결제 완료 → 추가 결제 없음)
+- 빌드 시 Next.js 16 `params: Promise<{id}>` 처리 — `useParams` 훅 직접 사용(클라이언트)
+
+### v1 API 호환성 확인
+- `GET /api/v1/tickets/active` 응답: `{tickets: [...], total: N}` + visit_places/stores JOIN → 요금 계산 가능 ✅
+- `GET /api/v1/tickets` 응답: `{data: [...], meta: {...}}` + visit_places 미포함 → 출차완료는 `paid_amount` 직접 사용 ✅
+- `GET /api/v1/tickets/:id` 응답: visit_places(fee 구조), stores(site_code, has_valet, valet_fee) JOIN → 요금 계산 가능 ✅
+- `PATCH /api/v1/tickets/:id/complete`: OPERATE(crew), body `{calculated_fee, payment_method, phone?}`, 응답 `{ticket_id, status, exit_at, calculated_fee, additional_fee, payment_method}` ✅
+
+### 빌드
+- `npm run build` ✅ 성공
+- 신규 라우트 2개 등록 확인:
+  - `○ /v2/crew/parking` (static)
+  - `ƒ /v2/crew/parking/[id]` (dynamic)
+
+### 완료 여부
+| 항목 | Code | DB | Test |
+|------|------|-----|------|
+| 목록 페이지 (탭/검색/폴링/통계) | ✅ | - | ⏳ 실배포 |
+| 상세 페이지 (정보/요금/출차처리) | ✅ | - | ⏳ |
+| 출차 처리 (PATCH complete) | ✅ | - | ⏳ |
+| 차량준비 액션 (car_ready) | ⏳ 19B-4 | - | - |
+| 번호판 수정 | ⏳ 19B-4 | - | - |
+| 타입 변경 (valet↔self) | ⏳ 19B-4 | - | - |
+
+### 다음 단계 (Part 19B-3)
+- `/v2/crew/entry` 페이지 — 입차 등록
+- `POST /api/v1/tickets` 사용 (OCR + 수동입력 + 월주차 자동감지)
+- `CameraOcr` 컴포넌트 재사용 (한글 마스킹 * 전략)
+- 입차 완료 시 `/api/alimtalk/entry` 자동 발송 (fire-and-forget, 기존 훅 유지)
+
+### Part 19B-4 (주차 액션 확장) — v1 API 신설 필요
+- `POST /api/v1/tickets/:id/ready` (OPERATE) — 차량준비 상태 전환 + 알림톡 훅
+- `PATCH /api/v1/tickets/:id/plate` (OPERATE) — 번호판 + plate_last4 수정 (audit 기록)
+- `PATCH /api/v1/tickets/:id/type` (OPERATE) — parking_type 변경 (audit 기록)
+- 또는 기존 `/api/v1/tickets/:id` PATCH에 OPERATE 전용 필드 화이트리스트 추가
 
