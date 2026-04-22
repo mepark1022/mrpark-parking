@@ -1,8 +1,8 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
 > **작성일:** 2026.04.09
-> **마지막 업데이트:** 2026.04.15
-> **마지막 작업:** Part 19B-5A — DB 컬럼(car_type/car_color) + 충돌 인덱스 + OCR API mode=last4 옵션 (sql/v2/13-tickets-car-info.sql 실행 완료)
+> **마지막 업데이트:** 2026.04.22
+> **마지막 작업:** 🚑 핫픽스 — 미팍티켓 알림톡 링크 404 복구 (middleware PUBLIC_PATHS 누락, commit eafc103)
 > **다음 작업:** ⚠️ **선결 점검** — 기존 UI vs v2 통합앱 UI 불완요소(누락 기능/페이지/필드) 갭 분석 → 그 다음 Part 19B-5B (충돌 검색 API)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
@@ -1205,4 +1205,42 @@ CREATE INDEX IF NOT EXISTS idx_tickets_collision
 - 매장 평균 동시 주차 대수 확인 (충돌 빈도 정밀 추정)
 - 차량 사진 자동 저장 시 Supabase Storage 비용 추정
 - OCR 신뢰점수 임계값(70%) 실측 검증 필요
+
+
+---
+
+## 🚑 핫픽스 (2026.04.22) — 미팍티켓 알림톡 링크 404 복구
+
+### 증상
+- 고객이 카카오톡 알림톡(입차확인)의 "주차현황 확인" 버튼을 누르면 **"티켓을 찾을 수 없습니다"** 화면 표시
+- 어드민 로그인 상태(`admin.mepark.kr/ticket/{id}`)로 접속하면 정상 표시 → 원인 은폐됨
+- 발생 범위: 도메인 무관(`ticket.mepark.kr`, `mrpark-parking.vercel.app` 모두), **비로그인 고객 전원 영향**
+
+### 원인
+- `src/lib/supabase/middleware.ts`의 `PUBLIC_PATHS`에 티켓 고객용 API 4종이 누락
+- 티켓 페이지(`/ticket/[id]`)는 public으로 허용됐으나, 페이지 내부에서 호출하는 API들이 비로그인 요청 시 `/login`으로 리다이렉트됨
+- 프론트는 리다이렉트 응답을 `!res.ok`로 캐치 → "티켓을 찾을 수 없습니다" 카드 표시
+
+### 누락된 API
+| 경로 | 용도 | 권한 설계 |
+|------|------|----------|
+| `/api/v1/tickets/{id}/public` | 티켓 조회 (메인) | service role로 RLS 우회 (익명 접근 전제) |
+| `/api/v1/tickets/{id}/exit-request` | 출차 요청 | service role로 RLS 우회 |
+| `/api/v1/tickets/{id}/fee` | 실시간 요금 | PUBLIC 선언 |
+| `/api/ticket/check-overdue`, `/api/ticket/{id}/additional-payment` | 레거시 고객용 | PUBLIC |
+
+### 수정 (commit eafc103)
+- `/api/ticket` prefix를 `PUBLIC_PATHS`에 추가
+- `/api/v1/tickets/{id}/{public|fee|exit-request}` 정규식 매칭 추가
+- `TICKET_V1_PUBLIC_RE` 상수 도입 → 10/10 단위 테스트 통과
+- ⚠️ `/api/v1/tickets` 루트(CRUD) 및 `/ready`, `/complete`, `/active` 등 크루·관리자 전용은 계속 인증 보호
+
+### 검증
+- ✅ 시크릿 창(로그아웃) PC에서 `ticket.mepark.kr/ticket/{id}` 정상 로드
+- ✅ 모바일 실기기(카카오톡 인앱 브라우저) 정상 동작 확인
+- ✅ 티켓 상태(주차중/발렛/예상요금/출차요청 버튼) 전체 렌더 확인
+
+### 후속 권장
+- 월주차 알림톡 3종(monthly_remind/expire/renew)의 링크 행선지 확인 → 같은 티켓 페이지라면 함께 복구됨, 별도 경로라면 추가 점검 필요
+- 솔라피 템플릿 버튼 URL 도메인 정리: `mrpark-parking.vercel.app` → `ticket.mepark.kr`로 교체 신청(재심사 2~5 영업일). 현재는 middleware 통과로 실사용 이슈 없음.
 
