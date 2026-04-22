@@ -14,11 +14,22 @@ const PUBLIC_PATHS = [
   "/api/payment", // 토스페이먼츠 웹훅
   "/api/alimtalk", // 솔라피 웹훅
   "/api/demo",     // 가상체험 데모 API (비로그인 허용)
+  "/api/ticket",   // 고객 티켓 레거시 API (check-overdue, additional-payment 등)
   "/homepage",  // 홈페이지 (mepark.kr)
 ];
 
+/** 공개 허용되는 티켓 v1 API 정규식
+ *  ex) /api/v1/tickets/{id}/public, /fee, /exit-request
+ *  (service role로 RLS 우회, 고객 익명 접근 전제)
+ *  ⚠️ /api/v1/tickets (루트/목록/생성)과 /ready, /complete 등 크루·관리자 전용은 제외
+ */
+const TICKET_V1_PUBLIC_RE =
+  /^\/api\/v1\/tickets\/[^/]+\/(public|fee|exit-request)$/;
+
 function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) return true;
+  if (TICKET_V1_PUBLIC_RE.test(pathname)) return true;
+  return false;
 }
 
 export async function updateSession(request: NextRequest) {
