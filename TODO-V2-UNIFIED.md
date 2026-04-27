@@ -1,9 +1,9 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
 > **작성일:** 2026.04.09
-> **마지막 업데이트:** 2026.04.22
-> **마지막 작업:** 🚑 핫픽스 — 미팍티켓 알림톡 링크 404 복구 (middleware PUBLIC_PATHS 누락, commit eafc103)
-> **다음 작업:** ⚠️ **선결 점검** — 기존 UI vs v2 통합앱 UI 불완요소(누락 기능/페이지/필드) 갭 분석 → 그 다음 Part 19B-5B (충돌 검색 API)
+> **마지막 업데이트:** 2026.04.27
+> **마지막 작업:** 📋 레거시 ↔ v2 갭 분석 완료 — TODO 하단 신규 섹션 추가 (P0 5건 / P1 7건 / P2 4건)
+> **다음 작업:** Part 19B-5B (충돌 검색 API) — `GET /api/v1/tickets/check-collision`
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -1243,4 +1243,98 @@ CREATE INDEX IF NOT EXISTS idx_tickets_collision
 ### 후속 권장
 - 월주차 알림톡 3종(monthly_remind/expire/renew)의 링크 행선지 확인 → 같은 티켓 페이지라면 함께 복구됨, 별도 경로라면 추가 점검 필요
 - 솔라피 템플릿 버튼 URL 도메인 정리: `mrpark-parking.vercel.app` → `ticket.mepark.kr`로 교체 신청(재심사 2~5 영업일). 현재는 middleware 통과로 실사용 이슈 없음.
+
+
+---
+
+## 📋 레거시 ↔ v2 갭 분석 결과 (2026.04.27)
+
+> Part 19B-5B 착수 전 선결 점검 완료. P0/P1/P2 분류로 후속 Part 정의.
+
+### 1️⃣ 어드민 페이지 (PC + 모바일)
+
+| 레거시 | v2 대응 | 갭 내용 | 우선순위 |
+|---|---|---|---|
+| `/dashboard` (757줄) | `/v2/dashboard` (855줄) | v2가 더 풍부(KPI 4 + 추이 + 도넛). **출근인원/총직원수 KPI는 v1만 존재** | **P1** |
+| `/parking-status` (1008줄) | **❌ 없음** | 실시간 주차중 리스트 + 초과차량 탭 + 번호판 수정 모달 + 강제출차(요금/무료) | **🔥 P0** |
+| `/analytics` (849줄) | `/v2/dashboard`에 부분 흡수 | **시간대별 차트, 매장별 비교, 전기간대비 % 누락** | **P1** |
+| `/stores` (2735줄) | **❌ 없음** | 사업장/주차장(self_spaces·mech_normal·mech_suv)/방문지(8필드 요금표) CRUD | **🔥 P0** |
+| `/team` (915줄) | **❌ 없음** | 계정생성·비번리셋·제거·매장배정·역할변경(super_admin/admin/crew) | **🔥 P0** |
+| `/workers` (1937줄) | `/v2/attendance` ✅ (Part 12A/B) | — | — |
+| `/accident` (708줄) | **❌ 없음** | 사고리포트 CRUD + 상태변경 + Excel | **P1** |
+| `/monthly` | `/v2/monthly` ✅ | — | — |
+| `/settings/{stores,team,workers,default-workers}` | **❌ 없음** | 기본 워커 / 매장 설정 | **P2** |
+
+### 2️⃣ CREW 페이지 (모바일 전용)
+
+v1 디렉토리 13개 vs v2 디렉토리 4개.
+
+| v1 (`/crew/*`) | v2 (`/v2/crew/*`) | 갭 내용 | 우선순위 |
+|---|---|---|---|
+| `parking-list` | `parking` ✅ | — | — |
+| `parking-list/[id]` (707줄) | `parking/[id]` (702줄) | **차량번호 수정 모달 / 차종변경 액션 누락** (v2 코드 코멘트: *"차량준비/번호판수정/타입변경은 19B-4에서 추가"* — 미완) | **🔥 P0** |
+| `entry` | `entry` ✅ | 19B-5C에서 4자리 모드로 재작업 예정 | (진행 중) |
+| `entry/qr` (QR 입차) | **❌ 없음** | QR 스캔 기반 입차 | **P1** |
+| `attendance` | **❌ 없음** | CREW 매일 출퇴근 체크인/아웃 | **🔥 P0** |
+| `attendance/history` | **❌ 없음** | 본인 출퇴근 이력 조회 | **P1** |
+| `accident` | **❌ 없음** | 현장 사고 등록 (사진 포함) | **P1** |
+| `leave` | **❌ 없음** | 휴가 신청 | **P2** |
+| `monthly` + `monthly/register` | **❌ 없음** | CREW 모바일에서 월주차 등록/조회 | **P1** |
+| `guide` | **❌ 없음** | 사용 안내 | **P2** |
+| `settings` | **❌ 없음** | CREW 설정(테마/알림) | **P2** |
+
+### 3️⃣ Sidebar 라우팅 상태
+
+`src/components/layout/Sidebar.tsx`는 현재 거의 전부 v1 경로로 라우팅 중. `/v2/alimtalk`만 v2. v2 페이지 출시 시점에 일괄 교체 필요.
+
+| 메뉴 | 현재 href | 교체 대상 |
+|---|---|---|
+| 대시보드 | `/dashboard` | `/v2/dashboard` |
+| 입차 현황 | `/parking-status` | `/v2/parking-status` (신규 P0) |
+| 월주차 관리 | `/monthly` | `/v2/monthly` |
+| 매출 분석 | `/analytics` | (제거 — `/v2/dashboard`에 통합 + P1 보강) |
+| 근무자 관리 | `/workers` | `/v2/attendance` |
+| 매장 관리 | `/stores` | `/v2/stores` (신규 P0) |
+| 팀원 초대 | `/team` | `/v2/team` (신규 P0) |
+| 사고보고 | `/accident` | `/v2/accident` (신규 P1) |
+| 설정 | `/settings` | `/v2/settings` (P2) |
+
+### 🎯 P0 우선순위 작업 (5건)
+
+| # | 작업 | 비고 |
+|---|---|---|
+| **GAP-P0-1** | `/v2/stores` — 사업장/주차장/방문지 CRUD | 마스터 데이터, 다른 모든 기능의 전제 |
+| **GAP-P0-2** | `/v2/team` — 계정/매장배정/역할 | 멀티테넌시 SaaS 전환 핵심 |
+| **GAP-P0-3** | `/v2/parking-status` — 실시간 주차중 + 초과차량 | 어드민 운영 핵심 |
+| **GAP-P0-4** | `/v2/crew/parking/[id]` 보강 — 차량번호 수정 + 차종변경 | **Part 19B-5C와 함께 처리** |
+| **GAP-P0-5** | `/v2/crew/attendance` — CREW 출퇴근 | CREW 매일 사용 |
+
+### 📋 P1 우선순위 작업 (7건)
+
+| # | 작업 |
+|---|---|
+| GAP-P1-1 | `/v2/dashboard` 보강 — 출근/총직원 KPI 카드 추가 |
+| GAP-P1-2 | `/v2/dashboard` 보강 — 시간대별 차트 + 매장별 비교 + 전기간대비 % |
+| GAP-P1-3 | `/v2/accident` — 사고 CRUD + 상태변경 + Excel |
+| GAP-P1-4 | `/v2/crew/entry/qr` — QR 스캔 입차 |
+| GAP-P1-5 | `/v2/crew/attendance/history` — CREW 본인 출퇴근 이력 |
+| GAP-P1-6 | `/v2/crew/accident` — CREW 현장 사고 등록 (사진) |
+| GAP-P1-7 | `/v2/crew/monthly` + `monthly/register` — CREW 모바일 월주차 |
+
+### 📋 P2 작업 (4건)
+
+| # | 작업 |
+|---|---|
+| GAP-P2-1 | `/v2/settings/*` — 기본 워커 / 매장 설정 |
+| GAP-P2-2 | `/v2/crew/leave` — 휴가 신청 |
+| GAP-P2-3 | `/v2/crew/guide` — 사용 안내 |
+| GAP-P2-4 | `/v2/crew/settings` — CREW 설정 |
+
+### 🚀 실행 순서 권장
+
+1. **Part 19B-5 마무리** (5B → 5C[+ GAP-P0-4 흡수] → 5D) — OCR 4자리 모드 완성
+2. **P0 항목 5건** — 관리자/CREW 통합앱 출시 가능 수준
+3. **Sidebar 일괄 교체** — v1 → v2 라우팅 전환
+4. **P1 항목 7건** — UX 보강
+5. **P2 항목 4건** — 부가 기능
 
