@@ -182,18 +182,33 @@ html{scroll-behavior:smooth}body{font-family:var(--fn);color:var(--body);backgro
 .feat-icon.navy{background:rgba(20,40,160,.06)}.feat-icon.gold{background:rgba(245,183,49,.1)}.feat-icon.green{background:rgba(22,163,74,.06)}.feat-icon.blue{background:rgba(15,158,213,.08)}
 .feat-card .ttl{font-size:17px;font-weight:700;color:var(--dark);margin-bottom:8px}.feat-card .desc{font-size:13px;color:var(--gray);line-height:1.6;margin-bottom:12px}.feat-card .tags{justify-content:flex-start}
 
-/* PRICING */
-.price-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
-.price-card{background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px;display:flex;flex-direction:column;transition:all .2s}
-.price-card.pop{border-color:var(--navy);position:relative;box-shadow:0 8px 30px rgba(20,40,160,.12)}
-.price-card.pop::before{content:'인기';position:absolute;top:-12px;right:20px;background:var(--gold);color:var(--dark);padding:3px 12px;border-radius:10px;font-size:11px;font-weight:800}
-.price-card .plan{font-family:var(--fe);font-size:18px;font-weight:800;color:var(--dark);margin-bottom:6px}
-.price-card .price{font-family:var(--fe);font-size:32px;font-weight:900;color:var(--navy);margin-bottom:4px}.price-card .price-unit{font-size:14px;font-weight:400;color:var(--gray)}
-.price-card .price-desc{font-size:12px;color:var(--gray);margin-bottom:20px}
-.price-card ul{list-style:none;margin-bottom:24px;flex:1}
-.price-card li{font-size:13px;color:var(--body);padding:6px 0;display:flex;align-items:center;gap:8px}.price-card li::before{content:'✓';color:var(--success);font-weight:700}
-.price-card .btn-plan{padding:12px;border-radius:10px;text-align:center;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid var(--navy);color:var(--navy);background:transparent;font-family:var(--fn);transition:all .2s}
-.price-card.pop .btn-plan{background:var(--navy);color:var(--white)}.price-card .btn-plan:hover{background:var(--navy);color:var(--white)}
+/* PRICING (BM v2) */
+.pv2-wrap{max-width:720px;margin:0 auto}
+.pv2-card{background:var(--white);border-radius:24px;padding:56px 48px;border:1.5px solid var(--border);box-shadow:0 8px 30px rgba(20,40,160,.05);word-break:keep-all;line-break:strict}
+.pv2-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(20,40,160,.06);border-radius:100px;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:24px}
+.pv2-rows{display:flex;flex-direction:column;margin-top:8px}
+.pv2-row{display:flex;justify-content:space-between;align-items:baseline;padding:20px 0;border-bottom:1px solid var(--light)}
+.pv2-row.hl + .pv2-row,.pv2-row:last-child{border-bottom:none}
+.pv2-row .pv2-label{font-size:16px;font-weight:600;color:var(--dark)}
+.pv2-row.zero .pv2-label{font-weight:700}
+.pv2-row .pv2-value{font-family:var(--fe);font-size:24px;font-weight:800;color:var(--dark)}
+.pv2-row.zero .pv2-value{font-size:44px;line-height:1}
+.pv2-row .pv2-suf{font-size:15px;font-weight:600;color:var(--gray);margin-left:4px}
+.pv2-row.zero .pv2-suf{font-size:18px}
+.pv2-row .pv2-text{font-family:var(--fn);font-size:22px;font-weight:700}
+.pv2-row.hl{background:rgba(245,183,49,.08);border:1.5px solid rgba(245,183,49,.3);border-radius:16px;padding:22px 24px;margin-top:14px;border-bottom:none !important;align-items:center}
+.pv2-row.hl .pv2-stack{display:flex;flex-direction:column;gap:4px}
+.pv2-row.hl .pv2-l-main{font-size:16px;font-weight:700;color:var(--dark)}
+.pv2-row.hl .pv2-l-sub{font-size:12px;font-weight:500;color:var(--gray)}
+.pv2-row.hl .pv2-value{font-family:var(--fe);font-size:44px;font-weight:800;color:var(--dark);line-height:1;text-align:right}
+.pv2-row.hl .pv2-suf{font-size:22px;font-weight:700;color:var(--dark);margin-left:2px}
+.pv2-row.hl .pv2-vat{display:block;text-align:right;font-size:11px;font-weight:500;color:var(--gray);margin-top:6px}
+.pv2-foot{text-align:center;margin-top:24px;font-size:13px;color:var(--gray);line-height:1.7}
+.pv2-cta{margin-top:36px;display:flex;justify-content:center}
+.pv2-btn{padding:16px 44px;border-radius:14px;font-family:var(--fn);font-size:16px;font-weight:800;cursor:pointer;border:none;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
+.pv2-btn-primary{background:var(--navy);color:var(--white)}
+.pv2-btn-primary:hover{background:var(--navy-d);transform:translateY(-2px);box-shadow:0 12px 28px rgba(20,40,160,.25)}
+@media(max-width:768px){.pv2-card{padding:36px 24px;border-radius:20px}.pv2-row{padding:16px 0}.pv2-row .pv2-label{font-size:14px}.pv2-row .pv2-value{font-size:20px}.pv2-row.zero .pv2-value{font-size:34px}.pv2-row.zero .pv2-suf{font-size:15px}.pv2-row.hl{padding:20px 16px}.pv2-row.hl .pv2-l-main{font-size:14px}.pv2-row.hl .pv2-l-sub{font-size:11px}.pv2-row.hl .pv2-value{font-size:34px}.pv2-row.hl .pv2-suf{font-size:18px}.pv2-btn{width:100%;justify-content:center;padding:15px 32px}}
 
 /* CTA */
 .cta-sec{background:var(--navy);padding:80px 40px;text-align:center}
@@ -253,7 +268,7 @@ html{scroll-behavior:smooth}body{font-family:var(--fn);color:var(--body);backgro
 .compare-arrow-icon{width:48px;height:48px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:var(--dark);box-shadow:0 4px 16px rgba(245,183,49,.3)}
 
 /* RESPONSIVE */
-@media(max-width:1024px){.price-grid{grid-template-columns:repeat(2,1fr)}.feat-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1024px){.feat-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:768px){
 .gnb{padding:0 16px;height:60px}.gnb-nav,.gnb-btns{display:none}.gnb-mobile-btn{display:block}
 .sec{padding:60px 20px}.sec-title{font-size:26px}.sec-hd{margin-bottom:40px}.sec-sub{font-size:14px}
@@ -265,7 +280,6 @@ html{scroll-behavior:smooth}body{font-family:var(--fn);color:var(--body);backgro
 .platform-content.active{grid-template-columns:1fr;gap:32px}.phone-frame{width:240px}.phone-screen{height:400px}
 .flow-grid{grid-template-columns:1fr;gap:48px}.flow-grid .phone-frame{width:260px}
 .wf-grid{grid-template-columns:1fr;gap:36px}.feat-grid{grid-template-columns:1fr}
-.price-grid{grid-template-columns:1fr;max-width:400px;margin:0 auto}
 .cta-sec{padding:60px 20px}.cta-sec h2{font-size:26px}
 .footer{padding:40px 20px 24px}.footer-grid{grid-template-columns:1fr;gap:24px}
 .patent-sec{padding:40px 20px}.patent-inner{padding:32px 20px}.patent-cards{flex-wrap:wrap;gap:12px}.patent-card{flex:0 0 calc(33% - 8px);max-width:none}.patent-img{height:200px}
@@ -327,8 +341,8 @@ html{scroll-behavior:smooth}body{font-family:var(--fn);color:var(--body);backgro
     </div>
   </div>
 </section>
-<!-- ═══════════ PRICING ═══════════ -->
-<section class="sec" id="pricing"><div class="sec-inner"><div class="sec-hd"><span class="sec-tag">💰 Pricing</span><h2 class="sec-title">합리적인 <em>요금제</em></h2><p class="sec-sub">주차장 규모에 맞는 플랜을 선택하세요</p></div><div class="price-grid"><div class="price-card"><div class="plan">Starter</div><div class="price">99,000<span class="price-unit">원/월</span></div><div class="price-desc">소규모 주차장 시작</div><ul><li>QR 전자주차권</li><li>모바일 결제</li><li>알림톡 발송</li><li>기본 대시보드</li></ul><button class="btn-plan">시작하기</button></div><div class="price-card pop"><div class="plan">Standard</div><div class="price">199,000<span class="price-unit">원/월</span></div><div class="price-desc">성장하는 주차장에 최적</div><ul><li>Starter 전체 포함</li><li>CREW앱 OCR</li><li>월주차 관리</li><li>매출 분석</li><li>근무자 관리</li></ul><button class="btn-plan">시작하기</button></div><div class="price-card"><div class="plan">Pro</div><div class="price">349,000<span class="price-unit">원/월</span></div><div class="price-desc">멀티매장 전문 운영</div><ul><li>Standard 전체 포함</li><li>멀티매장 통합</li><li>발렛 워크플로우</li><li>고급 분석 리포트</li><li>우선 CS 지원</li></ul><button class="btn-plan">시작하기</button></div><div class="price-card"><div class="plan">Enterprise</div><div class="price" style="font-size:24px">맞춤 견적</div><div class="price-desc">대형·프랜차이즈</div><ul><li>Pro 전체 포함</li><li>API 연동</li><li>화이트라벨</li><li>전담 매니저</li><li>SLA 보장</li></ul><button class="btn-plan">상담 신청</button></div></div></div></section>
+<!-- ═══════════ PRICING (BM v2) ═══════════ -->
+<section class="sec" id="pricing"><div class="sec-inner"><div class="sec-hd"><span class="sec-tag">💰 Pricing</span><h2 class="sec-title">주차장 운영의 모든 것, <em>수수료 하나로</em></h2><p class="sec-sub">월정액·가입비 없이, 결제가 일어날 때만 정산됩니다</p></div><div class="pv2-wrap"><div class="pv2-card"><span class="pv2-badge">미팍 통합 요금제</span><div class="pv2-rows"><div class="pv2-row zero"><span class="pv2-label">월정액</span><span class="pv2-value">0<span class="pv2-suf">원</span></span></div><div class="pv2-row zero"><span class="pv2-label">가입비</span><span class="pv2-value">0<span class="pv2-suf">원</span></span></div><div class="pv2-row zero"><span class="pv2-label">POS</span><span class="pv2-value pv2-text">없음</span></div><div class="pv2-row hl"><span class="pv2-label pv2-stack"><span class="pv2-l-main">미팍 수수료</span><span class="pv2-l-sub">결제 건당</span></span><span class="pv2-value">2<span class="pv2-suf">%</span><span class="pv2-vat">VAT 별도</span></span></div></div><p class="pv2-foot">* PG 결제 수수료는 토스페이먼츠·이니시스 등 PG사 정책에 따라 별도 부과됩니다</p><div class="pv2-cta"><a href="#cta" class="pv2-btn pv2-btn-primary">도입 문의하기 →</a></div></div></div></div></section>
 <section class="cta-sec" id="cta"><h2>지금 바로 <span style="color:var(--gold)">시작</span>하세요</h2><p>주차장 운영의 디지털 전환, 미팍티켓과 함께하세요</p><div class="cta-btns"><button class="btn-cta-g">📞 1899-1871</button><button class="btn-cta-w">✉️ <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7e131b0e1f0c154f4e4c4c3e19131f1712501d1113">[email&#160;protected]</a></button></div></section>
 <footer class="footer"><div class="footer-inner"><div class="footer-grid"><div class="footer-brand"><div class="f-logo"><div class="f-logo-icon"><span>P</span></div><span class="f-logo-text">미팍티켓</span></div><div class="f-desc">QR 전자주차권 · 모바일 결제 · 실시간 매출 추적<br>스마트 주차 관리의 시작</div></div><div class="footer-col"><div class="f-title">서비스</div><a href="javascript:void(0)">미팍티켓 (고객)</a><a href="javascript:void(0)">CREW앱</a><a href="javascript:void(0)">어드민</a><a href="javascript:void(0)">요금제</a></div><div class="footer-col"><div class="f-title">회사</div><a href="javascript:void(0)">회사 소개</a><a href="javascript:void(0)">채용</a><a href="javascript:void(0)">블로그</a><a href="javascript:void(0)">뉴스</a></div><div class="footer-col"><div class="f-title">지원</div><a href="javascript:void(0)">도입 문의</a><a href="javascript:void(0)">고객센터</a><a href="javascript:void(0)">이용약관</a><a href="javascript:void(0)">개인정보처리방침</a></div></div><div class="footer-bottom"><strong>주식회사 미스터팍</strong> (Mr. Park Co., Ltd.)<br>대표: 이지섭 | 설립: 2018.09.10<br>인천광역시 연수구 갯벌로 12, 인천테크노파크 갯벌타워 1501A,B호<br>대표번호: 1899-1871 | <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7f121a0f1e0d144e4f4d4d3f18121e1613511c1012">[email&#160;protected]</a><br><br>© 2026 주식회사 미스터팍. All rights reserved.</div></div></footer>
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflar
