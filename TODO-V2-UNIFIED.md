@@ -2,8 +2,8 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.05.28
-> **마지막 작업:** ✅ Part 19B-5C 완료 — CREW v2 입차 4자리 모드 + 충돌 모달 + GAP-P0-4 정보수정
-> **다음 작업:** Part 19B-5D (CREW v2 출차 검색 — N건 매칭 카드 리스트)
+> **마지막 작업:** ✅ Part 19B-5D 완료 — CREW v2 출차 검색 (4자리 → N건 카드, 월주차 포함)
+> **다음 작업:** Part 19B-5E (월주차 입차 4자리화 — 검토) 또는 P0 항목 (GAP-P0-1~3,5)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -72,7 +72,7 @@ cat TODO-V2-UNIFIED.md
 | **Part 19B-2** | CREW v2 주차 목록 + 상세 — tickets/active + tickets/[id] + /complete 출차처리 | ✅ 완료 | 7708d7a |
 | **Part 19B-3** | CREW v2 입차 등록 — POST tickets + OCR + 월주차 자동감지 + contract_status 버그 수정 + 신규 API 2개 | ✅ 완료 | (이번 push) |
 | **Part 19B-4** | 차량준비 액션(POST /api/v1/tickets/:id/ready) + 고객 페이지 RLS 우회(public/exit-request service role) + 출차완료 화면 4초 폴링 + 알림톡 자동 훅 | ✅ 완료 | 4249d42 / SQL: mepark_tickets·visit_places 컬럼 보강 + exit_requests 테이블 생성 (✅ 실행 완료) |
-| **Part 19B-5** | **4자리 OCR 전용 모드** — CREW 입차/출차 워크플로 단순화 + 동일 4자리 충돌 시 차종/컬러 모달 (월주차 제외) | 🚧 진행 중 (A·B·C 완료) | 5A: SQL+OCR mode=last4 / 5B: 충돌검색 API (960dd60) / 5C: 입차4자리+충돌모달+GAP-P0-4 |
+| **Part 19B-5** | **4자리 OCR 전용 모드** — CREW 입차/출차 워크플로 단순화 + 동일 4자리 충돌 시 차종/컬러 모달 | ✅ 완료 (A·B·C·D) | 5A: SQL+OCR mode=last4 / 5B: 충돌검색 API (960dd60) / 5C: 입차4자리+충돌모달+GAP-P0-4 / 5D: 출차검색(월주차 포함) |
 
 ---
 
@@ -1179,7 +1179,8 @@ CREATE INDEX IF NOT EXISTS idx_tickets_collision
 - **Part 19B-5A** ✅ — DB 컬럼 추가 + OCR API 4자리 모드 (`/api/ocr/plate`에 `mode=last4` 옵션 추가)
 - **Part 19B-5B** ✅ — 충돌 검색 API (`GET /api/v1/tickets/check-collision?store_id&plate_last4`) — commit 960dd60
 - **Part 19B-5C** ✅ — CREW v2 입차 페이지 단일 4자리 입력 + 충돌 모달 + GAP-P0-4 흡수
-- **Part 19B-5D** ⏳ — CREW v2 출차 검색 — N건 매칭 시 카드 리스트 (시간 + 위치 + 차종/컬러)
+- **Part 19B-5D** ✅ — CREW v2 출차 검색 — 4자리 → N건 매칭 카드 리스트 (월주차 포함, 차주성함 표시)
+- **Part 19B-5E** ⏳ (신설 검토) — 월주차 *입차* 4자리화 + 수기(차종/차주성함) 캡처. 현재 월주차 입차는 풀번호 자동감지 경로 → 4자리 통일 시 입차 경로·매칭 로직 재설계 필요
 
 ### Part 19B-5A 완료 기록 (2026.04.15)
 - **SQL** (`sql/v2/13-tickets-car-info.sql` · Supabase 실행 완료)
@@ -1225,8 +1226,27 @@ CREATE INDEX IF NOT EXISTS idx_tickets_collision
 - **준수**: 신규 API 모두 `requireAuth(OPERATE)`+field_member 제외+canAccessStore+org_id / PUBLIC_PATHS·middleware 무수정 / DB 변경 0건(5A 컬럼 재사용)
 - **빌드 검증**: `npm run build` ✅ (55s) / `/v2/crew/entry`·`parking/[id]`·`/api/v1/tickets/[id]/{plate,car-info}` 등록 확인
 
-### 알림톡 영향
-- 월주차 3개 템플릿: 무영향
+### Part 19B-5D 완료 기록 (2026.05.28)
+- **대표 결정사항 반영**: 출차 검색에 **월주차 포함** (4자리·수기 구분 동일 적용). 일반차=차종·차색 / 월주차=📅뱃지·차종·👤차주성함
+- **check-collision API 확장 (additive)** (`src/app/api/v1/tickets/check-collision/route.ts`)
+  - 신규 쿼리 파라미터 `include_monthly=true` (선택) — 미전달 시 기존 동작(월주차 제외) 유지 → **5C 입차 충돌검색 무영향**
+  - `include_monthly=true`: `is_monthly=false` 필터 제거 + select에 `monthly_parking_id` 추가
+  - 월주차 매칭 건은 `monthly_parking` 별도 조회(임베드 join 미사용 — FK 네이밍 의존 회피)로 `owner_name`(=customer_name)·`car_type`(티켓 우선, 계약 vehicle_type fallback) 보강
+  - DB 변경 0건 (5A 컬럼 + 기존 monthly_parking_id FK 재사용)
+- **신규 페이지** (`src/app/v2/crew/exit/page.tsx`)
+  - 4자리 입력(수동/OCR) → `GET check-collision?include_monthly=true` (debounce 500ms)
+  - **0건** → 안내 / **1건** → 카드 없이 즉시 `/v2/crew/parking/[id]` 이동 / **N건** → 카드 리스트 → 선택 → 상세
+  - 카드: 번호4자리·상태뱃지·(발렛/자주식|📅월주차)·차종·차색/👤차주성함·경과시간(색상)·위치
+  - CameraOcr 재사용 (풀번호 결과 → `extractDigits().slice(-4)`, 컴포넌트 무수정)
+- **진입점 3곳**
+  - 홈 빠른액션: 기존 2버튼(입차/현황) → **3버튼(입차/출차검색/현황)**, 출차검색=초록 (`src/app/v2/crew/page.tsx`)
+  - 현황 목록 툴바: "🔎 4자리로 출차 차량 찾기" 버튼 (`src/app/v2/crew/parking/page.tsx`)
+  - BottomNav는 무수정 (4탭 유지)
+- **준수**: 신규 페이지 `/v2/crew/exit`만 신설 · check-collision는 5B 신규코드라 additive 확장 · PUBLIC_PATHS·middleware 무수정 · Supabase 직접호출 0건 · DB 변경 0건
+- **빌드 검증**: `npm run build` ✅ Compiled successfully (69s) / `/v2/crew/exit`·`ƒ /api/v1/tickets/check-collision` 등록 확인
+- **시안**: `docs/part19B-5D-mockup.html` (대표 컨펌 완료 — 1234/7777/5678/9999 시나리오)
+
+
 - 일반차 2개 템플릿(입차확인/차량준비): 본문 표기 형식 검토 후 변수만 4자리로 발송 (대부분 재심사 불필요 예상)
 - **선결 작업**: 솔라피 콘솔에서 입차확인/차량준비 템플릿 본문 확인 → 재심사 필요 여부 판정
 

@@ -6,9 +6,13 @@
  *                   차종/컬러 입력 모달을 띄워 구분. 출차 시에도 N건 매칭에 활용.
  *
  * Query: ?store_id=xxx (필수) & plate_last4=1234 (필수, 숫자 4자리)
+ *        & include_monthly=true (선택, Part 19B-5D 출차 검색용 — 월주차 포함 + 차주성함 조인)
  * 응답: { has_collision: boolean, count: number, matches: [...] }
+ *        match(월주차): owner_name(차주성함) + car_type 보강(계약 vehicle_type fallback)
  *
  * 권한: OPERATE (crew 이상, field_member 제외)
+ *
+ * ⚠️ include_monthly 기본값 false → 5C 입차 충돌검색은 파라미터 미전달로 기존 동작(월주차 제외) 유지.
  *
  * ⚠️ 이 API는 로그인된 CREW/관리자 전용입니다. PUBLIC_PATHS에 추가하지 마세요.
  *    (고객용 public 티켓 API와 혼동 금지 — 2026.04.22 PUBLIC_PATHS 사고 참고)
@@ -34,6 +38,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get('store_id');
     const plateLast4 = searchParams.get('plate_last4');
+    const includeMonthly = searchParams.get('include_monthly') === 'true'; // Part 19B-5D 출차 검색
 
     // 입력 검증
     if (!storeId) {
@@ -50,26 +55,60 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // 동일 매장 + 동일 4자리 + 활성 상태 (월주차 제외)
-    const { data: matches, error } = await supabase
+    // 동일 매장 + 동일 4자리 + 활성 상태
+    // - 기본: 월주차 제외 (5C 입차 충돌검색)
+    // - include_monthly=true: 월주차 포함 (5D 출차 검색)
+    let query = supabase
       .from('mepark_tickets')
       .select(`
         id, plate_number, plate_last4, car_type, car_color,
-        parking_type, status, entry_at, parking_location, is_monthly
+        parking_type, status, entry_at, parking_location, is_monthly,
+        monthly_parking_id
       `)
       .eq('org_id', ctx.orgId)
       .eq('store_id', storeId)
       .eq('plate_last4', plateLast4)
-      .eq('is_monthly', false)          // 월주차는 충돌 대상 제외 (4자리 모드는 일반차만)
-      .in('status', ACTIVE_STATUSES)
-      .order('entry_at', { ascending: false });
+      .in('status', ACTIVE_STATUSES);
+
+    if (!includeMonthly) {
+      query = query.eq('is_monthly', false); // 4자리 입차 모드는 일반차만 (기존 동작)
+    }
+
+    const { data: rawMatches, error } = await query.order('entry_at', { ascending: false });
 
     if (error) {
       console.error('[v1/tickets/check-collision] 조회 오류:', error.message);
       return serverError('충돌 검색 중 오류가 발생했습니다');
     }
 
-    const list = matches || [];
+    let list: any[] = rawMatches || [];
+
+    // 월주차 포함 시: 계약(monthly_parking)에서 차주성함/차종 조인 보강
+    if (includeMonthly && list.length > 0) {
+      const monthlyIds = Array.from(
+        new Set(list.filter((m) => m.is_monthly && m.monthly_parking_id).map((m) => m.monthly_parking_id))
+      );
+      if (monthlyIds.length > 0) {
+        const { data: contracts } = await supabase
+          .from('monthly_parking')
+          .select('id, customer_name, vehicle_type')
+          .eq('org_id', ctx.orgId)
+          .in('id', monthlyIds);
+        const cmap = new Map((contracts || []).map((c: any) => [c.id, c]));
+        list = list.map((m) => {
+          if (m.is_monthly && m.monthly_parking_id) {
+            const c = cmap.get(m.monthly_parking_id);
+            return {
+              ...m,
+              owner_name: c?.customer_name || null,           // 차주성함 (월주차 카드 구분용)
+              car_type: m.car_type || c?.vehicle_type || null, // 차종: 티켓 우선, 없으면 계약 fallback
+            };
+          }
+          return m;
+        });
+      }
+    }
+
     return ok({
       has_collision: list.length > 0,
       count: list.length,

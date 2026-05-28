@@ -277,6 +277,25 @@ export default function CrewV2HomePage() {
               <span style={{ fontSize: 14, fontWeight: 700 }}>입차 등록</span>
             </button>
 
+            {/* 출차 검색 (Part 19B-5D) */}
+            <button
+              className="cv2-quick-btn"
+              style={{ background: "#16A34A", color: "#fff" }}
+              onClick={() => router.push("/v2/crew/exit")}
+            >
+              <div style={{
+                width: 48, height: 48, borderRadius: 14,
+                background: "rgba(255,255,255,0.18)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M21 21l-4.3-4.3" />
+                </svg>
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>출차 검색</span>
+            </button>
+
             {/* 주차 현황 */}
             <button
               className="cv2-quick-btn"

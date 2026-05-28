@@ -382,6 +382,20 @@ export default function CrewV2ParkingListPage() {
                 style={{ fontSize: 16, color: "#94A3B8", cursor: "pointer" }}>✕</span>
             )}
           </div>
+          <button
+            onClick={() => router.push("/v2/crew/exit")}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              height: 40, border: "none", borderRadius: 10, cursor: "pointer",
+              background: "#16A34A", color: "#fff", fontSize: 14, fontWeight: 700,
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" />
+            </svg>
+            4자리로 출차 차량 찾기
+          </button>
           <div className="cv2-plist-tabs">
             {TABS.map(tab => (
               <div

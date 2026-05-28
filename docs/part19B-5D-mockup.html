@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part 19B-5D — CREW v2 출차 검색 시안</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Noto+Sans+KR:wght@400;600;700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif; background: #EEF1F6;
+    padding: 28px 16px; color: #1A1D2B;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 800; color: #1428A0; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #64748B; margin-bottom: 22px; }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+
+  /* 폰 프레임 */
+  .phone {
+    width: 380px; background: #F8FAFC; border-radius: 28px;
+    border: 9px solid #0a1352; overflow: hidden; position: relative;
+    box-shadow: 0 16px 40px rgba(10,19,82,0.25); min-height: 720px;
+  }
+  .phone-label { font-size: 12px; font-weight: 700; color: #1428A0; margin: 0 0 10px 4px; }
+
+  /* 헤더 */
+  .hdr {
+    background: linear-gradient(135deg, #0a1352 0%, #1428A0 100%);
+    padding: 16px; color: #fff; display: flex; align-items: center; gap: 12px;
+  }
+  .back { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .hdr-title { font-size: 16px; font-weight: 700; }
+  .hdr-store { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+  .section { margin: 14px 16px 0; background: #fff; border-radius: 16px; border: 1px solid #E2E8F0; overflow: hidden; }
+  .section-title { padding: 14px 16px 10px; font-size: 12px; font-weight: 700; color: #1428A0;
+    letter-spacing: .5px; text-transform: uppercase; border-bottom: 1px solid #F1F5F9; }
+  .section-body { padding: 16px; }
+
+  /* 4자리 입력 */
+  .l4-wrap { border: 2.5px solid #E2E8F0; border-radius: 13px; background: #fff; padding: 10px; transition: border-color .2s; }
+  .l4-wrap.focused { border-color: #1428A0; }
+  .l4-input { width: 100%; height: 64px; border: none; outline: none; background: transparent; text-align: center;
+    font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 44px; letter-spacing: 14px;
+    color: #1A1D2B; text-indent: 14px; }
+  .l4-input::placeholder { color: #D7DEE8; }
+  .l4-hint { margin-top: 9px; font-size: 11px; color: #94A3B8; text-align: center; }
+  .l4-hint b { color: #1428A0; }
+  .ocr-btn { width: 100%; height: 52px; margin-top: 12px; background: #1428A0; color: #fff; border: none;
+    border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .ocr-btn:active { opacity: .85; }
+
+  .scoreline { margin-top: 10px; padding: 10px 13px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+  .scoreline.checking { background: #F8FAFC; color: #64748B; border: 1px solid #E2E8F0; }
+  .scoreline.none { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+  .scoreline.one { background: #F0FDF4; color: #16A34A; border: 1px solid #BBF7D0; }
+  .scoreline.many { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+
+  /* 결과 카드 리스트 */
+  .result-head { margin: 16px 16px 0; font-size: 13px; font-weight: 700; color: #1A1D2B; display: flex; align-items: center; gap: 6px; }
+  .result-head .count { color: #1428A0; }
+  .cards { padding: 10px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .vcard { background: #fff; border-radius: 14px; border: 1.5px solid #E2E8F0; overflow: hidden; cursor: pointer; transition: transform .1s; }
+  .vcard:active { transform: scale(.98); }
+  .vcard.exit_requested { border-color: #EA580C; border-width: 2.5px; background: #FFF7ED; }
+  .vcard-top { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 10px; border-bottom: 1px solid #F1F5F9; }
+  .vplate { font-size: 22px; font-weight: 800; letter-spacing: 1px; color: #1A1D2B; font-family: 'Outfit', sans-serif; }
+  .vbadge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .vbadge.parking { background: #EEF2FF; color: #1428A0; }
+  .vbadge.exit_requested { background: #FFF7ED; color: #EA580C; }
+  .vbadge.car_ready { background: #DCFCE7; color: #16A34A; }
+  .vcard-body { padding: 10px 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .vtype { padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .vtype.valet { background: #FFF7ED; color: #EA580C; }
+  .vtype.self  { background: #EEF2FF; color: #1428A0; }
+  .vchip { padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; background: #F1F5F9; color: #475569; }
+  .velapsed { font-size: 13px; font-weight: 700; margin-left: auto; font-family: 'Outfit', sans-serif; color: #16A34A; }
+  .vcard-footer { padding: 8px 14px 12px; display: flex; align-items: center; justify-content: space-between; }
+  .vloc { font-size: 12px; color: #94A3B8; }
+  .vgo { font-size: 12px; color: #1428A0; font-weight: 700; }
+
+  .empty { padding: 50px 20px; text-align: center; color: #94A3B8; font-size: 14px; line-height: 1.6; }
+  .toast { position: absolute; left: 50%; bottom: 90px; transform: translateX(-50%); background: #16A34A; color: #fff;
+    padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    opacity: 0; pointer-events: none; transition: opacity .25s; white-space: nowrap; z-index: 100; }
+  .toast.show { opacity: 1; }
+
+  /* 하단 네비 */
+  .bnav { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg,#0a1352,#1428A0);
+    display: flex; justify-content: space-around; align-items: center; padding: 8px 4px 16px; }
+  .bnav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .bnav-ic { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .bnav-ic.active { background: #F5B731; }
+  .bnav-lb { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.75); }
+  .bnav-lb.active { color: #F5B731; font-weight: 800; }
+
+  /* 진입점 시안 (홈 빠른액션) */
+  .home-actions { display: flex; gap: 10px; }
+  .qbtn { flex: 1; height: 96px; border-radius: 16px; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
+  .qbtn .ic { width: 44px; height: 44px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .qbtn.entry { background: #1428A0; color: #fff; }
+  .qbtn.entry .ic { background: rgba(255,255,255,.15); }
+  .qbtn.exit { background: #16A34A; color: #fff; }
+  .qbtn.exit .ic { background: rgba(255,255,255,.18); }
+  .qbtn.list { background: #fff; color: #1A1D2B; border: 1px solid #E2E8F0; }
+  .qbtn.list .ic { background: #F1F5F9; }
+
+  .note { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 18px 20px; max-width: 420px; font-size: 13px; line-height: 1.75; }
+  .note h3 { font-size: 14px; color: #1428A0; margin-bottom: 10px; }
+  .note .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 6px; background: #FEF3C7; color: #92400E; }
+  .note code { background: #F1F5F9; padding: 1px 6px; border-radius: 5px; font-size: 12px; font-family: 'Outfit', monospace; }
+  .try { font-size: 12px; color: #64748B; margin: 8px 0 0 4px; }
+  .try b { color: #1428A0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Part 19B-5D — CREW v2 출차 검색 (4자리 → N건 매칭 카드)</h1>
+  <p class="sub">데이터 소스: <code>GET /api/v1/tickets/check-collision</code> (신규 API/DB 변경 0건) · 입력 후 동작이 자동으로 바뀝니다</p>
+
+  <div class="row">
+    <!-- 폰 1: 출차 검색 화면 (인터랙티브) -->
+    <div>
+      <div class="phone-label">① 출차 검색 화면 — 직접 입력해보세요</div>
+      <div class="phone">
+        <div class="hdr">
+          <div class="back">‹</div>
+          <div>
+            <div class="hdr-title">출차 검색</div>
+            <div class="hdr-store">📍 금돈옥 청담점</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">차량 뒤 4자리</div>
+          <div class="section-body">
+            <div class="l4-wrap" id="l4wrap">
+              <input class="l4-input" id="l4" placeholder="0000" inputmode="numeric" maxlength="4" />
+            </div>
+            <div class="l4-hint">출차할 차량 <b>뒤 4자리</b> 입력 · 일반차 전용</div>
+            <button class="ocr-btn" onclick="ocr()">📷 카메라로 4자리 인식</button>
+            <div id="score"></div>
+          </div>
+        </div>
+
+        <div id="resultHead"></div>
+        <div class="cards" id="cards"></div>
+
+        <div class="toast" id="toast"></div>
+
+        <div class="bnav">
+          <div class="bnav-item"><div class="bnav-ic">🏠</div><div class="bnav-lb">홈</div></div>
+          <div class="bnav-item"><div class="bnav-ic active">🚗</div><div class="bnav-lb active">현황</div></div>
+          <div class="bnav-item"><div class="bnav-ic">🕐</div><div class="bnav-lb">출퇴근</div></div>
+          <div class="bnav-item"><div class="bnav-ic">⚙️</div><div class="bnav-lb">설정</div></div>
+        </div>
+      </div>
+      <p class="try"><b>1234</b> → 일반차 3건 · <b>7777</b> → 일반+월주차 혼합 3건(차주성함) · <b>5678</b> → 1건 즉시이동 · <b>9999</b> → 0건</p>
+    </div>
+
+    <!-- 폰 2: 진입점 시안 (홈) -->
+    <div>
+      <div class="phone-label">② 진입점 — 홈 빠른 액션 3버튼 제안</div>
+      <div class="phone" style="min-height:auto;">
+        <div class="hdr">
+          <div>
+            <div class="hdr-title">안녕하세요, 이지섭님 👋</div>
+            <div class="hdr-store">📍 금돈옥 청담점 · 근무 중</div>
+          </div>
+        </div>
+        <div style="padding:16px;">
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;">
+            <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:14px;">
+              <div style="font-size:11px;color:#64748B;">주차 중</div>
+              <div style="font-size:26px;font-weight:800;color:#1428A0;font-family:'Outfit';">12</div>
+            </div>
+            <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:14px;">
+              <div style="font-size:11px;color:#DC2626;">출차요청</div>
+              <div style="font-size:26px;font-weight:800;color:#DC2626;font-family:'Outfit';">2</div>
+            </div>
+          </div>
+          <div class="home-actions">
+            <button class="qbtn entry"><div class="ic">＋</div>입차 등록</button>
+            <button class="qbtn exit"><div class="ic">🔎</div>출차 검색</button>
+            <button class="qbtn list"><div class="ic">📋</div>주차 현황</button>
+          </div>
+          <p style="font-size:11px;color:#94A3B8;margin-top:12px;line-height:1.6;">
+            기존 2버튼(입차/현황) → <b>3버튼(입차/출차검색/현황)</b>으로 확장.<br>
+            "현황" 목록 화면 상단에도 동일한 "🔎 출차 검색" 버튼 배치.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 설계 노트 -->
+    <div class="note">
+      <h3>설계 요약 (월주차 포함 확정)</h3>
+      <b>흐름</b><br>
+      4자리 입력/OCR → <code>check-collision?include_monthly=true</code> 조회 (debounce 500ms)<br>
+      • <b>0건</b> → "검색 결과 없음" 안내<br>
+      • <b>1건</b> → 카드 없이 <b>즉시 상세</b>로 이동 <span style="color:#94A3B8;">(권장 · 변경 가능)</span><br>
+      • <b>N건</b> → 카드 리스트 → 선택 → 상세<br>
+      <br>
+      <b>카드 구분 필드</b><br>
+      • 일반차: 4자리 · 차종 · <b>차색</b> · 시간 · 위치 · 발렛/자주식<br>
+      • 월주차: 4자리 · 📅뱃지 · 차종 · <b>👤차주성함</b> · 위치 · 발렛/자주식<br>
+      <span style="font-size:11px;color:#64748B;">차주성함·차종은 <code>monthly_parking</code> 계약 조인(<code>customer_name</code>/<code>vehicle_type</code>)으로 자동 표시</span><br>
+      <br>
+      <b>구현 범위 (5D)</b><br>
+      ① <code>check-collision</code>에 <code>include_monthly</code> 파라미터 <b>추가(additive)</b> — 월주차 티켓 포함 + 계약 조인. 5C 입차는 파라미터 미전달 → <b>무영향</b>.<br>
+      ② 신규 페이지 <code>/v2/crew/exit</code> + 홈 3버튼 + 현황 상단 버튼.<br>
+      → <b>신규 DB·기존 코드 수정 0건</b> (check-collision는 5B 신규코드라 additive 확장 OK)<br>
+      <br>
+      <span class="tag">별도 파트 (5E)</span> <b>월주차 입차 4자리화</b><br>
+      현재 월주차 <b>입차</b>는 풀번호 자동감지 경로. "월주차 입차도 4자리 + 수기(차종/차주성함)"은 입차 경로·매칭 재설계라 5D와 분리. 5D 출차 검색은 조회만 하므로 지금 월주차 포함 구현에 문제 없음.
+    </div>
+  </div>
+</div>
+
+<script>
+  // 목 데이터 — 같은 4자리 충돌 시나리오
+  const MOCK = {
+    "1234": [
+      { id:"a1", plate:"1234", car_type:"SUV",  car_color:"검정", loc:"B1-04",  type:"valet", status:"exit_requested", min:142 },
+      { id:"a2", plate:"1234", car_type:"세단", car_color:"흰색", loc:"외부 3번", type:"valet", status:"parking", min:38 },
+      { id:"a3", plate:"1234", car_type:"경차", car_color:"은색", loc:"B2-11",  type:"self",  status:"car_ready", min:205 },
+    ],
+    "5678": [
+      { id:"b1", plate:"5678", car_type:"외제", car_color:"회색", loc:"발렛존 A", type:"valet", status:"parking", min:67 },
+    ],
+    "7777": [
+      { id:"c1", plate:"7777", car_type:"세단", car_color:"검정", loc:"B1-02", type:"valet", status:"parking", min:51 },
+      { id:"c2", plate:"7777", car_type:"SUV",  owner:"김련",   loc:"정기A-3", type:"valet", status:"parking", min:88, monthly:true },
+      { id:"c3", plate:"7777", car_type:"승합", owner:"박상무", loc:"정기B-1", type:"self",  status:"parking", min:300, monthly:true },
+    ],
+  };
+  const STATUS = {
+    parking:        { label:"주차 중", cls:"parking" },
+    exit_requested: { label:"출차요청", cls:"exit_requested" },
+    car_ready:      { label:"차량준비", cls:"car_ready" },
+  };
+  function elapsed(m){ if(m<60) return m+"분"; const h=Math.floor(m/60),mm=m%60; return mm?`${h}시간 ${mm}분`:`${h}시간`; }
+
+  const input = document.getElementById("l4");
+  const wrap = document.getElementById("l4wrap");
+  const score = document.getElementById("score");
+  const resultHead = document.getElementById("resultHead");
+  const cards = document.getElementById("cards");
+  const toast = document.getElementById("toast");
+  let timer = null;
+
+  input.addEventListener("focus", ()=> wrap.classList.add("focused"));
+  input.addEventListener("blur", ()=> wrap.classList.remove("focused"));
+  input.addEventListener("input", (e)=>{
+    e.target.value = e.target.value.replace(/\D/g,"").slice(0,4);
+    onChange(e.target.value);
+  });
+
+  function ocr(){ // OCR 시뮬레이션 → 1234 인식
+    input.value = "1234"; onChange("1234");
+    showToast("📷 OCR 인식: 1234");
+  }
+  function showToast(msg){ toast.textContent = msg; toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"),1600); }
+
+  function onChange(v){
+    clearTimeout(timer);
+    if(v.length !== 4){ score.innerHTML=""; resultHead.innerHTML=""; cards.innerHTML=""; return; }
+    score.innerHTML = `<div class="scoreline checking">⏳ 동일 4자리 차량 확인 중...</div>`;
+    resultHead.innerHTML=""; cards.innerHTML="";
+    timer = setTimeout(()=> search(v), 500);
+  }
+
+  function search(v){
+    const list = MOCK[v] || [];
+    if(list.length === 0){
+      score.innerHTML = `<div class="scoreline none">❌ 활성 차량 없음 — 이미 출차했거나 입차되지 않은 번호</div>`;
+      cards.innerHTML = `<div class="empty">검색 결과가 없습니다<br><span style="font-size:12px;">번호를 다시 확인하거나 풀번호(월주차) 검색을 이용하세요</span></div>`;
+      resultHead.innerHTML="";
+      return;
+    }
+    if(list.length === 1){
+      score.innerHTML = `<div class="scoreline one">✓ 1건 매칭 — 상세로 이동합니다</div>`;
+      resultHead.innerHTML=""; cards.innerHTML="";
+      showToast("→ 상세 이동: "+list[0].plate+" / "+list[0].car_type);
+      setTimeout(()=> renderCards(list, true), 700); // 시안에선 카드도 보여줌(참고용)
+      return;
+    }
+    // N건
+    score.innerHTML = `<div class="scoreline many">⚠️ 동일 4자리 ${list.length}대 — 차량을 선택하세요</div>`;
+    renderCards(list, false);
+  }
+
+  function renderCards(list, single){
+    resultHead.innerHTML = single
+      ? `<div class="result-head">참고 — 이동 대상 차량</div>`
+      : `<div class="result-head">🔎 <span class="count">${list.length}대</span>의 차량 — 출차할 차량 선택</div>`;
+    cards.innerHTML = list.map(c=>{
+      const st = STATUS[c.status];
+      const isM = c.monthly;
+      const chips = isM
+        ? `<span class="vchip" style="background:#F0FDF4;color:#16A34A;">${c.car_type}</span>
+           <span class="vchip" style="background:#EEF2FF;color:#1428A0;">👤 ${c.owner}</span>`
+        : `<span class="vchip">${c.car_type}</span>
+           <span class="vchip">${c.car_color}</span>`;
+      return `<div class="vcard ${c.status}" onclick="goDetail('${c.plate}','${isM ? c.owner : c.car_type}')">
+        <div class="vcard-top">
+          <span class="vplate">${c.plate}</span>
+          <span class="vbadge ${st.cls}">${st.label}</span>
+        </div>
+        <div class="vcard-body">
+          ${isM
+            ? `<span class="vtype" style="background:#F0FDF4;color:#16A34A;">📅 월주차</span>`
+            : `<span class="vtype ${c.type}">${c.type==='valet'?'🔑 발렛':'🏢 자주식'}</span>`}
+          ${chips}
+          <span class="velapsed">${elapsed(c.min)}</span>
+        </div>
+        <div class="vcard-footer">
+          <span class="vloc">📍 ${c.loc}${isM ? ` · ${c.type==='valet'?'발렛':'자주식'}` : ''}</span>
+          <span class="vgo">출차 처리 ›</span>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function goDetail(plate, type){ showToast("→ 상세 이동: "+plate+" / "+type); }
+</script>
+</body>
+</html>
