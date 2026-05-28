@@ -2,8 +2,8 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.04.27
-> **마지막 작업:** 📋 레거시 ↔ v2 갭 분석 완료 — TODO 하단 신규 섹션 추가 (P0 5건 / P1 7건 / P2 4건)
-> **다음 작업:** Part 19B-5B (충돌 검색 API) — `GET /api/v1/tickets/check-collision`
+> **마지막 작업:** ✅ Part 19B-5B 완료 — 충돌 검색 API `GET /api/v1/tickets/check-collision` (commit 960dd60)
+> **다음 작업:** Part 19B-5C (CREW v2 입차 4자리 입력 + 충돌 모달, GAP-P0-4 흡수)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -72,7 +72,7 @@ cat TODO-V2-UNIFIED.md
 | **Part 19B-2** | CREW v2 주차 목록 + 상세 — tickets/active + tickets/[id] + /complete 출차처리 | ✅ 완료 | 7708d7a |
 | **Part 19B-3** | CREW v2 입차 등록 — POST tickets + OCR + 월주차 자동감지 + contract_status 버그 수정 + 신규 API 2개 | ✅ 완료 | (이번 push) |
 | **Part 19B-4** | 차량준비 액션(POST /api/v1/tickets/:id/ready) + 고객 페이지 RLS 우회(public/exit-request service role) + 출차완료 화면 4초 폴링 + 알림톡 자동 훅 | ✅ 완료 | 4249d42 / SQL: mepark_tickets·visit_places 컬럼 보강 + exit_requests 테이블 생성 (✅ 실행 완료) |
-| **Part 19B-5** | **4자리 OCR 전용 모드** — CREW 입차/출차 워크플로 단순화 + 동일 4자리 충돌 시 차종/컬러 모달 (월주차 제외) | 🚧 진행 중 (A 완료) | 19B-5A: SQL 실행 완료 + OCR mode=last4 |
+| **Part 19B-5** | **4자리 OCR 전용 모드** — CREW 입차/출차 워크플로 단순화 + 동일 4자리 충돌 시 차종/컬러 모달 (월주차 제외) | 🚧 진행 중 (A·B 완료) | 5A: SQL+OCR mode=last4 / 5B: 충돌검색 API (960dd60) |
 
 ---
 
@@ -1177,7 +1177,7 @@ CREATE INDEX IF NOT EXISTS idx_tickets_collision
 
 ### 작업 분해
 - **Part 19B-5A** ✅ — DB 컬럼 추가 + OCR API 4자리 모드 (`/api/ocr/plate`에 `mode=last4` 옵션 추가)
-- **Part 19B-5B** ⏳ — 충돌 검색 API (`GET /api/v1/tickets/check-collision?store_id&plate_last4`)
+- **Part 19B-5B** ✅ — 충돌 검색 API (`GET /api/v1/tickets/check-collision?store_id&plate_last4`) — commit 960dd60
 - **Part 19B-5C** ⏳ — CREW v2 입차 페이지 단일 4자리 입력 + 충돌 모달 + 차량 사진 자동 저장(선택)
 - **Part 19B-5D** ⏳ — CREW v2 출차 검색 — N건 매칭 시 카드 리스트 (시간 + 위치 + 차종/컬러)
 
@@ -1192,6 +1192,19 @@ CREATE INDEX IF NOT EXISTS idx_tickets_collision
   - 응답에 `mode` echo back (클라이언트가 모드 확인 가능)
   - 기존 호출부(파라미터 미전달) 100% 호환 — `candidates_last4`는 빈 배열로 응답
 - **빌드 검증**: `npm run build` ✅ Compiled successfully (2.1min)
+
+### Part 19B-5B 완료 기록 (2026.05.28)
+- **신규 API** (`src/app/api/v1/tickets/check-collision/route.ts`)
+  - `GET /api/v1/tickets/check-collision?store_id=&plate_last4=`
+  - 같은 사업장 + 동일 4자리 + 활성 상태(parking/exit_requested/car_ready/pre_paid/overdue) + 월주차 제외 매칭 조회
+  - 응답: `{ has_collision: boolean, count: number, matches: [...] }` (matches: id·plate_number·car_type·car_color·status·entry_at·parking_location 등)
+  - `idx_tickets_collision` 부분인덱스의 status 5종과 **동일 필터**로 인덱스 활용
+- **권한/보안**
+  - `requireAuth(OPERATE)` + field_member 제외 + `canAccessStore` 검증 + `org_id` 필터
+  - 입력 검증: store_id 필수, plate_last4 숫자 4자리(`/^\d{4}$/`)
+  - ⚠️ **인증 전용 API → PUBLIC_PATHS 미추가** (2026.04.22 고객API 누락 사고 패턴 의도적 회피)
+- **타입 보강**: 5A에서 누락됐던 `mepark_tickets.car_type`/`car_color`를 `database.types.ts` Row/Insert/Update 3블록에 수기 추가 (TS strict 빌드 통과)
+- **빌드 검증**: `npm run build` ✅ Compiled successfully (56s) / 라우트 `ƒ /api/v1/tickets/check-collision` 등록 확인
 
 ### 알림톡 영향
 - 월주차 3개 템플릿: 무영향
