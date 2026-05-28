@@ -20,6 +20,19 @@
 - CREW는 배정 사업장만 → store_id는 `localStorage.crew_store_id` 사용
 **산출물**: 홈 진입 버튼 + (재사용 또는 신규) CREW 마감보고 작성 화면. 시안 컨펌 후 구현.
 
+#### ✅ 선결 점검 완료 (2026.05.28) — 방향 = B안 확정
+- **레이아웃 의존성**: `v2/layout.tsx`가 `/v2/crew/*`만 CREW 자체 레이아웃, 그 외 `/v2/*`는 admin AppLayout(Sidebar/Header/MobileTabBar) 강제. → 어드민 `/v2/daily-reports/new` 그대로 재사용 시 CREW BottomNav 사라지고 사이드바 입혀짐 = **재사용(A안) 불가**.
+- **권한**: `POST /api/v1/daily-reports` = `requireAuth('OPERATE')` → crew 작성 OK. **API 무수정 재사용** ✅
+- **컴포넌트**: `StaffSection`·`PaymentSection`(`/v2/daily-reports/new/`)은 import 0건 순수 컴포넌트 → **그대로 import 재사용 가능** ✅
+- **결론**: **B안 = CREW 전용 작성화면 `/v2/crew/daily-report/new` 신설** (대표 승인). 매장은 `localStorage.crew_store_id` 고정, employees는 고정 store_id로 로드, 모바일 풀폭+CREW 네이비 톤+sticky 액션바.
+- **폼 구조(어드민 동일)**: ①기본정보(날짜/날씨 WEATHER_OPTIONS 6종/총입차/행사flag+행사명/메모) ②근무인원 StaffSection(staff_type 6종) ③결제매출 PaymentSection(method 7종)+합계. 저장 draft/submitted.
+- **시안 파일**: `docs/crew-daily-report-mockup.html` (①홈 빠른액션 개편 ②작성화면)
+
+#### 🔁 1차 시안 피드백 — 내일(2026.05.29) 이어서 논의
+1. **마감보고 = 홈 하단 별도 버튼** (2×2 그리드 4번째 아님 → 빠른액션 아래 풀폭 카드/버튼으로). 대표 지시.
+2. **입차 버튼 제거 검토** — 대표 의견 "입차가 메인에 있으니 빼도?". ⚠️ **사실 정정**: 실제 BottomNav = 홈/현황/출퇴근/설정 4탭으로 **입차 탭 없음**(`src/app/v2/crew/layout.tsx` NAV_ITEMS 확인). 입차는 현재 홈 빠른액션에만 존재 → 그냥 빼면 입차 진입구 소실. **입차를 어디로 옮길지(BottomNav 추가? 홈 상단 대표 CTA?) 먼저 정한 뒤 빠른액션 재구성** 필요.
+3. **확정 후 구현 순서**: 홈 빠른액션 재배치 → `/v2/crew/daily-report/new` 신규(StaffSection/PaymentSection import) → 빌드 → push.
+
 ### 필수 명령어
 ```bash
 git clone https://<PAT>@github.com/mepark1022/mrpark-parking.git

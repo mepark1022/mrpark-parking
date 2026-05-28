@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CREW 마감보고 진입점 + 작성화면 시안</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+  body {
+    font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    background:#EEF1F6; color:#1A1D2B; padding:32px 16px 60px;
+  }
+  .page-title { text-align:center; margin-bottom:6px; font-size:20px; font-weight:800; color:#0a1352; }
+  .page-sub { text-align:center; margin-bottom:28px; font-size:13px; color:#64748B; }
+  .frames { display:flex; gap:28px; justify-content:center; flex-wrap:wrap; align-items:flex-start; }
+
+  /* ── 폰 프레임 ── */
+  .phone {
+    width:390px; background:#F8FAFC; border-radius:36px;
+    box-shadow:0 20px 50px rgba(10,19,82,0.18), 0 0 0 10px #11141d;
+    overflow:hidden; position:relative;
+  }
+  .phone-cap { text-align:center; font-size:12px; font-weight:700; color:#1428A0; margin:0 0 10px; }
+
+  /* ── CREW 헤더 (기존 톤 복제) ── */
+  .cv2-header {
+    background:linear-gradient(135deg,#0a1352 0%,#1428A0 100%);
+    padding:42px 20px 24px;
+  }
+  .hd-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+  .hd-name { font-size:20px; font-weight:800; color:#fff; display:flex; align-items:center; }
+  .hd-role { margin-left:8px; font-size:11px; font-weight:600; color:#F5B731; background:rgba(245,183,49,.15); padding:3px 8px; border-radius:6px; }
+  .hd-store { font-size:13px; color:rgba(255,255,255,.7); margin-top:4px; }
+  .hd-change { font-size:12px; font-weight:600; color:#fff; background:rgba(255,255,255,.14); padding:7px 12px; border-radius:9px; border:none; }
+
+  /* ── 주차현황 카드 ── */
+  .stat-card { background:#fff; border-radius:14px; border:1px solid #E2E8F0; margin:16px; padding:16px; }
+  .stat-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .stat-head b { font-size:15px; font-weight:700; }
+  .stat-row { display:flex; gap:10px; }
+  .stat-box { flex:1; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:12px; text-align:center; }
+  .stat-box .lbl { font-size:11px; color:#64748B; margin-bottom:4px; }
+  .stat-box .num { font-size:22px; font-weight:800; color:#1428A0; }
+  .stat-box.warn .lbl { color:#DC2626; }
+  .stat-box.warn .num { color:#DC2626; }
+
+  /* ── 빠른액션 (개편: 2×2 그리드) ── */
+  .quick-wrap { padding:4px 16px 0; }
+  .quick-label { font-size:12px; font-weight:700; color:#94A3B8; margin:8px 2px 10px; }
+  .quick-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .qbtn {
+    padding:18px 12px; border-radius:16px; border:none;
+    display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;
+  }
+  .qbtn .ic { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
+  .qbtn .t { font-size:14px; font-weight:700; }
+  .qbtn.navy  { background:#1428A0; color:#fff; }
+  .qbtn.navy  .ic { background:rgba(255,255,255,.15); }
+  .qbtn.green { background:#16A34A; color:#fff; }
+  .qbtn.green .ic { background:rgba(255,255,255,.18); }
+  .qbtn.white { background:#fff; color:#1A1D2B; border:1px solid #E2E8F0; }
+  .qbtn.white .ic { background:#F1F5F9; }
+  .qbtn.gold  { background:#fff; color:#1A1D2B; border:1px solid #F5B731; position:relative; }
+  .qbtn.gold  .ic { background:#FEF7E6; }
+  .new-badge { position:absolute; top:10px; right:10px; font-size:9px; font-weight:800; color:#fff; background:#F5B731; padding:2px 6px; border-radius:6px; }
+  .badge-red { font-size:11px; font-weight:700; color:#DC2626; background:#FEF2F2; padding:2px 8px; border-radius:10px; }
+
+  /* ── BottomNav ── */
+  .bottomnav { display:flex; background:#fff; border-top:1px solid #E2E8F0; padding:10px 0 22px; margin-top:18px; }
+  .bn-item { flex:1; text-align:center; font-size:10px; color:#94A3B8; }
+  .bn-item.on { color:#1428A0; font-weight:700; }
+  .bn-ic { font-size:18px; display:block; margin-bottom:3px; }
+
+  /* ══════ 화면 ② 작성화면 ══════ */
+  .form-header {
+    background:linear-gradient(135deg,#0a1352 0%,#1428A0 100%);
+    padding:42px 20px 18px;
+  }
+  .fh-back { font-size:13px; color:rgba(255,255,255,.75); margin-bottom:8px; display:inline-flex; align-items:center; gap:4px; }
+  .fh-title { font-size:20px; font-weight:800; color:#fff; }
+  .fh-store { font-size:13px; color:#F5B731; font-weight:600; margin-top:4px; }
+  .fh-date { font-size:12px; color:rgba(255,255,255,.7); margin-top:2px; }
+
+  .form-body { padding:16px 16px 96px; }
+  .sec { background:#fff; border-radius:14px; border:1px solid #E2E8F0; padding:16px; margin-bottom:14px; }
+  .sec-h { display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; margin-bottom:14px; border-bottom:1px solid #F1F5F9; }
+  .sec-h h3 { font-size:15px; font-weight:800; color:#0f172a; }
+  .sec-h .sum { font-size:12px; color:#64748B; }
+  .sec-h .sum strong { color:#1428A0; font-size:15px; }
+
+  .fld { margin-bottom:12px; }
+  .fld:last-child { margin-bottom:0; }
+  .fld label { display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:6px; }
+  .fld label .req { color:#dc2626; margin-left:3px; }
+  .inp { width:100%; height:42px; padding:0 12px; border-radius:10px; border:1px solid #cbd5e1; background:#fff; font-size:14px; color:#0f172a; }
+  .inp.fixed { background:#F1F5F9; color:#475569; font-weight:600; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  textarea.inp { height:auto; padding:10px 12px; resize:vertical; font-family:inherit; }
+  .event-toggle { display:inline-flex; align-items:center; gap:6px; font-size:13px; color:#475569; padding:0 12px; height:42px; border:1px solid #cbd5e1; border-radius:10px; }
+
+  /* 행 단위 입력 (근무인원/결제) */
+  .item-row { background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:12px; margin-bottom:10px; }
+  .item-row .ir-top { display:flex; gap:8px; margin-bottom:8px; }
+  .chip { font-size:12px; font-weight:700; padding:5px 10px; border-radius:8px; }
+  .chip.regular { background:#dcfce7; color:#15803d; }
+  .chip.card { background:#E8EBFB; color:#1428A0; }
+  .chip.valet { background:#FEF7E6; color:#b45309; }
+  .add-btn { width:100%; height:44px; border:1.5px dashed #cbd5e1; border-radius:12px; background:#fff; color:#1428A0; font-size:14px; font-weight:700; }
+
+  /* sticky 액션바 */
+  .action-bar {
+    position:absolute; bottom:0; left:0; right:0;
+    background:#fff; border-top:1px solid #e2e8f0;
+    padding:14px 16px 26px; display:flex; gap:8px;
+  }
+  .act { flex:1; height:48px; border-radius:12px; font-size:15px; font-weight:800; border:none; }
+  .act.draft { background:#fff; color:#1428A0; border:1.5px solid #1428A0; flex:0 0 110px; }
+  .act.submit { background:#1428A0; color:#fff; }
+
+  .note { max-width:840px; margin:30px auto 0; background:#fff; border:1px solid #E2E8F0; border-radius:14px; padding:20px 24px; }
+  .note h4 { font-size:14px; color:#1428A0; margin-bottom:10px; }
+  .note ul { padding-left:18px; }
+  .note li { font-size:13px; color:#475569; line-height:1.9; }
+  .note .ok { color:#15803d; font-weight:700; }
+  .note .new { color:#b45309; font-weight:700; }
+</style>
+</head>
+<body>
+  <div class="page-title">CREW 마감보고 — 진입점 + 작성화면 시안</div>
+  <div class="page-sub">기존 CREW 디자인 토큰 복제 · 경로 <code>/v2/crew/daily-report/new</code> 신설 · API <code>POST /api/v1/daily-reports</code> 재사용</div>
+
+  <div class="frames">
+
+    <!-- ════ 화면 ① 홈 빠른액션 개편 ════ -->
+    <div>
+      <div class="phone-cap">① CREW 홈 — 빠른액션 4버튼 (2×2)</div>
+      <div class="phone">
+        <div class="cv2-header">
+          <div class="hd-top">
+            <div>
+              <div class="hd-name">김크루님 <span class="hd-role">크루</span></div>
+              <div class="hd-store">금돈옥 청담점</div>
+            </div>
+            <button class="hd-change">매장 변경</button>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-head"><b>🚗 현재 주차 현황</b><span style="font-size:12px;color:#94A3B8;">↻ 새로고침</span></div>
+          <div class="stat-row">
+            <div class="stat-box"><div class="lbl">현재 주차</div><div class="num">18</div></div>
+            <div class="stat-box warn"><div class="lbl">출차요청</div><div class="num">2</div></div>
+          </div>
+        </div>
+
+        <div class="quick-wrap">
+          <div class="quick-label">빠른 작업</div>
+          <div class="quick-grid">
+            <button class="qbtn navy">
+              <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></div>
+              <span class="t">입차 등록</span>
+            </button>
+            <button class="qbtn green">
+              <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+              <span class="t">출차 검색</span>
+            </button>
+            <button class="qbtn white">
+              <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1428A0" stroke-width="2" stroke-linecap="round"><rect x="1" y="3" width="22" height="18" rx="2"/><path d="M1 9h22"/></svg></div>
+              <span class="t">주차 현황</span>
+              <span class="badge-red">출차요청 2건</span>
+            </button>
+            <button class="qbtn gold">
+              <span class="new-badge">NEW</span>
+              <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"><path d="M9 11H5a2 2 0 0 0-2 2v7h18v-7a2 2 0 0 0-2-2h-4"/><rect x="9" y="3" width="6" height="8" rx="1"/><path d="M9 7h6"/></svg></div>
+              <span class="t">마감 보고</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="bottomnav">
+          <div class="bn-item on"><span class="bn-ic">🏠</span>홈</div>
+          <div class="bn-item"><span class="bn-ic">🚗</span>입차</div>
+          <div class="bn-item"><span class="bn-ic">🔍</span>출차</div>
+          <div class="bn-item"><span class="bn-ic">📋</span>현황</div>
+          <div class="bn-item"><span class="bn-ic">👤</span>내정보</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ 화면 ② 마감보고 작성화면 ════ -->
+    <div>
+      <div class="phone-cap">② 마감보고 작성 (모바일 풀폭 · 매장 고정)</div>
+      <div class="phone">
+        <div class="form-header">
+          <div class="fh-back">← 홈으로</div>
+          <div class="fh-title">📋 마감 보고</div>
+          <div class="fh-store">금돈옥 청담점</div>
+          <div class="fh-date">2026년 5월 28일 (수)</div>
+        </div>
+
+        <div class="form-body">
+          <!-- 기본정보 -->
+          <div class="sec">
+            <div class="sec-h"><h3>📋 기본정보</h3></div>
+            <div class="row2" style="margin-bottom:12px;">
+              <div class="fld" style="margin:0;">
+                <label>날짜 <span class="req">*</span></label>
+                <input class="inp" value="2026-05-28">
+              </div>
+              <div class="fld" style="margin:0;">
+                <label>날씨</label>
+                <select class="inp"><option>맑음</option></select>
+              </div>
+            </div>
+            <div class="fld">
+              <label>총 입차 (대)</label>
+              <input class="inp" placeholder="예: 120">
+            </div>
+            <div class="fld">
+              <label>행사</label>
+              <div class="event-toggle"><input type="checkbox"> 🎉 행사 있음</div>
+            </div>
+            <div class="fld">
+              <label>메모</label>
+              <textarea class="inp" rows="2" placeholder="특이사항, 인계사항 등"></textarea>
+            </div>
+          </div>
+
+          <!-- 근무인원 -->
+          <div class="sec">
+            <div class="sec-h"><h3>👥 근무인원 (2명)</h3></div>
+            <div class="item-row">
+              <div class="ir-top"><span class="chip regular">정규</span><strong style="font-size:14px;">박발렛</strong></div>
+              <div class="row2"><input class="inp" value="09:00" style="height:38px;"><input class="inp" value="18:00" style="height:38px;"></div>
+            </div>
+            <div class="item-row">
+              <div class="ir-top"><span class="chip regular" style="background:#fef3c7;color:#b45309;">피크</span><strong style="font-size:14px;">이주차</strong></div>
+              <div class="row2"><input class="inp" value="11:00" style="height:38px;"><input class="inp" value="14:00" style="height:38px;"></div>
+            </div>
+            <button class="add-btn">+ 근무인원 추가</button>
+          </div>
+
+          <!-- 결제매출 -->
+          <div class="sec">
+            <div class="sec-h">
+              <h3>💰 결제매출 (2건)</h3>
+              <div class="sum">합계 <strong>340,000</strong>원</div>
+            </div>
+            <div class="item-row">
+              <div class="ir-top"><span class="chip valet">🚗 발렛비</span></div>
+              <div class="row2"><input class="inp" value="280,000원" style="height:38px;"><input class="inp" value="40대" style="height:38px;"></div>
+            </div>
+            <div class="item-row">
+              <div class="ir-top"><span class="chip card">💳 카드</span></div>
+              <div class="row2"><input class="inp" value="60,000원" style="height:38px;"><input class="inp" value="3건" style="height:38px;"></div>
+            </div>
+            <button class="add-btn">+ 결제 추가</button>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button class="act draft">💾 임시저장</button>
+          <button class="act submit">✅ 제출하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <h4>구현 메모</h4>
+    <ul>
+      <li><span class="ok">재사용</span> — <code>StaffSection</code> · <code>PaymentSection</code> (순수 컴포넌트, import 0건) 그대로 가져옴. <code>POST /api/v1/daily-reports</code> 무수정.</li>
+      <li><span class="new">신규</span> — 매장은 <code>localStorage.crew_store_id</code> 고정 (드롭다운 제거, 헤더에 매장명만). employees는 고정 store_id로 로드.</li>
+      <li><span class="new">신규</span> — 모바일 풀폭 레이아웃 + CREW 네이비 그라데이션 헤더 + sticky 하단 액션바(BottomNav 안 가림).</li>
+      <li>홈 빠른액션 <b>3버튼 → 2×2 그리드</b>로 개편, 4번째에 골드 테두리 "마감 보고" (NEW 뱃지). <em>대안: 그리드 유지 + 하단 별도 풀폭 카드.</em></li>
+      <li>기존 코드 수정 0 — 전부 <code>/v2/crew/daily-report/*</code> 신규 + 홈 <code>page.tsx</code> 빠른액션 블록만 교체.</li>
+    </ul>
+  </div>
+</body>
+</html>
