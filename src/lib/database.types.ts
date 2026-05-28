@@ -958,6 +958,8 @@ export type Database = {
           additional_fee: number | null
           additional_paid_at: string | null
           calculated_fee: number | null
+          car_color: string | null
+          car_type: string | null
           completed_at: string | null
           created_at: string | null
           entry_alimtalk_sent: boolean | null
@@ -995,6 +997,8 @@ export type Database = {
           additional_fee?: number | null
           additional_paid_at?: string | null
           calculated_fee?: number | null
+          car_color?: string | null
+          car_type?: string | null
           completed_at?: string | null
           created_at?: string | null
           entry_alimtalk_sent?: boolean | null
@@ -1032,6 +1036,8 @@ export type Database = {
           additional_fee?: number | null
           additional_paid_at?: string | null
           calculated_fee?: number | null
+          car_color?: string | null
+          car_type?: string | null
           completed_at?: string | null
           created_at?: string | null
           entry_alimtalk_sent?: boolean | null
