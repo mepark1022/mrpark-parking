@@ -131,6 +131,9 @@ export async function POST(request: NextRequest) {
       entry_method = 'ocr',
       is_free = false,
       phone,
+      car_type,   // 차종 (Part 19B-5C · 4자리 충돌 구분용, nullable)
+      car_color,  // 컬러 (Part 19B-5C · 4자리 충돌 구분용, nullable)
+      confirm_collision = false, // Part 19B-5C · 4자리 충돌 확인 후 중복 허용
     } = body;
 
     // 필수값 검증
@@ -146,20 +149,24 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     // 중복 차량 체크 (같은 사업장, 미완료 티켓)
-    const { data: existing } = await supabase
-      .from('mepark_tickets')
-      .select('id, plate_number, entry_at, status')
-      .eq('store_id', store_id)
-      .eq('plate_number', plate_number)
-      .neq('status', 'completed')
-      .maybeSingle();
+    // Part 19B-5C: confirm_collision=true면 4자리 충돌을 CREW가 확인한 것이므로
+    //              동일 plate_number 중복을 허용한다 (차종/컬러로 구분).
+    if (!confirm_collision) {
+      const { data: existing } = await supabase
+        .from('mepark_tickets')
+        .select('id, plate_number, entry_at, status')
+        .eq('store_id', store_id)
+        .eq('plate_number', plate_number)
+        .neq('status', 'completed')
+        .maybeSingle();
 
-    if (existing) {
-      return conflict(ErrorCodes.TICKET_OVERDUE, '이미 입차 중인 차량입니다', {
-        existing_ticket_id: existing.id,
-        entry_at: existing.entry_at,
-        status: existing.status,
-      });
+      if (existing) {
+        return conflict(ErrorCodes.TICKET_OVERDUE, '이미 입차 중인 차량입니다', {
+          existing_ticket_id: existing.id,
+          entry_at: existing.entry_at,
+          status: existing.status,
+        });
+      }
     }
 
     // 월주차 조회 (숫자만 비교)
@@ -204,6 +211,8 @@ export async function POST(request: NextRequest) {
         parking_location: parking_location || null,
         entry_method,
         is_free: is_free || isMonthly,
+        car_type: car_type || null,    // Part 19B-5C
+        car_color: car_color || null,  // Part 19B-5C
         entry_at: new Date().toISOString(),
       })
       .select('id, plate_number, status, entry_at, is_monthly')

@@ -1,9 +1,9 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
 > **작성일:** 2026.04.09
-> **마지막 업데이트:** 2026.04.27
-> **마지막 작업:** ✅ Part 19B-5B 완료 — 충돌 검색 API `GET /api/v1/tickets/check-collision` (commit 960dd60)
-> **다음 작업:** Part 19B-5C (CREW v2 입차 4자리 입력 + 충돌 모달, GAP-P0-4 흡수)
+> **마지막 업데이트:** 2026.05.28
+> **마지막 작업:** ✅ Part 19B-5C 완료 — CREW v2 입차 4자리 모드 + 충돌 모달 + GAP-P0-4 정보수정
+> **다음 작업:** Part 19B-5D (CREW v2 출차 검색 — N건 매칭 카드 리스트)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -72,7 +72,7 @@ cat TODO-V2-UNIFIED.md
 | **Part 19B-2** | CREW v2 주차 목록 + 상세 — tickets/active + tickets/[id] + /complete 출차처리 | ✅ 완료 | 7708d7a |
 | **Part 19B-3** | CREW v2 입차 등록 — POST tickets + OCR + 월주차 자동감지 + contract_status 버그 수정 + 신규 API 2개 | ✅ 완료 | (이번 push) |
 | **Part 19B-4** | 차량준비 액션(POST /api/v1/tickets/:id/ready) + 고객 페이지 RLS 우회(public/exit-request service role) + 출차완료 화면 4초 폴링 + 알림톡 자동 훅 | ✅ 완료 | 4249d42 / SQL: mepark_tickets·visit_places 컬럼 보강 + exit_requests 테이블 생성 (✅ 실행 완료) |
-| **Part 19B-5** | **4자리 OCR 전용 모드** — CREW 입차/출차 워크플로 단순화 + 동일 4자리 충돌 시 차종/컬러 모달 (월주차 제외) | 🚧 진행 중 (A·B 완료) | 5A: SQL+OCR mode=last4 / 5B: 충돌검색 API (960dd60) |
+| **Part 19B-5** | **4자리 OCR 전용 모드** — CREW 입차/출차 워크플로 단순화 + 동일 4자리 충돌 시 차종/컬러 모달 (월주차 제외) | 🚧 진행 중 (A·B·C 완료) | 5A: SQL+OCR mode=last4 / 5B: 충돌검색 API (960dd60) / 5C: 입차4자리+충돌모달+GAP-P0-4 |
 
 ---
 
@@ -1178,7 +1178,7 @@ CREATE INDEX IF NOT EXISTS idx_tickets_collision
 ### 작업 분해
 - **Part 19B-5A** ✅ — DB 컬럼 추가 + OCR API 4자리 모드 (`/api/ocr/plate`에 `mode=last4` 옵션 추가)
 - **Part 19B-5B** ✅ — 충돌 검색 API (`GET /api/v1/tickets/check-collision?store_id&plate_last4`) — commit 960dd60
-- **Part 19B-5C** ⏳ — CREW v2 입차 페이지 단일 4자리 입력 + 충돌 모달 + 차량 사진 자동 저장(선택)
+- **Part 19B-5C** ✅ — CREW v2 입차 페이지 단일 4자리 입력 + 충돌 모달 + GAP-P0-4 흡수
 - **Part 19B-5D** ⏳ — CREW v2 출차 검색 — N건 매칭 시 카드 리스트 (시간 + 위치 + 차종/컬러)
 
 ### Part 19B-5A 완료 기록 (2026.04.15)
@@ -1205,6 +1205,25 @@ CREATE INDEX IF NOT EXISTS idx_tickets_collision
   - ⚠️ **인증 전용 API → PUBLIC_PATHS 미추가** (2026.04.22 고객API 누락 사고 패턴 의도적 회피)
 - **타입 보강**: 5A에서 누락됐던 `mepark_tickets.car_type`/`car_color`를 `database.types.ts` Row/Insert/Update 3블록에 수기 추가 (TS strict 빌드 통과)
 - **빌드 검증**: `npm run build` ✅ Compiled successfully (56s) / 라우트 `ƒ /api/v1/tickets/check-collision` 등록 확인
+
+### Part 19B-5C 완료 기록 (2026.05.28)
+- **입차 페이지 재작업** (`src/app/v2/crew/entry/page.tsx` · 3칸분할→단일 4자리)
+  - 단일 4자리 입력(수동/OCR) · 일반차 전용(월주차 자동감지 제거 — 풀번호 경로로 분리)
+  - `last4.length===4` 시 `GET /api/v1/tickets/check-collision` (debounce 500ms)
+  - 충돌 없음 → 바로 `POST /api/v1/tickets` / 충돌 → CarInfoModal(차종·컬러) → `confirm_collision:true`로 POST
+  - OCR은 기존 CameraOcr 재사용 — 결과 풀번호에서 `extractDigits().slice(-4)`로 last4 추출 (컴포넌트 무수정)
+- **신규 공용 컴포넌트** (`src/components/crew/CarInfoModal.tsx`)
+  - 차종 칩(세단/SUV/경차/승합/외제/기타)+컬러(검정/흰색/회색/은색/파랑/빨강/기타) 바텀시트
+  - controlled · topContent로 충돌카드/번호판입력 주입 → 입차·정보수정 공용
+- **POST `/api/v1/tickets` 확장(additive)**: body·insert에 `car_type`/`car_color` + `confirm_collision`(true 시 동일 plate_number 중복체크 skip)
+- **GET `/api/v1/tickets/[id]` 확장(additive)**: select에 `car_type`/`car_color`
+- **GAP-P0-4 — parking/[id] 보강**
+  - 신규 `PATCH /api/v1/tickets/[id]/plate` (번호판+plate_last4, audit)
+  - 신규 `PATCH /api/v1/tickets/[id]/car-info` (차종/컬러, audit)
+  - 상세: 상태헤더 차종·컬러 표시 + "✏️ 정보 수정" 버튼 + CarInfoModal(번호판4자리+차종+컬러)
+  - v2 코멘트 *"번호판수정/타입변경은 19B-4에서 추가"* 미완 해소
+- **준수**: 신규 API 모두 `requireAuth(OPERATE)`+field_member 제외+canAccessStore+org_id / PUBLIC_PATHS·middleware 무수정 / DB 변경 0건(5A 컬럼 재사용)
+- **빌드 검증**: `npm run build` ✅ (55s) / `/v2/crew/entry`·`parking/[id]`·`/api/v1/tickets/[id]/{plate,car-info}` 등록 확인
 
 ### 알림톡 영향
 - 월주차 3개 템플릿: 무영향

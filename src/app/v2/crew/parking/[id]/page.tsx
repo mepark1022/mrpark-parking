@@ -5,12 +5,15 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { fmtPlate } from "@/lib/utils/format";
+import CarInfoModal from "@/components/crew/CarInfoModal";
 
 /**
  * CREW v2 주차 상세 페이지
- * - GET /api/v1/tickets/:id — 티켓 상세
+ * - GET   /api/v1/tickets/:id — 티켓 상세 (car_type/car_color 포함)
  * - PATCH /api/v1/tickets/:id/complete — 출차 처리 (OPERATE)
- * - 차량준비/번호판수정/타입변경은 19B-4에서 추가 (v1 API 신설 필요)
+ * - PATCH /api/v1/tickets/:id/ready — 차량준비 (OPERATE)
+ * - PATCH /api/v1/tickets/:id/plate — 번호판 수정 (Part 19B-5C · GAP-P0-4)
+ * - PATCH /api/v1/tickets/:id/car-info — 차종/컬러 수정 (Part 19B-5C · GAP-P0-4)
  */
 
 const CSS = `
@@ -118,6 +121,7 @@ const CSS = `
   .cv2-btn-primary { background: #16A34A; color: #fff; }
   .cv2-btn-secondary { background: #F1F5F9; color: #475569; }
   .cv2-btn-warning { background: #F5B731; color: #1A1D2B; }
+  .cv2-btn-edit { flex: 0 0 54px; background: #EEF2FF; color: #1428A0; font-size: 20px; padding: 0; }
 
   .cv2-modal-overlay {
     position: fixed; inset: 0;
@@ -231,6 +235,13 @@ export default function CrewV2ParkingDetailPage() {
   // 차량준비 모달
   const [showReadyModal, setShowReadyModal] = useState(false);
   const [readyPhone, setReadyPhone] = useState("");
+
+  // 정보 수정 모달 (Part 19B-5C · GAP-P0-4)
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editLast4, setEditLast4] = useState("");
+  const [editCarType, setEditCarType] = useState("");
+  const [editCarColor, setEditCarColor] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   // 초기 로드
   useEffect(() => {
@@ -346,6 +357,60 @@ export default function CrewV2ParkingDetailPage() {
     }
   };
 
+  // ── 정보 수정 (Part 19B-5C · GAP-P0-4) ──
+  const openEditModal = () => {
+    if (!ticket) return;
+    setEditLast4((ticket.plate_last4 || (ticket.plate_number || "").replace(/[^0-9]/g, "").slice(-4)) || "");
+    setEditCarType(ticket.car_type || "");
+    setEditCarColor(ticket.car_color || "");
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!ticket) return;
+    const next4 = editLast4.replace(/\D/g, "").slice(0, 4);
+    if (next4.length !== 4) { alert("번호판 뒤 4자리를 입력하세요"); return; }
+    setEditSubmitting(true);
+    try {
+      const curLast4 = ticket.plate_last4 || (ticket.plate_number || "").replace(/[^0-9]/g, "").slice(-4);
+      // 1) 번호판 변경 시에만 plate API 호출
+      if (next4 !== curLast4) {
+        const r1 = await fetch(`/api/v1/tickets/${id}/plate`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plate_number: next4 }),
+        });
+        if (!r1.ok) {
+          const j = await r1.json().catch(() => ({}));
+          alert(j?.error?.message || "번호판 수정에 실패했습니다");
+          setEditSubmitting(false);
+          return;
+        }
+      }
+      // 2) 차종/컬러는 항상 함께 저장 (빈 값은 null 처리됨)
+      const r2 = await fetch(`/api/v1/tickets/${id}/car-info`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ car_type: editCarType || null, car_color: editCarColor || null }),
+      });
+      if (!r2.ok) {
+        const j = await r2.json().catch(() => ({}));
+        alert(j?.error?.message || "차량정보 수정에 실패했습니다");
+        setEditSubmitting(false);
+        return;
+      }
+      setShowEditModal(false);
+      setEditSubmitting(false);
+      await fetchTicket(); // 갱신 반영
+    } catch (err) {
+      console.error("edit error:", err);
+      alert("네트워크 오류가 발생했습니다");
+      setEditSubmitting(false);
+    }
+  };
+
   // ── 로딩/에러 ──
   if (loading) {
     return (
@@ -410,6 +475,11 @@ export default function CrewV2ParkingDetailPage() {
           <div className="cv2-status-badge" style={{ background: statusCfg.bg, color: statusCfg.color }}>
             {statusCfg.label}
           </div>
+          {(ticket.car_type || ticket.car_color) && (
+            <div style={{ marginTop: 6, fontSize: 13, color: "#64748B", fontWeight: 600 }}>
+              {[ticket.car_type, ticket.car_color].filter(Boolean).join(" · ")}
+            </div>
+          )}
           <div style={{ marginTop: 8, display: "flex", flexDirection: "column", alignItems: "center" }}>
             <span className="cv2-elapsed">{elapsedStr(mins)}</span>
             <span className="cv2-elapsed-label">
@@ -553,6 +623,16 @@ export default function CrewV2ParkingDetailPage() {
         {/* 하단 고정 액션 */}
         {!isCompleted && (
           <div className="cv2-detail-footer">
+            {/* 정보 수정 (번호판/차종/컬러) — Part 19B-5C · GAP-P0-4 */}
+            <button
+              className="cv2-btn cv2-btn-edit"
+              onClick={openEditModal}
+              disabled={actionLoading}
+              aria-label="정보 수정"
+              title="번호판·차종·컬러 수정"
+            >
+              ✏️
+            </button>
             {/* 발렛 + (parking|exit_requested|pre_paid) 상태일 때만 차량준비 버튼 */}
             {ticket.parking_type === "valet" &&
              ["parking", "exit_requested", "pre_paid"].includes(ticket.status) && (
@@ -696,6 +776,42 @@ export default function CrewV2ParkingDetailPage() {
             </div>
           </div>
         )}
+
+        {/* 정보 수정 모달 (Part 19B-5C · GAP-P0-4) */}
+        <CarInfoModal
+          open={showEditModal}
+          title="차량 정보 수정"
+          description="번호판 오인식·차종 변경 시 수정합니다. <b>수정 이력은 audit 기록</b>됩니다."
+          icon="✏️"
+          iconBg="#EEF2FF"
+          iconColor="#1428A0"
+          carType={editCarType}
+          carColor={editCarColor}
+          onChangeType={setEditCarType}
+          onChangeColor={setEditCarColor}
+          onConfirm={handleSaveEdit}
+          onCancel={() => setShowEditModal(false)}
+          confirmLabel="저장"
+          confirmColor="#1428A0"
+          submitting={editSubmitting}
+          topContent={
+            <div style={{ marginBottom: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", margin: "4px 0 8px" }}>번호판 뒤 4자리</div>
+              <input
+                value={editLast4}
+                onChange={(e) => setEditLast4(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                inputMode="numeric"
+                maxLength={4}
+                style={{
+                  width: "100%", height: 52, border: "1.5px solid #E2E8F0", borderRadius: 10,
+                  fontFamily: "'Outfit', sans-serif", fontWeight: 800, fontSize: 22,
+                  letterSpacing: 6, textAlign: "center", color: "#1A1D2B", outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+          }
+        />
       </div>
     </>
   );
