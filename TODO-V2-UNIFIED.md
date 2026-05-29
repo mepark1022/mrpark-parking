@@ -1,15 +1,42 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
 > **작성일:** 2026.04.09
-> **마지막 업데이트:** 2026.05.30
-> **마지막 작업:** ✅ **GAP-P1-1 완료** — `/v2/dashboard`에 '금일 출근' KPI 카드 추가(5번째). 값=`출근/재직`, sub=`출근율 %·재직 N명`. 총직원=`employees?limit=1`(meta.total), 출근=`attendance?year&month` 오늘 컬럼 status∈{present,late,peak,support,additional} 집계. `KpiCard`에 `hideChange` prop additive 추가. **신규 API·SQL 없음, UI-only.** 빌드 OK (`✓ Compiled in 67s`, 109p, `/v2/dashboard` ○ 유지). ※ 라우팅 교체·P0 5건은 모두 완료 상태(이전 헤더의 "다음=라우팅 교체"는 stale였음 → 정정).
-> **다음 작업:** 추천순서 ⑤ → **GAP-P1-5 `/v2/crew/attendance/history`** (CREW 본인 출퇴근 이력, UI-only). `/api/v1/attendance/personal/[empId]` 기존 존재 → 신규 API 없이 가능. `/v2/crew/attendance`(P0-5 완료) 옆 탭/링크로 진입. ▼ 상세는 '🚨 새 대화 시작 시 필독' 참조
-> **P1 추천순서(고정):** ①P1-1✅ → ②P1-5 → ③P1-3+④P1-6(accidents API 신규, 묶음) → ⑤P1-7(월주차, API기존) → ⑥P1-4(QR)·⑦P1-2(차트)
+> **마지막 업데이트:** 2026.05.30 (P1-5 선결점검 → 보류 재정의 + accidents 착수 결정)
+> **마지막 작업:** ✅ **GAP-P1-1 완료** — `/v2/dashboard`에 '금일 출근' KPI 카드 추가(5번째). 값=`출근/재직`, sub=`출근율 %·재직 N명`. **신규 API·SQL 없음, UI-only.** 빌드 OK (`✓ Compiled in 67s`, 109p).
+> **🟡 P1-5 보류 (2026.05.30 선결점검 결론):** 레거시 `/crew/attendance/history`는 "출퇴근 이력"이 아니라 **퇴근요청(checkout_requests) 신청 이력**이었음. ①v1에 checkout_requests API 없음(신규 필요) → "UI-only" 전제 깨짐 ②personal API 기반 출퇴근 이력은 **P0-5(`/v2/crew/attendance`)에 이미 구현**되어 중복 ③v2에 퇴근요청→승인 워크플로 존재 자체가 미정. → **순서 후순위로 보류**, 보강계획은 '🚨 필독' 참조.
+> **다음 작업:** 추천순서 ③ → **GAP-P1-3+P1-6 (accidents 묶음)**. v1 accidents API 신규 필요. ▼ 상세·선결점검 결과는 '🚨 새 대화 시작 시 필독' 참조.
+> **P1 추천순서(갱신):** ①P1-1✅ → ②~~P1-5~~(보류) → ③**P1-3+P1-6(accidents, 진행중)** → ④P1-7(월주차, API기존) → ⑤P1-4(QR)·P1-2(차트) → ⑥(보류해제 시)P1-5
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
 
 ## 🚨 새 대화 시작 시 필독
+
+### 🟡 GAP-P1-5 보류 + 보강계획 (2026.05.30 선결점검)
+**결론: 계획대로 진행 불가 → 후순위 보류.** 선결점검에서 헤더 전제와 실제 코드 불일치 발견.
+- **레거시 `src/app/crew/attendance/history/page.tsx`의 실체** = "출퇴근 이력"이 **아님**. **퇴근요청(`checkout_requests`) 신청 이력** 페이지. 최근 30일 본인 퇴근요청 목록 + 삭제(pending) + 재요청(insert). `checkout_requests` 테이블 Supabase 직접조회.
+- **막힌 이유 3가지**:
+  1. v1 API에 `checkout_requests` 라우트 **없음** → 포팅하려면 신규 API 필요. "신규 API 없이 UI-only"라던 추천사유 무효.
+  2. personal API(`/api/v1/attendance/personal/:empId`) 기반 **출퇴근 이력은 P0-5 `/v2/crew/attendance`에 이미 구현됨**(월별 일자행+KPI+시간통계+사업장분포). "출퇴근 이력" 해석이면 **중복**.
+  3. v2 근태 = 일보(daily-report) 파생 모델. checkout_requests는 레거시 worker_attendance 흐름 소속 → v2에 "퇴근요청→승인" 워크플로를 둘지 자체가 **정책 미정**.
+- **보강계획(보류해제 조건 + 작업범위)**:
+  - 선행 결정: ⓐ v2에 퇴근요청/승인 워크플로를 유지할 것인가? (CREW가 일보 제출 후 퇴근시각 정정 요청 → 관리자 승인 플로우) 유지 안 하면 P1-5는 **폐기**.
+  - 유지 시 작업: (A1) 신규 API `GET·POST·DELETE /api/v1/checkout-requests`(SELF: 본인 30일 목록/재요청/삭제, MANAGE: 승인/반려) (A2) `/v2/crew/attendance/history` UI — P0-5 톤 재사용, BottomNav/근태페이지에서 진입 (A3) (선택) 관리자측 승인 화면.
+  - 즉, **순수 UI-only가 아니라 신규 API 동반 작업으로 재분류**. 진행 시 accidents와 동급 난이도.
+
+### ✅ GAP-P1-3 + P1-6 선결점검 결과 (2026.05.30) — accidents, 다음 진행 대상
+**확정: v1 accidents API 신규 필요(예상대로). 테이블·Storage 기존 활용.**
+- **테이블명 = `accident_reports`** (※ "accidents" 아님). **사진 = Supabase Storage 버킷 `accident-photos`** (경로 `{report_id}/{ts}_{i}.{ext}`, 최대 5장).
+- **레거시 위치**: admin `src/app/accident/page.tsx`(708줄), crew `src/app/crew/accident/page.tsx`. v2엔 둘 다 없음.
+- **`accident_reports` 컬럼**(레거시 insert 기준): `org_id`·`store_id`·`vehicle`(대문자)·`accident_type`(라벨)·`reporter`·`phone`·`detail`·`status`·`accident_at`·`admin_memo`·`created_at`·`updated_at`.
+- **상태값(한글)**: `접수` → `처리중` → `완료`.
+- **⚠️ v2 정책 충돌**: 레거시는 `phone` 원본을 DB 저장. **v2 규칙=전화번호 DB 저장 금지** → accidents API에서 `phone` 필드 **제외 or 마스킹 저장**으로 변경 필요(설계 결정).
+- **⚠️ 사진 업로드 설계 결정**: 레거시는 클라가 Storage 직접 upload. v2 "Supabase 직접호출 금지" 규칙과 충돌 → ⓐ CREW가 Storage 직접 upload 후 경로만 POST(현실적, Storage는 DB쿼리와 별개로 허용) vs ⓑ API가 signed-url 발급/프록시. **착수 시 ⓐ로 가는 것 추천**(네이티브 전환 시 어차피 재설계).
+- **활용 가능 기존 인프라**: 권한 미들웨어(`requireAuth`), 응답 envelope(`ok/badRequest/...`), `accident-photos` 버킷, xlsx(엑셀은 클라측 유지).
+- **작업 분할(권장)**:
+  - **Part 1 (API)**: `src/app/api/v1/accidents/route.ts`(GET 목록+필터 store/status/기간, POST 등록) + `[id]/route.ts`(GET 상세, PATCH status·admin_memo, DELETE). 권한: 등록=OPERATE(crew 가능)/조회·수정·삭제=MANAGE. org_id 필터 필수. phone 정책 반영. **신규 SQL 불필요(테이블 기존)** — 단 RLS/버킷 정책만 확인.
+  - **Part 2 (admin UI)**: `/v2/accident` — 목록(매장/상태/기간 필터)+상태변경+admin_memo+사진뷰어+엑셀+삭제. 네임스페이스 `v2ac-*`.
+  - **Part 3 (crew UI)**: `/v2/crew/accident` — 사고유형 선택→차량/신고자/상세 입력→사진 최대5장 업로드→POST. P0-5/CREW 톤.
 
 ### ✅ GAP-P1-1 완료 (2026.05.30) — `/v2/dashboard` 금일 출근 KPI 카드 (UI-only)
 **신규 API·SQL 없음.** `src/app/v2/dashboard/page.tsx`만 additive 편집.
