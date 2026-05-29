@@ -1,10 +1,9 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
 > **작성일:** 2026.04.09
-> **마지막 업데이트:** 2026.05.30 (P1-5 선결점검 → 보류 재정의 + accidents 착수 결정)
-> **마지막 작업:** ✅ **GAP-P1-1 완료** — `/v2/dashboard`에 '금일 출근' KPI 카드 추가(5번째). 값=`출근/재직`, sub=`출근율 %·재직 N명`. **신규 API·SQL 없음, UI-only.** 빌드 OK (`✓ Compiled in 67s`, 109p).
-> **🟡 P1-5 보류 (2026.05.30 선결점검 결론):** 레거시 `/crew/attendance/history`는 "출퇴근 이력"이 아니라 **퇴근요청(checkout_requests) 신청 이력**이었음. ①v1에 checkout_requests API 없음(신규 필요) → "UI-only" 전제 깨짐 ②personal API 기반 출퇴근 이력은 **P0-5(`/v2/crew/attendance`)에 이미 구현**되어 중복 ③v2에 퇴근요청→승인 워크플로 존재 자체가 미정. → **순서 후순위로 보류**, 보강계획은 '🚨 필독' 참조.
-> **다음 작업:** 추천순서 ③ → **GAP-P1-3+P1-6 (accidents 묶음)**. v1 accidents API 신규 필요. ▼ 상세·선결점검 결과는 '🚨 새 대화 시작 시 필독' 참조.
+> **마지막 업데이트:** 2026.05.30 (accidents Part 1 API 완료)
+> **마지막 작업:** ✅ **GAP-P1-3/6 Part 1 (accidents API) 완료** — 신규 `src/app/api/v1/accidents/route.ts`(GET 목록+필터 store/status/from/to, POST 등록) + `[id]/route.ts`(GET 상세+사진 signedUrl, PATCH status·admin_memo, DELETE+사진정리). 권한 GET=OPERATE(crew 배정매장 스코핑)/POST=OPERATE/PATCH·DELETE=MANAGE. **phone 미저장(null 고정, v2 정책), 사진은 Storage `accident-photos/{id}/` 직접업로드+조회시 signedUrl.** 신규 SQL 없음. 빌드 OK (`✓ Compiled in 71s`, 110p, accidents 2라우트 ƒ 등록).
+> **다음 작업:** **Part 2 — admin `/v2/accident` UI** (목록·매장/상태/기간 필터·상태변경·admin_memo·사진뷰어·엑셀·삭제, 네임스페이스 `v2ac-*`). 이후 Part 3 = crew `/v2/crew/accident`. ▼ 상세는 '🚨 새 대화 시작 시 필독' 참조.
 > **P1 추천순서(갱신):** ①P1-1✅ → ②~~P1-5~~(보류) → ③**P1-3+P1-6(accidents, 진행중)** → ④P1-7(월주차, API기존) → ⑤P1-4(QR)·P1-2(차트) → ⑥(보류해제 시)P1-5
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
@@ -38,7 +37,21 @@
   - **Part 2 (admin UI)**: `/v2/accident` — 목록(매장/상태/기간 필터)+상태변경+admin_memo+사진뷰어+엑셀+삭제. 네임스페이스 `v2ac-*`.
   - **Part 3 (crew UI)**: `/v2/crew/accident` — 사고유형 선택→차량/신고자/상세 입력→사진 최대5장 업로드→POST. P0-5/CREW 톤.
 
-### ✅ GAP-P1-1 완료 (2026.05.30) — `/v2/dashboard` 금일 출근 KPI 카드 (UI-only)
+### ✅ GAP-P1-3/6 Part 1 완료 (2026.05.30) — accidents API 신규
+**신규 SQL 없음**(accident_reports 기존). 신규 파일 2개:
+- `src/app/api/v1/accidents/route.ts`
+  - **GET** 목록. 필터: `store_id`·`status`(접수/처리중/완료)·`from`·`to`(accident_at 범위). admin/super=전체(또는 store_id), crew/field=배정매장만(`ctx.storeIds` `.in`, 빈배열이면 `[]`). `stores(id,name)` 조인. 정렬 accident_at desc.
+  - **POST** 등록(OPERATE). 필수 `store_id`·`vehicle`(자동대문자)·`accident_type`·`reporter`, 선택 `detail`·`accident_at`(미지정=now). 사업장 org소유+crew 배정 검증. **`phone`은 받아도 무시하고 null 저장(v2 정책)**, `reported_by=ctx.userId`, `status='접수'`. 응답에 `photo_path_prefix:"{id}/"`·`photo_bucket:"accident-photos"` 동봉(클라가 이 경로로 Storage 직접 업로드).
+- `src/app/api/v1/accidents/[id]/route.ts`
+  - **GET** 상세(OPERATE, crew는 배정매장 건만). Storage `accident-photos`의 `{id}/` list→`createSignedUrls`(1h) → `photos:[{name,url}]` 동봉. 사진조회 실패해도 본체 반환(격리).
+  - **PATCH** status / admin_memo (MANAGE). 상태값 검증. 둘 다 없으면 400.
+  - **DELETE** (MANAGE). 삭제 후 `{id}/` 사진 일괄 remove(격리).
+- 모두 `requireAuth`·envelope·org_id 필터·audit log(insert/update/delete) 적용. action은 등록='insert'(기존 정합).
+- 빌드 OK (`✓ Compiled in 71s`, 110p). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
+**⚠️ 실동작 선결 확인(Part 2 전 or 중)**: Storage 버킷 `accident-photos`의 **RLS/정책**이 (a)인증 세션의 list/signedUrl 허용 (b)crew의 `{id}/` 업로드 허용 인지 — 레거시가 클라 직접 업로드/조회를 했으니 정책은 이미 열려있을 가능성 높음. Part 3(crew 업로드) 실기기 검증 시 함께 확인.
+**▶ 다음 = Part 2 (admin UI)**: `src/app/v2/accident/page.tsx` 신규(네임스페이스 `v2ac-*`). 레거시 `src/app/accident/page.tsx`(708줄) 기능 이식 — KPI(접수/처리중/완료) + 매장·상태·기간 필터 + 카드/행 리스트 + 상세모달(상태 select→PATCH, admin_memo 저장→PATCH, 사진뷰어=GET 상세의 photos) + 엑셀(xlsx 클라측 유지) + 삭제. **API-first**(Supabase 직접호출 금지), `credentials:"include"`, NAVY/GOLD/Outfit. Sidebar 메뉴 `/accident`→`/v2/accident` 교체는 라우팅 정합 단계에서(현재 레거시 유지 중).
+
+ — `/v2/dashboard` 금일 출근 KPI 카드 (UI-only)
 **신규 API·SQL 없음.** `src/app/v2/dashboard/page.tsx`만 additive 편집.
 - **추가 카드(5번째)**: title "금일 출근", value `출근/재직`(예 `12 / 25`), sub `출근율 N%·재직 M명`. 기존 KPI 4카드 grid(auto-fit minmax 220px)에 자연 합류.
 - **데이터 경로**: ①총직원 = `GET /api/v1/employees?limit=1` → 응답 `meta.total`(기본필터 `퇴사` 제외 = `/v2/team` 목록 기준과 일치). ②출근 = `GET /api/v1/attendance?year&month`(오늘 기준 year/month) → `matrix[empId][오늘].status`가 {`present`,`late`,`peak`,`support`,`additional`} ∈ 이면 카운트. **v2 근태는 일보(daily-report) 파생이라 이 API가 정합**(레거시는 worker_attendance 직접조회였음 — v2에선 사용 안 함).
