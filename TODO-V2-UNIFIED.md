@@ -2,13 +2,25 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.05.29
-> **마지막 작업:** ✅ GAP-P0-1 / 1A 완료 — `/v2/stores` 사업장 목록 + 등록/수정/삭제(soft)/복원 + 주소→좌표 지오코딩
-> **다음 작업:** GAP-P0-1 / 1B `/v2/stores/[id]` 상세 + 주차장(면수) 관리 (parking-lots PUT/DELETE 라우트 신설) → 1C 방문지 요금표
+> **마지막 작업:** ✅ GAP-P0-1 / 1B 완료 — `/v2/stores/[id]` 상세 + 주차장(면수) CRUD (PUT/DELETE 라우트는 Part 8에 이미 존재 → 신설 불필요, UI만 작성)
+> **다음 작업:** GAP-P0-1 / 1C `/v2/stores/[id]` 방문지(visit_places) 요금표 관리 → 1D(후순위) 운영시간·근무조·지각규칙
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
 
 ## 🚨 새 대화 시작 시 필독
+
+### ✅ GAP-P0-1 / 1B 완료 (2026.05.29) — 사업장 상세 + 주차장(면수) CRUD
+**핵심 발견**: 분할안 메모엔 "parking-lots PUT/DELETE 라우트 신설 필요"라고 적혀 있었으나, **이미 Part 8에서 생성됨** → `src/app/api/v1/parking-lots/[id]/route.ts`(PUT·DELETE 보유). **API 전부 기존, SQL·라우트 신설 없이 UI만 작성**.
+**사용 API(전부 기존)**: `GET /api/v1/stores/:id`(parking_lots·visit_places·staff_count 동봉) / `GET·POST /api/v1/stores/:id/parking-lots`(목록+면수 summary / 등록) / `PUT·DELETE /api/v1/parking-lots/:lotId`(수정/삭제).
+**구현**:
+- **신규** `src/app/v2/stores/[id]/page.tsx` — (a) 뒤로가기 + 사업장 헤더(명·코드·삭제배지) (b) 사업장 정보 요약카드(운영토글 배지·담당/연락·유예·발렛요금·배정직원) (c) **면수 합계 4칸**(총면수 네이비 강조 + 자주식/기계식일반/기계식SUV) (d) 주차장 카드리스트(구분·방식 배지·면수내역·주소) (e) 주차장 추가/수정/삭제 모달. API-first, Supabase 직접호출 없음.
+- 주차장 모달 필드: `name`(필수)·`lot_type`(내부/외부 칩)·`parking_type`(자주식·기계식 복수 칩, 최소1개)·면수 3종(미선택 방식은 disabled+0 처리)·`road_address`(선택). 저장 시 합계 실시간 표기.
+- **수정** `src/app/v2/stores/page.tsx`(1A, v2 신규코드) — `Link` import + active 카드 액션에 **[관리]** 버튼 추가(상세 `/v2/stores/${id}` 진입점). 기존 [수정][삭제] 유지.
+- ⚠️ **면수 = self_spaces + mechanical_normal + mechanical_suv** 일관 적용(stores.total_spaces 미사용).
+- 디자인: `v2d-*` CSS 네임스페이스(1A의 `v2s-*`와 분리), NAVY `#1428A0`/GOLD `#F5B731`, 숫자 Outfit, maxWidth 1100.
+- 로컬 빌드 OK (`✓ Compiled successfully`, `/v2/stores/[id]` 동적 `ƒ` 등록). 경고 2건은 기존 `/ticket/[id]` Toss SDK 미설치 이슈로 무관.
+**다음(1C)**: `/v2/stores/[id]` 동일 페이지에 **방문지(visit_places) 요금표 섹션** 추가. visit-places API는 `GET·POST /api/v1/stores/:id/visit-places` 존재 — 개별 PUT/DELETE 라우트 유무 **착수 전 확인 필요**(1B처럼 이미 있을 수 있음). require_visit_place 토글과 연계.
 
 ### ✅ GAP-P0-1 / 1A 완료 (2026.05.29) — 사업장(stores) 관리 페이지
 **분할안**: 1A 사업장 CRUD → 1B 사업장 상세+주차장(면수) → 1C 방문지 요금표 / 1D(후순위) 운영시간·근무조·지각규칙(근무조·지각규칙은 B안 근태와 연계). 관련 테이블 모두 기존 존재 → **SQL 실행 불필요**.
@@ -1405,7 +1417,7 @@ v1 디렉토리 13개 vs v2 디렉토리 4개.
 
 | # | 작업 | 비고 |
 |---|---|---|
-| **GAP-P0-1** | `/v2/stores` — 사업장/주차장/방문지 CRUD | 🔄 진행중 (1A 사업장 ✅ / 1B 주차장·1C 방문지 남음) |
+| **GAP-P0-1** | `/v2/stores` — 사업장/주차장/방문지 CRUD | 🔄 진행중 (1A 사업장 ✅ / 1B 주차장 ✅ / 1C 방문지 남음) |
 | **GAP-P0-2** | `/v2/team` — 계정/매장배정/역할 | 멀티테넌시 SaaS 전환 핵심 |
 | **GAP-P0-3** | `/v2/parking-status` — 실시간 주차중 + 초과차량 | 어드민 운영 핵심 |
 | **GAP-P0-4** | `/v2/crew/parking/[id]` 보강 — 차량번호 수정 + 차종변경 | ✅ 완료 (19B-5C와 함께) |

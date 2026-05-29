@@ -18,6 +18,7 @@ export const dynamic = "force-dynamic";
  */
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 
 const NAVY = "#1428A0";
 const GOLD = "#F5B731";
@@ -285,7 +286,8 @@ export default function V2StoresPage() {
               <div style={{ display: "flex", gap: 7, marginTop: 14, borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
                 {statusFilter === "active" ? (
                   <>
-                    <button className="v2s-btn" onClick={() => openEdit(s)} style={{ flex: 1, background: "#F1F5F9", color: "#334155", fontSize: 13 }}>수정</button>
+                    <Link href={`/v2/stores/${s.id}`} className="v2s-btn" style={{ flex: 1, background: NAVY, color: "#fff", fontSize: 13, textAlign: "center", textDecoration: "none" }}>관리</Link>
+                    <button className="v2s-btn" onClick={() => openEdit(s)} style={{ background: "#F1F5F9", color: "#334155", fontSize: 13 }}>수정</button>
                     <button className="v2s-btn" onClick={() => remove(s)} style={{ background: "#fff", color: "#DC2626", border: "1px solid #FECACA", fontSize: 13 }}>삭제</button>
                   </>
                 ) : (
