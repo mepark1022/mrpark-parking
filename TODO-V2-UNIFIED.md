@@ -3,12 +3,40 @@
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.05.29
 > **마지막 작업:** ✅ GAP-P0-3 완료 — `/v2/parking-status` 신설 (실시간 주차중 + ⚠️유예초과 탭 + 번호판 수정 모달 + 강제출차 요금/무료). API 전부 기존, UI만. `tickets/active` select에 `pre_paid_deadline`·`additional_fee` 가산만(13D-B 선례)
-> **다음 작업:** GAP-P0-2 `/v2/team` (계정·역할·매장배정) — ⚠️선결: 매장배정 write API 신설 + 관리자계정 생성 정책 확정 / 또는 1D(후순위) 운영시간·근무조·지각규칙 / 갭분석 P1 진입
+> **다음 작업:** GAP-P0-2a `/v2/team` 본체 (직원목록·crew/field 계정생성·비번리셋·차단/해제·역할변경·매장배정) + 신규 API `POST /api/v1/employees/[id]/stores`(매장배정, replace-set). 관리자(admin) 계정 생성은 **P0-2b 후속**으로 분리(A안 확정 2026.05.29). ▼ 상세는 '🚨 새 대화 시작 시 필독'의 GAP-P0-2 결정 블록 참조
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
 
 ## 🚨 새 대화 시작 시 필독
+
+### ⏭️ GAP-P0-2 착수 결정 블록 (2026.05.29 확정 — 다음 세션용)
+**선결 점검 완료 → A안(단계분리) 확정.**
+
+**⚠️ 모델 분기(중요)**: v2 전 스택(`auth/me`·`employees` API·`store_members`)은 `profiles.employee_id` 키로 동작. 그러나 레거시 `/api/team/create-account`가 만든 **관리자 계정은 `employees` 행 없이 `profiles`+`workers`에만** 존재 → v2 직원목록에 안 잡히고 store_members가 레거시 `user_id` 키일 수 있음. (레거시 관리자 마이그레이션은 P0-2b 이후 별도 과제)
+
+**기존 활용 API(전부 존재)**:
+- `GET /api/v1/employees?has_account=&store_id=&role=&status=&search=` — 직원 목록(퇴사 기본제외). `has_account=false`는 서버 클라필터.
+- `GET /api/v1/employees/:id` — 상세(`store_members`[employee_id·is_active]·`account`{user_id,role,password_changed,last_login_at,...} 동봉).
+- `POST /api/v1/auth/create-account` `{ employee_id }` — **crew/field_member 전용**(내부이메일 자동생성, 관리자는 막힘). 초기PW=뒤4자리+12, 마스킹 반환.
+- `POST /api/v1/auth/reset-password/:id` — 비번 리셋.
+- `POST /api/v1/auth/ban/:id` · `POST /api/v1/auth/unban/:id` — 계정 차단/해제.
+- `PUT /api/v1/employees/:id` — 직원 수정(allowedFields에 **role 포함** → 역할변경 가능). `DELETE /api/v1/employees/:id` — 제거(soft). `resign`/`reinstate` 별도.
+
+**🆕 P0-2a에서 만들 신규 API 1개 (코드만, SQL無 — store_members 테이블 기존)**:
+- `POST /api/v1/employees/[id]/stores` — 매장배정 **replace-set**.
+  - body `{ store_ids: string[], primary_store_id?: string }`.
+  - 동작: 지정된 store들 upsert(`employee_id`,`store_id`,`org_id`,`is_active=true`,`assigned_by=ctx.userId`,`assigned_at=now`), `is_primary`는 primary_store_id만 true. 목록에 없는 기존 배정은 `is_active=false`,`deactivated_at=now`.
+  - 권한 MANAGE. org_id 필터 필수. 멱등.
+  - (선택) 같은 라우트에 `GET`으로 현재 배정 반환해도 됨. 단 상세 API가 이미 동봉하므로 불필요할 수 있음.
+
+**P0-2a 페이지** `src/app/v2/team/page.tsx`(신규, 네임스페이스 예: `v2tm-*`):
+- 직원 목록(검색·역할/계정유무/상태 필터·카드그리드) — 각 카드: 이름·사번·역할배지·계정상태(있음/없음·잠금)·배정매장칩.
+- 액션: [계정 생성](crew/field만, 생성 후 **초기PW 1회 노출** 모달) · [비번 리셋](리셋PW 1회 노출) · [차단/해제] · [역할 변경](crew↔field_member 등 권한규칙 내) · [매장 배정](멀티선택+primary 지정 → 신규 API) · [제거].
+- ⚠️ **관리자(admin/super_admin) 계정 생성 버튼은 P0-2a에서 비활성/숨김** → P0-2b.
+- API-first(Supabase 직접호출 금지), `credentials:"include"`, 응답 envelope `{success,data,error}`. 디자인 NAVY `#1428A0`/GOLD `#F5B731`, 숫자 Outfit.
+
+**P0-2b (후속, 정책 재확정 후)**: 관리자 실이메일 계정 생성. 후보 = 신규 `POST /api/v1/auth/admin-account`(employees role=admin + profile + store_members 일괄, 수동 email/pw). 레거시 관리자 계정의 employees 연결 마이그레이션 포함 검토.
 
 ### ✅ GAP-P0-3 완료 (2026.05.29) — `/v2/parking-status` 실시간 입차현황 + 강제출차
 **선결 점검 결과**: 필요한 API가 **전부 기존 존재** → SQL·라우트 신설 없이 **UI만**. `tickets/active` select에 `pre_paid_deadline`·`additional_fee` **가산만**(Part 13D-B와 동일한 additive 편집, 기존 폴링 동작 불변).
