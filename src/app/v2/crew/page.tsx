@@ -325,6 +325,37 @@ export default function CrewV2HomePage() {
           </div>
         </div>
 
+        {/* ── 사고보고 진입 ── */}
+        <div style={{ padding: "12px 16px 0" }}>
+          <div
+            onClick={() => router.push("/v2/crew/accident")}
+            style={{
+              background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14,
+              padding: "14px 16px", display: "flex", alignItems: "center", gap: 12,
+              cursor: "pointer", WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            <div style={{
+              width: 40, height: 40, borderRadius: 12, background: "#FEF2F2",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626"
+                strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <path d="M12 9v4M12 17h.01" />
+              </svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1D2B" }}>사고보고</div>
+              <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>스크래치 · 주차사고 · 분실 등 현장 보고</div>
+            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1"
+              strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </div>
+        </div>
+
         {/* ── 출차요청 알림 (있을 때만) ── */}
         {stats.exitRequested > 0 && (
           <div style={{ padding: "16px 16px 0" }}>

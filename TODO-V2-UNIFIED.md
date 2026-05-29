@@ -1,10 +1,10 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
 > **작성일:** 2026.04.09
-> **마지막 업데이트:** 2026.05.30 (accidents Part 2 admin UI 완료)
-> **마지막 작업:** ✅ **GAP-P1-3/6 Part 2 (admin `/v2/accident` UI) 완료** — 신규 `src/app/v2/accident/page.tsx` 1파일. KPI 4(이번달/접수/처리중/완료) + 필터(매장 API스코핑 · 상태/기간 클라) + 카드리스트 + 상세모달(상태 3버튼→PATCH, admin_memo→PATCH, 사진뷰어+라이트박스, 삭제) + 엑셀(클라 xlsx, phone 컬럼 제외). 전부 API-first(`credentials:include`), 네임스페이스 `v2ac-*`, NAVY/GOLD. 신규 SQL·API 없음. 빌드 OK (`✓ Compiled in 79s`, 111p, `/v2/accident` 정적 ○). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
-> **다음 작업:** **Part 3 — crew `/v2/crew/accident` UI** (사고유형 선택→차량/신고자/상세 입력→사진 최대5장 Storage 직접업로드→POST). P0-5/CREW 톤. ▼ 상세는 '🚨 새 대화 시작 시 필독'. ※또는 🔴**P1-8**(반드시) 먼저.
-> **P1 추천순서(갱신):** ①P1-1✅ → ②~~P1-5~~(보류) → ③**P1-3+P1-6(accidents, Part1 API✅ · Part2 admin UI✅ / Part3 crew UI 남음)** → 🔴**P1-8(반드시, v2 입차 차량사진)** → ④P1-7(월주차) → ⑤P1-4(QR)·P1-2(차트) → ⑥(보류해제 시)P1-5
+> **마지막 업데이트:** 2026.05.30 (accidents Part 3 crew UI 완료 → **accidents 3파트 전체 완료**)
+> **마지막 작업:** ✅ **GAP-P1-3/6 Part 3 (crew `/v2/crew/accident` UI) 완료** — 신규 `src/app/v2/crew/accident/page.tsx` 1파일(네임스페이스 `cv2ac-*`) + crew 홈(`/v2/crew/page.tsx`)에 사고보고 진입점 추가. 3-step(유형선택→차량정보→보고내용)+완료. **차주 연락처 입력 제거(v2 phone 미저장)**, reporter=`auth/me` 직원명 자동, store_id=localStorage `crew_store_id`. 등록=`POST /api/v1/accidents`(API-first) → 응답 `photo_bucket`/`photo_path_prefix`로 사진 Storage 직접 업로드(설계 ⓐ, 업로드 진행률 표시, 실패해도 보고 접수 격리). 신규 SQL·API 없음. 빌드 OK (`✓ Compiled in 74s`, 112p, `/v2/crew/accident` 정적 ○). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
+> **다음 작업:** 🔴 **GAP-P1-8 (반드시) — v2 입차 차량사진 6장 연속촬영**. 착수 시 **P1-8a**(tickets API의 `vehicle_photos` 수용/보강 확인)부터. ▼ 상세는 '🚨 새 대화 시작 시 필독'의 P1-8 블록. ※또는 ④P1-7(월주차) 선택 가능.
+> **P1 추천순서(갱신):** ①P1-1✅ → ②~~P1-5~~(보류) → ③**P1-3+P1-6(accidents) ✅ 전체완료(Part1 API·Part2 admin·Part3 crew)** → 🔴**P1-8(반드시, v2 입차 차량사진) ← 다음** → ④P1-7(월주차) → ⑤P1-4(QR)·P1-2(차트) → ⑥(보류해제 시)P1-5
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -51,7 +51,26 @@
 **작업 분할(예정)**: P1-8a (tickets API의 vehicle_photos 수용 확인/보강) → P1-8b (연속촬영 UI: 스트림 1회+슬롯 시퀀스+패스) → P1-8c (cleanup cron + vercel.json). ※ 사진단계 토글은 레거시 `crew_photo_enabled` 참고하되 v2는 "패스버튼" 방식 우선.
 **선결 점검 결과(2026.05.30)**: cron 인프라 존재(`src/app/api/cron/*`+vercel.json), `vehicle-photos` 버킷 기존(레거시만 사용, v2 미사용), v2 submit=`POST /api/v1/tickets`(line302). 확인 끝 — 착수 시 P1-8a부터.
 
-### ✅ GAP-P1-3/6 Part 2 완료 (2026.05.30) — admin `/v2/accident` UI 신규
+### ✅ GAP-P1-3/6 Part 3 완료 (2026.05.30) — crew `/v2/crew/accident` UI 신규 (accidents 3파트 전체 완료)
+**UI만 — 신규 API·SQL 없음.** Part 1 accidents API(`POST /api/v1/accidents`) + `auth/me` + Storage(`accident-photos`)만 사용.
+**구현** `src/app/v2/crew/accident/page.tsx`(신규 1파일, 네임스페이스 `cv2ac-*`):
+- **3-step 흐름**(레거시 톤 유지): ①유형선택(5종, 라벨 동일) → ②차량정보 → ③보고내용(상세+사진+제출요약) → 완료(step99). 헤더=v2 NAVY gradient(`cv2-entry-header` 패턴), 뒤로가기=step0이면 `/v2/crew`로/그 외 이전 step.
+- **v2 정책 반영(레거시 대비 변경점)**:
+  - ⚠️ **차주 연락처 입력 칸 제거** — v2 phone DB 미저장 정책(API도 무시). 레거시엔 STEP1에 phone 입력이 있었음.
+  - **reporter 자동** — `GET /api/v1/auth/me` → `employee.name`(없으면 emp_no→"크루"). 입력 안 받음.
+  - **store_id** = localStorage `crew_store_id`(없으면 `/v2/crew/login` 리다이렉트). storeName도 localStorage.
+  - **등록 = `POST /api/v1/accidents`**(`credentials:include`) body `{store_id, vehicle(대문자), accident_type=라벨, reporter, detail}`. Supabase 직접 insert 제거.
+  - **사진 업로드** = POST 응답의 `photo_bucket`(=`accident-photos`)·`photo_path_prefix`(=`{id}/`)로 **browser supabase client storage 직접 upload**(Part 1 설계 ⓐ). 경로 `{id}/{ts}_{i}.{ext}`, contentType 지정. **업로드 진행률 바**(done/total) 표시. 사진 업로드 실패해도 `console.error`만 하고 **보고 접수는 성공 처리**(격리).
+- **crew 홈 진입점 추가**(`src/app/v2/crew/page.tsx`, additive): '빠른 액션' 아래에 사고보고 카드(경고 삼각 아이콘+"스크래치·주차사고·분실 등 현장 보고") → `/v2/crew/accident`. ※BottomNav는 5칸 고정(settings 미구현)이라 건드리지 않고 홈 카드로 진입.
+- 디자인 NAVY `#1428A0`/GOLD/숫자 Outfit, `cv2ac-*` 네임스페이스. v2 crew layout(BottomNav 자동) 상속.
+- 빌드 OK (`✓ Compiled in 74s`, `/v2/crew/accident` 정적 `○`, 112p). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
+**⚠️ 실기기 검증 시 확인(미검증)**:
+1. **Storage `accident-photos` 버킷의 crew 업로드 정책** — browser client(anon+세션)로 `{id}/` 경로 upload가 RLS/버킷 정책상 허용되는지. 레거시가 동일 방식으로 클라 직접 업로드했으니 열려있을 가능성 높음(Part 1·2 메모 동일). 막히면 버킷 정책에 인증세션 INSERT 허용 추가 or API signed-url 프록시(설계 ⓑ)로 전환.
+2. admin `/v2/accident`에서 crew가 올린 사진이 signedUrl로 정상 표시되는지(end-to-end).
+3. crew가 자기 배정 매장에만 등록되는지(API가 `ctx.storeIds` 검증 — store_id 불일치 시 403).
+**▶ 다음 = 🔴 P1-8 (반드시)**: v2 입차 차량사진 6장 연속촬영. P1-8a(tickets API `vehicle_photos` 수용 확인)부터. 본 Part 3에서 검증한 Storage 직접업로드 패턴이 P1-8 사진 업로드에 그대로 응용됨.
+
+
 **UI만 — 신규 API·SQL 없음.** Part 1 accidents API + 기존 `/api/v1/stores`만 호출.
 **구현** `src/app/v2/accident/page.tsx`(신규 1파일, 네임스페이스 `v2ac-*`):
 - **KPI 4카드**: 이번 달 사고 / 접수 / 처리중 / 완료. **로드된 매장-스코프 전체 기준**으로 계산(상태·기간 클라필터와 무관하게 정확).
