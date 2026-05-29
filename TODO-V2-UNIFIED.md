@@ -1,31 +1,27 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
 > **작성일:** 2026.04.09
-> **마지막 업데이트:** 2026.05.28
-> **마지막 작업:** ✅ Part 19B-5D 완료 — CREW v2 출차 검색 (4자리 → N건 카드, 월주차 포함)
-> **다음 작업:** CREW 마감보고(현장일보) 진입점 신설 — 홈 빠른액션 버튼 → `/v2/daily-reports` 흐름 (아래 '📌 다음 작업 예정' 참고)
+> **마지막 업데이트:** 2026.05.29
+> **마지막 작업:** ✅ Part 13D-B 완료 — 출차요청 앱 내 토스트 신설 (CREW layout 토스트 채널 + active API 필드 보강)
+> **다음 작업:** 미정 (Vercel 배포 후 실기기 토스트 동작 확인 → 다음 작업 선정)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
 
 ## 🚨 새 대화 시작 시 필독
 
-### 📌 다음 작업 예정 — Part 13D-B: 출차요청 앱 내 토스트 신설 (2026.05.29 v4.2 컨펌 완료)
-**배경**: Part 13D-A(BottomNav 마감 탭 + CREW 작성화면) 완료. 시안 v4.2에서 출차요청 시인성 강화를 위해 앱 내 상단 토스트 신설 결정.
-**위치**: `src/app/v2/crew/layout.tsx` — 이미 5초 폴링 + 진동 + OS 푸시 + 펄스 뱃지 작동 중. **여기에 앱 내 토스트 채널만 추가**.
-
-**시안 v4.2 표기 규칙** (`docs/crew-daily-report-mockup.html` 참조):
-- plate 줄에 부가정보 1개만:
+### ✅ Part 13D-B 완료 (2026.05.29) — 출차요청 앱 내 토스트 신설
+**배경**: Part 13D-A 완료 후, 시안 v4.2에서 출차요청 시인성 강화를 위해 앱 내 상단 토스트 신설 결정.
+**구현**:
+- **수정** `src/app/api/v1/tickets/active/route.ts` — select에 `car_type, car_color, parking_lot_id` 추가 + `parking_lots:parking_lot_id(name)` 조인 (토스트 위치/차종 표기용, public 라우트와 동일 패턴).
+- **수정** `src/app/v2/crew/layout.tsx` — 기존 5초 폴링(진동·OS푸시·펄스뱃지) 유지하고 **앱 내 토스트 채널만 추가**. `toasts` state + `addToast`(최대 3개 누적, 5초 자동 제거). 상단 고정 네이비 카드(골드 좌측 바), ✕ 닫기, 카드 탭 시 `/v2/crew/parking` 이동, `crewV2ToastIn` 슬라이드인.
+- **v4.2 표기 규칙 적용**:
   - 충돌 없음 + 위치 있음 → `1234 · 🅿️ B동 · B2-15` (한 줄)
-  - 충돌 있음 → `1234 · 흰색 SUV` + 두번째 줄 `🅿️ B동 · B2-15` (두 줄)
-  - 충돌 없음 + 위치 없음 → `1234` (4자리만)
-  - 다중 누적 → `1234 · 외 N건` (위치 라인 생략)
-
-**선결 점검 (착수 전)**:
-- `/api/v1/tickets/active` 응답 필드 확인 — `car_color`/`car_type`/`parking_lot_id`/`parking_location` 반환 여부. lot name은 조인 필요할 가능성 → 응답 보강 필요시 별도 작업.
-- 토스트 동작: 자동 사라짐 5초, ✕ 닫기, 탭 시 `/v2/crew/parking` 이동, 다중 출차요청 누적 처리.
-
----
+  - 충돌 있음(동일 4자리 활성 2건+) → `1234 · 흰색 SUV` + 둘째 줄 `🅿️ B동 · B2-15`
+  - 충돌 없음 + 위치 없음 → `1234`
+  - 다중 누적(diff>1) → `1234 · 외 N건` (위치 라인 생략)
+- 로컬 빌드 OK (`✓ Compiled successfully`, 경고 2건은 기존 Toss SDK 모듈 미설치 이슈로 무관).
+- ⏳ **검증 대기**: Vercel 배포 후 실기기에서 출차요청 발생 → 토스트 표출/누적/탭 이동/자동사라짐 확인.
 
 #### ✅ Part 13D-A 완료 (2026.05.29) — BottomNav 마감 탭 + CREW 작성화면 신설
 - **신규**: `src/app/v2/crew/daily-report/new/page.tsx` — 어드민 `StaffSection`/`PaymentSection` 절대경로 import 재사용, 매장 `localStorage.crew_store_id` 고정, 모바일 풀폭 + CREW 네이비 헤더 + sticky 액션바, submit 후 CREW 홈 redirect (중복 시 머무름).

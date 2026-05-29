@@ -77,6 +77,14 @@ function CrewV2BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [exitReqCount, setExitReqCount] = useState(0);
+  const [toasts, setToasts] = useState<{ id: number; line1: string; line2: string | null }[]>([]);
+
+  // 토스트 추가 (최대 3개 누적, 5초 후 자동 제거)
+  const addToast = useCallback((line1: string, line2: string | null) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, line1, line2 }].slice(-3));
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000);
+  }, []);
 
   // 출차요청 폴링 (v1 API 사용)
   useEffect(() => {
@@ -100,18 +108,46 @@ function CrewV2BottomNav() {
         const count = exitReqs.length;
 
         if (count > prevCount && prevCount >= 0) {
+          const diff = count - prevCount;
+          const primary = exitReqs[0];
           // 진동
           if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
           // 브라우저 알림
           if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-            const plate = exitReqs[0]?.plate_number || "차량";
-            const diff = count - prevCount;
+            const plate = primary?.plate_number || "차량";
             new Notification("🚗 출차요청", {
               body: diff === 1 ? `${plate} 출차요청이 도착했습니다` : `${plate} 외 ${diff - 1}건 출차요청`,
               icon: "/icons/icon-192x192.png",
               tag: "exit-request",
               renotify: true,
             });
+          }
+          // 앱 내 토스트 (v4.2 표기 규칙)
+          const last4 =
+            primary?.plate_last4 ||
+            (primary?.plate_number || "").replace(/[^0-9]/g, "").slice(-4) ||
+            "차량";
+          if (diff > 1) {
+            // 다중 누적 → "1234 · 외 N건" (위치 라인 생략)
+            addToast(`${last4} · 외 ${diff - 1}건`, null);
+          } else {
+            // 동일 4자리 충돌 여부 (현재 활성 티켓 중 같은 last4 2건 이상)
+            const sameLast4 = primary?.plate_last4
+              ? tickets.filter((t: any) => t.plate_last4 === primary.plate_last4).length
+              : 0;
+            const collision = sameLast4 > 1;
+            const lotName = primary?.parking_lots?.name || null;
+            const loc = primary?.parking_location || null;
+            const locParts = [lotName ? `🅿️ ${lotName}` : null, loc].filter(Boolean) as string[];
+            if (collision) {
+              // 충돌 → "1234 · 흰색 SUV" + 둘째줄 위치
+              const carDesc =
+                [primary?.car_color, primary?.car_type].filter(Boolean).join(" ") || "차종미입력";
+              addToast(`${last4} · ${carDesc}`, locParts.length ? locParts.join(" · ") : null);
+            } else {
+              // 충돌 없음 → 위치 있으면 한 줄, 없으면 4자리만
+              addToast(locParts.length ? `${last4} · ${locParts.join(" · ")}` : `${last4}`, null);
+            }
           }
         }
         setExitReqCount(count);
@@ -122,7 +158,7 @@ function CrewV2BottomNav() {
     poll();
     const interval = setInterval(poll, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [addToast]);
 
   const isActive = (path: string) => {
     if (path === "/v2/crew") return pathname === "/v2/crew";
@@ -131,6 +167,76 @@ function CrewV2BottomNav() {
 
   return (
     <>
+      {/* ── 출차요청 앱 내 토스트 (상단 고정, 누적) ── */}
+      {toasts.length > 0 && (
+        <div style={{
+          position: "fixed",
+          top: "calc(env(safe-area-inset-top, 0px) + 12px)",
+          left: 12, right: 12, zIndex: 300,
+          display: "flex", flexDirection: "column", gap: 8,
+          pointerEvents: "none",
+        }}>
+          {toasts.map((t) => (
+            <div
+              key={t.id}
+              onClick={() => {
+                setToasts((prev) => prev.filter((x) => x.id !== t.id));
+                router.push("/v2/crew/parking");
+              }}
+              style={{
+                pointerEvents: "auto",
+                background: "linear-gradient(135deg, #0a1352 0%, #1428A0 100%)",
+                borderRadius: 14, padding: "12px 14px",
+                borderLeft: "4px solid #F5B731",
+                boxShadow: "0 8px 24px rgba(10,19,82,0.45)",
+                display: "flex", alignItems: "flex-start", gap: 10,
+                cursor: "pointer",
+                animation: "crewV2ToastIn 0.3s cubic-bezier(0.16,1,0.3,1)",
+                WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontSize: 11, fontWeight: 700, color: "#F5B731",
+                  letterSpacing: "-0.2px", marginBottom: 4,
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                }}>
+                  🚗 출차요청
+                </div>
+                <div style={{
+                  fontSize: 16, fontWeight: 800, color: "#fff",
+                  letterSpacing: "-0.3px", fontFamily: "'Noto Sans KR', sans-serif",
+                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                }}>
+                  {t.line1}
+                </div>
+                {t.line2 && (
+                  <div style={{
+                    fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.7)",
+                    marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif",
+                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                  }}>
+                    {t.line2}
+                  </div>
+                )}
+              </div>
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setToasts((prev) => prev.filter((x) => x.id !== t.id));
+                }}
+                style={{
+                  width: 26, height: 26, borderRadius: 13, flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "rgba(255,255,255,0.65)", fontSize: 15, lineHeight: 1,
+                }}
+              >
+                ✕
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <div style={{
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 200,
         background: "linear-gradient(135deg, #0a1352 0%, #1428A0 100%)",
@@ -183,6 +289,10 @@ function CrewV2BottomNav() {
         @keyframes crewV2BadgePulse {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.15); }
+        }
+        @keyframes crewV2ToastIn {
+          0% { opacity: 0; transform: translateY(-16px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </>

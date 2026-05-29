@@ -59,10 +59,12 @@ export async function GET(request: NextRequest) {
         id, plate_number, plate_last4, parking_type, status,
         entry_at, pre_paid_at, parking_location, is_monthly, paid_amount,
         entry_method, is_free,
+        car_type, car_color, parking_lot_id,
         store_id,
         visit_place_id,
         visit_places(id, name, free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee),
-        stores:store_id(id, name, free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee)
+        stores:store_id(id, name, free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee),
+        parking_lots:parking_lot_id(name)
       `)
       .in('store_id', targetStoreIds)
       .neq('status', 'completed')
