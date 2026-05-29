@@ -6,6 +6,7 @@
  */
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAuth, ok, notFound, serverError } from '@/lib/api';
 
 export async function POST(
@@ -31,8 +32,9 @@ export async function POST(
       return notFound('해당 직원의 계정을 찾을 수 없습니다');
     }
 
-    // Supabase Auth unban
-    const { error: unbanError } = await supabase.auth.admin.updateUserById(
+    // Supabase Auth unban — service_role 필수
+    const admin = createAdminClient();
+    const { error: unbanError } = await admin.auth.admin.updateUserById(
       profile.id,
       { ban_duration: 'none' }
     );

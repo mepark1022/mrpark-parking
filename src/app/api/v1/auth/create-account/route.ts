@@ -14,6 +14,7 @@
  */
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import {
   requireAuth, ok, badRequest, conflict, serverError,
   ErrorCodes,
@@ -84,10 +85,9 @@ export async function POST(request: NextRequest) {
     const maskedPassword = maskInitialPassword(initialPassword);
 
     // 5. Supabase Auth 계정 생성
-    // ⚠️ admin.createUser는 service_role 키 필요
-    // 서버 컴포넌트에서는 createClient()가 service_role일 수 있음
-    // 아니라면 별도 admin client 필요
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // ⚠️ admin.createUser는 service_role 키 필수 → 전용 admin 클라이언트 사용
+    const admin = createAdminClient();
+    const { data: authData, error: authError } = await admin.auth.admin.createUser({
       email,
       password: initialPassword,
       email_confirm: true, // 이메일 확인 건너뜀 (내부 계정)
@@ -103,8 +103,8 @@ export async function POST(request: NextRequest) {
       return serverError('계정 생성에 실패했습니다: ' + (authError?.message || ''));
     }
 
-    // 6. profiles INSERT (또는 UPDATE)
-    const { error: profileError } = await supabase
+    // 6. profiles INSERT (또는 UPDATE) — 신규 user_id row 쓰기는 service-role 필요
+    const { error: profileError } = await admin
       .from('profiles')
       .upsert({
         id: authData.user.id,

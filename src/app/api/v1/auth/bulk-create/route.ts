@@ -11,6 +11,7 @@
  */
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import {
   requireAuth, ok, serverError,
   generateInitialPassword,
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
     const { employee_ids } = body as { employee_ids?: string[] };
 
     const supabase = await createClient();
+    const admin = createAdminClient(); // auth.admin.* + profiles 쓰기 전용
 
     // 대상 직원 조회 (crew/field_member만, 재직/수습만)
     let query = supabase
@@ -85,8 +87,8 @@ export async function POST(request: NextRequest) {
         const password = generateInitialPassword(emp.phone, emp.emp_no);
         const isFallback = !emp.phone;
 
-        // Auth 계정 생성
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        // Auth 계정 생성 — service_role 필수
+        const { data: authData, error: authError } = await admin.auth.admin.createUser({
           email,
           password,
           email_confirm: true,
@@ -103,8 +105,8 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // profiles INSERT
-        await supabase.from('profiles').upsert({
+        // profiles INSERT — 신규 user_id row → service-role
+        await admin.from('profiles').upsert({
           id: authData.user.id,
           org_id: ctx.orgId,
           role: emp.role,

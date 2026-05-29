@@ -130,10 +130,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // 상태 변경 가드: 퇴사 전환은 전용 워크플로(DELETE / resign)에서만 (resign_date 등 스탬핑)
+    if (body.status === '퇴사') {
+      return badRequest(
+        ErrorCodes.VALIDATION_ERROR,
+        '퇴사 처리는 직원 제거(또는 퇴사 처리) 기능을 사용하세요'
+      );
+    }
+
     // 수정 가능 필드만 추출
     const updateData: Record<string, unknown> = {};
     const allowedFields = [
       'emp_no', 'name', 'phone', 'position', 'role', 'work_type',
+      'hire_date', 'status',
       'employment_type', 'base_salary', 'weekend_daily',
       'probation_months', 'probation_end',
       'insurance_national', 'insurance_health', 'insurance_employ', 'insurance_injury',

@@ -11,6 +11,7 @@
  */
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import {
   requireAuth, ok, badRequest, notFound, serverError,
   ErrorCodes,
@@ -59,8 +60,9 @@ export async function POST(
     const newPassword = generateInitialPassword(emp.phone, emp.emp_no);
     const maskedPassword = maskInitialPassword(newPassword);
 
-    // 4. Supabase Auth 비밀번호 변경
-    const { error: authError } = await supabase.auth.admin.updateUserById(
+    // 4. Supabase Auth 비밀번호 변경 — service_role 필수
+    const admin = createAdminClient();
+    const { error: authError } = await admin.auth.admin.updateUserById(
       profile.id,
       { password: newPassword }
     );
@@ -70,8 +72,8 @@ export async function POST(
       return serverError('비밀번호 초기화에 실패했습니다');
     }
 
-    // 5. profiles 갱신
-    await supabase
+    // 5. profiles 갱신 (타 사용자 row → service-role)
+    await admin
       .from('profiles')
       .update({
         password_changed: false,

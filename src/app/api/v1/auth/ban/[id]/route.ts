@@ -6,6 +6,7 @@
  */
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAuth, ok, notFound, serverError, ErrorCodes, badRequest } from '@/lib/api';
 
 export async function POST(
@@ -37,8 +38,9 @@ export async function POST(
       return badRequest(ErrorCodes.VALIDATION_ERROR, '본인 계정은 정지할 수 없습니다');
     }
 
-    // Supabase Auth ban
-    const { error: banError } = await supabase.auth.admin.updateUserById(
+    // Supabase Auth ban — service_role 필수
+    const admin = createAdminClient();
+    const { error: banError } = await admin.auth.admin.updateUserById(
       profile.id,
       { ban_duration: '876000h' } // ~100년 (영구 정지)
     );
