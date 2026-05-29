@@ -4,7 +4,7 @@
 > **마지막 업데이트:** 2026.05.30 (accidents Part 1 API 완료)
 > **마지막 작업:** ✅ **GAP-P1-3/6 Part 1 (accidents API) 완료** — 신규 `src/app/api/v1/accidents/route.ts`(GET 목록+필터 store/status/from/to, POST 등록) + `[id]/route.ts`(GET 상세+사진 signedUrl, PATCH status·admin_memo, DELETE+사진정리). 권한 GET=OPERATE(crew 배정매장 스코핑)/POST=OPERATE/PATCH·DELETE=MANAGE. **phone 미저장(null 고정, v2 정책), 사진은 Storage `accident-photos/{id}/` 직접업로드+조회시 signedUrl.** 신규 SQL 없음. 빌드 OK (`✓ Compiled in 71s`, 110p, accidents 2라우트 ƒ 등록).
 > **다음 작업:** **Part 2 — admin `/v2/accident` UI** (목록·매장/상태/기간 필터·상태변경·admin_memo·사진뷰어·엑셀·삭제, 네임스페이스 `v2ac-*`). 이후 Part 3 = crew `/v2/crew/accident`. ▼ 상세는 '🚨 새 대화 시작 시 필독' 참조.
-> **P1 추천순서(갱신):** ①P1-1✅ → ②~~P1-5~~(보류) → ③**P1-3+P1-6(accidents, 진행중)** → ④P1-7(월주차, API기존) → ⑤P1-4(QR)·P1-2(차트) → ⑥(보류해제 시)P1-5
+> **P1 추천순서(갱신):** ①P1-1✅ → ②~~P1-5~~(보류) → ③**P1-3+P1-6(accidents, Part1 API✅ / Part2·3 진행중)** → 🔴**P1-8(반드시, v2 입차 차량사진)** → ④P1-7(월주차) → ⑤P1-4(QR)·P1-2(차트) → ⑥(보류해제 시)P1-5
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -36,6 +36,20 @@
   - **Part 1 (API)**: `src/app/api/v1/accidents/route.ts`(GET 목록+필터 store/status/기간, POST 등록) + `[id]/route.ts`(GET 상세, PATCH status·admin_memo, DELETE). 권한: 등록=OPERATE(crew 가능)/조회·수정·삭제=MANAGE. org_id 필터 필수. phone 정책 반영. **신규 SQL 불필요(테이블 기존)** — 단 RLS/버킷 정책만 확인.
   - **Part 2 (admin UI)**: `/v2/accident` — 목록(매장/상태/기간 필터)+상태변경+admin_memo+사진뷰어+엑셀+삭제. 네임스페이스 `v2ac-*`.
   - **Part 3 (crew UI)**: `/v2/crew/accident` — 사고유형 선택→차량/신고자/상세 입력→사진 최대5장 업로드→POST. P0-5/CREW 톤.
+
+### 🔴 GAP-P1-8 (반드시) — v2 입차 차량사진 촬영 (2026.05.30 대표 확정 스펙)
+**배경**: v2 입차(Part 19B-5C, 4자리 OCR 모드)에서 레거시의 차량사진 6장 촬영 단계가 누락됨. **사고 클레임의 입차 전 상태 증거**라 운영가치 큼 → "반드시 있어야 함"으로 확정. DB `tickets.vehicle_photos`(string[]) **기존 컬럼**, Storage 버킷 `vehicle-photos` 기존(레거시 경로 `{ticket_id}/...`).
+**확정 요구사항 4**:
+1. **퀄리티 우선(흠집 판단용)** — 클라 압축 최소화·고해상도 캡처(`getUserMedia` width/height ideal 1920↑, jpeg quality ≥0.92 또는 무압축). **인위적 용량제한 없음.** 대신 **촬영 2개월 경과 사진만 자동삭제**(ticket row는 유지, Storage 객체만 remove)로 총량 최적화 → **신규 cron `/api/cron/vehicle-photo-cleanup`**(기존 `cron/*` 패턴 + `vercel.json` crons 등록, demo-cleanup 참고).
+2. **한번 활성화로 1~6장 연속촬영** — `getUserMedia` 스트림 **1회 오픈 유지**, 셔터 탭→canvas 캡처→다음 슬롯 자동진행(스트림 안 끊음). ⚠️기존 레거시는 슬롯마다 카메라 재오픈이라 끊김 → 이걸 개선.
+3. **슬롯 순서·라벨 고정** — ①전면 ②후면 ③운전석(좌) ④보조석(우) ⑤추가1 ⑥추가2. 라벨 오버레이 안내, 매끄러운 시퀀스 전환.
+4. **패스버튼** — (a)사진 단계 전체 스킵 (b)남은 슬롯 스킵 후 제출. **0장 제출 허용**.
+**기술 메모**:
+- 흐름: 4자리 입차확인 → (사진 단계: 패스 가능) → 연속촬영 → 제출. 업로드는 `POST /api/v1/tickets`로 ticket 생성 후 `ticket.id`로 `vehicle-photos/{ticket_id}/...` 업로드 → `vehicle_photos` 경로 저장(POST body 포함 가능 여부 / 아니면 PATCH 필요 — **tickets API의 vehicle_photos 수용 여부 선결 확인**).
+- ⚠️ 모바일 고해상 6장=수십MB 업로드 → **진행률·실패 재시도 UX** 필요. 네이티브 전환 시 백그라운드 업로드로 대체(웹은 MVP 동작 우선).
+- ⚠️ "용량제한 없음"은 입력 정책이고 Storage 총량은 플랜 한도 내 → **2개월 cleanup cron이 총량관리 핵심**.
+**작업 분할(예정)**: P1-8a (tickets API의 vehicle_photos 수용 확인/보강) → P1-8b (연속촬영 UI: 스트림 1회+슬롯 시퀀스+패스) → P1-8c (cleanup cron + vercel.json). ※ 사진단계 토글은 레거시 `crew_photo_enabled` 참고하되 v2는 "패스버튼" 방식 우선.
+**선결 점검 결과(2026.05.30)**: cron 인프라 존재(`src/app/api/cron/*`+vercel.json), `vehicle-photos` 버킷 기존(레거시만 사용, v2 미사용), v2 submit=`POST /api/v1/tickets`(line302). 확인 끝 — 착수 시 P1-8a부터.
 
 ### ✅ GAP-P1-3/6 Part 1 완료 (2026.05.30) — accidents API 신규
 **신규 SQL 없음**(accident_reports 기존). 신규 파일 2개:
