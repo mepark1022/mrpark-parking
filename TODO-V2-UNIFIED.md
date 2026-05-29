@@ -2,13 +2,25 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.05.29
-> **마지막 작업:** ✅ GAP-P0-1 / 1B 완료 — `/v2/stores/[id]` 상세 + 주차장(면수) CRUD (PUT/DELETE 라우트는 Part 8에 이미 존재 → 신설 불필요, UI만 작성)
-> **다음 작업:** GAP-P0-1 / 1C `/v2/stores/[id]` 방문지(visit_places) 요금표 관리 → 1D(후순위) 운영시간·근무조·지각규칙
+> **마지막 작업:** ✅ GAP-P0-1 / 1C 완료 — `/v2/stores/[id]`에 방문지(visit_places) 요금표 섹션 추가 (목록+추가/수정/삭제 모달, require_visit_place 연계 안내). API·SQL 신설 없이 UI만 (PUT/DELETE 라우트 기존 존재)
+> **다음 작업:** GAP-P0-1 / 1D(후순위) `/v2/stores/[id]` 운영시간·근무조·지각규칙 → 또는 P0 잔여(GAP-P0-2~4) / 갭분석 P1 진입
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
 
 ## 🚨 새 대화 시작 시 필독
+
+### ✅ GAP-P0-1 / 1C 완료 (2026.05.29) — 방문지(visit_places) 요금표 관리
+**선결 확인 결과**: 1B와 동일하게 visit-places 개별 **PUT/DELETE 라우트 이미 존재** (`src/app/api/v1/visit-places/[id]/route.ts`) → **SQL·라우트 신설 없이 UI만 작성**.
+**사용 API(전부 기존)**: `GET·POST /api/v1/stores/:id/visit-places`(목록/등록) / `PUT·DELETE /api/v1/visit-places/:vpId`(수정/삭제). 권한 MANAGE.
+**visit_places 요금 모델(9필드, 레거시 stores 폼과 동일)**: `name`(필수)·`floor`(선택)·`free_minutes`(무료분)·`base_fee`/`base_minutes`(기본요금/시간)·`extra_fee`(추가 원/분)·`daily_max`(0=무제한)·`valet_fee`·`monthly_fee`.
+**구현 (1C, 기존 1B 페이지에 섹션 추가)** `src/app/v2/stores/[id]/page.tsx`:
+- 주차장 섹션 **아래**에 「방문지 요금표」 섹션 신설 — 헤더(개수+추가버튼) + `require_visit_place` 켜진 사업장엔 골드 경고배너(최소 1곳 등록 안내) + 카드리스트(방문지명·층배지·기본요금 강조 + 무료/기본시간/추가/일최대/발렛/월정기 2열 요약 + 수정/삭제) + 빈상태.
+- 방문지 모달: 방문지명/층 + 요금 6필드(2열) + 월정기 + **요금 요약 프리뷰**("무료 N분 후 → 기본 ₩X, 이후 1분마다 ₩Y · 일 최대 …"). 음수 입력 차단.
+- API-first(Supabase 직접호출 없음), `loadVisitPlaces()` 별도 로더로 CRUD 후 갱신. 디자인은 1B의 `v2d-*` 네임스페이스/NAVY·GOLD/Outfit 숫자 그대로 재사용.
+- 로컬 빌드 OK (`✓ Compiled successfully in 71s`, `/v2/stores/[id]` 동적 `ƒ`, 106 pages). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
+**⚠️ 작업 중 함정(기록)**: 신규 모달을 파일 끝에 str_replace로 삽입할 때 직전 주차장 모달의 닫는 `)}`를 같이 소비 → 파싱에러. 모달 블록 끝 `)}` 보존 확인할 것.
+**다음(1D, 후순위)**: 동일 페이지에 운영시간(store_hours)·근무조(shifts)·지각규칙 섹션. 근무조·지각규칙은 B안 근태와 연계 → 근태 B안 방향 확정 후 진행 권장. 레거시 모달은 `src/app/stores/page.tsx`의 `modalType==="hours"|"shifts"` 참고.
 
 ### ✅ GAP-P0-1 / 1B 완료 (2026.05.29) — 사업장 상세 + 주차장(면수) CRUD
 **핵심 발견**: 분할안 메모엔 "parking-lots PUT/DELETE 라우트 신설 필요"라고 적혀 있었으나, **이미 Part 8에서 생성됨** → `src/app/api/v1/parking-lots/[id]/route.ts`(PUT·DELETE 보유). **API 전부 기존, SQL·라우트 신설 없이 UI만 작성**.
@@ -256,6 +268,7 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 
 | 날짜 | Part | 작업 내용 | 결과 | 커밋 |
 |------|------|----------|------|------|
+| 2026.05.29 | GAP-P0-1 / 1C | `/v2/stores/[id]`에 방문지(visit_places) 요금표 섹션 추가 — 카드리스트(9필드 요금)+추가/수정/삭제 모달+요금 프리뷰, require_visit_place 연계 경고배너. API·SQL 신설 없이 UI만(visit-places PUT/DELETE 라우트 기존 존재). API-first | 빌드 OK (`✓ Compiled`, /v2/stores/[id] ƒ, 106p) | (이번 push) |
 | 2026.05.29 | 13D-A | CREW 마감보고 진입점(BottomNav 5탭) + 작성화면 신설 (`/v2/crew/daily-report/new`). 어드민 StaffSection/PaymentSection 절대경로 import 재사용 | 빌드 OK, 정적 경로 등록 | (이번 push) |
 | 2026.04.09 | Part 1 | API v1 기반 구조 (types, response, errors, password, auth-middleware, index) | ✅ | af1efd1 |
 | 2026.04.09 | Part 2 | DB 스키마 SQL 4개 (employees, profiles확장, store_members, audit_logs) | 🔸 SQL 대기 | af1efd1 |
@@ -1372,7 +1385,7 @@ CREATE INDEX IF NOT EXISTS idx_tickets_collision
 | `/dashboard` (757줄) | `/v2/dashboard` (855줄) | v2가 더 풍부(KPI 4 + 추이 + 도넛). **출근인원/총직원수 KPI는 v1만 존재** | **P1** |
 | `/parking-status` (1008줄) | **❌ 없음** | 실시간 주차중 리스트 + 초과차량 탭 + 번호판 수정 모달 + 강제출차(요금/무료) | **🔥 P0** |
 | `/analytics` (849줄) | `/v2/dashboard`에 부분 흡수 | **시간대별 차트, 매장별 비교, 전기간대비 % 누락** | **P1** |
-| `/stores` (2735줄) | **❌ 없음** | 사업장/주차장(self_spaces·mech_normal·mech_suv)/방문지(8필드 요금표) CRUD | **🔥 P0** |
+| `/stores` (2735줄) | `/v2/stores` + `/v2/stores/[id]` ✅ (1A·1B·1C) | 사업장 CRUD·주차장(면수)·방문지 요금표 **완료**. 운영시간·근무조·지각규칙은 **1D(후순위)** 잔여 | ✅ (1D 잔여) |
 | `/team` (915줄) | **❌ 없음** | 계정생성·비번리셋·제거·매장배정·역할변경(super_admin/admin/crew) | **🔥 P0** |
 | `/workers` (1937줄) | `/v2/attendance` ✅ (Part 12A/B) | — | — |
 | `/accident` (708줄) | **❌ 없음** | 사고리포트 CRUD + 상태변경 + Excel | **P1** |
@@ -1417,7 +1430,7 @@ v1 디렉토리 13개 vs v2 디렉토리 4개.
 
 | # | 작업 | 비고 |
 |---|---|---|
-| **GAP-P0-1** | `/v2/stores` — 사업장/주차장/방문지 CRUD | 🔄 진행중 (1A 사업장 ✅ / 1B 주차장 ✅ / 1C 방문지 남음) |
+| **GAP-P0-1** | `/v2/stores` — 사업장/주차장/방문지 CRUD | ✅ 완료 (1A 사업장 ✅ / 1B 주차장 ✅ / 1C 방문지 ✅). 운영시간·근무조·지각규칙=1D 후순위 |
 | **GAP-P0-2** | `/v2/team` — 계정/매장배정/역할 | 멀티테넌시 SaaS 전환 핵심 |
 | **GAP-P0-3** | `/v2/parking-status` — 실시간 주차중 + 초과차량 | 어드민 운영 핵심 |
 | **GAP-P0-4** | `/v2/crew/parking/[id]` 보강 — 차량번호 수정 + 차종변경 | ✅ 완료 (19B-5C와 함께) |

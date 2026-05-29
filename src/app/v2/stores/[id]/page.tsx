@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 /**
- * 사업장 상세 + 주차장(면수) 관리 v2 — GAP-P0-1 / 1B
+ * 사업장 상세 + 주차장(면수) + 방문지 요금표 관리 v2 — GAP-P0-1 / 1B·1C
  *
  * 경로: /v2/stores/[id]
  *
@@ -13,9 +13,13 @@ export const dynamic = "force-dynamic";
  *   POST   /api/v1/stores/:id/parking-lots        주차장 등록
  *   PUT    /api/v1/parking-lots/:lotId            주차장 수정
  *   DELETE /api/v1/parking-lots/:lotId            주차장 삭제
+ *   GET    /api/v1/stores/:id/visit-places        방문지 목록           ← 1C
+ *   POST   /api/v1/stores/:id/visit-places        방문지 등록           ← 1C
+ *   PUT    /api/v1/visit-places/:vpId             방문지 수정           ← 1C
+ *   DELETE /api/v1/visit-places/:vpId             방문지 삭제           ← 1C
  *
  * ⚠️ 면수 = self_spaces + mechanical_normal + mechanical_suv (stores.total_spaces 사용 금지)
- * 방문지(visit_places) 관리는 1C에서, 운영시간·근무조는 1D에서.
+ * 운영시간·근무조·지각규칙은 1D(후순위)에서.
  *
  * 레이아웃: /v2/layout.tsx 가 AppLayout(Sidebar+Header+MobileTabBar) 자동 적용
  */
@@ -43,6 +47,24 @@ function lotSpaces(l: any): number {
   return (l.self_spaces || 0) + (l.mechanical_normal || 0) + (l.mechanical_suv || 0);
 }
 
+// 방문지 요금 폼 기본값 (레거시 stores 폼과 동일)
+const EMPTY_VP = {
+  name: "",
+  floor: "",
+  free_minutes: 30,
+  base_fee: 1000,
+  base_minutes: 30,
+  extra_fee: 500,
+  daily_max: 0,
+  valet_fee: 3000,
+  monthly_fee: 150000,
+};
+
+// 원화 표기
+function won(n: any): string {
+  return `${Number(n || 0).toLocaleString("ko-KR")}원`;
+}
+
 export default function StoreDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -59,6 +81,14 @@ export default function StoreDetailPage({ params }: { params: Promise<{ id: stri
   const [form, setForm] = useState({ ...EMPTY_LOT });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+
+  // 방문지(visit_places)
+  const [vplaces, setVplaces] = useState<any[]>([]);
+  const [showVPModal, setShowVPModal] = useState(false);
+  const [editingVP, setEditingVP] = useState<any>(null); // null = 신규
+  const [vpForm, setVpForm] = useState({ ...EMPTY_VP });
+  const [vpSaving, setVpSaving] = useState(false);
+  const [vpError, setVpError] = useState("");
 
   // ── 상세 + 주차장 로드 ──
   const loadStore = useCallback(async () => {
@@ -90,13 +120,28 @@ export default function StoreDetailPage({ params }: { params: Promise<{ id: stri
     }
   }, [id]);
 
+  const loadVisitPlaces = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/v1/stores/${id}/visit-places`, { credentials: "include" });
+      const json = await res.json();
+      if (res.ok && json?.success) {
+        setVplaces(Array.isArray(json.data) ? json.data : []);
+      }
+    } catch {
+      /* 방문지 조회 실패는 상세 표시를 막지 않음 */
+    }
+  }, [id]);
+
   const loadAll = useCallback(async () => {
     setLoading(true);
     setError("");
     const okStore = await loadStore();
-    if (okStore) await loadLots();
+    if (okStore) {
+      await loadLots();
+      await loadVisitPlaces();
+    }
     setLoading(false);
-  }, [loadStore, loadLots]);
+  }, [loadStore, loadLots, loadVisitPlaces]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
@@ -188,6 +233,94 @@ export default function StoreDetailPage({ params }: { params: Promise<{ id: stri
         return;
       }
       await loadLots();
+    } catch {
+      alert("네트워크 오류가 발생했습니다");
+    }
+  };
+
+  // ── 방문지 모달 ──
+  const openNewVP = () => {
+    setEditingVP(null);
+    setVpForm({ ...EMPTY_VP });
+    setVpError("");
+    setShowVPModal(true);
+  };
+  const openEditVP = (vp: any) => {
+    setEditingVP(vp);
+    setVpForm({
+      name: vp.name ?? "",
+      floor: vp.floor ?? "",
+      free_minutes: vp.free_minutes ?? 0,
+      base_fee: vp.base_fee ?? 0,
+      base_minutes: vp.base_minutes ?? 0,
+      extra_fee: vp.extra_fee ?? 0,
+      daily_max: vp.daily_max ?? 0,
+      valet_fee: vp.valet_fee ?? 0,
+      monthly_fee: vp.monthly_fee ?? 0,
+    });
+    setVpError("");
+    setShowVPModal(true);
+  };
+
+  const setVF = (k: string, v: any) => setVpForm(f => ({ ...f, [k]: v }));
+  // 숫자 입력 핸들러 (음수 차단)
+  const setVFNum = (k: string, raw: string) =>
+    setVpForm(f => ({ ...f, [k]: raw === "" ? 0 : Math.max(0, parseInt(raw) || 0) }));
+
+  const saveVP = async () => {
+    if (!vpForm.name.trim()) { setVpError("방문지명을 입력하세요"); return; }
+    const payload = {
+      name: vpForm.name.trim(),
+      floor: vpForm.floor.trim() || null,
+      free_minutes: Number(vpForm.free_minutes) || 0,
+      base_fee: Number(vpForm.base_fee) || 0,
+      base_minutes: Number(vpForm.base_minutes) || 0,
+      extra_fee: Number(vpForm.extra_fee) || 0,
+      daily_max: Number(vpForm.daily_max) || 0,
+      valet_fee: Number(vpForm.valet_fee) || 0,
+      monthly_fee: Number(vpForm.monthly_fee) || 0,
+    };
+
+    setVpSaving(true);
+    setVpError("");
+    try {
+      const url = editingVP
+        ? `/api/v1/visit-places/${editingVP.id}`
+        : `/api/v1/stores/${id}/visit-places`;
+      const method = editingVP ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.success) {
+        setVpError(json?.error?.message || "저장에 실패했습니다");
+        return;
+      }
+      setShowVPModal(false);
+      await loadVisitPlaces();
+    } catch {
+      setVpError("네트워크 오류가 발생했습니다");
+    } finally {
+      setVpSaving(false);
+    }
+  };
+
+  const removeVP = async (vp: any) => {
+    if (!confirm(`'${vp.name}' 방문지를 삭제할까요?\n등록된 요금표가 함께 삭제됩니다.`)) return;
+    try {
+      const res = await fetch(`/api/v1/visit-places/${vp.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.success) {
+        alert(json?.error?.message || "삭제에 실패했습니다");
+        return;
+      }
+      await loadVisitPlaces();
     } catch {
       alert("네트워크 오류가 발생했습니다");
     }
@@ -372,6 +505,69 @@ export default function StoreDetailPage({ params }: { params: Promise<{ id: stri
               ))}
             </div>
           )}
+
+          {/* ── 방문지(요금표) 섹션 ── */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "26px 0 12px" }}>
+            <h2 style={{ fontSize: 17, fontWeight: 800, color: "#1A1D2B", margin: 0 }}>
+              방문지 요금표 <span style={{ fontSize: 14, fontWeight: 600, color: "#94A3B8" }}>{vplaces.length}곳</span>
+            </h2>
+            <button className="v2d-btn" onClick={openNewVP} style={{ background: NAVY, color: "#fff" }}>+ 방문지 추가</button>
+          </div>
+
+          {store.require_visit_place && (
+            <div style={{ fontSize: 12.5, color: "#92400E", background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 9, padding: "10px 13px", marginBottom: 12 }}>
+              ⚠️ 이 사업장은 <b>방문지 필수</b>로 설정되어 있습니다. 입차 시 방문지를 반드시 선택해야 하므로 최소 1곳 이상 등록하세요.
+            </div>
+          )}
+
+          {vplaces.length === 0 ? (
+            <div className="v2d-card" style={{ padding: "44px 20px", textAlign: "center" }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🏥</div>
+              <div style={{ fontSize: 14.5, fontWeight: 700, color: "#1A1D2B" }}>등록된 방문지가 없습니다</div>
+              <div style={{ fontSize: 12.5, color: "#94A3B8", marginTop: 4 }}>병원·상가 등 방문지별 요금표를 등록할 수 있습니다</div>
+              <button className="v2d-btn" onClick={openNewVP} style={{ marginTop: 16, background: NAVY, color: "#fff" }}>+ 첫 방문지 등록</button>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
+              {vplaces.map(vp => (
+                <div key={vp.id} className="v2d-card">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 15.5, fontWeight: 700, color: "#1A1D2B" }}>{vp.name}</div>
+                      {vp.floor && (
+                        <span style={{ display: "inline-block", marginTop: 6, fontSize: 11, fontWeight: 600, color: "#475569", background: "#F1F5F9", padding: "2px 8px", borderRadius: 6 }}>
+                          {vp.floor}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 2 }}>기본요금</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "Outfit, sans-serif", color: NAVY, lineHeight: 1 }}>
+                        {Number(vp.base_fee || 0).toLocaleString("ko-KR")}
+                        <span style={{ fontSize: 11, fontWeight: 600, marginLeft: 2, color: "#94A3B8" }}>원</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 요금 내역 */}
+                  <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "7px 12px", fontSize: 12, color: "#64748B" }}>
+                    <span>무료 <b style={{ color: "#334155" }}>{vp.free_minutes ?? 0}분</b></span>
+                    <span>기본시간 <b style={{ color: "#334155" }}>{vp.base_minutes ?? 0}분</b></span>
+                    <span>추가 <b style={{ color: "#334155" }}>{won(vp.extra_fee)}</b>/분</span>
+                    <span>일최대 <b style={{ color: "#334155" }}>{Number(vp.daily_max) > 0 ? won(vp.daily_max) : "무제한"}</b></span>
+                    <span>발렛 <b style={{ color: "#334155" }}>{won(vp.valet_fee)}</b></span>
+                    <span>월정기 <b style={{ color: "#334155" }}>{won(vp.monthly_fee)}</b></span>
+                  </div>
+
+                  {/* 액션 */}
+                  <div style={{ display: "flex", gap: 7, marginTop: 13, borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
+                    <button className="v2d-btn" onClick={() => openEditVP(vp)} style={{ flex: 1, background: "#F1F5F9", color: "#334155", fontSize: 13 }}>수정</button>
+                    <button className="v2d-btn" onClick={() => removeVP(vp)} style={{ background: "#fff", color: "#DC2626", border: "1px solid #FECACA", fontSize: 13 }}>삭제</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
 
@@ -486,6 +682,83 @@ export default function StoreDetailPage({ params }: { params: Promise<{ id: stri
               <button className="v2d-btn" onClick={() => !saving && setShowModal(false)} disabled={saving} style={{ flex: 1, background: "#F1F5F9", color: "#475569" }}>취소</button>
               <button className="v2d-btn" onClick={save} disabled={saving} style={{ flex: 2, background: NAVY, color: "#fff", opacity: saving ? 0.6 : 1 }}>
                 {saving ? "저장 중..." : editingLot ? "수정 저장" : "주차장 추가"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 방문지 등록/수정 모달 ── */}
+      {showVPModal && (
+        <div
+          onClick={() => !vpSaving && setShowVPModal(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 16px", overflowY: "auto" }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 520, padding: 24, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: "#1A1D2B", margin: 0 }}>{editingVP ? "방문지 수정" : "방문지 추가"}</h2>
+              <button onClick={() => !vpSaving && setShowVPModal(false)} style={{ background: "none", border: "none", fontSize: 22, color: "#94A3B8", cursor: "pointer", lineHeight: 1 }}>✕</button>
+            </div>
+
+            {/* 방문지명 / 층 */}
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10, marginBottom: 14 }}>
+              <div>
+                <label className="v2d-label">방문지명 *</label>
+                <input className="v2d-input" placeholder="예: 1층 내과" value={vpForm.name} onChange={e => setVF("name", e.target.value)} />
+              </div>
+              <div>
+                <label className="v2d-label">층 (선택)</label>
+                <input className="v2d-input" placeholder="예: B1, 1F" value={vpForm.floor} onChange={e => setVF("floor", e.target.value)} />
+              </div>
+            </div>
+
+            {/* 요금 필드 그리드 */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+              <div>
+                <label className="v2d-label">무료 주차 (분)</label>
+                <input className="v2d-input" type="number" min={0} inputMode="numeric" value={vpForm.free_minutes} onChange={e => setVFNum("free_minutes", e.target.value)} />
+              </div>
+              <div>
+                <label className="v2d-label">기본 요금 (원)</label>
+                <input className="v2d-input" type="number" min={0} inputMode="numeric" value={vpForm.base_fee} onChange={e => setVFNum("base_fee", e.target.value)} />
+              </div>
+              <div>
+                <label className="v2d-label">기본 시간 (분)</label>
+                <input className="v2d-input" type="number" min={0} inputMode="numeric" value={vpForm.base_minutes} onChange={e => setVFNum("base_minutes", e.target.value)} />
+              </div>
+              <div>
+                <label className="v2d-label">추가 요금 (원/분)</label>
+                <input className="v2d-input" type="number" min={0} inputMode="numeric" value={vpForm.extra_fee} onChange={e => setVFNum("extra_fee", e.target.value)} />
+              </div>
+              <div>
+                <label className="v2d-label">일 최대 (0=무제한)</label>
+                <input className="v2d-input" type="number" min={0} inputMode="numeric" value={vpForm.daily_max} onChange={e => setVFNum("daily_max", e.target.value)} />
+              </div>
+              <div>
+                <label className="v2d-label">발렛 요금 (원)</label>
+                <input className="v2d-input" type="number" min={0} inputMode="numeric" value={vpForm.valet_fee} onChange={e => setVFNum("valet_fee", e.target.value)} />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label className="v2d-label">월정기 요금 (원)</label>
+              <input className="v2d-input" type="number" min={0} inputMode="numeric" value={vpForm.monthly_fee} onChange={e => setVFNum("monthly_fee", e.target.value)} />
+            </div>
+
+            {/* 요금 요약 프리뷰 */}
+            <div style={{ fontSize: 12.5, color: "#475569", background: "#F8FAFC", border: "1px solid #e2e8f0", borderRadius: 9, padding: "11px 13px", marginBottom: 16, lineHeight: 1.7 }}>
+              <div>✓ 무료 <b>{vpForm.free_minutes || 0}분</b> 후 → 기본 <b style={{ color: NAVY }}>{won(vpForm.base_fee)}</b> ({vpForm.base_minutes || 0}분)</div>
+              <div>✓ 이후 <b>1분마다</b> → <b style={{ color: NAVY }}>{won(vpForm.extra_fee)}</b> · 일 최대 <b style={{ color: NAVY }}>{Number(vpForm.daily_max) > 0 ? won(vpForm.daily_max) : "무제한"}</b></div>
+            </div>
+
+            {vpError && (
+              <div style={{ fontSize: 13, color: "#DC2626", background: "#FEF2F2", padding: "9px 12px", borderRadius: 8, marginBottom: 14 }}>{vpError}</div>
+            )}
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="v2d-btn" onClick={() => !vpSaving && setShowVPModal(false)} disabled={vpSaving} style={{ flex: 1, background: "#F1F5F9", color: "#475569" }}>취소</button>
+              <button className="v2d-btn" onClick={saveVP} disabled={vpSaving} style={{ flex: 2, background: NAVY, color: "#fff", opacity: vpSaving ? 0.6 : 1 }}>
+                {vpSaving ? "저장 중..." : editingVP ? "수정 저장" : "방문지 추가"}
               </button>
             </div>
           </div>
