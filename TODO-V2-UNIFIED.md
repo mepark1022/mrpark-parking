@@ -10,28 +10,28 @@
 
 ## 🚨 새 대화 시작 시 필독
 
-### 📌 다음 작업 예정 — CREW 마감보고(현장일보) 진입점 신설 (2026.05.28 대표 결정)
-**배경**: 현장일보(마감보고) 기능은 어드민 페이지로 완성됨(`/v2/daily-reports` 목록·`/new` 작성·`/[id]` 상세, Part 13A/B/C). 단, **CREW 통합앱에는 진입 버튼이 없음**. CREW가 현장에서 직접 마감보고를 올릴 수 있게 진입점 신설.
-**대표 결정**: 진입점 = **CREW 홈 빠른액션 버튼** (`src/app/v2/crew/page.tsx`). BottomNav 탭 추가 아님.
-**선결 점검 (착수 전 반드시)**:
-- 현재 홈 빠른액션은 이미 3버튼(입차/출차검색/현황) — 4번째 버튼 추가 시 레이아웃 검토 (한 줄 4버튼은 좁음 → 2번째 행 또는 별도 카드 권장)
-- 어드민 `/v2/daily-reports/new`를 CREW가 그대로 재사용 가능한지 확인 (권한 OPERATE 작성 허용? Sidebar/PC 레이아웃 의존성? 모바일 적합성?) → 재사용 vs CREW 전용 작성화면 신설 판단
-- 마감보고 작성 API는 이미 존재: `POST /api/v1/daily-reports` (Part 10A, OPERATE 작성 가능)
-- CREW는 배정 사업장만 → store_id는 `localStorage.crew_store_id` 사용
-**산출물**: 홈 진입 버튼 + (재사용 또는 신규) CREW 마감보고 작성 화면. 시안 컨펌 후 구현.
+### 📌 다음 작업 예정 — Part 13D-B: 출차요청 앱 내 토스트 신설 (2026.05.29 v4.2 컨펌 완료)
+**배경**: Part 13D-A(BottomNav 마감 탭 + CREW 작성화면) 완료. 시안 v4.2에서 출차요청 시인성 강화를 위해 앱 내 상단 토스트 신설 결정.
+**위치**: `src/app/v2/crew/layout.tsx` — 이미 5초 폴링 + 진동 + OS 푸시 + 펄스 뱃지 작동 중. **여기에 앱 내 토스트 채널만 추가**.
 
-#### ✅ 선결 점검 완료 (2026.05.28) — 방향 = B안 확정
-- **레이아웃 의존성**: `v2/layout.tsx`가 `/v2/crew/*`만 CREW 자체 레이아웃, 그 외 `/v2/*`는 admin AppLayout(Sidebar/Header/MobileTabBar) 강제. → 어드민 `/v2/daily-reports/new` 그대로 재사용 시 CREW BottomNav 사라지고 사이드바 입혀짐 = **재사용(A안) 불가**.
-- **권한**: `POST /api/v1/daily-reports` = `requireAuth('OPERATE')` → crew 작성 OK. **API 무수정 재사용** ✅
-- **컴포넌트**: `StaffSection`·`PaymentSection`(`/v2/daily-reports/new/`)은 import 0건 순수 컴포넌트 → **그대로 import 재사용 가능** ✅
-- **결론**: **B안 = CREW 전용 작성화면 `/v2/crew/daily-report/new` 신설** (대표 승인). 매장은 `localStorage.crew_store_id` 고정, employees는 고정 store_id로 로드, 모바일 풀폭+CREW 네이비 톤+sticky 액션바.
-- **폼 구조(어드민 동일)**: ①기본정보(날짜/날씨 WEATHER_OPTIONS 6종/총입차/행사flag+행사명/메모) ②근무인원 StaffSection(staff_type 6종) ③결제매출 PaymentSection(method 7종)+합계. 저장 draft/submitted.
-- **시안 파일**: `docs/crew-daily-report-mockup.html` (①홈 빠른액션 개편 ②작성화면)
+**시안 v4.2 표기 규칙** (`docs/crew-daily-report-mockup.html` 참조):
+- plate 줄에 부가정보 1개만:
+  - 충돌 없음 + 위치 있음 → `1234 · 🅿️ B동 · B2-15` (한 줄)
+  - 충돌 있음 → `1234 · 흰색 SUV` + 두번째 줄 `🅿️ B동 · B2-15` (두 줄)
+  - 충돌 없음 + 위치 없음 → `1234` (4자리만)
+  - 다중 누적 → `1234 · 외 N건` (위치 라인 생략)
 
-#### 🔁 1차 시안 피드백 — 내일(2026.05.29) 이어서 논의
-1. **마감보고 = 홈 하단 별도 버튼** (2×2 그리드 4번째 아님 → 빠른액션 아래 풀폭 카드/버튼으로). 대표 지시.
-2. **입차 버튼 제거 검토** — 대표 의견 "입차가 메인에 있으니 빼도?". ⚠️ **사실 정정**: 실제 BottomNav = 홈/현황/출퇴근/설정 4탭으로 **입차 탭 없음**(`src/app/v2/crew/layout.tsx` NAV_ITEMS 확인). 입차는 현재 홈 빠른액션에만 존재 → 그냥 빼면 입차 진입구 소실. **입차를 어디로 옮길지(BottomNav 추가? 홈 상단 대표 CTA?) 먼저 정한 뒤 빠른액션 재구성** 필요.
-3. **확정 후 구현 순서**: 홈 빠른액션 재배치 → `/v2/crew/daily-report/new` 신규(StaffSection/PaymentSection import) → 빌드 → push.
+**선결 점검 (착수 전)**:
+- `/api/v1/tickets/active` 응답 필드 확인 — `car_color`/`car_type`/`parking_lot_id`/`parking_location` 반환 여부. lot name은 조인 필요할 가능성 → 응답 보강 필요시 별도 작업.
+- 토스트 동작: 자동 사라짐 5초, ✕ 닫기, 탭 시 `/v2/crew/parking` 이동, 다중 출차요청 누적 처리.
+
+---
+
+#### ✅ Part 13D-A 완료 (2026.05.29) — BottomNav 마감 탭 + CREW 작성화면 신설
+- **신규**: `src/app/v2/crew/daily-report/new/page.tsx` — 어드민 `StaffSection`/`PaymentSection` 절대경로 import 재사용, 매장 `localStorage.crew_store_id` 고정, 모바일 풀폭 + CREW 네이비 헤더 + sticky 액션바, submit 후 CREW 홈 redirect (중복 시 머무름).
+- **수정**: `src/app/v2/crew/layout.tsx` — `IconReport` SVG 추가, `NAV_ITEMS` 4탭 → 5탭(`{ id:"daily-report", label:"마감", path:"/v2/crew/daily-report/new" }`을 출퇴근↔설정 사이에).
+- 로컬 빌드 OK. `/v2/crew/daily-report/new` 정적 경로 등록 확인.
+- 시안 v4.2: `docs/crew-daily-report-mockup.html`
 
 ### 필수 명령어
 ```bash
@@ -218,6 +218,7 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 
 | 날짜 | Part | 작업 내용 | 결과 | 커밋 |
 |------|------|----------|------|------|
+| 2026.05.29 | 13D-A | CREW 마감보고 진입점(BottomNav 5탭) + 작성화면 신설 (`/v2/crew/daily-report/new`). 어드민 StaffSection/PaymentSection 절대경로 import 재사용 | 빌드 OK, 정적 경로 등록 | (이번 push) |
 | 2026.04.09 | Part 1 | API v1 기반 구조 (types, response, errors, password, auth-middleware, index) | ✅ | af1efd1 |
 | 2026.04.09 | Part 2 | DB 스키마 SQL 4개 (employees, profiles확장, store_members, audit_logs) | 🔸 SQL 대기 | af1efd1 |
 | 2026.04.09 | Part 3 | Auth API 7개 (login, logout, me, create-account, bulk-create, reset-password, ban, unban) | ✅ | (이번 push) |

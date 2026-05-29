@@ -47,28 +47,91 @@
   /* ── 빠른액션 (개편: 2×2 그리드) ── */
   .quick-wrap { padding:4px 16px 0; }
   .quick-label { font-size:12px; font-weight:700; color:#94A3B8; margin:8px 2px 10px; }
-  .quick-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .quick-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
   .qbtn {
-    padding:18px 12px; border-radius:16px; border:none;
-    display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;
+    padding:16px 8px; border-radius:14px; border:none;
+    display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer;
   }
-  .qbtn .ic { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
-  .qbtn .t { font-size:14px; font-weight:700; }
+  .qbtn .ic { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; }
+  .qbtn .t { font-size:13px; font-weight:700; }
   .qbtn.navy  { background:#1428A0; color:#fff; }
   .qbtn.navy  .ic { background:rgba(255,255,255,.15); }
   .qbtn.green { background:#16A34A; color:#fff; }
   .qbtn.green .ic { background:rgba(255,255,255,.18); }
-  .qbtn.white { background:#fff; color:#1A1D2B; border:1px solid #E2E8F0; }
+  .qbtn.white { background:#fff; color:#1A1D2B; border:1px solid #E2E8F0; position:relative; }
   .qbtn.white .ic { background:#F1F5F9; }
-  .qbtn.gold  { background:#fff; color:#1A1D2B; border:1px solid #F5B731; position:relative; }
-  .qbtn.gold  .ic { background:#FEF7E6; }
-  .new-badge { position:absolute; top:10px; right:10px; font-size:9px; font-weight:800; color:#fff; background:#F5B731; padding:2px 6px; border-radius:6px; }
-  .badge-red { font-size:11px; font-weight:700; color:#DC2626; background:#FEF2F2; padding:2px 8px; border-radius:10px; }
+  .badge-dot { position:absolute; top:8px; right:8px; min-width:18px; height:18px; padding:0 5px; font-size:10px; font-weight:800; color:#fff; background:#DC2626; border-radius:9px; display:flex; align-items:center; justify-content:center; }
+
+  /* ── 상단 출차요청 토스트 (앱 내) ── */
+  .exit-toast {
+    position:absolute; top:0; left:0; right:0; z-index:50;
+    background:linear-gradient(135deg,#DC2626 0%,#B91C1C 100%);
+    color:#fff; padding:14px 16px 14px 14px;
+    display:flex; align-items:center; gap:12px;
+    box-shadow:0 4px 20px rgba(220,38,38,0.4);
+    animation: toastSlide 0.3s ease-out;
+  }
+  @keyframes toastSlide { from { transform:translateY(-100%); } to { transform:translateY(0); } }
+  .toast-ic {
+    width:38px; height:38px; border-radius:10px;
+    background:rgba(255,255,255,0.18);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    font-size:20px;
+  }
+  .toast-body { flex:1; min-width:0; }
+  .toast-title { font-size:11px; font-weight:700; opacity:0.85; margin-bottom:2px; letter-spacing:0.3px; }
+  .toast-plate { font-size:16px; font-weight:800; letter-spacing:-0.3px; }
+  .toast-plate .plate-num { font-family:'Outfit',sans-serif; font-weight:900; font-size:18px; letter-spacing:1px; }
+  .toast-plate .plate-meta { opacity:0.9; font-weight:600; font-size:13px; margin-left:6px; }
+  .toast-loc {
+    font-size:12px; color:rgba(255,255,255,0.92); font-weight:600;
+    margin-top:5px; display:flex; align-items:center; gap:6px;
+  }
+  .toast-loc .lot { font-weight:700; }
+  .toast-loc .sep { opacity:0.55; }
+  .toast-loc .loc-code { font-family:'Outfit',sans-serif; font-weight:700; letter-spacing:0.5px; }
+  .toast-close { width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,0.18); border:none; color:#fff; font-size:16px; cursor:pointer; flex-shrink:0; }
+
+  /* BottomNav 펄스 뱃지 (출차요청) - 실제 동작 */
+  .bn-item .bn-icon-wrap { position:relative; width:40px; height:40px; margin:0 auto; display:flex; align-items:center; justify-content:center; }
+  .bn-pulse-badge {
+    position:absolute; top:-2px; right:-4px;
+    min-width:18px; height:18px; padding:0 4px; border-radius:9px;
+    background:#DC2626; border:2px solid #0a1352;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:800; color:#fff;
+    animation: pulseDot 1.5s ease-in-out infinite;
+  }
+  @keyframes pulseDot {
+    0%,100% { transform:scale(1); box-shadow:0 0 0 0 rgba(220,38,38,0.5); }
+    50% { transform:scale(1.15); box-shadow:0 0 0 6px rgba(220,38,38,0); }
+  }
+
+  /* 풀폭 마감보고 카드 */
+  .report-card {
+    margin:14px 16px 0; padding:18px 18px;
+    background:linear-gradient(135deg,#fff 0%,#FEF7E6 100%);
+    border:1.5px solid #F5B731; border-radius:14px;
+    display:flex; align-items:center; gap:14px; cursor:pointer; position:relative;
+  }
+  .report-card .rc-ic { width:48px; height:48px; border-radius:12px; background:#FEF7E6; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .report-card .rc-text { flex:1; }
+  .report-card .rc-title { font-size:15px; font-weight:800; color:#1A1D2B; margin-bottom:2px; }
+  .report-card .rc-sub { font-size:12px; color:#94A3B8; }
+  .report-card .rc-arrow { color:#b45309; font-size:18px; font-weight:700; }
+  .new-badge { position:absolute; top:10px; right:14px; font-size:9px; font-weight:800; color:#fff; background:#F5B731; padding:2px 6px; border-radius:6px; }
 
   /* ── BottomNav ── */
   .bottomnav { display:flex; background:#fff; border-top:1px solid #E2E8F0; padding:10px 0 22px; margin-top:18px; }
-  .bn-item { flex:1; text-align:center; font-size:10px; color:#94A3B8; }
+  .bn-item { flex:1; text-align:center; font-size:10px; color:#94A3B8; position:relative; }
   .bn-item.on { color:#1428A0; font-weight:700; }
+  .bn-item.nav-new .bn-ic { color:#b45309; }
+  .nav-dot {
+    position:absolute; top:-2px; right:50%; transform:translateX(20px);
+    background:#F5B731; color:#fff; font-size:8px; font-weight:800;
+    width:14px; height:14px; border-radius:7px;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
   .bn-ic { font-size:18px; display:block; margin-bottom:3px; }
 
   /* ══════ 화면 ② 작성화면 ══════ */
@@ -126,15 +189,29 @@
 </style>
 </head>
 <body>
-  <div class="page-title">CREW 마감보고 — 진입점 + 작성화면 시안</div>
-  <div class="page-sub">기존 CREW 디자인 토큰 복제 · 경로 <code>/v2/crew/daily-report/new</code> 신설 · API <code>POST /api/v1/daily-reports</code> 재사용</div>
+  <div class="page-title">CREW 마감보고 — 진입점 + 작성화면 + 출차 토스트 시안 (v4.2)</div>
+  <div class="page-sub">2026.05.29 v4.2 · 토스트 위치 표기 규칙: <b>충돌 없으면 위치를 plate 줄로 → 한 줄</b>, 충돌 있으면 2줄(식별/위치 분리)</div>
 
   <div class="frames">
 
     <!-- ════ 화면 ① 홈 빠른액션 개편 ════ -->
     <div>
-      <div class="phone-cap">① CREW 홈 — 빠른액션 4버튼 (2×2)</div>
-      <div class="phone">
+      <div class="phone-cap">① CREW 홈 — 출차요청 토스트(상단) + BottomNav 현황 펄스 뱃지 + 마감 탭</div>
+      <div class="phone" style="position:relative;">
+
+        <!-- ▼ 출차요청 상단 토스트 (일반 케이스: 충돌 없음 → 4자리 + 위치 한 줄) -->
+        <div class="exit-toast">
+          <div class="toast-ic">🚗</div>
+          <div class="toast-body">
+            <div class="toast-title">출차요청 도착 · 방금</div>
+            <div class="toast-plate">
+              <span class="plate-num">1234</span>
+              <span class="plate-meta">· 🅿️ B동 · B2-15</span>
+            </div>
+          </div>
+          <button class="toast-close">✕</button>
+        </div>
+
         <div class="cv2-header">
           <div class="hd-top">
             <div>
@@ -157,32 +234,45 @@
           <div class="quick-label">빠른 작업</div>
           <div class="quick-grid">
             <button class="qbtn navy">
-              <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></div>
-              <span class="t">입차 등록</span>
+              <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></div>
+              <span class="t">입차</span>
             </button>
             <button class="qbtn green">
-              <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+              <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
               <span class="t">출차 검색</span>
             </button>
             <button class="qbtn white">
-              <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1428A0" stroke-width="2" stroke-linecap="round"><rect x="1" y="3" width="22" height="18" rx="2"/><path d="M1 9h22"/></svg></div>
+              <span class="badge-dot">2</span>
+              <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1428A0" stroke-width="2" stroke-linecap="round"><rect x="1" y="3" width="22" height="18" rx="2"/><path d="M1 9h22"/></svg></div>
               <span class="t">주차 현황</span>
-              <span class="badge-red">출차요청 2건</span>
-            </button>
-            <button class="qbtn gold">
-              <span class="new-badge">NEW</span>
-              <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"><path d="M9 11H5a2 2 0 0 0-2 2v7h18v-7a2 2 0 0 0-2-2h-4"/><rect x="9" y="3" width="6" height="8" rx="1"/><path d="M9 7h6"/></svg></div>
-              <span class="t">마감 보고</span>
             </button>
           </div>
         </div>
 
-        <div class="bottomnav">
-          <div class="bn-item on"><span class="bn-ic">🏠</span>홈</div>
-          <div class="bn-item"><span class="bn-ic">🚗</span>입차</div>
-          <div class="bn-item"><span class="bn-ic">🔍</span>출차</div>
-          <div class="bn-item"><span class="bn-ic">📋</span>현황</div>
-          <div class="bn-item"><span class="bn-ic">👤</span>내정보</div>
+        <div class="bottomnav" style="background:linear-gradient(135deg,#0a1352 0%,#1428A0 100%); border-top:none;">
+          <div class="bn-item on" style="color:#F5B731;">
+            <div class="bn-icon-wrap" style="background:#F5B731; border-radius:12px;"><span class="bn-ic" style="color:#0a1352;">🏠</span></div>
+            홈
+          </div>
+          <div class="bn-item" style="color:rgba(255,255,255,0.75);">
+            <div class="bn-icon-wrap">
+              <span class="bn-ic">🅿️</span>
+              <span class="bn-pulse-badge">2</span>
+            </div>
+            현황
+          </div>
+          <div class="bn-item" style="color:rgba(255,255,255,0.75);">
+            <div class="bn-icon-wrap"><span class="bn-ic">🕒</span></div>
+            출퇴근
+          </div>
+          <div class="bn-item" style="color:rgba(255,255,255,0.75);">
+            <div class="bn-icon-wrap"><span class="bn-ic">📋</span></div>
+            마감
+          </div>
+          <div class="bn-item" style="color:rgba(255,255,255,0.75);">
+            <div class="bn-icon-wrap"><span class="bn-ic">⚙️</span></div>
+            설정
+          </div>
         </div>
       </div>
     </div>
@@ -266,14 +356,117 @@
     </div>
   </div>
 
+  <!-- ════ 토스트 상세 디자인 ════ -->
+  <div style="max-width:840px; margin:40px auto 0;">
+    <h3 style="font-size:16px; font-weight:800; color:#0a1352; text-align:center; margin-bottom:6px;">③ 출차요청 토스트 — 상세 디자인 & 변형</h3>
+    <p style="text-align:center; font-size:12px; color:#64748B; margin-bottom:24px;">상단 슬라이드 다운 · 5초 자동 사라짐 · 탭 시 <code>/v2/crew/parking</code> 이동 · ✕ 즉시 닫기</p>
+
+    <div style="display:flex; gap:18px; justify-content:center; flex-wrap:wrap;">
+
+      <!-- 변형 A: 충돌 없음 → 4자리 + 위치 한 줄 (대다수) -->
+      <div style="width:380px; background:#fff; border-radius:14px; border:1px solid #E2E8F0; padding:18px;">
+        <div style="font-size:12px; font-weight:700; color:#94A3B8; margin-bottom:10px;">A · 충돌 없음 → 위치가 앞줄 <span style="color:#15803d; background:#dcfce7; padding:2px 7px; border-radius:5px; font-size:10px; margin-left:4px;">대다수</span></div>
+        <div class="exit-toast" style="position:static; border-radius:12px;">
+          <div class="toast-ic">🚗</div>
+          <div class="toast-body">
+            <div class="toast-title">출차요청 도착 · 방금</div>
+            <div class="toast-plate">
+              <span class="plate-num">1234</span>
+              <span class="plate-meta">· 🅿️ B동 · B2-15</span>
+            </div>
+          </div>
+          <button class="toast-close">✕</button>
+        </div>
+        <div style="font-size:11px; color:#64748B; margin-top:10px; line-height:1.6;">
+          • 충돌 없음 → 차종/색상 NULL → 그 자리에 <b>위치를 끌어올림</b><br>
+          • <b>한 줄로 끝</b>: 4자리 + "🅿️ 주차장 · 자리"<br>
+          • 토스트 높이 컴팩트, 빠른 인지
+        </div>
+      </div>
+
+      <!-- 변형 B: 충돌 + 위치 (식별 풀세트, 2줄) -->
+      <div style="width:380px; background:#fff; border-radius:14px; border:1px solid #F59E0B; padding:18px; box-shadow:0 0 0 1px #FEF3C7;">
+        <div style="font-size:12px; font-weight:700; color:#94A3B8; margin-bottom:10px;">B · 충돌 + 위치 → 2줄 <span style="color:#b45309; background:#FEF3C7; padding:2px 7px; border-radius:5px; font-size:10px; margin-left:4px;">식별 풀세트</span></div>
+        <div class="exit-toast" style="position:static; border-radius:12px;">
+          <div class="toast-ic">🚗</div>
+          <div class="toast-body">
+            <div class="toast-title">출차요청 도착 · 방금</div>
+            <div class="toast-plate"><span class="plate-num">1234</span><span class="plate-meta">· 흰색 SUV</span></div>
+            <div class="toast-loc">🅿️ <span class="lot">B동</span> <span class="sep">·</span> <span class="loc-code">B2-15</span></div>
+          </div>
+          <button class="toast-close">✕</button>
+        </div>
+        <div style="font-size:11px; color:#64748B; margin-top:10px; line-height:1.6;">
+          • 동일 4자리 충돌 → CarInfoModal에서 차종/색상 받음<br>
+          • <b>식별(차종·색상) + 위치(주차장·자리)</b> 한눈에<br>
+          • 두 1234 중 어느 차량인지 + 어디서 빼올지 즉시
+        </div>
+      </div>
+
+      <!-- 변형 C: 위치 정보 없음 (생략) -->
+      <div style="width:380px; background:#fff; border-radius:14px; border:1px solid #E2E8F0; padding:18px;">
+        <div style="font-size:12px; font-weight:700; color:#94A3B8; margin-bottom:10px;">C · 위치 정보 없음 <span style="color:#64748B; background:#F1F5F9; padding:2px 7px; border-radius:5px; font-size:10px; margin-left:4px;">자동 생략</span></div>
+        <div class="exit-toast" style="position:static; border-radius:12px;">
+          <div class="toast-ic">🚗</div>
+          <div class="toast-body">
+            <div class="toast-title">출차요청 도착 · 방금</div>
+            <div class="toast-plate"><span class="plate-num">5678</span></div>
+          </div>
+          <button class="toast-close">✕</button>
+        </div>
+        <div style="font-size:11px; color:#64748B; margin-top:10px; line-height:1.6;">
+          • <code>parking_lot_id</code>·<code>parking_location</code> 둘 다 NULL<br>
+          • 두번째 줄 <b>자동 생략</b> (빈 자리 안 보임)<br>
+          • 자주식·소형 발렛장에서 위치 입력 안 한 경우
+        </div>
+      </div>
+
+      <!-- 변형 D: 다중 누적 -->
+      <div style="width:380px; background:#fff; border-radius:14px; border:1px solid #E2E8F0; padding:18px;">
+        <div style="font-size:12px; font-weight:700; color:#94A3B8; margin-bottom:10px;">D · 짧은 시간 내 다중 (누적)</div>
+        <div class="exit-toast" style="position:static; border-radius:12px;">
+          <div class="toast-ic">🚗</div>
+          <div class="toast-body">
+            <div class="toast-title">출차요청 도착 · 방금</div>
+            <div class="toast-plate"><span class="plate-num">1234</span><span class="plate-meta">· 외 2건</span></div>
+          </div>
+          <button class="toast-close">✕</button>
+        </div>
+        <div style="font-size:11px; color:#64748B; margin-top:10px; line-height:1.6;">
+          • 누적 시 첫 차량 4자리 + "외 N건" <b>한 줄</b><br>
+          • 차량별 위치가 달라서 단일 위치 표기 불가 → 위치 라인 생략<br>
+          • 탭 → 현황 페이지, 출차요청 필터로
+        </div>
+      </div>
+
+      <!-- 변형 E: 채널 비교 -->
+      <div style="width:380px; background:#FAFBFD; border-radius:14px; border:1px solid #E2E8F0; padding:18px;">
+        <div style="font-size:12px; font-weight:700; color:#94A3B8; margin-bottom:10px;">E · 알림 채널 비교 (현재 + 신설)</div>
+        <table style="width:100%; font-size:12px; border-collapse:collapse;">
+          <tr style="background:#F1F5F9;"><th style="text-align:left; padding:8px; color:#475569;">채널</th><th style="text-align:left; padding:8px; color:#475569;">현재</th><th style="text-align:center; padding:8px; color:#15803d;">v4</th></tr>
+          <tr><td style="padding:8px; border-top:1px solid #E2E8F0;">📳 진동</td><td style="padding:8px; border-top:1px solid #E2E8F0;">✓</td><td style="padding:8px; border-top:1px solid #E2E8F0; text-align:center;">✓ 유지</td></tr>
+          <tr><td style="padding:8px; border-top:1px solid #E2E8F0;">🔔 OS 푸시</td><td style="padding:8px; border-top:1px solid #E2E8F0;">✓ (앱 밖)</td><td style="padding:8px; border-top:1px solid #E2E8F0; text-align:center;">✓ 유지</td></tr>
+          <tr><td style="padding:8px; border-top:1px solid #E2E8F0;">🔴 펄스 뱃지</td><td style="padding:8px; border-top:1px solid #E2E8F0;">✓ (현황 탭)</td><td style="padding:8px; border-top:1px solid #E2E8F0; text-align:center;">✓ 유지</td></tr>
+          <tr style="background:#FEF7E6;"><td style="padding:8px; border-top:1px solid #E2E8F0;"><b>📍 앱 내 토스트</b></td><td style="padding:8px; border-top:1px solid #E2E8F0; color:#dc2626;">없음</td><td style="padding:8px; border-top:1px solid #E2E8F0; text-align:center; color:#15803d;"><b>신설 ★</b></td></tr>
+        </table>
+        <div style="font-size:11px; color:#64748B; margin-top:10px; line-height:1.6;">
+          앱 열어두고 다른 화면 보고 있을 때 ← <b>여기가 사각지대</b>. 토스트로 메움.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <div class="note">
-    <h4>구현 메모</h4>
+    <h4>구현 메모 (v4 — 2026.05.29 토스트 신설 + 4자리 모드 반영)</h4>
     <ul>
-      <li><span class="ok">재사용</span> — <code>StaffSection</code> · <code>PaymentSection</code> (순수 컴포넌트, import 0건) 그대로 가져옴. <code>POST /api/v1/daily-reports</code> 무수정.</li>
-      <li><span class="new">신규</span> — 매장은 <code>localStorage.crew_store_id</code> 고정 (드롭다운 제거, 헤더에 매장명만). employees는 고정 store_id로 로드.</li>
-      <li><span class="new">신규</span> — 모바일 풀폭 레이아웃 + CREW 네이비 그라데이션 헤더 + sticky 하단 액션바(BottomNav 안 가림).</li>
-      <li>홈 빠른액션 <b>3버튼 → 2×2 그리드</b>로 개편, 4번째에 골드 테두리 "마감 보고" (NEW 뱃지). <em>대안: 그리드 유지 + 하단 별도 풀폭 카드.</em></li>
-      <li>기존 코드 수정 0 — 전부 <code>/v2/crew/daily-report/*</code> 신규 + 홈 <code>page.tsx</code> 빠른액션 블록만 교체.</li>
+      <li><span class="new">신규 ① BottomNav "마감" 탭</span> — <code>src/app/v2/crew/layout.tsx</code>의 <code>NAV_ITEMS</code> 5번째에 추가(출퇴근↔설정 사이). 어제 결정 "BottomNav 탭 추가 아님"은 오늘 변경.</li>
+      <li><span class="new">신규 ② 작성화면</span> — <code>/v2/crew/daily-report/new</code>. <code>StaffSection</code>·<code>PaymentSection</code> import 재사용. 매장은 <code>localStorage.crew_store_id</code> 고정, 모바일 풀폭, sticky 액션바.</li>
+      <li><span class="new">신규 ③ 앱 내 출차요청 토스트 ★</span> — <code>layout.tsx</code> 폴링 로직(이미 5초 폴링·진동·OS알림·펄스뱃지 작동 중)에 <b>앱 내 상단 슬라이드 토스트만 추가</b>. <code>prevCount</code> 증가 감지 시 React state로 토스트 띄우고 5초 후 자동 사라짐. 탭 → <code>/v2/crew/parking</code>.</li>
+      <li><span class="new">위치/식별 표기 위계 (대표 지시)</span> — <b>plate 줄에는 항상 1개의 부가정보만</b>: 충돌이면 차종/색상, 충돌 없으면 위치(`🅿️ B동 · B2-15`). 즉 일반 차량은 <b>한 줄로 완결</b>("1234 · 🅿️ B동 · B2-15"), 충돌 차량만 두 줄("1234 · 흰색 SUV" / "🅿️ B동 · B2-15"). 둘 다 NULL이면 4자리만, 다중 누적이면 위치 라인 생략.</li>
+      <li><span class="new">차량번호 표기 정책</span> — <code>src/app/v2/crew/entry/page.tsx</code> 주석 확인 결과: 입차 시 동일 4자리 충돌 없으면 4자리만 입력, <code>car_color/car_type = NULL</code>. <b>충돌 시에만</b> CarInfoModal에서 차종/색상 받음. 위치(<code>parking_lot_id</code>·<code>parking_location</code>)는 충돌 여부와 무관하게 선택 입력.</li>
+      <li><span class="ok">기존 동작 유지</span> — 진동·OS 푸시·BottomNav 현황 탭 빨간 펄스 뱃지(`crewV2BadgePulse`) 모두 그대로. 토스트는 <b>추가 채널</b>로만 동작.</li>
+      <li>기존 코드 수정 최소 — <code>layout.tsx</code>에 ① NAV_ITEMS 한 줄 ② 토스트 state + JSX ③ IconReport 추가. <code>/v2/crew/daily-report/new</code>는 완전 신규. 홈 <code>page.tsx</code>는 손 안 댐.</li>
     </ul>
   </div>
 </body>

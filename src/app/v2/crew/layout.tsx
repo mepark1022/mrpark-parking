@@ -49,11 +49,24 @@ const IconGear = ({ active }: { active: boolean }) => (
   </svg>
 );
 
+const IconReport = ({ active }: { active: boolean }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+    stroke={active ? "#1428A0" : "rgba(255,255,255,0.75)"}
+    strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    {/* 클립보드 */}
+    <path d="M9 11H5a2 2 0 0 0-2 2v7h18v-7a2 2 0 0 0-2-2h-4" />
+    <rect x="9" y="3" width="6" height="8" rx="1" />
+    {/* 내부 줄 */}
+    <path d="M7 16h10M7 18h6" strokeWidth={1.8} />
+  </svg>
+);
+
 const NAV_ITEMS = [
-  { id: "home",       label: "홈",     path: "/v2/crew",             Icon: IconHome },
-  { id: "parking",    label: "현황",   path: "/v2/crew/parking",     Icon: IconCar },
-  { id: "attendance", label: "출퇴근", path: "/v2/crew/attendance",  Icon: IconClock },
-  { id: "settings",   label: "설정",   path: "/v2/crew/settings",    Icon: IconGear },
+  { id: "home",       label: "홈",     path: "/v2/crew",                  Icon: IconHome },
+  { id: "parking",    label: "현황",   path: "/v2/crew/parking",          Icon: IconCar },
+  { id: "attendance", label: "출퇴근", path: "/v2/crew/attendance",       Icon: IconClock },
+  { id: "daily-report", label: "마감", path: "/v2/crew/daily-report/new", Icon: IconReport },
+  { id: "settings",   label: "설정",   path: "/v2/crew/settings",         Icon: IconGear },
 ];
 
 // BottomNav 숨기는 경로
