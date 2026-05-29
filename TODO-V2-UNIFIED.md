@@ -2,13 +2,24 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.05.29
-> **마지막 작업:** ✅ Part 13D-B 완료 — 출차요청 앱 내 토스트 신설 (CREW layout 토스트 채널 + active API 필드 보강)
-> **다음 작업:** 미정 (Vercel 배포 후 실기기 토스트 동작 확인 → 다음 작업 선정)
+> **마지막 작업:** ✅ GAP-P0-5 완료 — `/v2/crew/attendance` 신설 (CREW BottomNav 출퇴근 탭 404 해소 / A안: 개인 근태 조회 뷰)
+> **다음 작업:** GAP-P0-1 `/v2/stores`(권장) 또는 GAP-P0-3 `/v2/parking-status` / (선택) B안 GPS 자가 체크인 후속 파트
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
 
 ## 🚨 새 대화 시작 시 필독
+
+### ✅ GAP-P0-5 완료 (2026.05.29) — CREW 개인 근태 조회 페이지 신설 (404 해소)
+**배경**: CREW BottomNav에 `출퇴근` 탭(`/v2/crew/attendance`)이 배포돼 있는데 페이지가 없어 **라이브 404** 상태였음. (`설정` 탭 `/v2/crew/settings`도 동일 404 — GAP-P2-4로 잔존)
+**모델 충돌 확인(중요)**: 레거시 `/crew/attendance`는 GPS 지오펜스 자가 체크인 → `worker_attendance`(`workers.id`) 기록. 반면 **v2 근태 어드민은 `daily_reports.daily_report_staff` + `attendance_overrides`(`employees.id`)에서 집계** → 자가체크인 테이블 없음. 레거시 그대로 포팅 시 데이터가 어드민에 안 잡힘.
+**결정**: **A안(읽기 전용 개인 근태 조회 뷰) 먼저 → GPS 자가 체크인(B안)은 후속 파트로 분리.**
+**구현**:
+- **신규** `src/app/v2/crew/attendance/page.tsx` — `/api/v1/auth/me`로 본인 `employee.id` 획득 → `GET /api/v1/attendance/personal/:empId?year=&month=`(Part 11A) 호출. Supabase 직접호출 없음(API-first).
+- 구성: 네이비 헤더 + 월 네비게이션(미래 차단) / KPI 4칸(출근일·근무시간·지각·결근) / 근무시간 통계(평균·최대·최소) / 사업장별 근무(2곳+일 때) / 일자별 기록 카드리스트(최신순, 상태배지·출퇴근시각·근무시간·매장) / 직원 미연결·빈상태·에러 처리.
+- 디자인 토큰: CREW 네이비 `#1428A0`/`#0a1352`, 골드 `#F5B731`, bg `#F8FAFC`, 숫자 Outfit. layout이 NavSpacer+BottomNav 처리.
+- 로컬 빌드 OK (`✓ Compiled successfully`, `/v2/crew/attendance` 정적 등록).
+**후속 후보**: B안 — 신규 `employee_attendance` 테이블 + `/api/v1/attendance/check-in|check-out|cancel` write API + 어드민 매트릭스 병합(override > 자가체크인 > 일보). GPS 지오펜스/부정방지 필요 시 진행.
 
 ### ✅ Part 13D-B 완료 (2026.05.29) — 출차요청 앱 내 토스트 신설
 **배경**: Part 13D-A 완료 후, 시안 v4.2에서 출차요청 시인성 강화를 위해 앱 내 상단 토스트 신설 결정.
@@ -1383,8 +1394,8 @@ v1 디렉토리 13개 vs v2 디렉토리 4개.
 | **GAP-P0-1** | `/v2/stores` — 사업장/주차장/방문지 CRUD | 마스터 데이터, 다른 모든 기능의 전제 |
 | **GAP-P0-2** | `/v2/team` — 계정/매장배정/역할 | 멀티테넌시 SaaS 전환 핵심 |
 | **GAP-P0-3** | `/v2/parking-status` — 실시간 주차중 + 초과차량 | 어드민 운영 핵심 |
-| **GAP-P0-4** | `/v2/crew/parking/[id]` 보강 — 차량번호 수정 + 차종변경 | **Part 19B-5C와 함께 처리** |
-| **GAP-P0-5** | `/v2/crew/attendance` — CREW 출퇴근 | CREW 매일 사용 |
+| **GAP-P0-4** | `/v2/crew/parking/[id]` 보강 — 차량번호 수정 + 차종변경 | ✅ 완료 (19B-5C와 함께) |
+| **GAP-P0-5** | `/v2/crew/attendance` — CREW 출퇴근 | ✅ 완료 (A안: 개인 근태 조회 뷰 / 404 해소). GPS 자가체크인=B안 후속 |
 
 ### 📋 P1 우선순위 작업 (7건)
 
