@@ -88,7 +88,9 @@ function CrewV2BottomNav() {
 
   // 출차요청 폴링 (v1 API 사용)
   useEffect(() => {
-    let prevCount = -1;
+    // 신규 감지: count가 아닌 ticket id 셋으로 비교 (처리+신규 동시 발생 누락 방지)
+    let seenIds = new Set<string>();
+    let prevStore: string | null = null;
 
     if (typeof Notification !== "undefined" && Notification.permission === "default") {
       Notification.requestPermission();
@@ -107,9 +109,20 @@ function CrewV2BottomNav() {
         const exitReqs = tickets.filter((t: any) => t.status === "exit_requested");
         const count = exitReqs.length;
 
-        if (count > prevCount && prevCount >= 0) {
-          const diff = count - prevCount;
-          const primary = exitReqs[0];
+        // 매장 전환 시: 현재 건은 베이스라인으로만 등록(알림 없음)
+        if (sid !== prevStore) {
+          seenIds = new Set(exitReqs.map((t: any) => t.id));
+          prevStore = sid;
+          setExitReqCount(count);
+          return;
+        }
+
+        // 신규 출차요청 = 이전 폴에 없던 id (count 동일해도 감지됨)
+        const newReqs = exitReqs.filter((t: any) => !seenIds.has(t.id));
+
+        if (newReqs.length > 0) {
+          const diff = newReqs.length;
+          const primary = newReqs[0];
           // 진동
           if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
           // 브라우저 알림
@@ -150,8 +163,10 @@ function CrewV2BottomNav() {
             }
           }
         }
+
+        // 매 폴마다 갱신: 처리된 건 제거 + 신규 반영
+        seenIds = new Set(exitReqs.map((t: any) => t.id));
         setExitReqCount(count);
-        prevCount = count;
       } catch { /* 네트워크 에러 무시 */ }
     };
 

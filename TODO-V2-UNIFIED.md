@@ -23,6 +23,11 @@
 - 로컬 빌드 OK (`✓ Compiled successfully`, 경고 2건은 기존 Toss SDK 모듈 미설치 이슈로 무관).
 - ⏳ **검증 대기**: Vercel 배포 후 실기기에서 출차요청 발생 → 토스트 표출/누적/탭 이동/자동사라짐 확인.
 
+##### 🔧 13D-B 후속 보강 (2026.05.29) — 신규 감지 방식 개선
+- **결함**: 기존 `count > prevCount` 방식은 5초 폴 사이 "1건 처리 + 1건 신규" 동시 발생 시 count 동일 → 신규 출차요청 누락. (진동/OS푸시/뱃지/토스트 공통)
+- **수정** `src/app/v2/crew/layout.tsx` — `prevCount` → `seenIds: Set<ticketId>` 비교로 교체. 이전 폴에 없던 id만 신규로 감지(count 동일해도 잡힘). 매장 전환 시 현재 건은 베이스라인으로만 등록(오탐 방지). 매 폴 `seenIds` 갱신.
+- 네이티브 전환(FCM) 후에도 "어떤 ticket이 신규인지" 판단 로직은 동일하게 이어짐 → 웹 워크어라운드 아님.
+
 #### ✅ Part 13D-A 완료 (2026.05.29) — BottomNav 마감 탭 + CREW 작성화면 신설
 - **신규**: `src/app/v2/crew/daily-report/new/page.tsx` — 어드민 `StaffSection`/`PaymentSection` 절대경로 import 재사용, 매장 `localStorage.crew_store_id` 고정, 모바일 풀폭 + CREW 네이비 헤더 + sticky 액션바, submit 후 CREW 홈 redirect (중복 시 머무름).
 - **수정**: `src/app/v2/crew/layout.tsx` — `IconReport` SVG 추가, `NAV_ITEMS` 4탭 → 5탭(`{ id:"daily-report", label:"마감", path:"/v2/crew/daily-report/new" }`을 출퇴근↔설정 사이에).
