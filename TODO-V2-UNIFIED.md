@@ -2,13 +2,25 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.05.30
-> **마지막 작업:** ✅ **GAP-P0-2b 파트2(UI) 완료** — `/v2/team`에 [직원 등록] 모달 신설(emp_no·name·hire_date 필수 + role·phone·position, POST `/api/v1/employees`, 사번중복 시 suggestion 표기) + 상세모달 관리자 placeholder를 실제 [관리자 계정 생성] 폼(email+pw 6자↑ → `admin-account`)으로 교체(비번 수동입력이라 pwReveal 없이 성공메시지) + 헤더/빈상태 "추후 지원" 문구 제거. UI만(신규 API·SQL 無). 빌드 OK (`✓ Compiled in 74s`, `/v2/team` 정적). **→ P0 5건 100% 완료 · `/team` 레거시 완전 대체.** ⚠️ 실기기 검증 시 파트1의 SQL14 실행 + Vercel `SUPABASE_SERVICE_ROLE_KEY` 등록 선행 필요
-> **다음 작업:** **v1→v2 라우팅 일괄교체** (Sidebar/MobileTabBar 메뉴를 레거시 `/stores`·`/team`·`/parking-status` → `/v2/*`로) — P0 페이지가 모두 v2에 갖춰졌으므로 진입점 전환. 또는 **P1 착수**(갭분석 P1 7건 중 선택). ▼ 상세는 '🚨 새 대화 시작 시 필독' 참조
+> **마지막 작업:** ✅ **GAP-P1-1 완료** — `/v2/dashboard`에 '금일 출근' KPI 카드 추가(5번째). 값=`출근/재직`, sub=`출근율 %·재직 N명`. 총직원=`employees?limit=1`(meta.total), 출근=`attendance?year&month` 오늘 컬럼 status∈{present,late,peak,support,additional} 집계. `KpiCard`에 `hideChange` prop additive 추가. **신규 API·SQL 없음, UI-only.** 빌드 OK (`✓ Compiled in 67s`, 109p, `/v2/dashboard` ○ 유지). ※ 라우팅 교체·P0 5건은 모두 완료 상태(이전 헤더의 "다음=라우팅 교체"는 stale였음 → 정정).
+> **다음 작업:** 추천순서 ⑤ → **GAP-P1-5 `/v2/crew/attendance/history`** (CREW 본인 출퇴근 이력, UI-only). `/api/v1/attendance/personal/[empId]` 기존 존재 → 신규 API 없이 가능. `/v2/crew/attendance`(P0-5 완료) 옆 탭/링크로 진입. ▼ 상세는 '🚨 새 대화 시작 시 필독' 참조
+> **P1 추천순서(고정):** ①P1-1✅ → ②P1-5 → ③P1-3+④P1-6(accidents API 신규, 묶음) → ⑤P1-7(월주차, API기존) → ⑥P1-4(QR)·⑦P1-2(차트)
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
 
 ## 🚨 새 대화 시작 시 필독
+
+### ✅ GAP-P1-1 완료 (2026.05.30) — `/v2/dashboard` 금일 출근 KPI 카드 (UI-only)
+**신규 API·SQL 없음.** `src/app/v2/dashboard/page.tsx`만 additive 편집.
+- **추가 카드(5번째)**: title "금일 출근", value `출근/재직`(예 `12 / 25`), sub `출근율 N%·재직 M명`. 기존 KPI 4카드 grid(auto-fit minmax 220px)에 자연 합류.
+- **데이터 경로**: ①총직원 = `GET /api/v1/employees?limit=1` → 응답 `meta.total`(기본필터 `퇴사` 제외 = `/v2/team` 목록 기준과 일치). ②출근 = `GET /api/v1/attendance?year&month`(오늘 기준 year/month) → `matrix[empId][오늘].status`가 {`present`,`late`,`peak`,`support`,`additional`} ∈ 이면 카운트. **v2 근태는 일보(daily-report) 파생이라 이 API가 정합**(레거시는 worker_attendance 직접조회였음 — v2에선 사용 안 함).
+- **격리**: hr fetch는 메인 Promise.all 밖 별도 `try`로 감쌈 → 실패해도 카드만 "—", 대시보드 본체(매출/차량/추이 등) 무영향. `fetchMetaTotal()` 헬퍼 신설(기존 `fetchJson`은 data만 반환해 meta 못 읽음).
+- **`KpiCard` 변경**: `hideChange?: boolean` prop 추가 + '직전 대비' 행을 `{!hideChange && …}`로 래핑. 출근 카드는 비교대상 없어 `hideChange`. **기존 4카드는 prop 미전달 → 동작 불변.**
+- 신규 state `hr: {present,total}|null`. todayStr()는 브라우저 로컬(=KST)이라 그대로 사용.
+- 빌드 OK (`✓ Compiled in 67s`, `/v2/dashboard` 정적 `○` 유지, 109p). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
+**⚠️ 알아둘 점**: 그날 일보가 한 건도 제출 안 됐으면 출근=0으로 표시됨(정상 — v2는 일보 기반). 실시간 체크인 개념이 필요하면 별도 근태 엔드포인트 논의 필요.
+**▶ 다음(추천 ⑤ → P1-5)**: `/v2/crew/attendance/history` — CREW 본인 출퇴근 이력. `GET /api/v1/attendance/personal/[empId]` 기존 존재 → **신규 API 없이 UI-only**. 레거시 `src/app/crew/attendance/history/page.tsx` 참고, `/v2/crew/attendance`(P0-5) 톤 재사용. CREW BottomNav/근태 페이지에서 진입.
 
 ### ✅ GAP-P0-2b 파트2 완료 (2026.05.30) — `/v2/team` 직원 등록 모달 + 관리자 계정 생성 폼 (P0 마무리)
 **UI만 — 신규 API·SQL 없음.** 파트1에서 만든 `POST /api/v1/auth/admin-account` + 기존 `POST /api/v1/employees`만 호출.
@@ -354,6 +366,7 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 
 | 날짜 | Part | 작업 내용 | 결과 | 커밋 |
 |------|------|----------|------|------|
+| 2026.05.30 | GAP-P1-1 | `/v2/dashboard`에 **금일 출근 KPI 카드** 추가(5번째). 값 `출근/재직` + sub `출근율 %·재직 N명`. 데이터: 총직원=`/api/v1/employees?limit=1`(meta.total, 퇴사제외=team목록 기준 일치), 출근=`/api/v1/attendance?year&month`의 오늘 컬럼에서 status∈{present,late,peak,support,additional} 카운트(v2 근태=일보 파생이라 정합). hr fetch는 별도 try로 격리(실패 시 카드만 "—", 대시보드 본체 무영향). `KpiCard`에 `hideChange` prop 추가(출근 카드는 '직전 대비' 비교 없음 → 기존 4카드 영향 0). 신규 API·SQL 없음, UI-only | 빌드 OK (`✓ Compiled in 67s`, `/v2/dashboard` ○ 유지, 109p) | (이번 push) |
 | 2026.05.30 | GAP-P0-2b 파트2 | `/v2/team` UI. [직원 등록] 모달 신설(emp_no·name·hire_date 필수+role·phone·position, POST `/api/v1/employees`, 사번중복 suggestion 노출) + 상세모달 관리자 placeholder를 실제 [관리자 계정 생성] 폼(email+pw6자↑→`admin-account`, 수동입력이라 pwReveal 없이 성공메시지)으로 교체 + "추후 지원" 문구 2곳 제거. 신규 API·SQL 없음 → **P0 5건 100% 완료, `/team` 레거시 대체** | 빌드 OK (`✓ Compiled in 74s`, `/v2/team` ○ 유지) · ⏳실기기 검증(SQL14+ServiceRoleKey 선행) | (이번 push) |
 | 2026.05.30 | GAP-P0-2b 파트1 | 계정 백엔드. `src/lib/supabase/admin.ts`(service-role 헬퍼) 신설 + v1 auth 5라우트의 `auth.admin.*`/타사용자 profiles 쓰기를 service-role로 교체(create-account·bulk-create·reset-password·ban·unban — anon키로 admin API 호출하던 잠재버그 수정). 신규 `POST /api/v1/auth/admin-account`(관리자 실이메일, MANAGE, super_admin은 super_admin만). employees PUT allowedFields에 hire_date·status(퇴사 제외) 추가. 레거시 관리자 마이그레이션 SQL `sql/v2/14`(멱등) | 빌드 OK (`✓ Compiled in 73s`, admin-account ƒ 등록) · ⏳SQL14 실행+실기기 검증 대기 | (이번 push) |
 | 2026.05.30 | v1→v2 라우팅 교체 | Sidebar·MobileTabBar·`/more`·MoreSubNav의 메뉴 경로를 v2로 일괄교체 완결. dashboard·parking-status·monthly·stores·team → `/v2/*`. (Sidebar·MobileTabBar·more는 이전 세션 미push분 포함, MoreSubNav는 이번 누락분 보강). analytics·workers·accident·settings는 v2 미구현(P1/P2)이라 레거시 유지. 라벨 '팀원 초대'→'직원 관리' 정합 | 빌드 OK (`✓ Compiled in 78s`, 108p) | 75eead8 |

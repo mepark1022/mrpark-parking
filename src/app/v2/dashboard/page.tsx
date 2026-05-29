@@ -119,6 +119,8 @@ export default function DashboardPage() {
   const [byTenant, setByTenant] = useState<any>(null);
   const [byPayment, setByPayment] = useState<any>(null);
   const [trend, setTrend] = useState<any>(null);
+  // P1-1: 금일 인력 스냅샷 (출근/재직) — 대시보드 기간필터와 무관, 오늘 기준
+  const [hr, setHr] = useState<{ present: number; total: number } | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -184,6 +186,15 @@ export default function DashboardPage() {
         return json.data;
       };
 
+      // P1-1: 페이지네이션 meta.total만 필요할 때(직원수 카운트). data 배열 길이로 폴백.
+      const fetchMetaTotal = async (url: string) => {
+        const res = await fetch(url, { credentials: "include" });
+        if (!res.ok) throw new Error(`${url} ${res.status}`);
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error?.message || "API 오류");
+        return Number(json.meta?.total ?? (Array.isArray(json.data) ? json.data.length : 0));
+      };
+
       // 5개 병렬
       const [ov, bs, bt, bp, tr] = await Promise.all([
         fetchJson(`/api/v1/stats/overview?${base.toString()}`),
@@ -198,6 +209,27 @@ export default function DashboardPage() {
       setByTenant(bt);
       setByPayment(bp);
       setTrend(tr);
+
+      // P1-1: 금일 인력 스냅샷 (출근/재직). 별도 try로 격리 — 실패 시 카드만 "—" 처리.
+      try {
+        const today = todayStr();
+        const [tY, tM] = today.split("-");
+        const [att, total] = await Promise.all([
+          fetchJson(`/api/v1/attendance?year=${tY}&month=${Number(tM)}`),
+          fetchMetaTotal(`/api/v1/employees?limit=1`),
+        ]);
+        // 출근으로 간주하는 상태: 정상/지각/피크/지원/추가근무 (결근·휴무·휴직 제외)
+        const PRESENT = new Set(["present", "late", "peak", "support", "additional"]);
+        const matrix = att?.matrix || {};
+        let present = 0;
+        for (const empId of Object.keys(matrix)) {
+          const st = matrix[empId]?.[today]?.status;
+          if (st && PRESENT.has(st)) present++;
+        }
+        setHr({ present, total });
+      } catch {
+        setHr(null);
+      }
     } catch (e: any) {
       setError(e?.message || "불러오기 실패");
     } finally {
@@ -405,6 +437,20 @@ export default function DashboardPage() {
           sub={
             overview?.current?.active_monthly != null
               ? `활성 월주차 ${fmtCount(overview.current.active_monthly)}건`
+              : undefined
+          }
+        />
+        <KpiCard
+          title="금일 출근"
+          icon="🙋"
+          value={hr ? `${hr.present} / ${hr.total}` : "—"}
+          hideChange
+          loading={loading && !hr}
+          sub={
+            hr
+              ? hr.total > 0
+                ? `출근율 ${Math.round((hr.present / hr.total) * 100)}% · 재직 ${hr.total}명`
+                : "재직자 없음"
               : undefined
           }
         />
@@ -727,6 +773,7 @@ function KpiCard({
   change,
   sub,
   loading,
+  hideChange,
 }: {
   title: string;
   icon: string;
@@ -734,6 +781,7 @@ function KpiCard({
   change?: number | null;
   sub?: string;
   loading?: boolean;
+  hideChange?: boolean;
 }) {
   const ch = fmtChange(change);
   return (
@@ -756,12 +804,14 @@ function KpiCard({
       <div style={{ fontSize: 22, fontWeight: 800, color: NAVY, fontFamily: "monospace", lineHeight: 1.2 }}>
         {loading ? "..." : value}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
-        <span style={{ color: ch.color, fontWeight: 700 }}>
-          {ch.arrow} {ch.text}
-        </span>
-        <span style={{ color: "#94a3b8" }}>직전 대비</span>
-      </div>
+      {!hideChange && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+          <span style={{ color: ch.color, fontWeight: 700 }}>
+            {ch.arrow} {ch.text}
+          </span>
+          <span style={{ color: "#94a3b8" }}>직전 대비</span>
+        </div>
+      )}
       {sub && (
         <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, marginTop: "auto" }}>{sub}</div>
       )}
