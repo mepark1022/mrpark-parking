@@ -1,10 +1,10 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
 > **작성일:** 2026.04.09
-> **마지막 업데이트:** 2026.05.30 (accidents Part 1 API 완료)
-> **마지막 작업:** ✅ **GAP-P1-3/6 Part 1 (accidents API) 완료** — 신규 `src/app/api/v1/accidents/route.ts`(GET 목록+필터 store/status/from/to, POST 등록) + `[id]/route.ts`(GET 상세+사진 signedUrl, PATCH status·admin_memo, DELETE+사진정리). 권한 GET=OPERATE(crew 배정매장 스코핑)/POST=OPERATE/PATCH·DELETE=MANAGE. **phone 미저장(null 고정, v2 정책), 사진은 Storage `accident-photos/{id}/` 직접업로드+조회시 signedUrl.** 신규 SQL 없음. 빌드 OK (`✓ Compiled in 71s`, 110p, accidents 2라우트 ƒ 등록).
-> **다음 작업:** **Part 2 — admin `/v2/accident` UI** (목록·매장/상태/기간 필터·상태변경·admin_memo·사진뷰어·엑셀·삭제, 네임스페이스 `v2ac-*`). 이후 Part 3 = crew `/v2/crew/accident`. ▼ 상세는 '🚨 새 대화 시작 시 필독' 참조.
-> **P1 추천순서(갱신):** ①P1-1✅ → ②~~P1-5~~(보류) → ③**P1-3+P1-6(accidents, Part1 API✅ / Part2·3 진행중)** → 🔴**P1-8(반드시, v2 입차 차량사진)** → ④P1-7(월주차) → ⑤P1-4(QR)·P1-2(차트) → ⑥(보류해제 시)P1-5
+> **마지막 업데이트:** 2026.05.30 (accidents Part 2 admin UI 완료)
+> **마지막 작업:** ✅ **GAP-P1-3/6 Part 2 (admin `/v2/accident` UI) 완료** — 신규 `src/app/v2/accident/page.tsx` 1파일. KPI 4(이번달/접수/처리중/완료) + 필터(매장 API스코핑 · 상태/기간 클라) + 카드리스트 + 상세모달(상태 3버튼→PATCH, admin_memo→PATCH, 사진뷰어+라이트박스, 삭제) + 엑셀(클라 xlsx, phone 컬럼 제외). 전부 API-first(`credentials:include`), 네임스페이스 `v2ac-*`, NAVY/GOLD. 신규 SQL·API 없음. 빌드 OK (`✓ Compiled in 79s`, 111p, `/v2/accident` 정적 ○). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
+> **다음 작업:** **Part 3 — crew `/v2/crew/accident` UI** (사고유형 선택→차량/신고자/상세 입력→사진 최대5장 Storage 직접업로드→POST). P0-5/CREW 톤. ▼ 상세는 '🚨 새 대화 시작 시 필독'. ※또는 🔴**P1-8**(반드시) 먼저.
+> **P1 추천순서(갱신):** ①P1-1✅ → ②~~P1-5~~(보류) → ③**P1-3+P1-6(accidents, Part1 API✅ · Part2 admin UI✅ / Part3 crew UI 남음)** → 🔴**P1-8(반드시, v2 입차 차량사진)** → ④P1-7(월주차) → ⑤P1-4(QR)·P1-2(차트) → ⑥(보류해제 시)P1-5
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -50,6 +50,20 @@
 - ⚠️ "용량제한 없음"은 입력 정책이고 Storage 총량은 플랜 한도 내 → **2개월 cleanup cron이 총량관리 핵심**.
 **작업 분할(예정)**: P1-8a (tickets API의 vehicle_photos 수용 확인/보강) → P1-8b (연속촬영 UI: 스트림 1회+슬롯 시퀀스+패스) → P1-8c (cleanup cron + vercel.json). ※ 사진단계 토글은 레거시 `crew_photo_enabled` 참고하되 v2는 "패스버튼" 방식 우선.
 **선결 점검 결과(2026.05.30)**: cron 인프라 존재(`src/app/api/cron/*`+vercel.json), `vehicle-photos` 버킷 기존(레거시만 사용, v2 미사용), v2 submit=`POST /api/v1/tickets`(line302). 확인 끝 — 착수 시 P1-8a부터.
+
+### ✅ GAP-P1-3/6 Part 2 완료 (2026.05.30) — admin `/v2/accident` UI 신규
+**UI만 — 신규 API·SQL 없음.** Part 1 accidents API + 기존 `/api/v1/stores`만 호출.
+**구현** `src/app/v2/accident/page.tsx`(신규 1파일, 네임스페이스 `v2ac-*`):
+- **KPI 4카드**: 이번 달 사고 / 접수 / 처리중 / 완료. **로드된 매장-스코프 전체 기준**으로 계산(상태·기간 클라필터와 무관하게 정확).
+- **필터**: 매장(API `store_id`로 서버 스코핑 + 재조회) · 상태(클라) · 기간(클라: 이번달/3개월/올해/전체). 상태·기간을 클라로 둔 이유 = KPI 카운트 정확도 유지(레거시 동일 전략).
+- **목록**: 카드 그리드(auto-fill minmax 300px → 모바일 1열). 카드=차량번호·상태뱃지·사고유형·매장·일시·보고자.
+- **상세 모달**(`GET /api/v1/accidents/:id`): 기본정보 + 크루 보고내용 + **상태변경 3버튼→PATCH** + **관리자 메모 textarea→PATCH** + **사진뷰어**(GET이 내려준 `photos[].url` signedUrl, 썸네일 그리드 + 클릭 라이트박스) + **삭제**(DELETE, confirm). 변경 시 목록 state도 동기 갱신.
+- **엑셀**(클라 xlsx 유지): 현재 필터 결과 다운로드. ⚠️ **`차주 연락처` 컬럼 제거**(v2 phone 미저장 정책 — 레거시엔 있었음). 컬럼=사고일시/매장/유형/차량/보고자/상태/보고내용/메모/접수일시.
+- 디자인 NAVY/GOLD/Outfit, `v2ac-*`. 레이아웃은 `/v2/layout.tsx` 자동(AppLayout import 안 함).
+- 빌드 OK (`✓ Compiled in 79s`, `/v2/accident` 정적 `○`, 111p). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
+**⚠️ 실기기 검증 시 확인**: Storage `accident-photos` 버킷의 인증세션 list/signedUrl 정책(Part 1 메모 참조). 레거시가 클라 직접조회를 했으니 열려있을 가능성 높음 — Part 3(crew 업로드) 검증 시 함께.
+**▶ 다음 = Part 3 (crew UI)**: `src/app/v2/crew/accident/page.tsx` 신규. 사고유형 선택 → 차량/신고자/상세 입력 → `POST /api/v1/accidents`(응답 `photo_path_prefix`·`photo_bucket` 수령) → 사진 최대5장 Storage `accident-photos/{id}/`에 **직접 업로드**(Part 1 설계 ⓐ). 레거시 `src/app/crew/accident/page.tsx` 참고, P0-5/CREW 톤. CREW BottomNav에서 진입.
+**Sidebar 메뉴 교체 보류**: `/accident`→`/v2/accident` 라우팅 정합은 v1→v2 일괄교체 단계에서(현재 레거시 유지 중).
 
 ### ✅ GAP-P1-3/6 Part 1 완료 (2026.05.30) — accidents API 신규
 **신규 SQL 없음**(accident_reports 기존). 신규 파일 2개:
