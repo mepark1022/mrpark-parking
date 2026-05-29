@@ -1,9 +1,9 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
 > **작성일:** 2026.04.09
-> **마지막 업데이트:** 2026.05.29
-> **마지막 작업:** ✅ GAP-P0-2a 완료 — `/v2/team` 직원관리 신설 (목록 카드 + 상세모달: 계정생성/비번리셋/차단·해제/역할변경/매장배정/제거) + 신규 API `POST·GET /api/v1/employees/[id]/stores`(매장배정 replace-set, SQL無). 관리자 계정 생성은 모달에서 안내문구로 비활성(P0-2b). 빌드 OK
-> **다음 작업:** (택1) **P0-2b** 관리자 실이메일 계정 생성(신규 `POST /api/v1/auth/admin-account` + 레거시 관리자 employees 연결 마이그레이션) / **P1 갭** 7건 / **Sidebar v1→v2 라우팅 일괄교체**(P0 페이지 다수 완성됨 — `/stores`·`/team`·`/parking-status` 등 v2 진입점 연결). ▼ P0-2b 상세는 '🚨 새 대화 시작 시 필독'의 GAP-P0-2 결정 블록 참조
+> **마지막 업데이트:** 2026.05.30
+> **마지막 작업:** ✅ v1→v2 라우팅 일괄교체 완결(75eead8) — Sidebar·MobileTabBar·`/more`·MoreSubNav 메뉴 경로를 모두 v2로. P0 완성 페이지(`/v2/stores`·`/v2/team`·`/v2/parking-status`·`/v2/monthly`·`/v2/dashboard`)가 이제 메뉴에서 실제 도달 가능. analytics·workers·accident·settings는 v2 미구현(P1/P2)이라 레거시 유지. 빌드 OK
+> **다음 작업:** (택1) **P0-2b** 관리자 실이메일 계정 생성 + `/v2/team` 직원 신규등록/수정(emp_no·name·hire_date) — `/team` 레거시 의존 제거 → `/team` 메뉴도 v2 완전대체 가능 / **P1 갭** 7건(dashboard 보강·`/v2/accident`·`/v2/crew/entry/qr` 등) / **GAP-P1-3 `/v2/accident`** — workers·accident 레거시 메뉴를 v2로 옮기는 선결작업. ▼ P0-2b 상세는 '🚨 새 대화 시작 시 필독'의 GAP-P0-2 결정 블록 참조
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -327,6 +327,7 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 
 | 날짜 | Part | 작업 내용 | 결과 | 커밋 |
 |------|------|----------|------|------|
+| 2026.05.30 | v1→v2 라우팅 교체 | Sidebar·MobileTabBar·`/more`·MoreSubNav의 메뉴 경로를 v2로 일괄교체 완결. dashboard·parking-status·monthly·stores·team → `/v2/*`. (Sidebar·MobileTabBar·more는 이전 세션 미push분 포함, MoreSubNav는 이번 누락분 보강). analytics·workers·accident·settings는 v2 미구현(P1/P2)이라 레거시 유지. 라벨 '팀원 초대'→'직원 관리' 정합 | 빌드 OK (`✓ Compiled in 78s`, 108p) | 75eead8 |
 | 2026.05.29 | GAP-P0-1 / 1C | `/v2/stores/[id]`에 방문지(visit_places) 요금표 섹션 추가 — 카드리스트(9필드 요금)+추가/수정/삭제 모달+요금 프리뷰, require_visit_place 연계 경고배너. API·SQL 신설 없이 UI만(visit-places PUT/DELETE 라우트 기존 존재). API-first | 빌드 OK (`✓ Compiled`, /v2/stores/[id] ƒ, 106p) | (이번 push) |
 | 2026.05.29 | 13D-A | CREW 마감보고 진입점(BottomNav 5탭) + 작성화면 신설 (`/v2/crew/daily-report/new`). 어드민 StaffSection/PaymentSection 절대경로 import 재사용 | 빌드 OK, 정적 경로 등록 | (이번 push) |
 | 2026.04.09 | Part 1 | API v1 기반 구조 (types, response, errors, password, auth-middleware, index) | ✅ | af1efd1 |
