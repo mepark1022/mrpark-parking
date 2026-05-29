@@ -2,15 +2,27 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.05.30
-> **마지막 작업:** ✅ **GAP-P0-2b 파트1(백엔드/API) 완료** — service-role 클라이언트 헬퍼 신설 + v1 auth 5라우트 service-role 버그 수정(create-account·bulk-create·reset-password·ban·unban) + 신규 `POST /api/v1/auth/admin-account`(관리자 실이메일 계정, MANAGE) + employees PUT에 hire_date·status 추가 + 레거시 관리자 마이그레이션 SQL(`sql/v2/14`). 빌드 OK. **⚠️ SQL 14 실행 + 실기기 계정버튼 검증 대기**
-> **다음 작업:** **P0-2b 파트2(UI)** — `/v2/team`에 [직원 등록] 모달(emp_no·name·hire_date·role) + 관리자 placeholder를 실제 [관리자 계정 생성] 폼(email+pw, `admin-account` 호출)으로 교체 + 직원 수정 모달(hire_date 등). 완료 시 P0 5건 100% → `/team` 레거시 완전 대체. ▼ 상세는 '🚨 새 대화 시작 시 필독'의 GAP-P0-2b 블록 참조
+> **마지막 작업:** ✅ **GAP-P0-2b 파트2(UI) 완료** — `/v2/team`에 [직원 등록] 모달 신설(emp_no·name·hire_date 필수 + role·phone·position, POST `/api/v1/employees`, 사번중복 시 suggestion 표기) + 상세모달 관리자 placeholder를 실제 [관리자 계정 생성] 폼(email+pw 6자↑ → `admin-account`)으로 교체(비번 수동입력이라 pwReveal 없이 성공메시지) + 헤더/빈상태 "추후 지원" 문구 제거. UI만(신규 API·SQL 無). 빌드 OK (`✓ Compiled in 74s`, `/v2/team` 정적). **→ P0 5건 100% 완료 · `/team` 레거시 완전 대체.** ⚠️ 실기기 검증 시 파트1의 SQL14 실행 + Vercel `SUPABASE_SERVICE_ROLE_KEY` 등록 선행 필요
+> **다음 작업:** **v1→v2 라우팅 일괄교체** (Sidebar/MobileTabBar 메뉴를 레거시 `/stores`·`/team`·`/parking-status` → `/v2/*`로) — P0 페이지가 모두 v2에 갖춰졌으므로 진입점 전환. 또는 **P1 착수**(갭분석 P1 7건 중 선택). ▼ 상세는 '🚨 새 대화 시작 시 필독' 참조
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
 
 ## 🚨 새 대화 시작 시 필독
 
-### ✅ GAP-P0-2b 파트1 완료 (2026.05.30) — 계정 백엔드/API (service-role 버그 수정 포함)
+### ✅ GAP-P0-2b 파트2 완료 (2026.05.30) — `/v2/team` 직원 등록 모달 + 관리자 계정 생성 폼 (P0 마무리)
+**UI만 — 신규 API·SQL 없음.** 파트1에서 만든 `POST /api/v1/auth/admin-account` + 기존 `POST /api/v1/employees`만 호출.
+**구현** `src/app/v2/team/page.tsx`:
+- ① **[직원 등록] 모달 신설** — 헤더 우측 + 빈상태에 [+ 직원 등록] 버튼. 모달 필드: `emp_no`·`name`·`hire_date`(필수, hire_date 기본=오늘) + `role`(크루/필드/관리자, 기본 crew)·`position`·`phone`(선택). `POST /api/v1/employees` → 사번 자동 대문자. **사번중복 409 시 서버 `error.details.suggestion`을 메시지에 노출**(예: "추천 사번: C001-2"). 성공 시 모달 닫고 `load()`.
+- ② **관리자 placeholder → 실제 계정 생성 폼 교체** — 상세모달 계정섹션의 `isAdminRole` 분기(기존 ⚠️안내박스)를 email+password(6자↑) 입력 + [관리자 계정 생성] 버튼으로 교체. 클라 검증(이메일정규식·6자) 후 `POST /api/v1/auth/admin-account {employee_id,email,password}`. ⚠️ **응답에 비번 없음(수동입력)** → 기존 crew처럼 `pwReveal` 안 띄우고 `actionMsg`(성공메시지)만 + `refreshDetail()`. super_admin이면 "최고관리자만 생성 가능" 안내문 추가(서버도 차단).
+- ③ **"추후 지원" 문구 제거 2곳** — 헤더 부제 `(관리자 계정 생성은 추후 지원)` 삭제(→ "직원 등록 · 계정 · 매장 배정 · 역할 관리"), 빈상태 `직원 등록은 기존 직원관리에서` → `상단 [+ 직원 등록]으로…`.
+- 신규 상태: `showCreate`·`createForm`·`createBusy`·`createErr`(등록모달), `adminEmail`·`adminPw`(관리자폼, openDetail/close 시 초기화). 디자인 NAVY/GOLD/Outfit, `v2tm-*` 네임스페이스 재사용.
+- 로컬 빌드 OK (`✓ Compiled successfully in 74s`, `/v2/team` 정적 `○` 유지, 109 pages). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
+**⚠️ 실기기 검증 전 선행(파트1 대기항목)**: ① Supabase에서 `sql/v2/14` 실행 ② Vercel env `SUPABASE_SERVICE_ROLE_KEY` 등록 확인 ③ 관리자 계정 생성/crew 계정생성·리셋·차단 실동작 확인.
+**④ 미반영(후속 후보, P1)**: 직원 정보 **수정 모달**(PUT, hire_date·position 등 인라인 편집) — 파트2 핵심 3건에서 제외. 필요 시 별도 모달로.
+**▶ 다음**: v1→v2 **라우팅 일괄교체**(Sidebar·MobileTabBar 메뉴 `/stores`·`/team`·`/parking-status` → `/v2/*`). P0 5건이 v2에 모두 갖춰져 진입점만 전환하면 됨. (또는 P1 7건 중 선택)
+
+
 **🔴 핵심 발견(검토 중)**: `@/lib/supabase/server`의 `createClient()`는 **anon키+세션** 기반인데, v1 auth 라우트 5개가 이걸로 `supabase.auth.admin.*`(관리자 전용 API)를 호출 → service_role 키가 없어 **실패(403)**. 즉 P0-2a `/v2/team`의 [계정 생성]·[비번 리셋]·[차단/해제] 버튼이 실기기에서 에러날 가능성 높았음(아직 v2로 계정 만든 적 없어 미발현). 레거시 `/api/team/create-account`만 별도 service-role 써서 정상.
 **구현(파트1)**:
 - **신규** `src/lib/supabase/admin.ts` — `createAdminClient()` (service_role, RLS 우회, auth.admin.* 전용). env: `SUPABASE_SERVICE_ROLE_KEY` 필요(Vercel 등록 확인).
@@ -342,6 +354,7 @@ src/middleware.ts                 # crew.mepark.kr 분기 추가 (1개 블록만
 
 | 날짜 | Part | 작업 내용 | 결과 | 커밋 |
 |------|------|----------|------|------|
+| 2026.05.30 | GAP-P0-2b 파트2 | `/v2/team` UI. [직원 등록] 모달 신설(emp_no·name·hire_date 필수+role·phone·position, POST `/api/v1/employees`, 사번중복 suggestion 노출) + 상세모달 관리자 placeholder를 실제 [관리자 계정 생성] 폼(email+pw6자↑→`admin-account`, 수동입력이라 pwReveal 없이 성공메시지)으로 교체 + "추후 지원" 문구 2곳 제거. 신규 API·SQL 없음 → **P0 5건 100% 완료, `/team` 레거시 대체** | 빌드 OK (`✓ Compiled in 74s`, `/v2/team` ○ 유지) · ⏳실기기 검증(SQL14+ServiceRoleKey 선행) | (이번 push) |
 | 2026.05.30 | GAP-P0-2b 파트1 | 계정 백엔드. `src/lib/supabase/admin.ts`(service-role 헬퍼) 신설 + v1 auth 5라우트의 `auth.admin.*`/타사용자 profiles 쓰기를 service-role로 교체(create-account·bulk-create·reset-password·ban·unban — anon키로 admin API 호출하던 잠재버그 수정). 신규 `POST /api/v1/auth/admin-account`(관리자 실이메일, MANAGE, super_admin은 super_admin만). employees PUT allowedFields에 hire_date·status(퇴사 제외) 추가. 레거시 관리자 마이그레이션 SQL `sql/v2/14`(멱등) | 빌드 OK (`✓ Compiled in 73s`, admin-account ƒ 등록) · ⏳SQL14 실행+실기기 검증 대기 | (이번 push) |
 | 2026.05.30 | v1→v2 라우팅 교체 | Sidebar·MobileTabBar·`/more`·MoreSubNav의 메뉴 경로를 v2로 일괄교체 완결. dashboard·parking-status·monthly·stores·team → `/v2/*`. (Sidebar·MobileTabBar·more는 이전 세션 미push분 포함, MoreSubNav는 이번 누락분 보강). analytics·workers·accident·settings는 v2 미구현(P1/P2)이라 레거시 유지. 라벨 '팀원 초대'→'직원 관리' 정합 | 빌드 OK (`✓ Compiled in 78s`, 108p) | 75eead8 |
 | 2026.05.29 | GAP-P0-1 / 1C | `/v2/stores/[id]`에 방문지(visit_places) 요금표 섹션 추가 — 카드리스트(9필드 요금)+추가/수정/삭제 모달+요금 프리뷰, require_visit_place 연계 경고배너. API·SQL 신설 없이 UI만(visit-places PUT/DELETE 라우트 기존 존재). API-first | 빌드 OK (`✓ Compiled`, /v2/stores/[id] ƒ, 106p) | (이번 push) |

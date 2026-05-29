@@ -3,20 +3,21 @@
 export const dynamic = "force-dynamic";
 
 /**
- * 직원 관리 v2 — 목록 + 상세 모달(계정/매장배정/역할/제거) (GAP-P0-2a)
+ * 직원 관리 v2 — 목록 + 등록 모달 + 상세 모달(계정/매장배정/역할/제거) (GAP-P0-2a + P0-2b)
  *
- * API (매장배정 1개만 신규, 나머지 전부 기존):
+ * API (매장배정 1개만 신규, 나머지 전부 기존/P0-2b):
  *   GET    /api/v1/employees?search=&role=&status=&has_account=   목록(퇴사 기본제외)
+ *   POST   /api/v1/employees   { emp_no, name, hire_date, role?, phone?, position? }   직원 등록 (P0-2b UI)
  *   GET    /api/v1/employees/:id                                   상세(store_members·account 동봉)
  *   PUT    /api/v1/employees/:id   { role }                        역할 변경
  *   DELETE /api/v1/employees/:id                                   제거(soft)
  *   POST   /api/v1/auth/create-account     { employee_id }         계정 생성(crew/field 전용, 초기PW 반환)
+ *   POST   /api/v1/auth/admin-account  { employee_id, email, password }   관리자 계정 생성(admin/super_admin, 수동입력) 🆕P0-2b
  *   POST   /api/v1/auth/reset-password/:id                         비번 리셋(리셋PW 반환)
  *   POST   /api/v1/auth/ban/:id  ·  /api/v1/auth/unban/:id         계정 차단/해제
- *   POST   /api/v1/employees/:id/stores  { store_ids, primary_store_id? }   매장배정(replace-set) 🆕
+ *   POST   /api/v1/employees/:id/stores  { store_ids, primary_store_id? }   매장배정(replace-set)
  *   GET    /api/v1/stores?status=active                            배정용 사업장 목록
  *
- * ⚠️ 관리자(admin/super_admin) 계정 생성은 P0-2a에서 숨김 → P0-2b 후속
  * 레이아웃: /v2/layout.tsx 가 AppLayout(Sidebar+Header+MobileTabBar) 자동 적용
  */
 
@@ -70,6 +71,16 @@ export default function V2TeamPage() {
 
   // 비번 1회 노출 모달
   const [pwReveal, setPwReveal] = useState<{ title: string; pw: string; sub?: string } | null>(null);
+
+  // 직원 등록 모달
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState({ emp_no: "", name: "", hire_date: "", role: "crew", phone: "", position: "" });
+  const [createBusy, setCreateBusy] = useState(false);
+  const [createErr, setCreateErr] = useState("");
+
+  // 관리자 계정 생성 폼 (상세 모달 내 입력)
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPw, setAdminPw] = useState("");
 
   const storeName = useCallback(
     (id: string) => stores.find((s) => s.id === id)?.name ?? id?.slice(0, 8),
@@ -147,6 +158,8 @@ export default function V2TeamPage() {
     setDetailLoading(true);
     setActionMsg("");
     setActionErr("");
+    setAdminEmail("");
+    setAdminPw("");
     try {
       const res = await fetch(`/api/v1/employees/${empId}`, { credentials: "include" });
       const json = await res.json();
@@ -330,6 +343,91 @@ export default function V2TeamPage() {
     }
   };
 
+  // ── 직원 등록 모달 열기/닫기 ──
+  const openCreate = () => {
+    const today = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD (로컬 기준)
+    setCreateForm({ emp_no: "", name: "", hire_date: today, role: "crew", phone: "", position: "" });
+    setCreateErr("");
+    setShowCreate(true);
+  };
+
+  // ── 직원 등록 (POST /api/v1/employees) ──
+  const doCreateEmployee = async () => {
+    setCreateErr("");
+    if (!createForm.emp_no.trim() || !createForm.name.trim() || !createForm.hire_date) {
+      setCreateErr("사번 · 이름 · 입사일은 필수입니다");
+      return;
+    }
+    setCreateBusy(true);
+    try {
+      const res = await fetch("/api/v1/employees", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emp_no: createForm.emp_no.trim(),
+          name: createForm.name.trim(),
+          hire_date: createForm.hire_date,
+          role: createForm.role,
+          phone: createForm.phone.trim() || undefined,
+          position: createForm.position.trim() || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json?.success) {
+        setShowCreate(false);
+        await load();
+      } else {
+        // 사번 중복 시 서버가 suggestion 제공
+        const sug = json?.error?.details?.suggestion;
+        setCreateErr((json?.error?.message || "등록 실패") + (sug ? ` (추천 사번: ${sug})` : ""));
+      }
+    } catch {
+      setCreateErr("네트워크 오류");
+    } finally {
+      setCreateBusy(false);
+    }
+  };
+
+  // ── 관리자 계정 생성 (POST /api/v1/auth/admin-account) — 실이메일+수동비번 ──
+  const doCreateAdminAccount = async () => {
+    if (!detail) return;
+    setActionErr("");
+    setActionMsg("");
+    const email = adminEmail.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setActionErr("올바른 이메일을 입력하세요");
+      return;
+    }
+    if (adminPw.length < 6) {
+      setActionErr("비밀번호는 6자 이상이어야 합니다");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/v1/auth/admin-account", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employee_id: detail.id, email, password: adminPw }),
+      });
+      const json = await res.json();
+      if (res.ok && json?.success) {
+        // 관리자 비번은 수동입력 → pwReveal 불필요, 성공메시지만
+        setActionMsg(json.data?.message || "관리자 계정이 생성되었습니다");
+        setAdminEmail("");
+        setAdminPw("");
+        await refreshDetail();
+      } else {
+        setActionErr(json?.error?.message || "관리자 계정 생성 실패");
+      }
+    } catch {
+      setActionErr("네트워크 오류");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   // 매장 체크박스 토글
   const toggleStore = (id: string) => {
     setAssignSel((prev) => {
@@ -364,11 +462,14 @@ export default function V2TeamPage() {
       `}</style>
 
       {/* ── 헤더 ── */}
-      <div style={{ marginBottom: 18 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1A1D2B", margin: 0 }}>직원 관리</h1>
-        <p style={{ fontSize: 13, color: "#64748B", margin: "4px 0 0" }}>
-          직원 계정 · 매장 배정 · 역할 관리 (관리자 계정 생성은 추후 지원)
-        </p>
+      <div style={{ marginBottom: 18, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1A1D2B", margin: 0 }}>직원 관리</h1>
+          <p style={{ fontSize: 13, color: "#64748B", margin: "4px 0 0" }}>
+            직원 등록 · 계정 · 매장 배정 · 역할 관리
+          </p>
+        </div>
+        <button className="v2tm-btn" onClick={openCreate} style={{ background: NAVY, color: "#fff" }}>+ 직원 등록</button>
       </div>
 
       {/* ── 필터 ── */}
@@ -415,7 +516,8 @@ export default function V2TeamPage() {
         <div className="v2tm-card" style={{ padding: "50px 20px", textAlign: "center" }}>
           <div style={{ fontSize: 34, marginBottom: 8 }}>👥</div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#1A1D2B" }}>조건에 맞는 직원이 없습니다</div>
-          <div style={{ fontSize: 13, color: "#64748B", marginTop: 6 }}>직원 등록은 기존 직원관리에서 진행됩니다</div>
+          <div style={{ fontSize: 13, color: "#64748B", marginTop: 6, marginBottom: 14 }}>상단 [+ 직원 등록]으로 새 직원을 추가하세요</div>
+          <button className="v2tm-btn" onClick={openCreate} style={{ background: NAVY, color: "#fff" }}>+ 직원 등록</button>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
@@ -516,8 +618,31 @@ export default function V2TeamPage() {
                       </div>
                     </>
                   ) : isAdminRole(detail.role) ? (
-                    <div style={{ fontSize: 13, color: "#92400E", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 9, padding: "10px 12px" }}>
-                      ⚠️ 관리자 계정 생성은 실제 이메일이 필요하여 추후 지원됩니다 (P0-2b).
+                    <div>
+                      <div style={{ fontSize: 13, color: "#64748B", marginBottom: 10 }}>
+                        관리자 계정은 <b>실제 이메일</b>과 <b>비밀번호(6자 이상)</b>로 직접 생성합니다.
+                        {detail.role === "super_admin" && " (최고관리자 계정은 최고관리자만 생성 가능)"}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 360 }}>
+                        <input
+                          className="v2tm-input"
+                          type="email"
+                          placeholder="이메일 (예: admin@mepark.kr)"
+                          value={adminEmail}
+                          disabled={busy}
+                          onChange={(e) => setAdminEmail(e.target.value)}
+                        />
+                        <input
+                          className="v2tm-input"
+                          type="password"
+                          placeholder="비밀번호 (6자 이상)"
+                          value={adminPw}
+                          disabled={busy}
+                          onChange={(e) => setAdminPw(e.target.value)}
+                        />
+                        <button className="v2tm-btn" disabled={busy} onClick={doCreateAdminAccount} style={{ background: NAVY, color: "#fff", alignSelf: "flex-start" }}>관리자 계정 생성</button>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 8 }}>⚠️ 비밀번호는 직접 입력하므로 다시 표시되지 않습니다. 직원에게 직접 전달하세요.</div>
                     </div>
                   ) : (
                     <div>
@@ -601,6 +726,77 @@ export default function V2TeamPage() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── 직원 등록 모달 ── */}
+      {showCreate && (
+        <div className="v2tm-overlay" onClick={() => !createBusy && setShowCreate(false)}>
+          <div className="v2tm-modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
+            {/* 헤더 */}
+            <div style={{ background: NAVY, color: "#fff", padding: "18px 20px", borderRadius: "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 800 }}>직원 등록</div>
+              <button onClick={() => !createBusy && setShowCreate(false)} style={{ background: "transparent", border: "none", color: "#fff", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>×</button>
+            </div>
+
+            {createErr && (
+              <div style={{ padding: "10px 20px", background: "#FEF2F2", color: "#B91C1C", fontSize: 13, fontWeight: 600 }}>{createErr}</div>
+            )}
+
+            <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* 사번 + 이름 */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label className="v2tm-label">사번 *</label>
+                  <input className="v2tm-input" placeholder="예: C001" value={createForm.emp_no} disabled={createBusy} onChange={(e) => setCreateForm({ ...createForm, emp_no: e.target.value })} />
+                </div>
+                <div>
+                  <label className="v2tm-label">이름 *</label>
+                  <input className="v2tm-input" placeholder="실명" value={createForm.name} disabled={createBusy} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} />
+                </div>
+              </div>
+
+              {/* 입사일 + 역할 */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label className="v2tm-label">입사일 *</label>
+                  <input className="v2tm-input" type="date" value={createForm.hire_date} disabled={createBusy} onChange={(e) => setCreateForm({ ...createForm, hire_date: e.target.value })} />
+                </div>
+                <div>
+                  <label className="v2tm-label">역할</label>
+                  <select className="v2tm-input" value={createForm.role} disabled={createBusy} onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}>
+                    <option value="crew">크루</option>
+                    <option value="field_member">필드</option>
+                    <option value="admin">관리자</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 직책 + 연락처 */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label className="v2tm-label">직책 <span style={{ color: "#94A3B8", fontWeight: 500 }}>(선택)</span></label>
+                  <input className="v2tm-input" placeholder="예: 팀장" value={createForm.position} disabled={createBusy} onChange={(e) => setCreateForm({ ...createForm, position: e.target.value })} />
+                </div>
+                <div>
+                  <label className="v2tm-label">연락처 <span style={{ color: "#94A3B8", fontWeight: 500 }}>(선택)</span></label>
+                  <input className="v2tm-input" placeholder="010-0000-0000" value={createForm.phone} disabled={createBusy} onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })} />
+                </div>
+              </div>
+
+              <div style={{ fontSize: 12, color: "#94A3B8" }}>
+                · 사번은 자동으로 대문자 변환됩니다.
+                {createForm.role !== "admin"
+                  ? " 등록 후 상세에서 로그인 계정을 생성하세요."
+                  : " 관리자는 등록 후 상세에서 이메일·비밀번호로 계정을 생성합니다."}
+              </div>
+
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
+                <button className="v2tm-btn" disabled={createBusy} onClick={() => setShowCreate(false)} style={{ background: "#F1F5F9", color: "#475569" }}>취소</button>
+                <button className="v2tm-btn" disabled={createBusy} onClick={doCreateEmployee} style={{ background: NAVY, color: "#fff" }}>{createBusy ? "등록 중..." : "등록"}</button>
+              </div>
+            </div>
           </div>
         </div>
       )}
