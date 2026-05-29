@@ -2,13 +2,24 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.05.29
-> **마지막 작업:** ✅ GAP-P0-5 완료 — `/v2/crew/attendance` 신설 (CREW BottomNav 출퇴근 탭 404 해소 / A안: 개인 근태 조회 뷰)
-> **다음 작업:** GAP-P0-1 `/v2/stores`(권장) 또는 GAP-P0-3 `/v2/parking-status` / (선택) B안 GPS 자가 체크인 후속 파트
+> **마지막 작업:** ✅ GAP-P0-1 / 1A 완료 — `/v2/stores` 사업장 목록 + 등록/수정/삭제(soft)/복원 + 주소→좌표 지오코딩
+> **다음 작업:** GAP-P0-1 / 1B `/v2/stores/[id]` 상세 + 주차장(면수) 관리 (parking-lots PUT/DELETE 라우트 신설) → 1C 방문지 요금표
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
 
 ## 🚨 새 대화 시작 시 필독
+
+### ✅ GAP-P0-1 / 1A 완료 (2026.05.29) — 사업장(stores) 관리 페이지
+**분할안**: 1A 사업장 CRUD → 1B 사업장 상세+주차장(면수) → 1C 방문지 요금표 / 1D(후순위) 운영시간·근무조·지각규칙(근무조·지각규칙은 B안 근태와 연계). 관련 테이블 모두 기존 존재 → **SQL 실행 불필요**.
+**구현 (1A)**:
+- **신규** `src/app/v2/stores/page.tsx` — 목록(검색·운영중/삭제됨 필터·카드그리드) + 등록/수정 모달 + soft-delete + 복원. API-first.
+- 사용 API(전부 기존): `GET/POST /api/v1/stores`, `PUT/DELETE /api/v1/stores/:id`, `POST /api/v1/stores/:id/restore`, `GET /api/geocode/forward`(주소→좌표).
+- 폼 필드: 기본정보(명·코드·시도·구군·도로명주소+좌표검색·담당/연락처) + 수치(gps_radius_meters·grace_period_minutes·valet_fee) + 운영토글 8종(has_valet·is_free_parking·has_kiosk·has_toss_kiosk·enable_monthly·enable_plate_search·require_visit_place·require_entry_photo).
+- 레이아웃: `/v2/layout.tsx`가 AppLayout(Sidebar+Header+MobileTabBar) 자동 적용. 루트 `padding:20,maxWidth:1400`.
+- 로컬 빌드 OK (`✓ Compiled`, `/v2/stores` 정적 등록, 106 pages).
+**다음(1B)**: `/v2/stores/[id]` 상세 페이지 + 주차장 목록/추가/수정/삭제. ⚠️ parking-lots는 현재 **GET/POST만** → `/api/v1/stores/[id]/parking-lots/[lotId]` **PUT/DELETE 라우트 신설 필요**(코드만, SQL無). 면수 = self_spaces+mechanical_normal+mechanical_suv.
+> ※ Sidebar 메뉴는 아직 레거시 `/stores`를 가리킬 수 있음 — v1→v2 라우팅 일괄교체는 별도 단계(P0 마무리 후).
 
 ### ✅ GAP-P0-5 완료 (2026.05.29) — CREW 개인 근태 조회 페이지 신설 (404 해소)
 **배경**: CREW BottomNav에 `출퇴근` 탭(`/v2/crew/attendance`)이 배포돼 있는데 페이지가 없어 **라이브 404** 상태였음. (`설정` 탭 `/v2/crew/settings`도 동일 404 — GAP-P2-4로 잔존)
@@ -20,6 +31,9 @@
 - 디자인 토큰: CREW 네이비 `#1428A0`/`#0a1352`, 골드 `#F5B731`, bg `#F8FAFC`, 숫자 Outfit. layout이 NavSpacer+BottomNav 처리.
 - 로컬 빌드 OK (`✓ Compiled successfully`, `/v2/crew/attendance` 정적 등록).
 **후속 후보**: B안 — 신규 `employee_attendance` 테이블 + `/api/v1/attendance/check-in|check-out|cancel` write API + 어드민 매트릭스 병합(override > 자가체크인 > 일보). GPS 지오펜스/부정방지 필요 시 진행.
+> ⚠️ **B안 착수 전 필수 — 부정 출퇴근 방지대책 재확인 + 적용논의 (대표님 요청 2026.05.29)**
+> - 레거시 기보유 방지책: ① GPS Haversine 거리계산 + 매장 `gps_radius_meters` 반경제한(현 20% 여유) ② 관리자/오너 반경우회 ③ `check_in/out_distance_m` 기록(사후감사) ④ 역지오코딩 주소 스냅샷
+> - 검토/강화 후보: 셀카·사진 인증, 디바이스 핑거프린트, 모의위치(Mock GPS) 탐지, 동일좌표 반복 패턴 플래그, 체크인 시각·위치 이상 알림. → B안 SQL/스키마 설계 전에 적용범위 확정.
 
 ### ✅ Part 13D-B 완료 (2026.05.29) — 출차요청 앱 내 토스트 신설
 **배경**: Part 13D-A 완료 후, 시안 v4.2에서 출차요청 시인성 강화를 위해 앱 내 상단 토스트 신설 결정.
@@ -1391,7 +1405,7 @@ v1 디렉토리 13개 vs v2 디렉토리 4개.
 
 | # | 작업 | 비고 |
 |---|---|---|
-| **GAP-P0-1** | `/v2/stores` — 사업장/주차장/방문지 CRUD | 마스터 데이터, 다른 모든 기능의 전제 |
+| **GAP-P0-1** | `/v2/stores` — 사업장/주차장/방문지 CRUD | 🔄 진행중 (1A 사업장 ✅ / 1B 주차장·1C 방문지 남음) |
 | **GAP-P0-2** | `/v2/team` — 계정/매장배정/역할 | 멀티테넌시 SaaS 전환 핵심 |
 | **GAP-P0-3** | `/v2/parking-status` — 실시간 주차중 + 초과차량 | 어드민 운영 핵심 |
 | **GAP-P0-4** | `/v2/crew/parking/[id]` 보강 — 차량번호 수정 + 차종변경 | ✅ 완료 (19B-5C와 함께) |
