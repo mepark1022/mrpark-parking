@@ -249,6 +249,11 @@ export async function POST(request: NextRequest) {
       entry_at: ticket.entry_at,
       is_monthly: ticket.is_monthly,
       alimtalk_requested: !!phone,
+      // P1-8a: 차량사진 업로드 대상 안내 (accidents API 패턴 일치)
+      //  CREW가 이 경로로 Storage 직접 업로드 후, 업로드된 경로를
+      //  PATCH /api/v1/tickets/:id/photos 로 기록한다. org 스코프 격리.
+      photo_bucket: 'vehicle-photos',
+      photo_path_prefix: `${ctx.orgId}/${ticket.id}/`,
     });
   } catch (err) {
     console.error('[v1/tickets] 서버 오류:', err);

@@ -1,9 +1,9 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
 > **작성일:** 2026.04.09
-> **마지막 업데이트:** 2026.05.30 (accidents Part 3 crew UI 완료 → **accidents 3파트 전체 완료**)
-> **마지막 작업:** ✅ **GAP-P1-3/6 Part 3 (crew `/v2/crew/accident` UI) 완료** — 신규 `src/app/v2/crew/accident/page.tsx` 1파일(네임스페이스 `cv2ac-*`) + crew 홈(`/v2/crew/page.tsx`)에 사고보고 진입점 추가. 3-step(유형선택→차량정보→보고내용)+완료. **차주 연락처 입력 제거(v2 phone 미저장)**, reporter=`auth/me` 직원명 자동, store_id=localStorage `crew_store_id`. 등록=`POST /api/v1/accidents`(API-first) → 응답 `photo_bucket`/`photo_path_prefix`로 사진 Storage 직접 업로드(설계 ⓐ, 업로드 진행률 표시, 실패해도 보고 접수 격리). 신규 SQL·API 없음. 빌드 OK (`✓ Compiled in 74s`, 112p, `/v2/crew/accident` 정적 ○). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
-> **다음 작업:** 🔴 **GAP-P1-8 (반드시) — v2 입차 차량사진 6장 연속촬영**. 착수 시 **P1-8a**(tickets API의 `vehicle_photos` 수용/보강 확인)부터. ▼ 상세는 '🚨 새 대화 시작 시 필독'의 P1-8 블록. ※또는 ④P1-7(월주차) 선택 가능.
+> **마지막 업데이트:** 2026.05.30 (GAP-P1-8 **P1-8a 완료** — tickets API vehicle_photos 수용 보강)
+> **마지막 작업:** ✅ **GAP-P1-8 P1-8a (tickets API vehicle_photos 수용 보강) 완료** — ①`POST /api/v1/tickets` 응답에 `photo_bucket`('vehicle-photos')·`photo_path_prefix`(`{org_id}/{ticket_id}/`) 추가(additive, accidents 패턴 일치) ②신규 `PATCH /api/v1/tickets/[id]/photos`(OPERATE, crew可, `@ts-nocheck`, car-info 미러링) — `vehicle_photos:string[]` 사후 기록. 검증: 배열·문자열·중복제거·최대6장·경로 prefix(`{org_id}/{id}/`) 강제로 cross-org/타티켓 주입 차단·completed 차단·빈배열(패스) 허용. audit_logs 기록. 신규 SQL 없음(`vehicle_photos` 컬럼 기존, database.types 확인). 빌드 OK (`✓ Compiled in 63s`, `/api/v1/tickets/[id]/photos` ƒ 등록). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
+> **다음 작업:** 🔴 **GAP-P1-8 P1-8b — v2 입차 연속촬영 UI**. `getUserMedia` 스트림 1회 오픈 유지 + 슬롯 시퀀스(①전면②후면③운전석④보조석⑤추가1⑥추가2) + 패스버튼. 흐름: 4자리 입차확인 → (사진단계, 패스 가능) → 연속촬영 → `POST /api/v1/tickets`로 생성 → 응답 `photo_bucket`/`photo_path_prefix`로 Storage 직접 업로드 → `PATCH .../photos`로 경로 기록. ▼ 상세는 P1-8 블록. 이후 P1-8c(cleanup cron+vercel.json).
 > **P1 추천순서(갱신):** ①P1-1✅ → ②~~P1-5~~(보류) → ③**P1-3+P1-6(accidents) ✅ 전체완료(Part1 API·Part2 admin·Part3 crew)** → 🔴**P1-8(반드시, v2 입차 차량사진) ← 다음** → ④P1-7(월주차) → ⑤P1-4(QR)·P1-2(차트) → ⑥(보류해제 시)P1-5
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
@@ -50,6 +50,15 @@
 - ⚠️ "용량제한 없음"은 입력 정책이고 Storage 총량은 플랜 한도 내 → **2개월 cleanup cron이 총량관리 핵심**.
 **작업 분할(예정)**: P1-8a (tickets API의 vehicle_photos 수용 확인/보강) → P1-8b (연속촬영 UI: 스트림 1회+슬롯 시퀀스+패스) → P1-8c (cleanup cron + vercel.json). ※ 사진단계 토글은 레거시 `crew_photo_enabled` 참고하되 v2는 "패스버튼" 방식 우선.
 **선결 점검 결과(2026.05.30)**: cron 인프라 존재(`src/app/api/cron/*`+vercel.json), `vehicle-photos` 버킷 기존(레거시만 사용, v2 미사용), v2 submit=`POST /api/v1/tickets`(line302). 확인 끝 — 착수 시 P1-8a부터.
+
+**✅ P1-8a 완료(2026.05.30)** — tickets API vehicle_photos 수용 보강:
+- **선결 확인 결과**: ⓐ`vehicle_photos string[]|null` 컬럼 **기존**(database.types Row/Insert/Update) → 신규 SQL 불필요. ⓑ 레거시 경로 = `{org_id}/{ticket_id}/{idx}_{label}.jpg`(org 스코프) — TODO 표기 `{ticket_id}/`보다 org 격리 우수 → **`{org_id}/{ticket_id}/` 채택**. ⓒ 레거시 흐름 = insert→upload→`vehicle_photos` update(사후 기록 확정). ⓓ 메인 PATCH `[id]`는 **MANAGE 전용** + 화이트리스트에 vehicle_photos 없음 → CREW 사용 불가 → **전용 라우트 신규 필요** 확정.
+- **변경 1**: `POST /api/v1/tickets` 응답에 `photo_bucket`('vehicle-photos')·`photo_path_prefix`(`${ctx.orgId}/${ticket.id}/`) **추가**(additive, accidents API 패턴 일치). insert·body는 불변(사진은 ticket.id 확정 후 업로드되므로 POST body 수용 불가).
+- **변경 2 (신규)**: `PATCH /api/v1/tickets/[id]/photos/route.ts`(OPERATE, crew可, `@ts-nocheck`, car-info 미러링). body `{vehicle_photos:string[]}`. 검증: 배열형·문자열만·trim·중복제거·**최대 6장**·각 경로 **`{org_id}/{id}/` prefix 강제**(cross-org/타티켓 주입 차단). completed 차단. **빈배열(패스) 허용**(기존값 없으면 changed:false). `vehicle_photos`+`updated_at` update, audit_logs 기록.
+- 빌드 OK(`✓ Compiled in 63s`, `/api/v1/tickets/[id]/photos` ƒ). 커밋 `feat(tickets): P1-8a - vehicle_photos 수용 보강`.
+- **⚠️ P1-8b/8c 인계 메모**: ①UI는 POST 응답의 `photo_path_prefix` 하위로 Storage 직접 업로드 후 그 경로배열을 `PATCH .../photos`로 전송. ②경로 포맷 `{org_id}/{ticket_id}/{idx}_{label}.jpg` 권장(cleanup cron이 prefix로 2개월 경과 객체 remove 시 활용). ③`vehicle-photos` 버킷의 crew(browser client) 업로드 정책은 accidents와 동일하게 실기기 검증 필요(막히면 버킷 정책 INSERT 허용 추가). ④패스(0장) 시 PATCH 생략 가능(또는 빈배열 PATCH→changed:false).
+
+**▶ 다음 = P1-8b (연속촬영 UI)**: `/v2/crew/entry` 흐름에 사진 단계 삽입. `getUserMedia` 스트림 **1회 오픈 유지** + canvas 캡처로 슬롯 자동진행(①~⑥) + 라벨 오버레이 + 패스버튼(전체스킵/남은슬롯스킵). 고해상(ideal 1920↑, jpeg q≥0.92). 업로드 진행률·재시도 UX. accidents Part 3의 Storage 직접업로드 패턴 그대로 응용.
 
 ### ✅ GAP-P1-3/6 Part 3 완료 (2026.05.30) — crew `/v2/crew/accident` UI 신규 (accidents 3파트 전체 완료)
 **UI만 — 신규 API·SQL 없음.** Part 1 accidents API(`POST /api/v1/accidents`) + `auth/me` + Storage(`accident-photos`)만 사용.
