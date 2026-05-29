@@ -2,13 +2,28 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.05.29
-> **마지막 작업:** ✅ GAP-P0-1 / 1C 완료 — `/v2/stores/[id]`에 방문지(visit_places) 요금표 섹션 추가 (목록+추가/수정/삭제 모달, require_visit_place 연계 안내). API·SQL 신설 없이 UI만 (PUT/DELETE 라우트 기존 존재)
-> **다음 작업:** GAP-P0-1 / 1D(후순위) `/v2/stores/[id]` 운영시간·근무조·지각규칙 → 또는 P0 잔여(GAP-P0-2~4) / 갭분석 P1 진입
+> **마지막 작업:** ✅ GAP-P0-3 완료 — `/v2/parking-status` 신설 (실시간 주차중 + ⚠️유예초과 탭 + 번호판 수정 모달 + 강제출차 요금/무료). API 전부 기존, UI만. `tickets/active` select에 `pre_paid_deadline`·`additional_fee` 가산만(13D-B 선례)
+> **다음 작업:** GAP-P0-2 `/v2/team` (계정·역할·매장배정) — ⚠️선결: 매장배정 write API 신설 + 관리자계정 생성 정책 확정 / 또는 1D(후순위) 운영시간·근무조·지각규칙 / 갭분석 P1 진입
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
 
 ## 🚨 새 대화 시작 시 필독
+
+### ✅ GAP-P0-3 완료 (2026.05.29) — `/v2/parking-status` 실시간 입차현황 + 강제출차
+**선결 점검 결과**: 필요한 API가 **전부 기존 존재** → SQL·라우트 신설 없이 **UI만**. `tickets/active` select에 `pre_paid_deadline`·`additional_fee` **가산만**(Part 13D-B와 동일한 additive 편집, 기존 폴링 동작 불변).
+**사용 API(전부 기존)**:
+- `GET /api/v1/tickets/active` — 미완료 티켓(admin=전체매장 / crew=배정매장). visit_places·stores·parking_lots 조인 동봉(요금계산용).
+- `PATCH /api/v1/tickets/:id/plate` `{ plate_number }` — 번호판 수정(OPERATE, 숫자4자리↑ 검증, completed 불가).
+- `POST /api/v1/fee/calculate` `{ entry_time, store_id, visit_place_id?, is_valet?, ticket_id }` — 요금계산(월주차/무료는 0 반환, 방문지>매장 요금체계). 응답 `{ total_fee, breakdown{parking_fee,valet_fee,daily_max_applied}, elapsed_minutes, is_monthly, is_free }`.
+- `PATCH /api/v1/tickets/:id/complete` `{ calculated_fee, payment_method? }` — 출차 처리. **무료출차=calculated_fee:0**. ⚠️ field_member는 출차권한 없음(서버 차단).
+**구현** `src/app/v2/parking-status/page.tsx`(신규, 네임스페이스 `v2ps-*`):
+- KPI 4칸(주차중/사전정산/출차요청/⚠️유예초과) + 탭(입차현황 / ⚠️유예초과) + 매장필터(활성티켓 기준 자동) + 차량번호 검색.
+- 카드리스트(반응형 grid, 표 대신 카드 — 1B/1C 톤): 번호·매장·상태배지(parking/pre_paid/exit_requested/overdue)·월주차/무료 배지·입차/경과·위치(parking_lots>parking_location)·차종/색. **초과 카드**엔 마감시각·N분초과·추가요금.
+- 번호판 수정 모달(PATCH plate). 강제출차 모달: 열 때 fee/calculate 선조회 → 정산금액·breakdown 표기 → [🆓 무료출차] / [💳 N원 출차](결제수단 칩: 현금/카드/계좌이체/기타). 월주차·무료차량은 무료출차만 노출.
+- 상태값 집합: `parking`(입차 초기)·`pre_paid`·`overdue`·`exit_requested`·`completed`. **15초 자동 갱신**(silent) + 수동 새로고침.
+- 로컬 빌드 OK (`✓ Compiled successfully in 62s`, `/v2/parking-status` 정적 `○` 등록). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
+**⚠️ 미반영(후속 후보)**: 출차완료(`completed`) 목록/오늘출차 KPI는 active 엔드포인트가 미완료만 반환 → 필요 시 `GET /api/v1/tickets`(날짜필터)로 별도 탭. 강제출차 시 정산완료 알림톡/전화번호 입력은 미연동(complete가 `phone` optional 수신은 함). Sidebar 메뉴 `/parking-status`→`/v2/parking-status` 교체는 v1→v2 라우팅 일괄단계에서.
 
 ### ✅ GAP-P0-1 / 1C 완료 (2026.05.29) — 방문지(visit_places) 요금표 관리
 **선결 확인 결과**: 1B와 동일하게 visit-places 개별 **PUT/DELETE 라우트 이미 존재** (`src/app/api/v1/visit-places/[id]/route.ts`) → **SQL·라우트 신설 없이 UI만 작성**.
@@ -1383,7 +1398,7 @@ CREATE INDEX IF NOT EXISTS idx_tickets_collision
 | 레거시 | v2 대응 | 갭 내용 | 우선순위 |
 |---|---|---|---|
 | `/dashboard` (757줄) | `/v2/dashboard` (855줄) | v2가 더 풍부(KPI 4 + 추이 + 도넛). **출근인원/총직원수 KPI는 v1만 존재** | **P1** |
-| `/parking-status` (1008줄) | **❌ 없음** | 실시간 주차중 리스트 + 초과차량 탭 + 번호판 수정 모달 + 강제출차(요금/무료) | **🔥 P0** |
+| `/parking-status` (1008줄) | `/v2/parking-status` ✅ | 실시간 주차중 + ⚠️초과 탭 + 번호판 수정 + 강제출차(요금/무료) **완료** | ✅ (GAP-P0-3) |
 | `/analytics` (849줄) | `/v2/dashboard`에 부분 흡수 | **시간대별 차트, 매장별 비교, 전기간대비 % 누락** | **P1** |
 | `/stores` (2735줄) | `/v2/stores` + `/v2/stores/[id]` ✅ (1A·1B·1C) | 사업장 CRUD·주차장(면수)·방문지 요금표 **완료**. 운영시간·근무조·지각규칙은 **1D(후순위)** 잔여 | ✅ (1D 잔여) |
 | `/team` (915줄) | **❌ 없음** | 계정생성·비번리셋·제거·매장배정·역할변경(super_admin/admin/crew) | **🔥 P0** |
@@ -1432,7 +1447,7 @@ v1 디렉토리 13개 vs v2 디렉토리 4개.
 |---|---|---|
 | **GAP-P0-1** | `/v2/stores` — 사업장/주차장/방문지 CRUD | ✅ 완료 (1A 사업장 ✅ / 1B 주차장 ✅ / 1C 방문지 ✅). 운영시간·근무조·지각규칙=1D 후순위 |
 | **GAP-P0-2** | `/v2/team` — 계정/매장배정/역할 | 멀티테넌시 SaaS 전환 핵심 |
-| **GAP-P0-3** | `/v2/parking-status` — 실시간 주차중 + 초과차량 | 어드민 운영 핵심 |
+| **GAP-P0-3** | `/v2/parking-status` — 실시간 주차중 + 초과차량 | ✅ 완료 (2026.05.29). 주차중+⚠️초과 탭+번호판수정+강제출차(요금/무료). API 전부 기존, UI만 |
 | **GAP-P0-4** | `/v2/crew/parking/[id]` 보강 — 차량번호 수정 + 차종변경 | ✅ 완료 (19B-5C와 함께) |
 | **GAP-P0-5** | `/v2/crew/attendance` — CREW 출퇴근 | ✅ 완료 (A안: 개인 근태 조회 뷰 / 404 해소). GPS 자가체크인=B안 후속 |
 

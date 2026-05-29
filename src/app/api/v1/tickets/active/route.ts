@@ -57,8 +57,8 @@ export async function GET(request: NextRequest) {
       .from('mepark_tickets')
       .select(`
         id, plate_number, plate_last4, parking_type, status,
-        entry_at, pre_paid_at, parking_location, is_monthly, paid_amount,
-        entry_method, is_free,
+        entry_at, pre_paid_at, pre_paid_deadline, parking_location, is_monthly, paid_amount,
+        additional_fee, entry_method, is_free,
         car_type, car_color, parking_lot_id,
         store_id,
         visit_place_id,
