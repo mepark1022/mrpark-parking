@@ -5,12 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { useRef, useEffect } from "react";
 
 const subPages = [
-  { path: "/parking-status", label: "입차현황", icon: "🚗" },
-  { path: "/monthly", label: "월주차", icon: "📅" },
-  { path: "/analytics", label: "매출분석", icon: "📊" },
-  { path: "/stores", label: "매장관리", icon: "🏠" },
-  { path: "/team", label: "팀원초대", icon: "👥" },
-  { path: "/settings", label: "설정", icon: "⚙️" },
+  // v2 통합앱 라우팅 (v1→v2 일괄교체, 2026.05.30)
+  { path: "/v2/parking-status", label: "입차현황", icon: "🚗" },
+  { path: "/v2/monthly", label: "월주차", icon: "📅" },
+  { path: "/analytics", label: "매출분석", icon: "📊" }, // v2 미구현(매출분석은 /v2/dashboard 통계로 일부 대체) → 레거시 유지
+  { path: "/v2/stores", label: "매장관리", icon: "🏠" },
+  { path: "/v2/team", label: "직원관리", icon: "👥" },
+  { path: "/settings", label: "설정", icon: "⚙️" }, // v2 미구현(GAP-P2-1) → 레거시 유지
   { path: "/guide", label: "기능안내", icon: "💡" },
 ];
 

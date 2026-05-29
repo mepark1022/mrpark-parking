@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 const tabs = [
   {
     id: "dashboard",
-    path: "/dashboard",
+    path: "/v2/dashboard",
     label: "홈",
     icon: (active: boolean) => (
       <span style={{
@@ -20,7 +20,7 @@ const tabs = [
   },
   {
     id: "parking-status",
-    path: "/parking-status",
+    path: "/v2/parking-status",
     label: "입차현황",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -76,7 +76,7 @@ const tabs = [
   },
 ];
 
-const moreRoutes = ["/parking-status", "/monthly", "/analytics", "/stores", "/team", "/settings", "/guide", "/more"];
+const moreRoutes = ["/monthly", "/v2/monthly", "/analytics", "/stores", "/v2/stores", "/team", "/v2/team", "/settings", "/guide", "/more"];
 
 export default function MobileTabBar() {
   const pathname = usePathname();

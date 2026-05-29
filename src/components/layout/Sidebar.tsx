@@ -8,15 +8,15 @@ import { LogoGNB } from "@/components/Logo";
 import { createClient } from "@/lib/supabase/client";
 
 const defaultMenuItems = [
-  { id: "dashboard", href: "/dashboard", label: "대시보드", icon: (
+  { id: "dashboard", href: "/v2/dashboard", label: "대시보드", icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
   )},
   // 일일입력: 미팍티켓 자동 집계로 대체 → 사이드바에서 숨김 (2026.3.11)
   // { id: "entry", href: "/entry", label: "일일 입력", icon: (...) },
-  { id: "parking-status", href: "/parking-status", label: "입차 현황", icon: (
+  { id: "parking-status", href: "/v2/parking-status", label: "입차 현황", icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="7" rx="2"/><path d="M5 11l2-5h10l2 5"/><circle cx="7.5" cy="15.5" r="1.5"/><circle cx="16.5" cy="15.5" r="1.5"/></svg>
   ), badge: true },
-  { id: "monthly", href: "/monthly", label: "월주차 관리", icon: (
+  { id: "monthly", href: "/v2/monthly", label: "월주차 관리", icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/><circle cx="12" cy="15" r="1"/></svg>
   )},
   { id: "analytics", href: "/analytics", label: "매출 분석", icon: (
@@ -28,10 +28,10 @@ const managementMenuItems = [
   { id: "workers", href: "/workers", label: "근무자 관리", icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
   )},
-  { id: "stores", href: "/stores", label: "매장 관리", icon: (
+  { id: "stores", href: "/v2/stores", label: "매장 관리", icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
   )},
-  { id: "team", href: "/team", label: "팀원 초대", icon: (
+  { id: "team", href: "/v2/team", label: "직원 관리", icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
   )},
   { id: "accident", href: "/accident", label: "사고보고", icon: (
@@ -69,7 +69,7 @@ export default function Sidebar() {
 
   // 입차현황 탭 진입 시 배지 초기화
   useEffect(() => {
-    if (pathname === "/parking-status" || pathname.startsWith("/parking-status/")) {
+    if (pathname === "/v2/parking-status" || pathname.startsWith("/v2/parking-status/")) {
       setParkingCount(0);
     }
     if (pathname === "/workers" || pathname.startsWith("/workers/")) {
@@ -171,7 +171,7 @@ export default function Sidebar() {
     <aside className="v3-sidebar">
       {/* Logo - 클릭 시 대시보드로 이동 */}
       <div style={{ padding: "24px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "center" }}>
-        <Link href="/dashboard" style={{ display: "flex", textDecoration: "none" }}>
+        <Link href="/v2/dashboard" style={{ display: "flex", textDecoration: "none" }}>
           <LogoGNB theme="dark" />
         </Link>
       </div>

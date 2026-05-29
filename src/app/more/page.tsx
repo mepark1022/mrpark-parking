@@ -23,14 +23,14 @@ const menuGroups = [
     title: "주차 관리",
     items: [
       {
-        path: "/parking-status",
+        path: "/v2/parking-status",
         label: "입차 현황",
         desc: "매장별 입차 데이터 조회",
         icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="7" rx="2" /><path d="M5 11l2-5h10l2 5" /><circle cx="7.5" cy="15.5" r="1.5" /><circle cx="16.5" cy="15.5" r="1.5" /></svg>),
         color: "#16a34a", bg: "#dcfce7",
       },
       {
-        path: "/monthly",
+        path: "/v2/monthly",
         label: "월주차 관리",
         desc: "월주차 계약 관리",
         icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1428A0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>),
@@ -49,16 +49,16 @@ const menuGroups = [
     title: "관리",
     items: [
       {
-        path: "/stores",
+        path: "/v2/stores",
         label: "매장 관리",
         desc: "매장 정보 및 운영 설정",
         icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>),
         color: "#16a34a", bg: "#dcfce7",
       },
       {
-        path: "/team",
-        label: "팀원 초대",
-        desc: "팀원 초대 및 관리",
+        path: "/v2/team",
+        label: "직원 관리",
+        desc: "직원 계정·매장배정·역할 관리",
         icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>),
         color: "#7c3aed", bg: "#f3e8ff",
       },
