@@ -2,13 +2,29 @@
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.05.29
-> **마지막 작업:** ✅ GAP-P0-3 완료 — `/v2/parking-status` 신설 (실시간 주차중 + ⚠️유예초과 탭 + 번호판 수정 모달 + 강제출차 요금/무료). API 전부 기존, UI만. `tickets/active` select에 `pre_paid_deadline`·`additional_fee` 가산만(13D-B 선례)
-> **다음 작업:** GAP-P0-2a `/v2/team` 본체 (직원목록·crew/field 계정생성·비번리셋·차단/해제·역할변경·매장배정) + 신규 API `POST /api/v1/employees/[id]/stores`(매장배정, replace-set). 관리자(admin) 계정 생성은 **P0-2b 후속**으로 분리(A안 확정 2026.05.29). ▼ 상세는 '🚨 새 대화 시작 시 필독'의 GAP-P0-2 결정 블록 참조
+> **마지막 작업:** ✅ GAP-P0-2a 완료 — `/v2/team` 직원관리 신설 (목록 카드 + 상세모달: 계정생성/비번리셋/차단·해제/역할변경/매장배정/제거) + 신규 API `POST·GET /api/v1/employees/[id]/stores`(매장배정 replace-set, SQL無). 관리자 계정 생성은 모달에서 안내문구로 비활성(P0-2b). 빌드 OK
+> **다음 작업:** (택1) **P0-2b** 관리자 실이메일 계정 생성(신규 `POST /api/v1/auth/admin-account` + 레거시 관리자 employees 연결 마이그레이션) / **P1 갭** 7건 / **Sidebar v1→v2 라우팅 일괄교체**(P0 페이지 다수 완성됨 — `/stores`·`/team`·`/parking-status` 등 v2 진입점 연결). ▼ P0-2b 상세는 '🚨 새 대화 시작 시 필독'의 GAP-P0-2 결정 블록 참조
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
 
 ## 🚨 새 대화 시작 시 필독
+
+### ✅ GAP-P0-2a 완료 (2026.05.29) — `/v2/team` 직원 관리 (목록 + 상세모달 액션)
+**선결 확인 결과**: A안(단계분리) 그대로. 활용 API 전부 기존, **신규 API 1개만 추가**(코드만, SQL無 — store_members 기존 테이블).
+**신규 API** `src/app/api/v1/employees/[id]/stores/route.ts`:
+- `POST` — 매장배정 **replace-set**(멱등). body `{ store_ids: string[], primary_store_id? }`. 동작: ①store_ids 각 매장 `upsert`(onConflict `org_id,employee_id,store_id` → is_active=true·is_primary=primary만·assigned_by/at 갱신·deactivated_at=null) ②store_ids에 없는 기존 활성배정 `is_active=false`+`deactivated_at` ③감사로그. 입력검증: store_ids 배열·중복제거·primary는 store_ids 포함必·각 store가 같은 org 소유인지 검증(아니면 STORE_NOT_FOUND). 권한 MANAGE, org_id 필터.
+- `GET` — 현재 활성 배정 반환(편의용, 상세 API가 이미 동봉하므로 필수 아님).
+**페이지** `src/app/v2/team/page.tsx`(신규, 네임스페이스 `v2tm-*`):
+- **목록**: 검색(이름/사번)·역할필터·계정유무필터(`has_account`)·재직상태필터. 카드 = 이름·사번·직책·역할배지·상태배지·**계정 있음/없음 배지**. ⚠️성능상 카드엔 매장칩 미표기 — 목록 API가 employees.*만 반환(account·store_members 미동봉)하므로 계정배지는 `has_account=true` 동일필터 1콜로 id집합 산출(총 2콜). 매장칩·잠금·최근로그인은 상세모달에서.
+- **상세 모달**(카드 클릭 → `GET /api/v1/employees/:id`): 계정섹션(있음→비번리셋/차단·해제 · 없음+crew/field→계정생성 · 없음+admin→**P0-2b 안내문구로 비활성**) + 역할섹션(crew↔field_member select, admin은 read-only) + 매장배정섹션(체크박스 멀티선택 + '주' 라디오 → 신규 POST) + 제거섹션(soft DELETE).
+- **비번 1회노출 모달**: 계정생성/리셋 후 `initial_password`/`masked_password` 1회 표시(Outfit, 네이비).
+- API-first(Supabase 직접호출 없음), `credentials:"include"`, envelope `{success,data,error}`. 디자인 NAVY `#1428A0`/GOLD `#F5B731`, 숫자 Outfit, maxWidth 1400.
+- 로컬 빌드 OK (`✓ Compiled successfully in 66s`, `/v2/team` 정적 `○`, `/api/v1/employees/[id]/stores` 동적 `ƒ` 등록). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
+**⚠️ 미반영(후속 후보)**:
+- **P0-2b**: 관리자(admin/super_admin) 실이메일 계정 생성. 모달에 안내문구만 있고 버튼 없음. + 레거시 `team/create-account`로 만든 관리자(employees 행 無)의 마이그레이션.
+- 직원 **신규 등록/수정**(emp_no·name·hire_date 등)은 본 페이지 미포함 — 레거시 `/team` 또는 후속 모달로. 본 P0-2a는 "계정·배정·역할·제거" 운영 액션 중심.
+- Sidebar 메뉴 `/team`→`/v2/team` 교체는 v1→v2 라우팅 일괄단계에서.
 
 ### ⏭️ GAP-P0-2 착수 결정 블록 (2026.05.29 확정 — 다음 세션용)
 **선결 점검 완료 → A안(단계분리) 확정.**
