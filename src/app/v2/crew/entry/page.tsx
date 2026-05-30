@@ -6,6 +6,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import CameraOcr from "@/components/crew/CameraOcr";
 import CarInfoModal from "@/components/crew/CarInfoModal";
+import VehiclePhotoCapture from "@/components/crew/VehiclePhotoCapture";
+import { createClient } from "@/lib/supabase/client";
 import { extractDigits } from "@/lib/plate";
 
 /**
@@ -15,7 +17,9 @@ import { extractDigits } from "@/lib/plate";
  * - 충돌 시 차종/컬러 입력 모달(CarInfoModal) → POST /api/v1/tickets (confirm_collision=true)
  * - 충돌 없으면 바로 입차 등록
  * - CameraOcr 재사용 (결과 풀번호에서 last4만 추출 · 컴포넌트 무수정)
- * - Supabase 직접 호출 0건
+ * - P1-8b: 입차확인 → 차량사진 연속촬영(VehiclePhotoCapture, 패스 가능) → POST → Storage 업로드 → PATCH photos
+ * - DB 쿼리는 전부 v1 API 경유(직접 호출 0건). 단, vehicle-photos Storage 업로드만 예외 허용
+ *   (P1-8 스펙·P1-8a 메모 확정 — Storage는 DB쿼리와 별개, 네이티브 전환 시 백그라운드 업로드로 대체)
  */
 
 const CSS = `
@@ -189,6 +193,13 @@ export default function CrewV2EntryPage() {
   const [submitting, setSubmitting] = useState(false);
   const [successInfo, setSuccessInfo] = useState<any>(null);
 
+  // P1-8b: 차량사진 단계
+  const [photoStep, setPhotoStep] = useState(false);      // 연속촬영 오버레이 표시
+  const [pendingCarInfo, setPendingCarInfo] = useState(false); // 충돌차종 확정 여부(사진 후 POST에 반영)
+  const [uploadInfo, setUploadInfo] = useState<{ done: number; total: number; failed: number } | null>(null);
+
+  const supabase = createClient(); // vehicle-photos Storage 업로드 전용
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── 초기 로드 ──
@@ -275,8 +286,39 @@ export default function CrewV2EntryPage() {
   // ── 검증 ──
   const canSubmit = !!storeId && last4.length === 4 && !submitting && !collisionChecking;
 
-  // ── 제출 핸들러 ──
-  const doSubmit = async (withCarInfo: boolean) => {
+  // ── 차량사진 Storage 업로드 (진행률 + 슬롯당 최대 3회 재시도) ──
+  // 경로: {org_id}/{ticket_id}/{idx}_{slotKey}.jpg  → PATCH prefix 검증과 정합
+  // 라벨은 한글이라 Storage 키엔 ASCII 슬롯키 사용 (한글 키 이슈 회피)
+  const uploadVehiclePhotos = async (
+    photos: { blob: Blob; label: string }[],
+    prefix: string
+  ): Promise<string[]> => {
+    const SLOT_KEYS = ["front", "rear", "left", "right", "extra1", "extra2"];
+    const uploaded: string[] = [];
+    let failed = 0;
+    setUploadInfo({ done: 0, total: photos.length, failed: 0 });
+    for (let i = 0; i < photos.length; i++) {
+      const path = `${prefix}${i}_${SLOT_KEYS[i] ?? `slot${i}`}.jpg`;
+      let success = false;
+      for (let attempt = 0; attempt < 3 && !success; attempt++) {
+        try {
+          const { error } = await supabase.storage
+            .from("vehicle-photos")
+            .upload(path, photos[i].blob, { contentType: "image/jpeg", upsert: true });
+          if (!error) { success = true; uploaded.push(path); }
+          else await new Promise((r) => setTimeout(r, 600)); // 재시도 백오프
+        } catch {
+          await new Promise((r) => setTimeout(r, 600));
+        }
+      }
+      if (!success) failed++;
+      setUploadInfo({ done: i + 1, total: photos.length, failed });
+    }
+    return uploaded;
+  };
+
+  // ── 제출 핸들러 (사진 단계 통과 후 호출) ──
+  const doSubmit = async (withCarInfo: boolean, photos: { blob: Blob; label: string }[] = []) => {
     if (!storeId || last4.length !== 4) return;
     setSubmitting(true);
     try {
@@ -321,20 +363,51 @@ export default function CrewV2EntryPage() {
         return;
       }
 
+      // ── POST 성공 → 차량사진 업로드 + 경로 기록 (P1-8b) ──
+      const ticketId = result.data?.ticket_id;
+      const prefix = result.data?.photo_path_prefix;
+      if (photos.length > 0 && ticketId && prefix) {
+        const uploadedPaths = await uploadVehiclePhotos(photos, prefix);
+        if (uploadedPaths.length > 0) {
+          try {
+            await fetch(`/api/v1/tickets/${ticketId}/photos`, {
+              method: "PATCH",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ vehicle_photos: uploadedPaths }),
+            });
+          } catch (e) {
+            // 사진 경로 기록 실패는 비치명적 — 입차 자체는 이미 성공
+            console.error("photos PATCH error:", e);
+          }
+        }
+        if (uploadedPaths.length < photos.length) {
+          alert(`사진 ${photos.length}장 중 ${uploadedPaths.length}장만 업로드되었습니다.\n입차는 정상 등록됩니다.`);
+        }
+        setUploadInfo(null);
+      }
+
       setShowCarModal(false);
       setSuccessInfo({ ...result.data, car_type: carType, car_color: carColor });
       setTimeout(() => router.replace("/v2/crew/parking"), 1500);
     } catch (err) {
       console.error("submit error:", err);
       alert("네트워크 오류가 발생했습니다");
+      setUploadInfo(null);
       setSubmitting(false);
     }
   };
 
-  // 메인 버튼: 충돌이면 모달, 아니면 바로 등록
+  // 메인 버튼: 충돌이면 차종/컬러 모달, 아니면 사진 단계로
   const handleMainSubmit = () => {
     if (collision?.has_collision) setShowCarModal(true);
-    else doSubmit(false);
+    else { setPendingCarInfo(false); setPhotoStep(true); }
+  };
+
+  // 사진 촬영 완료(또는 패스/0장) → 실제 제출(POST → 업로드 → PATCH)
+  const handlePhotosComplete = async (photos: { blob: Blob; label: string }[]) => {
+    setPhotoStep(false);
+    await doSubmit(pendingCarInfo, photos);
   };
 
   if (opLoading) {
@@ -488,6 +561,30 @@ export default function CrewV2EntryPage() {
           </div>
         )}
 
+        {/* P1-8b: 차량사진 연속촬영 (패스 가능 · 0장 허용) */}
+        {photoStep && (
+          <VehiclePhotoCapture
+            onComplete={handlePhotosComplete}
+            onCancel={() => setPhotoStep(false)}
+          />
+        )}
+
+        {/* P1-8b: 사진 업로드 진행률 */}
+        {uploadInfo && (
+          <div className="cv2-toast-overlay">
+            <div className="cv2-toast">
+              <div style={{ fontSize: 40, marginBottom: 10 }}>📤</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#1A1D2B", marginBottom: 10 }}>차량사진 업로드 중…</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#1428A0" }}>
+                {uploadInfo.done} / {uploadInfo.total}
+              </div>
+              {uploadInfo.failed > 0 && (
+                <div style={{ fontSize: 12, color: "#DC2626", marginTop: 8 }}>실패 {uploadInfo.failed}장 (재시도 후)</div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 충돌 차종/컬러 모달 */}
         <CarInfoModal
           open={showCarModal}
@@ -497,7 +594,7 @@ export default function CrewV2EntryPage() {
           carColor={carColor}
           onChangeType={setCarType}
           onChangeColor={setCarColor}
-          onConfirm={() => doSubmit(true)}
+          onConfirm={() => { setShowCarModal(false); setPendingCarInfo(true); setPhotoStep(true); }}
           onCancel={() => setShowCarModal(false)}
           confirmLabel="이대로 입차"
           confirmColor="#16A34A"
