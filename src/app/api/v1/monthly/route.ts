@@ -4,8 +4,9 @@
  * POST /api/v1/monthly    월주차 신규 등록 (+ tenants usage_count++ / last_contracted_at 갱신)
  *
  * 권한:
- *   GET  : MANAGE (super_admin/admin) — crew/field는 배정된 store만
- *   POST : MANAGE
+ *   GET  : OPERATE (super_admin/admin/crew) — crew는 배정된 store만 (P1-7: CREW 월주차 조회)
+ *   POST : OPERATE (crew는 배정된 store만 등록 — P1-7: CREW 월주차 등록)
+ *   ※ field_member는 OPERATE 미보유 → 자동 제외
  *
  * 호환성:
  *   - monthly_parking에는 org_id 컬럼이 없음 → store_id로만 org 분리
@@ -70,7 +71,8 @@ function isValidDate(s: string): boolean {
 // GET: 월주차 목록
 // ────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
-  const auth = await requireAuth(request, 'MANAGE');
+  // P1-7: CREW 월주차 조회 허용 (OPERATE). crew는 아래 95~100줄에서 배정 store로 스코핑됨
+  const auth = await requireAuth(request, 'OPERATE');
   if (auth.error) return auth.error;
   const { ctx } = auth;
 
@@ -161,7 +163,8 @@ export async function GET(request: NextRequest) {
 // POST: 월주차 신규 등록
 // ────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
-  const auth = await requireAuth(request, 'MANAGE');
+  // P1-7: CREW 월주차 등록 허용 (OPERATE). crew는 아래 189~193줄에서 배정 store로 제한됨
+  const auth = await requireAuth(request, 'OPERATE');
   if (auth.error) return auth.error;
   const { ctx } = auth;
 

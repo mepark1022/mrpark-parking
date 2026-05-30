@@ -5,9 +5,10 @@
  * DELETE /api/v1/monthly/:id    soft delete (contract_status='cancelled') / ?hard=true → super_admin만
  *
  * 권한:
- *   GET   : MANAGE (crew/field는 배정 store만)
- *   PATCH : MANAGE
- *   DELETE: MANAGE (soft) / super_admin (hard)
+ *   GET   : OPERATE (crew는 배정 store만 — P1-7: CREW 편집 로드)
+ *   PATCH : OPERATE (crew는 배정 store만 — P1-7: CREW 월주차 수정)
+ *   DELETE: MANAGE (soft) / super_admin (hard) — 계약 해지/삭제는 관리자 전용
+ *   ※ field_member는 OPERATE 미보유 → GET/PATCH 자동 제외
  */
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -48,7 +49,8 @@ function isValidDate(s: string): boolean {
 // GET: 상세
 // ────────────────────────────────────────────────────────
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const auth = await requireAuth(request, 'MANAGE');
+  // P1-7: CREW 상세/편집 로드 허용 (OPERATE). crew는 아래 store 스코프 검증으로 제한됨
+  const auth = await requireAuth(request, 'OPERATE');
   if (auth.error) return auth.error;
   const { ctx } = auth;
 
@@ -88,7 +90,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PATCH: 부분 수정
 // ────────────────────────────────────────────────────────
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  const auth = await requireAuth(request, 'MANAGE');
+  // P1-7: CREW 월주차 수정 허용 (OPERATE). crew는 아래 store 스코프 검증으로 제한됨
+  const auth = await requireAuth(request, 'OPERATE');
   if (auth.error) return auth.error;
   const { ctx } = auth;
 
