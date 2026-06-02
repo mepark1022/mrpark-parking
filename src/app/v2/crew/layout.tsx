@@ -70,7 +70,7 @@ const NAV_ITEMS = [
 ];
 
 // BottomNav 숨기는 경로
-const HIDE_NAV_PATHS = ["/v2/crew/login", "/v2/crew/select-store"];
+const HIDE_NAV_PATHS = ["/v2/crew/login", "/v2/crew/select-store", "/v2/crew/entry/qr"];
 
 // ── BottomNav 컴포넌트 ──
 function CrewV2BottomNav() {

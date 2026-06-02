@@ -191,7 +191,6 @@ export default function CrewV2EntryPage() {
 
   // 제출
   const [submitting, setSubmitting] = useState(false);
-  const [successInfo, setSuccessInfo] = useState<any>(null);
 
   // P1-8b: 차량사진 단계
   const [photoStep, setPhotoStep] = useState(false);      // 연속촬영 오버레이 표시
@@ -388,8 +387,9 @@ export default function CrewV2EntryPage() {
       }
 
       setShowCarModal(false);
-      setSuccessInfo({ ...result.data, car_type: carType, car_color: carColor });
-      setTimeout(() => router.replace("/v2/crew/parking"), 1500);
+      // 입차 성공 → 미팍티켓 QR 발급/공유 화면으로 핸드오프 (GAP-P1-4)
+      const plate = result.data?.plate_number || "";
+      router.replace(`/v2/crew/entry/qr?ticketId=${encodeURIComponent(ticketId || "")}&plate=${encodeURIComponent(plate)}`);
     } catch (err) {
       console.error("submit error:", err);
       alert("네트워크 오류가 발생했습니다");
@@ -614,25 +614,6 @@ export default function CrewV2EntryPage() {
             </>
           }
         />
-
-        {/* 성공 토스트 */}
-        {successInfo && (
-          <div className="cv2-toast-overlay">
-            <div className="cv2-toast">
-              <div style={{ fontSize: 56, marginBottom: 12 }}>✅</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1D2B", marginBottom: 6 }}>입차 완료</div>
-              <div style={{ fontSize: 26, fontWeight: 800, color: "#1428A0", letterSpacing: 2, fontFamily: "'Outfit', sans-serif" }}>{successInfo.plate_number}</div>
-              {(successInfo.car_type || successInfo.car_color) && (
-                <div style={{ fontSize: 13, color: "#64748B", marginTop: 8 }}>
-                  {[successInfo.car_type, successInfo.car_color].filter(Boolean).join(" · ")}
-                </div>
-              )}
-              {successInfo.alimtalk_requested && (
-                <div style={{ fontSize: 12, color: "#92400E", marginTop: 6 }}>알림톡 발송 요청됨</div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
