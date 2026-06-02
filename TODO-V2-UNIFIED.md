@@ -8,9 +8,9 @@
 > **마지막 작업:** ✅ **GAP-P1-4 (미팍티켓 QR 발급/공유) 완료** — 신규 `src/app/v2/crew/entry/qr/page.tsx`(`@ts-nocheck`, `cv2qr-*`, Suspense, 풀스크린 네이비 핸드오프). 레거시 `crew/entry/qr` 이식. **선결점검 발견**: 레거시는 "QR 스캔 입차"가 아니라 `/ticket/{id}` URL을 **QR로 표시·공유**하는 화면(고객 뷰 `/ticket/[id]` 25KB는 이미 운영 중=실시간상태/출차요청/Toss추가결제)이었고, 현재 v2 입차 성공은 토스트 1.5초→`/v2/crew/parking` 자동이동이라 **고객에게 QR 넘기는 단계가 공백**이었음. ①진입=`?ticketId=&plate=`, `${origin}/ticket/{id}` URL을 QR로. ②⚠️**QR 생성 교정**: 레거시 외부 `api.qrserver.com` 호출(약전파/오프라인 취약·제3자 URL 전송) → **클라이언트 `qrcode` 라이브러리**(npm `qrcode@1.5.4` 신규설치)로 교체, 오프라인 동작·네이티브 전환 구조 정합(설계결함 지금 수정 원칙). errorCorrectionLevel M, NAVY/화이트. ③액션: 링크공유(navigator.share→없으면 clipboard+복사토스트)·현황보기·다음차량입차·홈. ④**entry 배선**: `entry/page.tsx` 성공 흐름의 `setSuccessInfo+setTimeout(parking,1500)` → `router.replace('/v2/crew/entry/qr?ticketId=&plate=')`로 교체. 죽은 successInfo state·토스트블록 제거(최소외과). ⑤풀스크린 핸드오프라 `v2/crew/layout` `HIDE_NAV_PATHS`에 `/v2/crew/entry/qr` 추가(하단탭 숨김). 빌드 OK(`✓ Compiled successfully in 78s`, `/v2/crew/entry/qr` ○). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치 무관.
 > **마지막 작업:** ✅ **GAP-P1-2 Part 1 (시간대별 통계 API) 완료** (commit `bd0763b`) — 신규 `src/app/api/v1/stats/hourly/route.ts`(`@ts-nocheck`). **선결점검 결과**: ⓐ`recharts@3.7.0` 기존설치 + v2 dashboard가 이미 `ComposedChart/PieChart` 사용 → 차트 라이브러리 추가 불필요. ⓑ `overview` API가 **전기간대비(compare/change %) 이미 서버 제공**, `by-store`(매장별 비교)·`daily-trend`(추이)·`by-payment-method` 기존 존재 → Part2 UI가 그대로 재사용. ⓒ **유일 공백 = 시간대별(hourly)**: 기존 stats 5종은 전부 `daily_reports`(일 합계)라 시간대 집계 불가. 레거시는 `mepark_tickets.entry_at` KST시각으로 클라 직접계산(v2 직접쿼리 금지 위반) → **신규 hourly API 필요**로 확정. **구현**: `GET /api/v1/stats/hourly?date_from&date_to&store_id?`(year+month도 지원). `mepark_tickets`(status=completed) KST시각 0~23 버킷 24개 zero-fill, 시간대별 `total_cars/valet_count/parking_count/revenue` + `peak` + `totals`. **본 라우트가 v2 첫 티켓단위 stats** → Supabase 1000행 제한 회피 페이지네이션(PAGE_SIZE 1000, MAX_PAGES 200=20만건 상한, 초과 시 `truncated:true`). 권한 MANAGE, crew/field는 `ctx.storeIds` 스코핑(빈배열→zeros), org_id 필터. 미들웨어 `/api/` 일괄통과(PUBLIC_PATHS 불필요, 인증은 `requireAuth` 처리). 신규 SQL 불필요. 빌드 OK(`✓ Compiled in 80s`, `/api/v1/stats/hourly` ƒ, 117p). 경고 2건은 기존 Toss SDK 무관.
 > **마지막 작업:** ✅ **GAP-P1-2 Part 2 (`/v2/analytics` UI) 완료 — P1 시리즈 전부 종료**. 신규 `src/app/v2/analytics/page.tsx`(`@ts-nocheck`, `v2an-*`, `<style jsx>`). 레거시 `src/app/analytics/page.tsx`(849줄)를 **API-first 재구축**(Supabase 직접쿼리 0). 데이터=stats 5종 조합(`overview`·`daily-trend`·`hourly`(Part1신규)·`by-store`·`by-payment-method`) 전부 `credentials:include`+envelope `{success,data}` 파싱. 구성: ①KPI 4카드(매출/입차/발렛/일보, `overview.change` 전기간대비 %) ②매출 추이 AreaChart(`daily-trend`) ③**시간대별 입차 BarChart(`hourly`, peak 시각 GOLD Cell 강조 + `truncated` 경고배너)** ④매장별 매출 비교 BarChart(`by-store`) ⑤결제수단 도넛(`by-payment-method`, 범례+비율+금액) ⑥매장별 상세 실적 테이블(items+합계행). 프리셋=이번달/지난달/최근30일/올해+직접입력+매장필터, 필터변경 시 자동로드. **daily-trend 92일 서버제약 처리**: 기간>92일이면 호출 생략하고 안내문 표시(다른 차트는 전기간 정상). NAVY/GOLD/Outfit, 모바일 KPI 2열·grid2 1열 반응형. ⚠️**Sidebar 메뉴 교체 보류**(`Sidebar.tsx`의 `/analytics`→`/v2/analytics`는 accidents와 동일하게 v1→v2 일괄교체 단계에서. 현재 직접 URL `/v2/analytics`로 접근). 빌드 OK(`✓ Compiled successfully in 73s`, `/v2/analytics` ○, 118p). 경고 2건은 기존 Toss SDK 무관.
-> **다음 작업:** ▶ **P1 전부 완료** → 이후 후보: ①Sidebar `/analytics`→`/v2/analytics` 등 v1→v2 라우팅 일괄교체 ②(보류해제 시)P1-5(퇴근요청 워크플로, 신규 API 동반) ③실기기 검증 누적분 1회 점검(P1-2 analytics 차트 end-to-end, P1-4 QR 핸드오프, P1-7 crew 200/타매장403, P1-8 `vehicle-photos` 버킷 INSERT 정책) ④미팍티켓/미톡 등 P1 외 신규 트랙. ⚠️**P1-2 analytics 실기기 점검**: 긴 기간 선택 시 hourly `truncated` 미발생·daily-trend 92일 안내 정상 동작 확인.
+> **다음 작업:** ▶ **P1 시리즈 완전 종료**(P1-1·2·3·4·6·7·8 ✅ + P1-5 ❌폐기). 이후 후보: ①Sidebar `/analytics`→`/v2/analytics` 등 v1→v2 라우팅 일괄교체(+레거시 `crew/attendance/history`·`checkout_requests` 정리) ②실기기 검증 누적분 1회 점검(P1-2 analytics 차트 end-to-end, P1-4 QR 핸드오프, P1-7 crew 200/타매장403, P1-8 `vehicle-photos` 버킷 INSERT 정책) ③미팍티켓/미톡 등 P1 외 신규 트랙. ⚠️**P1-2 analytics 실기기 점검**: 긴 기간 선택 시 hourly `truncated` 미발생·daily-trend 92일 안내 정상 동작 확인.
 > **⚠️ P1-8b 실기기 검증 미완(P1-8c 전/병행 필요):** `vehicle-photos` 버킷의 crew(browser anon client) **INSERT(upload) 정책**이 막히면 업로드 실패 → 버킷 RLS에 authenticated INSERT 허용 정책 추가 SQL 필요(accidents `accident-photos`와 동일 패턴). 실기기 1대로 1장 촬영→업로드 성공 여부 먼저 확인 권장.
-> **P1 추천순서(갱신):** ①P1-1✅ → ②~~P1-5~~(보류) → ③**P1-3+P1-6(accidents) ✅** → ④**P1-8 ✅(8a·8b·8c)** → ⑤**P1-7(월주차) ✅(Part1·2·3)** → ⑥**P1-4(QR) ✅** → ⑦**P1-2(분석차트) ✅(Part1·2)** → **🎉 P1 전부 완료** → ⑧(보류해제 시)P1-5
+> **P1 추천순서(갱신):** ①P1-1✅ → ②~~P1-5~~**(❌폐기 2026.06.03)** → ③**P1-3+P1-6(accidents) ✅** → ④**P1-8 ✅(8a·8b·8c)** → ⑤**P1-7(월주차) ✅(Part1·2·3)** → ⑥**P1-4(QR) ✅** → ⑦**P1-2(분석차트) ✅(Part1·2)** → **🎉 P1 시리즈 완전 종료**
 > **기획서 위치:** 프로젝트 지식 `미팍통합앱_신규기획서_v2.md`
 
 ---
@@ -35,6 +35,19 @@
 **⚠️ 실기기 검증(미검증)**: crew 세션으로 `GET/POST/PATCH /api/v1/monthly` 200 응답 + 타 매장 차단(403) 확인. 삭제버튼은 CREW UI에 노출 안 함(API도 MANAGE).
 
 
+### ❌ GAP-P1-5 폐기 확정 (2026.06.03 대표 결정)
+**결정: 폐기.** v2 일보 파생 근태 모델에서 레거시 `checkout_requests`(퇴근수정 요청→관리자 승인) 워크플로는 **구조적으로 불필요**. 근거:
+- **퇴근시각 = 일보의 `staff.check_out`** — CREW가 일보 작성 시 직접 입력(레거시는 `worker_attendance` 별도 체크라 본인이 못 고쳐서 승인 흐름 필요했음).
+- **미확정 일보는 CREW 본인이 직접 수정** 가능(`PATCH /api/v1/daily-reports/[id]`, OPERATE·본인작성·미확정) → 퇴근시각 오타/누락 자가정정.
+- **확정 후 정정 = MANAGE 직접수정 + audit_logs** → 별도 요청 테이블 불요.
+- **누락 감지 = anomaly API `no_checkout`** 으로 관리자 이미 모니터링.
+- **출퇴근 이력 조회 = P0-5 `/v2/crew/attendance`** 에 이미 구현(월별 일자행 + check_in~check_out).
+- v2 디렉토리 `checkout_requests` 사용처 **0건** 확인(`parking/[id]`·`anomaly`의 "checkout"은 출차/누락감지로 무관).
+**잔여 미세갭(작업 불요)**: 확정 일보 퇴근시각 정정을 CREW가 관리자에 알리는 경량 채널 — 현재 관리자 직접수정으로 커버. 필요 시 사고보고류 경량 메모로 충분(전용 워크플로 신설 안 함).
+**→ P1 시리즈 전부 종료**(P1-1·2·3·4·6·7·8 ✅ + P1-5 폐기). 레거시 `crew/attendance/history`·`checkout_requests` 4단 흐름은 v1→v2 일괄교체 시 함께 정리.
+
+<details><summary>(폐기 전 보강계획 — 참고용 보존)</summary>
+
 ### 🟡 GAP-P1-5 보류 + 보강계획 (2026.05.30 선결점검)
 **결론: 계획대로 진행 불가 → 후순위 보류.** 선결점검에서 헤더 전제와 실제 코드 불일치 발견.
 - **레거시 `src/app/crew/attendance/history/page.tsx`의 실체** = "출퇴근 이력"이 **아님**. **퇴근요청(`checkout_requests`) 신청 이력** 페이지. 최근 30일 본인 퇴근요청 목록 + 삭제(pending) + 재요청(insert). `checkout_requests` 테이블 Supabase 직접조회.
@@ -46,6 +59,8 @@
   - 선행 결정: ⓐ v2에 퇴근요청/승인 워크플로를 유지할 것인가? (CREW가 일보 제출 후 퇴근시각 정정 요청 → 관리자 승인 플로우) 유지 안 하면 P1-5는 **폐기**.
   - 유지 시 작업: (A1) 신규 API `GET·POST·DELETE /api/v1/checkout-requests`(SELF: 본인 30일 목록/재요청/삭제, MANAGE: 승인/반려) (A2) `/v2/crew/attendance/history` UI — P0-5 톤 재사용, BottomNav/근태페이지에서 진입 (A3) (선택) 관리자측 승인 화면.
   - 즉, **순수 UI-only가 아니라 신규 API 동반 작업으로 재분류**. 진행 시 accidents와 동급 난이도.
+
+</details>
 
 ### ✅ GAP-P1-3 + P1-6 선결점검 결과 (2026.05.30) — accidents, 다음 진행 대상
 **확정: v1 accidents API 신규 필요(예상대로). 테이블·Storage 기존 활용.**
