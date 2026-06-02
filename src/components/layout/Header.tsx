@@ -18,6 +18,18 @@ const pageTitles: Record<string, { title: string; desc: string }> = {
   "/accident": { title: "사고보고", desc: "주차 사고를 보고하고 관리합니다" },
   "/settings": { title: "설정", desc: "시스템 설정을 관리합니다" },
   "/more": { title: "더보기", desc: "" },
+  // v2 admin 라우트 (startsWith 매칭 — v1 키와 prefix 충돌 없음). 미설정 시 전부 "대시보드"로 잘못 표시됨.
+  "/v2/dashboard": { title: "대시보드", desc: "전체 매장의 주차 현황을 한눈에 확인합니다" },
+  "/v2/parking-status": { title: "입차 현황", desc: "매장별 입차 데이터를 조회하고 검색합니다" },
+  "/v2/monthly": { title: "월주차 관리", desc: "월주차 계약을 관리합니다" },
+  "/v2/analytics": { title: "매출 분석", desc: "매출 데이터를 분석합니다" },
+  "/v2/stores": { title: "매장 관리", desc: "매장 정보와 운영 설정을 관리합니다" },
+  "/v2/team": { title: "직원 관리", desc: "직원을 초대하고 관리합니다" },
+  "/v2/accident": { title: "사고보고", desc: "주차 사고를 보고하고 관리합니다" },
+  "/v2/alimtalk": { title: "알림톡 로그", desc: "알림톡 발송 내역을 확인합니다" },
+  "/v2/attendance": { title: "근태 관리", desc: "직원 출퇴근과 근태를 관리합니다" },
+  "/v2/daily-reports": { title: "일일 보고서", desc: "일일 영업 보고서를 관리합니다" },
+  "/v2/tenants": { title: "입주사 관리", desc: "입주사 정보를 관리합니다" },
 };
 
 const roleBadge = {

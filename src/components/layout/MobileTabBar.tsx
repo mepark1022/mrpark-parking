@@ -50,7 +50,7 @@ const tabs = [
   },
   {
     id: "accident",
-    path: "/accident",
+    path: "/v2/accident",
     label: "사고",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -76,7 +76,7 @@ const tabs = [
   },
 ];
 
-const moreRoutes = ["/monthly", "/v2/monthly", "/analytics", "/stores", "/v2/stores", "/team", "/v2/team", "/settings", "/guide", "/more"];
+const moreRoutes = ["/monthly", "/v2/monthly", "/v2/analytics", "/stores", "/v2/stores", "/team", "/v2/team", "/settings", "/guide", "/more"];
 
 export default function MobileTabBar() {
   const pathname = usePathname();

@@ -37,7 +37,7 @@ const menuGroups = [
         color: "#1428A0", bg: "#ecf0ff",
       },
       {
-        path: "/analytics",
+        path: "/v2/analytics",
         label: "매출 분석",
         desc: "매출 데이터 분석",
         icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5B731" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>),

@@ -64,8 +64,8 @@ export default function BugReportFAB() {
 
   // 현재 페이지 URL 자동 매칭
   const PAGE_OPTIONS = [
-    "/dashboard", "/parking-status", "/monthly", "/analytics", "/workers",
-    "/stores", "/team", "/accident", "/bugs", "/settings", "/login",
+    "/dashboard", "/parking-status", "/monthly", "/v2/analytics", "/workers",
+    "/stores", "/team", "/v2/accident", "/bugs", "/settings", "/login",
     "/crew", "/crew/entry", "/crew/entry/qr", "/crew/parking-status",
     "/crew/parking-list", "/crew/attendance", "/crew/attendance/history",
     "/crew/accident", "/crew/monthly", "/crew/monthly/register",
@@ -401,11 +401,11 @@ export default function BugReportFAB() {
                     <option value="/dashboard">대시보드</option>
                     <option value="/parking-status">입차 현황</option>
                     <option value="/monthly">월주차 관리</option>
-                    <option value="/analytics">매출 분석</option>
+                    <option value="/v2/analytics">매출 분석</option>
                     <option value="/workers">근무자 관리</option>
                     <option value="/stores">매장 관리</option>
                     <option value="/team">팀원 관리</option>
-                    <option value="/accident">사고보고</option>
+                    <option value="/v2/accident">사고보고</option>
                     <option value="/bugs">오류보고</option>
                     <option value="/settings">설정</option>
                     <option value="/login">로그인</option>
