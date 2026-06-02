@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // ── 현재 기간 집계 (daily_reports) ──
+    // ── 현재 기간 집계 (daily_records) ──
     const currentReports = await fetchReportSummary(
       supabase,
       ctx.orgId,
@@ -127,11 +127,11 @@ async function fetchReportSummary(
   storeId: string | null
 ): Promise<{ data?: any; error?: string }> {
   let q = supabase
-    .from('daily_reports')
-    .select('total_revenue, total_cars, valet_count')
+    .from('daily_records')
+    .select('valet_revenue, total_cars, valet_count')
     .eq('org_id', orgId)
-    .gte('report_date', dateFrom)
-    .lte('report_date', dateTo);
+    .gte('date', dateFrom)
+    .lte('date', dateTo);
 
   if (storeId) q = q.eq('store_id', storeId);
 
@@ -143,7 +143,7 @@ async function fetchReportSummary(
 
   const summary = (data || []).reduce(
     (acc: any, r: any) => {
-      acc.revenue += Number(r.total_revenue || 0);
+      acc.revenue += Number(r.valet_revenue || 0);
       acc.total_cars += Number(r.total_cars || 0);
       acc.valet_count += Number(r.valet_count || 0);
       acc.report_count += 1;
