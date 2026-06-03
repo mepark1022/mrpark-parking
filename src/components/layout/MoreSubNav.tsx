@@ -26,9 +26,10 @@ export default function MoreSubNav() {
 
   // 더보기 하위 페이지에서만 표시 (/more 자체는 제외)
   const isSubPage = subPagePaths.some((p) => pathname.startsWith(p));
-  if (!isSubPage) return null;
 
   // 활성 탭 자동 스크롤
+  // ⚠️ hook은 항상 호출되어야 함 — early return(아래) 위로 올림. (React #310: hook 개수 불일치 방지)
+  //    sub페이지가 아니면 ref가 미부착이라 내부 if가 false → no-op.
   useEffect(() => {
     if (activeRef.current && scrollRef.current) {
       const container = scrollRef.current;
@@ -37,6 +38,8 @@ export default function MoreSubNav() {
       container.scrollTo({ left: offset, behavior: "smooth" });
     }
   }, [pathname]);
+
+  if (!isSubPage) return null;
 
   return (
     <>
