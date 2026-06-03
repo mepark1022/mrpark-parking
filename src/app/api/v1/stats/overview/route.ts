@@ -138,7 +138,7 @@ async function fetchReportSummary(
   const { data, error } = await q;
   if (error) {
     console.error('[stats/overview reports]:', error.message);
-    return { error: `일보 집계 오류[DEBUG]: ${error.message}` };
+    return { error: '일보 집계 중 오류가 발생했습니다' };
   }
 
   const summary = (data || []).reduce(

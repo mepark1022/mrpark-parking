@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await q;
     if (error) {
       console.error('[stats/by-store]:', error.message);
-      return serverError(`주차장별 통계 오류[DEBUG]: ${error.message}`);
+      return serverError('주차장별 통계 조회 중 오류가 발생했습니다');
     }
 
     // store_id별로 집계
