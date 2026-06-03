@@ -200,7 +200,7 @@ function InviteAcceptContent() {
         if (inv.role === "crew") {
           router.push("/crew/home");
         } else {
-          router.push("/dashboard");
+          router.push("/v2/dashboard");
         }
       }, 1500);
     } catch (err) {

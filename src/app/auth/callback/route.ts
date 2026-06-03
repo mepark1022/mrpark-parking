@@ -15,7 +15,7 @@ function getAdminClient() {
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = searchParams.get("next") ?? "/v2/dashboard";
 
   // invite_token: URL → 쿠키 순서로 확인
   let inviteToken = searchParams.get("invite_token");
@@ -131,7 +131,7 @@ export async function GET(request: Request) {
 
           const isAdminRole = invitation.role !== "crew";
           const response = NextResponse.redirect(
-            `${origin}${isAdminRole ? "/dashboard" : "/store-select?return=/dashboard"}`
+            `${origin}${isAdminRole ? "/v2/dashboard" : "/store-select?return=/v2/dashboard"}`
           );
           response.cookies.set("invite_token", "", { maxAge: 0, path: "/" });
           return response;
@@ -171,8 +171,8 @@ export async function GET(request: Request) {
         }
       }
 
-      // crew / viewer → 매장 선택 후 진입 (crew는 /dashboard 아닌 /crew로)
-      const crewNext = next === "/dashboard" ? "/crew" : next;
+      // crew / viewer → 매장 선택 후 진입 (crew는 /v2/dashboard 아닌 /crew로)
+      const crewNext = next === "/v2/dashboard" ? "/crew" : next;
       return NextResponse.redirect(`${origin}/store-select?return=${crewNext}`);
     } else {
       // exchangeCodeForSession 실패 - PKCE 불일치 등 → 쿠키 초기화 후 재시도

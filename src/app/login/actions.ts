@@ -41,12 +41,12 @@ export async function login(formData: FormData) {
     // role에 따라 분기: admin/owner/super_admin → 대시보드, crew/viewer → 매장 선택
     const adminRoles = ["admin", "owner", "super_admin"];
     if (!profile?.role || !adminRoles.includes(profile.role)) {
-      redirect("/store-select?return=/dashboard");
+      redirect("/store-select?return=/v2/dashboard");
     }
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect("/v2/dashboard");
 }
 
 export async function signup(formData: FormData) {

@@ -288,7 +288,7 @@ function getRoleBadge(role: string) {
 function StoreSelectInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get("return") || "/dashboard";
+  const returnTo = searchParams.get("return") || "/v2/dashboard";
   const isChange = searchParams.get("change") === "1"; // 변경 모드
 
   const [stores, setStores] = useState<Store[]>([]);
@@ -357,8 +357,8 @@ function StoreSelectInner() {
 
       // crew & 매장 1개면 바로 자동 진입
       if (!isAdmin && list.length === 1 && !isChange) {
-        // crew가 /dashboard로 진입하지 않도록: returnTo가 /dashboard면 /crew로 보냄
-        const crewReturnTo = returnTo === "/dashboard" ? "/crew" : returnTo;
+        // crew가 /v2/dashboard로 진입하지 않도록: returnTo가 /v2/dashboard면 /crew로 보냄
+        const crewReturnTo = returnTo === "/v2/dashboard" ? "/crew" : returnTo;
         saveAndGo(list[0], crewReturnTo);
         return;
       }
@@ -379,9 +379,9 @@ function StoreSelectInner() {
     const store = stores.find(s => s.id === selectedId);
     if (!store) return;
     setConfirming(true);
-    // crew는 /dashboard 대신 /crew로 이동
+    // crew는 /v2/dashboard 대신 /crew로 이동
     const isAdminRole = role === "admin" || role === "owner" || role === "super_admin";
-    const dest = (!isAdminRole && returnTo === "/dashboard") ? "/crew" : returnTo;
+    const dest = (!isAdminRole && returnTo === "/v2/dashboard") ? "/crew" : returnTo;
     saveAndGo(store, dest);
   }
 

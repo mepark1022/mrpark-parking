@@ -22,7 +22,7 @@ const ADMIN_STEPS = [
     highlight: '[data-menu="stores"]',
     position: "right",
     actionLabel: "매장 관리 바로가기",
-    actionPath: "/stores",
+    actionPath: "/v2/stores",
   },
   {
     id: "team",
@@ -32,7 +32,7 @@ const ADMIN_STEPS = [
     highlight: '[data-menu="team"]',
     position: "right",
     actionLabel: "팀원 초대 바로가기",
-    actionPath: "/team",
+    actionPath: "/v2/team",
   },
   {
     id: "dashboard",
@@ -42,7 +42,7 @@ const ADMIN_STEPS = [
     highlight: '[data-menu="dashboard"]',
     position: "right",
     actionLabel: "대시보드 바로가기",
-    actionPath: "/dashboard",
+    actionPath: "/v2/dashboard",
   },
   {
     id: "ticket",
@@ -52,7 +52,7 @@ const ADMIN_STEPS = [
     highlight: '[data-menu="parking-status"]',
     position: "right",
     actionLabel: "입차 현황 바로가기",
-    actionPath: "/parking-status",
+    actionPath: "/v2/parking-status",
   },
 ];
 

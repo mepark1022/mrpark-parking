@@ -247,12 +247,12 @@ function getRedirectPath(role?: string): string {
   switch (role) {
     case 'super_admin':
     case 'admin':
-      return '/dashboard';
+      return '/v2/dashboard';
     case 'crew':
       return '/'; // crew.mepark.kr 루트
     case 'field_member':
       return '/'; // crew.mepark.kr 제한모드
     default:
-      return '/dashboard';
+      return '/v2/dashboard';
   }
 }
