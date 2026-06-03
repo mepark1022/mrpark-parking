@@ -25,12 +25,13 @@ export default function AttendanceMapView({
   const [mapError, setMapError] = useState(false);
 
   const hasAnyCoord = storeLat || checkInCoords || checkOutCoords || currentCoords;
-  if (!hasAnyCoord) return null;
 
   const centerLat = storeLat || currentCoords?.lat || checkInCoords?.lat || 37.5665;
   const centerLng = storeLng || currentCoords?.lng || checkInCoords?.lng || 126.9780;
 
+  // ⚠️ hook은 항상 호출되어야 함 — early return(JSX 직전)은 hook 뒤로. (React #310 방지)
   useEffect(() => {
+    if (!hasAnyCoord) return;
     if (window.kakao?.maps) { setMapLoaded(true); return; }
     const KAKAO_JS_KEY = process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
     if (!KAKAO_JS_KEY) { setMapError(true); return; }
@@ -142,6 +143,8 @@ export default function AttendanceMapView({
       </div>
     );
   }
+
+  if (!hasAnyCoord) return null;
 
   return (
     <div ref={mapRef} style={{ width: "100%", height: 200, borderRadius: 14, overflow: "hidden", border: "1.5px solid #E2E8F0", background: "#F1F5F9" }}>
