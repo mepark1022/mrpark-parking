@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await q;
     if (error) {
       console.error('[stats/daily-trend]:', error.message);
-      return serverError('일별 추이 조회 중 오류가 발생했습니다');
+      return serverError(`일별 추이 오류[DEBUG]: ${error.message}`);
     }
 
     // date별 합산 (같은 날짜 여러 사업장이면 합쳐서 표시)
