@@ -58,11 +58,11 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
 
     let q = supabase
-      .from('daily_reports')
-      .select('report_date, total_revenue, total_cars, valet_count')
+      .from('daily_records')
+      .select('date, valet_revenue, total_cars, valet_count')
       .eq('org_id', ctx.orgId)
-      .gte('report_date', date_from)
-      .lte('report_date', date_to);
+      .gte('date', date_from)
+      .lte('date', date_to);
 
     if (storeId) q = q.eq('store_id', storeId);
     if (['crew', 'field_member'].includes(ctx.role)) {
@@ -82,12 +82,12 @@ export async function GET(request: NextRequest) {
     // date별 합산 (같은 날짜 여러 사업장이면 합쳐서 표시)
     const byDate = new Map<string, any>();
     for (const r of data || []) {
-      const cur = byDate.get(r.report_date) || { revenue: 0, total_cars: 0, valet_count: 0, report_count: 0 };
-      cur.revenue += Number(r.total_revenue || 0);
+      const cur = byDate.get(r.date) || { revenue: 0, total_cars: 0, valet_count: 0, report_count: 0 };
+      cur.revenue += Number(r.valet_revenue || 0);
       cur.total_cars += Number(r.total_cars || 0);
       cur.valet_count += Number(r.valet_count || 0);
       cur.report_count += 1;
-      byDate.set(r.report_date, cur);
+      byDate.set(r.date, cur);
     }
 
     // 모든 날짜에 대해 row 생성 (빈 날짜 = 0)
