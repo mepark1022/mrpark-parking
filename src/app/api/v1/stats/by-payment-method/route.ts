@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     const { data: reports, error: rErr } = await rq;
     if (rErr) {
       console.error('[stats/by-payment-method reports]:', rErr.message);
-      return serverError('일보 조회 중 오류가 발생했습니다');
+      return serverError(`일보 조회 오류[DEBUG]: ${rErr.message}`);
     }
 
     const reportIds = (reports || []).map((r: any) => r.id);

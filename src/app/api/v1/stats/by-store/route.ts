@@ -46,11 +46,11 @@ export async function GET(request: NextRequest) {
 
     // 일보 + 사업장 정보
     let q = supabase
-      .from('daily_records')
-      .select('store_id, valet_revenue, total_cars, valet_count, stores!inner(id, name, site_code)')
+      .from('daily_reports')
+      .select('store_id, total_revenue, total_cars, valet_count, stores!inner(id, name, site_code)')
       .eq('org_id', ctx.orgId)
-      .gte('date', date_from)
-      .lte('date', date_to);
+      .gte('report_date', date_from)
+      .lte('report_date', date_to);
 
     // crew/field 스코프
     if (['crew', 'field_member'].includes(ctx.role)) {
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         valet_count: 0,
         report_count: 0,
       };
-      cur.revenue += Number(r.valet_revenue || 0);
+      cur.revenue += Number(r.total_revenue || 0);
       cur.total_cars += Number(r.total_cars || 0);
       cur.valet_count += Number(r.valet_count || 0);
       cur.report_count += 1;
