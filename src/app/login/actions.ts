@@ -46,7 +46,8 @@ export async function login(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/v2/dashboard");
+  // admin/owner/super_admin → 루트 선택 화면(v1/v2 분리 테스트). 컷오버 확정 시 "/v2/dashboard"로 환원.
+  redirect("/");
 }
 
 export async function signup(formData: FormData) {
