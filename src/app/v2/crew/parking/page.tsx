@@ -6,7 +6,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { fmtPlate } from "@/lib/utils/format";
 import { extractDigits } from "@/lib/plate";
-import { carColorHex } from "@/components/crew/CarInfoModal";
 
 /**
  * CREW v2 주차 목록 페이지
@@ -475,18 +474,10 @@ export default function CrewV2ParkingListPage() {
                   {/* 상단: 색상칩 + 번호판 + 상태 */}
                   <div className="cv2-vcard-top">
                     <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                      {t.car_color && carColorHex(t.car_color) && (
-                        <span style={{
-                          width: 14, height: 14, borderRadius: "50%",
-                          background: carColorHex(t.car_color),
-                          border: "1.5px solid rgba(0,0,0,0.18)",
-                          flexShrink: 0,
-                        }} aria-hidden title={t.car_color} />
-                      )}
                       <span className="cv2-vplate">{fmtPlate(t.plate_number)}</span>
-                      {t.car_type && (
-                        <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 600, whiteSpace: "nowrap" }}>
-                          {t.car_type}
+                      {(t.car_type || t.car_color) && (
+                        <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {[t.car_type, t.car_color].filter(Boolean).join(" · ")}
                         </span>
                       )}
                     </span>

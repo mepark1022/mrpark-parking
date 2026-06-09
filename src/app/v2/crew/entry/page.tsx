@@ -600,7 +600,7 @@ export default function CrewV2EntryPage() {
         <CarInfoModal
           open={showCarModal}
           title={`동일 4자리 차량 ${collision?.count || 0}대`}
-          description={`현재 <b>${last4}</b> 활성 차량이 이미 있습니다. 출차 시 구분되도록 <b>차종·컬러</b>를 입력하세요.`}
+          description={`현재 <b>${last4}</b> 활성 차량이 이미 있습니다. 출차 시 구분되도록 <b>차종</b>을 입력하세요.`}
           carType={carType}
           carColor={carColor}
           onChangeType={setCarType}
@@ -616,7 +616,7 @@ export default function CrewV2EntryPage() {
                 <div className="cv2-coll-card" key={m.id}>
                   <div className="cv2-coll-pn">{m.plate_last4 || m.plate_number}</div>
                   <div className="cv2-coll-meta">
-                    {[m.car_type || "차종?", m.car_color || "컬러?", m.parking_location || "위치?"].join(" · ")}<br />
+                    {[m.car_type || "차종?", m.parking_location || "위치?"].join(" · ")}<br />
                     {m.entry_at ? new Date(m.entry_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : ""} 입차 · <span className="cv2-coll-tag">{m.parking_type === "self" ? "자주식" : "발렛"}</span>
                   </div>
                 </div>

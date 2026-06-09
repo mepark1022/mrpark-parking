@@ -44,6 +44,11 @@ const CSS = `
   .cim-desc b { color: #1428A0; }
   .cim-label { font-size: 12px; font-weight: 600; color: #374151; margin: 16px 0 8px; }
   .cim-label:first-of-type { margin-top: 4px; }
+  .cim-input { width: 100%; box-sizing: border-box; height: 50px; border-radius: 12px;
+    border: 1.5px solid #E2E8F0; padding: 0 14px; font-size: 15px; color: #1A1D2B; outline: none; }
+  .cim-input:focus { border-color: #1428A0; box-shadow: 0 0 0 3px rgba(20,40,160,0.08); }
+  .cim-input::placeholder { color: #B6C0CF; }
+  .cim-hint { font-size: 11.5px; color: #94A3B8; margin-top: 6px; }
   .cim-chips { display: flex; flex-wrap: wrap; gap: 7px; }
   .cim-chip { padding: 8px 14px; border-radius: 20px; border: 1.5px solid #E2E8F0;
     background: #fff; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; transition: 0.15s; }
@@ -69,9 +74,10 @@ interface CarInfoModalProps {
   iconBg?: string;
   iconColor?: string;
   carType: string;
-  carColor: string;
   onChangeType: (t: string) => void;
-  onChangeColor: (c: string) => void;
+  /** @deprecated 색상 입력 제거(차종 수기입력으로 통합) — 호환용으로만 유지, 미사용 */
+  carColor?: string;
+  onChangeColor?: (c: string) => void;
   onConfirm: () => void;
   onCancel: () => void;
   confirmLabel?: string;
@@ -88,9 +94,7 @@ export default function CarInfoModal({
   iconBg = "#FEF3C7",
   iconColor = "#92400E",
   carType,
-  carColor,
   onChangeType,
-  onChangeColor,
   onConfirm,
   onCancel,
   confirmLabel = "확인",
@@ -116,31 +120,17 @@ export default function CarInfoModal({
           {topContent}
 
           <div className="cim-label">차종</div>
-          <div className="cim-chips">
-            {CAR_TYPES.map((t) => (
-              <div
-                key={t}
-                className={`cim-chip ${carType === t ? "sel" : ""}`}
-                onClick={() => onChangeType(carType === t ? "" : t)}
-              >
-                {t}
-              </div>
-            ))}
-          </div>
-
-          <div className="cim-label">컬러</div>
-          <div className="cim-clrs">
-            {CAR_COLORS.map((c) => (
-              <div
-                key={c.name}
-                className={`cim-clr ${carColor === c.name ? "sel" : ""}`}
-                onClick={() => onChangeColor(carColor === c.name ? "" : c.name)}
-              >
-                <div className="cim-dot" style={{ background: c.hex }} />
-                <div className="cim-nm">{c.name}</div>
-              </div>
-            ))}
-          </div>
+          <input
+            className="cim-input"
+            type="text"
+            value={carType}
+            onChange={(e) => onChangeType(e.target.value)}
+            placeholder="예: 흰색 아반떼 / 검정 카니발"
+            maxLength={40}
+            autoComplete="off"
+            enterKeyHint="done"
+          />
+          <div className="cim-hint">색상·모델·흠집 등 구분에 필요한 내용을 자유롭게 적으세요.</div>
 
           <div className="cim-btns">
             <button className="cim-ghost" onClick={onCancel} disabled={submitting}>취소</button>
