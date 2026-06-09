@@ -257,7 +257,9 @@ export default function VehiclePhotoCapture({ onComplete, onCancel }: VehiclePho
 // ─────────────────────────────────────────────
 const CSS = `
   .vphoto-overlay {
-    position: fixed; inset: 0; z-index: 200;
+    /* z-index 400: CREW 하단탭(BottomNav z200)·출차요청 배너(z300) 위로 올려 풀스크린 점유
+       (사진 단계는 /v2/crew/entry의 하위 상태라 layout HIDE_NAV_PATHS 경로숨김이 안 먹음 → 오버레이가 직접 덮음) */
+    position: fixed; inset: 0; z-index: 400;
     background: #0a1352; display: flex; flex-direction: column;
     color: #fff;
   }
