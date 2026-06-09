@@ -326,6 +326,16 @@ export default function CrewV2ParkingListPage() {
 
   const exitReqCount = stats.exitReq;
 
+  // 같은 4자리 중복 카운트 맵 (현재 주차중 전체 기준 — 탭 무관하게 같은 번호 탐지)
+  const dupCountMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const t of tickets) {
+      const last4 = t.plate_last4 || extractDigits(t.plate_number || "").slice(-4);
+      if (last4) m.set(last4, (m.get(last4) || 0) + 1);
+    }
+    return m;
+  }, [tickets]);
+
   // 경과 시간 색상
   const elapsedColor = (mins: number) => {
     if (mins > 240) return "warn";
@@ -464,6 +474,8 @@ export default function CrewV2ParkingListPage() {
               const currentFee = activeTab === "exited"
                 ? (t.paid_amount || 0)
                 : (t.is_monthly ? 0 : calcFee(t.entry_at, feeStructure, t.parking_type));
+              const last4 = t.plate_last4 || extractDigits(t.plate_number || "").slice(-4);
+              const dupCount = activeTab === "exited" ? 0 : (dupCountMap.get(last4) || 0);
 
               return (
                 <div
@@ -471,10 +483,19 @@ export default function CrewV2ParkingListPage() {
                   className={`cv2-vehicle-card ${t.status}`}
                   onClick={() => router.push(`/v2/crew/parking/${t.id}`)}
                 >
-                  {/* 상단: 색상칩 + 번호판 + 상태 */}
+                  {/* 상단: 번호판(+중복배지) + 상태 */}
                   <div className="cv2-vcard-top">
                     <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                       <span className="cv2-vplate">{fmtPlate(t.plate_number)}</span>
+                      {dupCount >= 2 && (
+                        <span style={{
+                          fontSize: 11, fontWeight: 800, color: "#DC2626",
+                          background: "#FEF2F2", border: "1px solid #FECACA",
+                          padding: "2px 7px", borderRadius: 8, whiteSpace: "nowrap", flexShrink: 0,
+                        }}>
+                          중복 {dupCount}대
+                        </span>
+                      )}
                       {(t.car_type || t.car_color) && (
                         <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {[t.car_type, t.car_color].filter(Boolean).join(" · ")}
