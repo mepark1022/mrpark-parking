@@ -129,19 +129,19 @@ export default function CrewV2HomePage() {
         .cv2-home { min-height: 100dvh; background: #F8FAFC; }
         .cv2-home-header {
           background: linear-gradient(135deg, #0a1352 0%, #1428A0 100%);
-          padding: 20px 20px 24px;
-          padding-top: calc(20px + env(safe-area-inset-top, 0));
+          padding: 22px 20px 28px;
+          padding-top: calc(22px + env(safe-area-inset-top, 0));
         }
         .cv2-quick-btn {
-          flex: 1; padding: 18px 12px; border-radius: 16px;
+          flex: 1; padding: 26px 12px; border-radius: 18px;
           border: none; display: flex; flex-direction: column;
-          align-items: center; gap: 8px; cursor: pointer;
+          align-items: center; gap: 10px; cursor: pointer;
           transition: all 0.15s; -webkit-tap-highlight-color: transparent;
         }
         .cv2-quick-btn:active { transform: scale(0.96); }
         .cv2-stat-card {
           background: #fff; border-radius: 14px; border: 1px solid #E2E8F0;
-          padding: 16px; text-align: center;
+          padding: 18px 16px; text-align: center;
         }
       `}</style>
 
@@ -202,12 +202,12 @@ export default function CrewV2HomePage() {
         </div>
 
         {/* ── 주차 현황 카드 ── */}
-        <div style={{ padding: "16px 16px 0" }}>
+        <div style={{ padding: "18px 16px 0" }}>
           <div style={{
             background: "#fff", borderRadius: 16, border: "1px solid #E2E8F0",
-            padding: 20, position: "relative",
+            padding: 22, position: "relative",
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: "#1A1D2B" }}>🚗 현재 주차 현황</span>
               <button onClick={handleRefresh} disabled={refreshing}
                 style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, opacity: refreshing ? 0.4 : 1 }}>
@@ -216,11 +216,11 @@ export default function CrewV2HomePage() {
             </div>
 
             {/* 총 대수 */}
-            <div style={{ textAlign: "center", marginBottom: 16 }}>
-              <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 48, fontWeight: 900, color: "#1428A0", lineHeight: 1 }}>
+            <div style={{ textAlign: "center", marginBottom: 18 }}>
+              <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 54, fontWeight: 900, color: "#1428A0", lineHeight: 1 }}>
                 {stats.total}
               </div>
-              <div style={{ fontSize: 13, color: "#64748B", marginTop: 4 }}>현재 주차 대수</div>
+              <div style={{ fontSize: 13, color: "#64748B", marginTop: 6 }}>현재 주차 대수</div>
             </div>
 
             {/* 상세 4칸 */}
@@ -256,7 +256,7 @@ export default function CrewV2HomePage() {
         </div>
 
         {/* ── 빠른 액션 ── */}
-        <div style={{ padding: "16px 16px 0" }}>
+        <div style={{ padding: "20px 16px 0" }}>
           <div style={{ display: "flex", gap: 12 }}>
             {/* 입차 등록 */}
             <button
@@ -326,7 +326,7 @@ export default function CrewV2HomePage() {
         </div>
 
         {/* ── 사고보고 진입 ── */}
-        <div style={{ padding: "12px 16px 0" }}>
+        <div style={{ padding: "16px 16px 0" }}>
           <div
             onClick={() => router.push("/v2/crew/accident")}
             style={{
@@ -388,7 +388,7 @@ export default function CrewV2HomePage() {
         )}
 
         {/* ── 안내 ── */}
-        <div style={{ padding: "24px 16px", textAlign: "center" }}>
+        <div style={{ padding: "32px 16px 8px", textAlign: "center" }}>
           <div style={{ fontSize: 12, color: "#94A3B8", lineHeight: 1.6 }}>
             미팍Ticket CREW v2 · API-first
           </div>
