@@ -20,6 +20,13 @@ export const CAR_COLORS: { name: string; hex: string }[] = [
   { name: "기타", hex: "linear-gradient(135deg,#eee,#bbb)" },
 ];
 
+// 색상 이름 → hex/그라데이션 조회 (없으면 null). 색상 칩 렌더용 공용 헬퍼.
+export function carColorHex(name?: string | null): string | null {
+  if (!name) return null;
+  const found = CAR_COLORS.find((c) => c.name === name.trim());
+  return found ? found.hex : null;
+}
+
 const CSS = `
   .cim-ov { position: fixed; inset: 0; background: rgba(10,15,40,0.55);
     display: flex; align-items: flex-end; justify-content: center; z-index: 1000; }

@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { fmtPlate } from "@/lib/utils/format";
-import CarInfoModal from "@/components/crew/CarInfoModal";
+import CarInfoModal, { carColorHex } from "@/components/crew/CarInfoModal";
 
 /**
  * CREW v2 주차 상세 페이지
@@ -476,8 +476,18 @@ export default function CrewV2ParkingDetailPage() {
             {statusCfg.label}
           </div>
           {(ticket.car_type || ticket.car_color) && (
-            <div style={{ marginTop: 6, fontSize: 13, color: "#64748B", fontWeight: 600 }}>
-              {[ticket.car_type, ticket.car_color].filter(Boolean).join(" · ")}
+            <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
+              {ticket.car_color && carColorHex(ticket.car_color) && (
+                <span style={{
+                  width: 18, height: 18, borderRadius: "50%",
+                  background: carColorHex(ticket.car_color),
+                  border: "1.5px solid rgba(0,0,0,0.18)",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.1)", flexShrink: 0,
+                }} aria-hidden />
+              )}
+              <span style={{ fontSize: 15, color: "#334155", fontWeight: 700 }}>
+                {[ticket.car_type, ticket.car_color].filter(Boolean).join(" · ")}
+              </span>
             </div>
           )}
           <div style={{ marginTop: 8, display: "flex", flexDirection: "column", alignItems: "center" }}>

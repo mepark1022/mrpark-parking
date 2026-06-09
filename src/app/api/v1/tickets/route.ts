@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
          entry_at, pre_paid_at, exit_requested_at, completed_at,
          parking_location, parking_lot_id, visit_place_id,
          is_monthly, is_free, paid_amount, payment_method, entry_method,
-         monthly_parking_id, entry_crew_id`,
+         monthly_parking_id, entry_crew_id, car_type, car_color`,
         { count: 'exact' }
       )
       .eq('org_id', ctx.orgId)
