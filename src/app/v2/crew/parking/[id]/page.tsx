@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { fmtPlate } from "@/lib/utils/format";
+import { createBrowserClient } from "@supabase/ssr";
 import CarInfoModal from "@/components/crew/CarInfoModal";
 
 /**
@@ -243,6 +244,9 @@ export default function CrewV2ParkingDetailPage() {
   const [editCarColor, setEditCarColor] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
 
+  // 차량사진 미리보기 signed URL (vehicle-photos)
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+
   // 초기 로드
   useEffect(() => {
     fetchTicket();
@@ -250,6 +254,29 @@ export default function CrewV2ParkingDetailPage() {
     const interval = setInterval(() => setTick(t => t + 1), 60000);
     return () => clearInterval(interval);
   }, [id]);
+
+  // 차량사진 signed URL 생성 (ticket 로드 후)
+  useEffect(() => {
+    const paths: string[] = Array.isArray(ticket?.vehicle_photos) ? ticket.vehicle_photos.filter(Boolean) : [];
+    if (paths.length === 0) { setPhotoUrls([]); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+        const { data, error } = await supabase.storage
+          .from("vehicle-photos")
+          .createSignedUrls(paths, 3600); // 1시간
+        if (error || !data || cancelled) return;
+        setPhotoUrls(data.map((d) => d.signedUrl).filter(Boolean));
+      } catch {
+        // 미리보기 실패는 비치명
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [ticket?.vehicle_photos]);
 
   const fetchTicket = useCallback(async () => {
     try {
@@ -619,6 +646,35 @@ export default function CrewV2ParkingDetailPage() {
             )}
           </div>
         </div>
+
+        {/* 차량 사진 (입차 시 촬영분) */}
+        {photoUrls.length > 0 && (
+          <div className="cv2-card">
+            <div className="cv2-card-title">📷 차량 사진 <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 600 }}>입차 시 {photoUrls.length}장</span></div>
+            <div className="cv2-card-body">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                {photoUrls.map((url, i) => (
+                  <a
+                    key={i}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "block", aspectRatio: "1 / 1", borderRadius: 10,
+                      overflow: "hidden", border: "1px solid #E2E8F0", background: "#F1F5F9",
+                    }}
+                  >
+                    <img src={url} alt={`차량사진 ${i + 1}`}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </a>
+                ))}
+              </div>
+              <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 8 }}>
+                사진을 누르면 원본 크기로 볼 수 있습니다 · 흠집·사고 클레임 증거용
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 하단 고정 액션 */}
         {!isCompleted && (

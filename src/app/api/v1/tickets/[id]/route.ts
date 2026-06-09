@@ -68,7 +68,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         `id, org_id, store_id, plate_number, plate_last4, parking_type, status,
          entry_at, pre_paid_at, exit_requested_at, completed_at,
          parking_location, parking_lot_id, visit_place_id,
-         car_type, car_color,
+         car_type, car_color, vehicle_photos,
          is_monthly, is_free, paid_amount, payment_method, entry_method,
          monthly_parking_id, entry_crew_id,
          visit_places(id, name, floor, free_minutes, base_fee, base_minutes, extra_fee, daily_max, valet_fee, monthly_fee),
