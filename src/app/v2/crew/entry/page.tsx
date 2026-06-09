@@ -288,6 +288,8 @@ export default function CrewV2EntryPage() {
   // ── 차량사진 Storage 업로드 (진행률 + 슬롯당 최대 3회 재시도) ──
   // 경로: {org_id}/{ticket_id}/{idx}_{slotKey}.jpg  → PATCH prefix 검증과 정합
   // 라벨은 한글이라 Storage 키엔 ASCII 슬롯키 사용 (한글 키 이슈 회피)
+  // 마지막 업로드 에러 메시지 보관(진단용 — 부분실패 alert에 노출)
+  const lastUploadErrRef = useRef<string>("");
   const uploadVehiclePhotos = async (
     photos: { blob: Blob; label: string }[],
     prefix: string
@@ -295,6 +297,7 @@ export default function CrewV2EntryPage() {
     const SLOT_KEYS = ["front", "rear", "left", "right", "extra1", "extra2"];
     const uploaded: string[] = [];
     let failed = 0;
+    lastUploadErrRef.current = "";
     setUploadInfo({ done: 0, total: photos.length, failed: 0 });
     for (let i = 0; i < photos.length; i++) {
       const path = `${prefix}${i}_${SLOT_KEYS[i] ?? `slot${i}`}.jpg`;
@@ -305,8 +308,15 @@ export default function CrewV2EntryPage() {
             .from("vehicle-photos")
             .upload(path, photos[i].blob, { contentType: "image/jpeg", upsert: true });
           if (!error) { success = true; uploaded.push(path); }
-          else await new Promise((r) => setTimeout(r, 600)); // 재시도 백오프
-        } catch {
+          else {
+            // ⚠️ 진단: Storage 에러를 콘솔에 노출 (기존엔 삼켜서 원인 불명이었음)
+            lastUploadErrRef.current = error.message || String(error);
+            console.error(`[vehicle-photo upload] path=${path} attempt=${attempt + 1}:`, error);
+            await new Promise((r) => setTimeout(r, 600)); // 재시도 백오프
+          }
+        } catch (e) {
+          lastUploadErrRef.current = (e as Error)?.message || String(e);
+          console.error(`[vehicle-photo upload] path=${path} attempt=${attempt + 1} (throw):`, e);
           await new Promise((r) => setTimeout(r, 600));
         }
       }
@@ -381,7 +391,8 @@ export default function CrewV2EntryPage() {
           }
         }
         if (uploadedPaths.length < photos.length) {
-          alert(`사진 ${photos.length}장 중 ${uploadedPaths.length}장만 업로드되었습니다.\n입차는 정상 등록됩니다.`);
+          const reason = lastUploadErrRef.current ? `\n\n원인: ${lastUploadErrRef.current}` : "";
+          alert(`사진 ${photos.length}장 중 ${uploadedPaths.length}장만 업로드되었습니다.\n입차는 정상 등록됩니다.${reason}`);
         }
         setUploadInfo(null);
       }
