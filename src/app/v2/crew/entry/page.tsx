@@ -285,22 +285,20 @@ export default function CrewV2EntryPage() {
   // ── 검증 ──
   const canSubmit = !!storeId && last4.length === 4 && !submitting && !collisionChecking;
 
-  // ── 차량사진 Storage 업로드 (진행률 + 슬롯당 최대 3회 재시도) ──
-  // 경로: {org_id}/{ticket_id}/{idx}_{slotKey}.jpg  → PATCH prefix 검증과 정합
-  // 라벨은 한글이라 Storage 키엔 ASCII 슬롯키 사용 (한글 키 이슈 회피)
+  // ── 차량사진 Storage 업로드 (진행률 + 장당 최대 3회 재시도) ──
   // 마지막 업로드 에러 메시지 보관(진단용 — 부분실패 alert에 노출)
   const lastUploadErrRef = useRef<string>("");
+  // 경로: {org_id}/{ticket_id}/{idx}_photo.jpg  → PATCH prefix 검증과 정합 (순서·방향 없음)
   const uploadVehiclePhotos = async (
     photos: { blob: Blob; label: string }[],
     prefix: string
   ): Promise<string[]> => {
-    const SLOT_KEYS = ["front", "rear", "left", "right", "extra1", "extra2"];
     const uploaded: string[] = [];
     let failed = 0;
     lastUploadErrRef.current = "";
     setUploadInfo({ done: 0, total: photos.length, failed: 0 });
     for (let i = 0; i < photos.length; i++) {
-      const path = `${prefix}${i}_${SLOT_KEYS[i] ?? `slot${i}`}.jpg`;
+      const path = `${prefix}${i}_photo.jpg`;
       let success = false;
       for (let attempt = 0; attempt < 3 && !success; attempt++) {
         try {

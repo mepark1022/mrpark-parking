@@ -7,20 +7,19 @@
  * 대표 확정 스펙:
  *  1. getUserMedia 스트림을 "1회만" 오픈하고 유지 (레거시처럼 슬롯마다 재오픈 안 함 → 끊김 제거)
  *  2. 셔터 탭 → canvas 풀해상도 캡처 → 다음 슬롯 자동 진행 (스트림 끊지 않음)
- *  3. 슬롯 순서·라벨 고정: ①전면 ②후면 ③운전석(좌) ④보조석(우) ⑤추가1 ⑥추가2
- *  4. 패스버튼: (a)사진 단계 전체 스킵  (b)남은 슬롯 스킵 후 제출 — 0장 제출 허용
+ *  3. 순서·라벨 없이 자유 촬영 (최대 6장) — 전면/후면 등 방향 가이드 제거
+ *  4. 패스버튼: (a)사진 단계 전체 스킵  (b)현재까지 촬영분으로 제출 — 0장 제출 허용
  *  - 흠집 판단용 고화질: width/height ideal 1920↑, jpeg quality 0.92, 인위적 용량제한 없음
  *
  * 설계: 이 컴포넌트는 "촬영"만 책임진다. 업로드/티켓생성(POST→Storage→PATCH)은 부모(entry/page.tsx)가 담당.
- *  - onComplete(photos): 촬영 완료 또는 남은 슬롯 스킵 후 제출 시 호출. 0장(전체 스킵)도 빈 배열로 전달.
+ *  - onComplete(photos): 촬영 완료 또는 현재까지 촬영분 제출 시 호출. 0장(전체 스킵)도 빈 배열로 전달.
  *  - onCancel(): 사진 단계 자체를 취소하고 입력 폼으로 복귀 (제출 안 함).
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
-// 슬롯 라벨 (순서 고정)
-const PHOTO_SLOTS = ["전면", "후면", "운전석(좌)", "보조석(우)", "추가1", "추가2"] as const;
-const MAX_PHOTOS = PHOTO_SLOTS.length; // 6
+// 순서·라벨 없이 자유 촬영, 최대 6장
+const MAX_PHOTOS = 6;
 
 interface CapturedPhoto {
   blob: Blob;
@@ -46,9 +45,8 @@ export default function VehiclePhotoCapture({ onComplete, onCancel }: VehiclePho
   const streamRef = useRef<MediaStream | null>(null);
   const capturedRef = useRef<CapturedPhoto[]>([]); // 언마운트 정리용 최신 스냅샷
 
-  // 현재 촬영 대상 슬롯 = 지금까지 찍은 장수 (자동 진행)
+  // 자유 촬영: 현재 장수만 추적 (방향 슬롯 없음)
   const currentIndex = captured.length;
-  const currentLabel = currentIndex < MAX_PHOTOS ? PHOTO_SLOTS[currentIndex] : null;
   const isFull = currentIndex >= MAX_PHOTOS;
 
   // ── 카메라 1회 오픈 (마운트 시 한 번) ─────────────────
@@ -113,7 +111,7 @@ export default function VehiclePhotoCapture({ onComplete, onCancel }: VehiclePho
         setErrorMsg("사진 캡처에 실패했습니다. 다시 시도하세요.");
         return;
       }
-      const label = PHOTO_SLOTS[capturedRef.current.length] ?? `추가${capturedRef.current.length}`;
+      const label = `사진 ${capturedRef.current.length + 1}`;
       const preview = URL.createObjectURL(blob);
       setCaptured((prev) => [...prev, { blob, label, preview }]);
       // 스트림은 유지 → 다음 슬롯으로 자동 진행 (currentIndex 증가)
@@ -137,9 +135,9 @@ export default function VehiclePhotoCapture({ onComplete, onCancel }: VehiclePho
     setCaptured((prev) => {
       const target = prev[idx];
       if (target) URL.revokeObjectURL(target.preview);
-      // 삭제 후 라벨은 슬롯 순서 유지 위해 뒤 항목 라벨 당김
+      // 삭제 후 번호 재정렬 (방향 라벨 없음)
       const next = prev.filter((_, i) => i !== idx);
-      return next.map((p, i) => ({ ...p, label: PHOTO_SLOTS[i] ?? `추가${i}` }));
+      return next.map((p, i) => ({ ...p, label: `사진 ${i + 1}` }));
     });
   }, []);
 
@@ -192,11 +190,11 @@ export default function VehiclePhotoCapture({ onComplete, onCancel }: VehiclePho
 
           {ready && !isFull && (
             <div className="vphoto-slot-label">
-              {currentIndex + 1}. {currentLabel} 촬영
+              자유롭게 촬영 · {captured.length}/{MAX_PHOTOS}장 (권장 4장 이상)
             </div>
           )}
           {ready && isFull && (
-            <div className="vphoto-slot-label done">✓ 6장 촬영 완료</div>
+            <div className="vphoto-slot-label done">✓ {MAX_PHOTOS}장 촬영 완료</div>
           )}
         </div>
 
@@ -206,7 +204,6 @@ export default function VehiclePhotoCapture({ onComplete, onCancel }: VehiclePho
             {captured.map((p, i) => (
               <div className="vphoto-thumb" key={p.preview}>
                 <img src={p.preview} alt={p.label} />
-                <span className="vphoto-thumb-label">{p.label}</span>
                 <button className="vphoto-thumb-x" onClick={() => removeAt(i)} aria-label="삭제">×</button>
               </div>
             ))}
