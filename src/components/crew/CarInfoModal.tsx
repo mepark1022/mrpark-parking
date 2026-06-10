@@ -119,13 +119,13 @@ export default function CarInfoModal({
 
           {topContent}
 
-          <div className="cim-label">차종</div>
+          <div className="cim-label">메모</div>
           <input
             className="cim-input"
             type="text"
             value={carType}
             onChange={(e) => onChangeType(e.target.value)}
-            placeholder="예: 흰색 아반떼 / 검정 카니발"
+            placeholder="예: 흰색 아반떼 / 검정 카니발 / 앞범퍼 스크래치"
             maxLength={40}
             autoComplete="off"
             enterKeyHint="done"

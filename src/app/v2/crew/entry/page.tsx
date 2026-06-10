@@ -479,7 +479,7 @@ export default function CrewV2EntryPage() {
 
             {collisionChecking && <div className="cv2-scoreline checking">⏳ 동일 4자리 차량 확인 중...</div>}
             {!collisionChecking && collision?.has_collision && (
-              <div className="cv2-scoreline warn">⚠️ 동일 4자리 활성 차량 {collision.count}대 — 입차 시 차종/컬러로 구분</div>
+              <div className="cv2-scoreline warn">⚠️ 동일 4자리 활성 차량 {collision.count}대 — 입차 시 메모로 구분</div>
             )}
             {!collisionChecking && collision && !collision.has_collision && last4.length === 4 && (
               <div className="cv2-scoreline ok">✓ 동일 4자리 차량 없음 — 바로 입차 가능</div>
@@ -558,7 +558,7 @@ export default function CrewV2EntryPage() {
             {submitting ? "등록 중..." :
              last4.length !== 4 ? "차량 뒤 4자리를 입력하세요" :
              collisionChecking ? "확인 중..." :
-             collision?.has_collision ? "차종·컬러 입력 후 입차" :
+             collision?.has_collision ? "메모 입력 후 입차" :
              "입차 등록"}
           </button>
         </div>
@@ -598,7 +598,7 @@ export default function CrewV2EntryPage() {
         <CarInfoModal
           open={showCarModal}
           title={`동일 4자리 차량 ${collision?.count || 0}대`}
-          description={`현재 <b>${last4}</b> 활성 차량이 이미 있습니다. 출차 시 구분되도록 <b>차종</b>을 입력하세요.`}
+          description={`현재 <b>${last4}</b> 활성 차량이 이미 있습니다. 출차 시 구분되도록 <b>메모</b>를 입력하세요.`}
           carType={carType}
           carColor={carColor}
           onChangeType={setCarType}
