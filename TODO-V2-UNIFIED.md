@@ -1,5 +1,8 @@
 # 📋 미팍 통합앱 v2 개발 추적 문서
 
+> 🎯 **[통합 가드레일] 정본 = 미팍 2.0 / 네이티브 전환 = DB 통합 디데이 / parking(비정본) 신규 쓰기 동결(§3-5)**
+> — 통합 전략 정본: `docs/미팍통합앱_신규기획서_v3.2.md` (C안 점진통합 확정 2026.06.15). parking에 직원·근태·마감·사업장 마스터 **신규 INSERT 금지**(이관·읽기·요금계산용 facet만 한시 잔류).
+
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.05.30 (GAP-P1-4 **미팍티켓 QR 발급/공유 `/v2/crew/entry/qr` 완료** — 입차→고객 티켓 핸드오프, 클라이언트 QR 생성)
 > **마지막 작업:** ✅ **GAP-P1-8 P1-8b (v2 입차 연속촬영 UI) 완료** — ①신규 컴포넌트 `src/components/crew/VehiclePhotoCapture.tsx`(`@ts-nocheck`, `vphoto-*` 네임스페이스): `getUserMedia` 스트림 **1회 오픈 유지**(마운트 useEffect, 언마운트 시 getTracks().stop()+objectURL revoke), 셔터 탭→풀해상도 `drawImage`(크롭X)→`toBlob(jpeg,0.92)`→다음 슬롯 자동진행, 슬롯 라벨 고정(전면/후면/운전석(좌)/보조석(우)/추가1/추가2, width/height ideal 1920/1080), 썸네일 스트립+슬롯삭제+직전재촬영, 패스 2종(`사진 없이 입차`=0장 / `N장으로 입차 등록`=남은슬롯 스킵), 권한거부 에러화면. 부모엔 `{blob,label}[]`만 반환(업로드 미수행). ②`entry/page.tsx` 통합: 흐름을 `입차확인(+충돌 차종모달) → 사진단계 → POST → Storage 업로드 → PATCH photos`로 개편. `handleMainSubmit`/모달 onConfirm이 바로 POST 안 하고 `photoStep` 진입, `handlePhotosComplete`가 `doSubmit(pendingCarInfo, photos)` 호출. `doSubmit`에 photos 인자 추가 + `uploadVehiclePhotos`(슬롯당 3회 재시도+백오프, 진행률 `uploadInfo` state, 경로 `{prefix}{idx}_{SLOT_KEY}.jpg` — **한글 라벨 대신 ASCII 슬롯키** front/rear/left/right/extra1/extra2로 Storage 키 이슈 회피) → 성공경로만 `PATCH /api/v1/tickets/[id]/photos`. 업로드 진행률 오버레이 추가. 부분실패/PATCH실패는 비치명(입차는 정상). ③POST 응답 필드 `result.data.ticket_id`(주의: `id` 아님)/`photo_path_prefix` 사용. 빌드 OK (`✓ Compiled successfully in 100s`, `/v2/crew/entry` ○). 경고 2건은 기존 `ticket/[id]` Toss SDK 미설치로 무관.
