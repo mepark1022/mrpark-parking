@@ -2,7 +2,7 @@
 
 > 🎯 **[통합 가드레일] 정본 = 미팍 2.0 / 네이티브 전환 = DB 통합 디데이 / parking(비정본) 신규 쓰기 동결(§3-5)**
 > — 통합 전략 정본: `docs/미팍통합앱_신규기획서_v3.2.md` (C안 점진통합 확정 2026.06.15). parking에 직원·근태·마감·사업장 마스터 **신규 INSERT 금지**(이관·읽기·요금계산용 facet만 한시 잔류).
-> 📌 **[P0 진행중]** 로그인·계정 통일 = **전화번호 단일 ID + 2.0→parking 단방향 복사**(관리자도 전화 로그인·대표 이메일 예비). 확정 설계: `docs/기획서-P0-로그인계정통일-v1.md` → 다음 착수 = **파트1(복사기 백엔드)**.
+> 📌 **[P0 파트1·2 완료 / 다음=파트3]** 로그인·계정 통일 = **전화번호 단일 ID + 2.0→parking 단방향 복사**(관리자도 전화 로그인·대표 이메일 예비). 확정 설계: `docs/기획서-P0-로그인계정통일-v1.md`. **파트2 완료(2026.06.15)**: 내부이메일 `{사번}@`→`{전화}@mepark.internal`, 기존 재직 crew 1회 마이그레이션, crew 전화 로그인+관리자 이메일 예비 **실기기 검증 OK**. → 다음 = **파트3(parking 직접발급 통로 동결 §3-5 + 2.0/parking 양쪽 동일 전화·비번 로그인 확인)**.
 
 > **작성일:** 2026.04.09
 > **마지막 업데이트:** 2026.05.30 (GAP-P1-4 **미팍티켓 QR 발급/공유 `/v2/crew/entry/qr` 완료** — 입차→고객 티켓 핸드오프, 클라이언트 QR 생성)
@@ -22,6 +22,21 @@
 ---
 
 ## 🚨 새 대화 시작 시 필독
+
+### ✅ P0 파트2 완료 (2026.06.15) — parking 로그인 전화 기반 단일화 (커밋 `9769678` + `f140e2c`)
+**목표:** 내부이메일 `{사번}@` → `{전화}@mepark.internal` 전환 + 기존 재직 crew 1회 마이그레이션 + 관리자 전화 로그인 허용(이메일 예비 유지).
+**코드 변경:**
+- `src/lib/api/password.ts` — `generateInternalEmail(phone)` 전화 단일 규칙(field 도메인 폐기, role 인자 제거)
+- `src/app/api/v1/auth/login/route.ts` — 전화 직접 인증(`handlePhoneLogin`), 사번(EMPNO) 로그인 폐기 안내, 관리자 전화 허용, EMAIL=관리자 예비
+- `src/app/api/v1/auth/create-account`·`bulk-create` — 전화 기반 발급(phone 없으면 차단/fail)
+- ⭐`src/app/crew/login/page.tsx` — **실제 라이브 로그인 화면**. 전화→`{전화}@mepark.internal` 변환 후 supabase 직접 인증, UI 라벨/안내/placeholder/input type 전화용.
+**🔴 핵심 교훈(반복주의):** 로그인 경로가 **2개**다 — (A) `/api/v1/auth/login` 백엔드 라우트, (B) `crew/login/page.tsx`의 **Supabase 클라이언트 직접 `signInWithPassword`**. **라이브 admin.mepark.kr 로그인은 (B)를 탄다.** 백엔드(A)만 고치면 라이브 미반영 → 콘솔 `…grant_type=password 400`(전화를 이메일로 직접 인증 시도)으로 발현. **프론트 로그인 페이지를 반드시 동시 수정**. (`v2/crew/login`은 (A) API 방식이라 별개·정상.)
+**DB 마이그레이션(Supabase parking `xwkatswg`, 1회 실행 완료):**
+1. `employees.phone` 정규화 `update employees set phone=regexp_replace(phone,'[^0-9]','','g') where phone~'[^0-9]';` — 런타임 `.eq('phone',정규화)` 매칭 전제(**필수**).
+2. `auth.users.email` 사번형→전화형 + `auth.identities` `identity_data.email` 동기화(email provider). 대상=재직 crew. 퇴사자 사번형은 방치(로그인 차단됨).
+**검증(실기기 OK):** crew `01085780007`+비번 → `/crew/select-store` 진입 / 관리자 `mepark1022@gmail.com` 이메일 로그인 유지. 사번 입력→"전화번호로 로그인하세요"(코드 보장).
+**잔여:** crew 비번은 이메일만 바꿔 **기존 유지**(초기비번=전화 뒤4+12). 로그인 후 "접근 가능한 매장 없음"은 `store_members` 미배정 문제로 인증과 무관.
+**▶ 다음 = 파트3:** parking 직접발급 통로 동결(§3-5) + 동일 직원이 2.0/parking 양쪽 같은 전화·비번으로 로그인되는지 실기기 확인.
 
 ### 📄 전자문서함 — mrpark-2.0로 이관됨 (2026.06.14)
 전자문서함(근로계약·사직서·시말서·급여명세서) 거처=**mrpark-2.0** 확정. 정본 `mrpark-2.0/docs/기획서-전자문서함-전자서명-v1.md`. parking 아님(인사 마스터가 2.0에 있음).
