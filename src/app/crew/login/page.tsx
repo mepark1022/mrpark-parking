@@ -120,9 +120,25 @@ function CrewLoginContent() {
       } else {
         localStorage.removeItem("crew_saved_email");
       }
+      // P0 로그인 단일화: 전화 입력 → {전화}@mepark.internal 변환.
+      // @ 포함 시 이메일 그대로(관리자 예비 경로).
+      const raw = loginEmail.trim();
+      let emailToUse: string;
+      if (raw.includes("@")) {
+        emailToUse = raw;
+      } else {
+        const digits = raw.replace(/\D/g, "");
+        if (/^010\d{7,8}$/.test(digits)) {
+          emailToUse = `${digits}@mepark.internal`;
+        } else {
+          setError("전화번호로 로그인하세요");
+          setLoading(false);
+          return;
+        }
+      }
       const supabase = createClient();
       const { error: loginError } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
+        email: emailToUse,
         password: loginPassword,
       });
       if (loginError) {
@@ -264,18 +280,19 @@ function CrewLoginContent() {
           
           {/* 안내문 */}
           <div style={{ background: "#f0f4ff", borderRadius: 10, padding: "10px 14px", marginBottom: 18, fontSize: 13, color: "#1428A0", lineHeight: 1.6, textAlign: "center" }}>
-            관리자가 발급한 <strong>이메일과 비밀번호</strong>로 로그인하세요
+            <strong>전화번호와 비밀번호</strong>로 로그인하세요 (관리자는 이메일)
           </div>
 
           {/* 이메일/비번 폼 */}
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>이메일</label>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>전화번호</label>
               <input
-                type="email"
+                type="text"
+                inputMode="tel"
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="example@email.com"
+                placeholder="01012345678 (관리자는 이메일)"
                 style={{ width: "100%", padding: "13px 14px", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 15, color: "#1A1D2B", outline: "none", boxSizing: "border-box" }}
               />
             </div>
