@@ -103,11 +103,10 @@ export function normalizeEmpNo(input: string): string {
  * crew → {emp_no}@mepark.internal
  * field_member → {emp_no}@field.mepark.internal
  */
-export function generateInternalEmail(empNo: string, role: 'crew' | 'field_member'): string {
-  const normalized = normalizeEmpNo(empNo).toLowerCase();
-  if (role === 'field_member') {
-    return `${normalized}@field.mepark.internal`;
-  }
+export function generateInternalEmail(phone: string): string {
+  // P0 로그인 단일화(2026.06.15 대표 확정): 전화 기반 단일 규칙 {전화}@mepark.internal
+  // 미팍 2.0 정본 규칙에 일치. 기존 {사번}@ · field 도메인 규칙 폐기.
+  const normalized = normalizePhone(phone);
   return `${normalized}@mepark.internal`;
 }
 

@@ -83,7 +83,17 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const email = generateInternalEmail(emp.emp_no, emp.role as 'crew' | 'field_member');
+        if (!emp.phone) {
+          failCount++;
+          results.push({
+            emp_no: emp.emp_no,
+            name: emp.name,
+            status: 'failed',
+            message: '전화번호 없음 — 전화 기반 계정 생성 불가',
+          });
+          continue;
+        }
+        const email = generateInternalEmail(emp.phone);
         const password = generateInitialPassword(emp.phone, emp.emp_no);
         const isFallback = !emp.phone;
 

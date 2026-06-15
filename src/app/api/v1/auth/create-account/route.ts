@@ -54,10 +54,7 @@ export async function POST(request: NextRequest) {
       return badRequest(ErrorCodes.EMP_ALREADY_RESIGNED, '퇴사한 직원의 계정은 생성할 수 없습니다');
     }
 
-    // 2. 이메일 생성
-    const role = emp.role as 'crew' | 'field_member';
-    let email: string;
-
+    // 2. 이메일 생성 (관리자 제외 + 전화 필수 확인 후 생성)
     if (['super_admin', 'admin'].includes(emp.role)) {
       // 관리자는 실제 이메일이 필요 — 이 API에서는 crew/field만 처리
       return badRequest(
@@ -66,7 +63,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    email = generateInternalEmail(emp.emp_no, role);
+    if (!emp.phone) {
+      return badRequest(
+        ErrorCodes.VALIDATION_ERROR,
+        '전화번호가 없는 직원은 계정을 생성할 수 없습니다(전화 기반 로그인)'
+      );
+    }
+
+    const email = generateInternalEmail(emp.phone);
 
     // 3. 기존 계정 중복 체크
     const { data: existingProfile } = await supabase

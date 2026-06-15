@@ -1,31 +1,32 @@
 /**
  * POST /api/v1/auth/login
- * 통합 로그인 — 이메일/사번/전화번호 자동 판별
+ * 통합 로그인 — 전화번호 기반 단일화 (P0 파트2, 2026.06.15 대표 확정)
  * 권한: PUBLIC
- * 
+ *
  * Body: { identifier: string, password: string }
- * 
+ *
  * 플로우:
  *   1. 입력값 정규화 + 유형 판별 (EMAIL/PHONE/EMPNO)
- *   2. PHONE → employees에서 emp_no 확보 → EMPNO 모드
- *   3. EMPNO → employees에서 role 확인 → 내부 이메일 생성
- *   4. signInWithPassword 실행
+ *   2. EMAIL  → super_admin(대표) 이메일 예비 경로
+ *   3. PHONE  → employees 조회(퇴사·중복 차단) → {전화}@mepark.internal 직접 인증
+ *   4. EMPNO  → 폐기. "전화번호로 로그인하세요" 안내
  *   5. 성공 → 실패 카운트 초기화 + last_login_at 갱신
- *   6. 실패 → 실패 카운트 증가 (5회 시 3분 잠금)
+ *
+ * 변경점(파트2):
+ *   - 내부이메일 규칙 {사번}@ → {전화}@mepark.internal (generateInternalEmail)
+ *   - 전화→사번 우회 제거, 전화로 곧장 인증
+ *   - 관리자도 전화 로그인 허용(이메일은 예비 경로로 유지)
+ *   - 전제: employees.phone 은 정규화(숫자만) 저장 — .eq 매칭용
  */
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import {
-  ok, badRequest, unauthorized, tooMany, serverError,
+  ok, badRequest, unauthorized, serverError,
   ErrorCodes,
   detectLoginInputType,
   normalizePhone,
-  normalizeEmpNo,
   generateInternalEmail,
 } from '@/lib/api';
-
-const MAX_FAIL_COUNT = 5;
-const LOCK_DURATION_MS = 3 * 60 * 1000; // 3분
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,29 +43,27 @@ export async function POST(request: NextRequest) {
     if (!inputType) {
       return badRequest(
         ErrorCodes.AUTH_INVALID_INPUT,
-        '이메일, 전화번호, 또는 사번을 입력하세요'
+        '전화번호로 로그인하세요'
       );
     }
 
     const supabase = await createClient();
 
-    // ── EMAIL 모드 ──
+    // ── EMAIL 모드 — super_admin(대표) 예비 경로 ──
     if (inputType === 'EMAIL') {
       return await handleEmailLogin(supabase, trimmed, password);
     }
 
-    // ── PHONE 모드 → emp_no 확보 → EMPNO 모드 ──
-    let empNo: string;
-    if (inputType === 'PHONE') {
-      const phoneResult = await resolvePhone(supabase, normalizePhone(trimmed));
-      if ('error' in phoneResult) return phoneResult.error;
-      empNo = phoneResult.empNo;
-    } else {
-      empNo = normalizeEmpNo(trimmed);
+    // ── EMPNO 모드 — 폐기. 전화 로그인으로 안내 ──
+    if (inputType === 'EMPNO') {
+      return badRequest(
+        ErrorCodes.AUTH_INVALID_INPUT,
+        '사번 로그인은 더 이상 지원하지 않습니다. 전화번호로 로그인하세요'
+      );
     }
 
-    // ── EMPNO 모드 ──
-    return await handleEmpNoLogin(supabase, empNo, password);
+    // ── PHONE 모드 — 전화 직접 인증 ──
+    return await handlePhoneLogin(supabase, normalizePhone(trimmed), password);
 
   } catch (err) {
     console.error('[POST /api/v1/auth/login]', err);
@@ -72,20 +71,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ── 이메일 로그인 ──
+// ── 이메일 로그인 (관리자 예비 경로) ──
 async function handleEmailLogin(
   supabase: Awaited<ReturnType<typeof createClient>>,
   email: string,
   password: string
 ) {
-  // 잠금 상태 체크
-  const lockCheck = await checkAccountLock(supabase, email, 'email');
-  if (lockCheck) return lockCheck;
-
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
-    await incrementFailCount(supabase, email, 'email');
     return unauthorized('이메일 또는 비밀번호가 올바르지 않습니다');
   }
 
@@ -101,38 +95,32 @@ async function handleEmailLogin(
   });
 }
 
-// ── 사번 로그인 ──
-async function handleEmpNoLogin(
+// ── 전화번호 로그인 (crew·관리자 공통) ──
+async function handlePhoneLogin(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  empNo: string,
+  phone: string,
   password: string
 ) {
-  // employees에서 조회
-  const { data: emp } = await supabase
+  // employees에서 전화로 조회 — 퇴사 차단 + 중복 차단 (role 무관: 관리자도 허용)
+  const { data: matches } = await supabase
     .from('employees')
-    .select('id, emp_no, role, status, phone')
-    .eq('emp_no', empNo)
-    .single();
+    .select('id, emp_no, role, status')
+    .eq('phone', phone)
+    .neq('status', '퇴사');
 
-  if (!emp) {
-    return badRequest(ErrorCodes.AUTH_ACCOUNT_NOT_FOUND, '등록되지 않은 사번입니다');
+  if (!matches || matches.length === 0) {
+    return badRequest(ErrorCodes.AUTH_PHONE_NOT_FOUND, '등록되지 않은 전화번호입니다');
   }
 
-  if (emp.status === '퇴사') {
-    return badRequest(ErrorCodes.AUTH_ACCOUNT_RESIGNED, '퇴사 처리된 계정입니다');
+  if (matches.length > 1) {
+    // 전화번호 = 로그인 ID 이므로 유일성 위반. 정본(2.0)에서 정리 필요
+    return badRequest(ErrorCodes.AUTH_PHONE_MULTIPLE, '동일 번호가 여러 명입니다. 관리자에게 문의하세요');
   }
 
-  // admin 역할이면 이메일 로그인 안내
-  if (['super_admin', 'admin'].includes(emp.role)) {
-    return badRequest(ErrorCodes.AUTH_ADMIN_USE_EMAIL, '관리자는 이메일로 로그인하세요');
-  }
+  const emp = matches[0];
 
-  // 내부 이메일 생성
-  const internalEmail = generateInternalEmail(emp.emp_no, emp.role as 'crew' | 'field_member');
-
-  // 잠금 상태 체크
-  const lockCheck = await checkAccountLock(supabase, internalEmail, 'email');
-  if (lockCheck) return lockCheck;
+  // 내부 인증 이메일 = {전화}@mepark.internal
+  const internalEmail = generateInternalEmail(phone);
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email: internalEmail,
@@ -140,7 +128,6 @@ async function handleEmpNoLogin(
   });
 
   if (error || !data.user) {
-    await incrementFailCount(supabase, internalEmail, 'email');
     return unauthorized(
       '비밀번호가 올바르지 않습니다. 초기 비밀번호: 전화번호 뒤4자리+12'
     );
@@ -152,62 +139,10 @@ async function handleEmpNoLogin(
   return ok({
     user_id: data.user.id,
     role: profile?.role || emp.role,
-    emp_no: emp.emp_no,
+    emp_no: profile?.emp_no || emp.emp_no,
     password_changed: profile?.password_changed ?? false,
     redirect: getRedirectPath(profile?.role || emp.role),
   });
-}
-
-// ── 전화번호 → emp_no 변환 ──
-async function resolvePhone(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  phone: string
-): Promise<{ empNo: string } | { error: ReturnType<typeof badRequest> }> {
-  const { data: matches } = await supabase
-    .from('employees')
-    .select('emp_no, status')
-    .eq('phone', phone)
-    .neq('status', '퇴사');
-
-  if (!matches || matches.length === 0) {
-    return { error: badRequest(ErrorCodes.AUTH_PHONE_NOT_FOUND, '등록되지 않은 전화번호입니다') };
-  }
-
-  if (matches.length > 1) {
-    return { error: badRequest(ErrorCodes.AUTH_PHONE_MULTIPLE, '동일 번호가 여러 명입니다. 사번으로 로그인하세요') };
-  }
-
-  return { empNo: matches[0].emp_no };
-}
-
-// ── 잠금 상태 확인 ──
-async function checkAccountLock(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  identifier: string,
-  type: 'email'
-): Promise<ReturnType<typeof tooMany> | null> {
-  // profiles에서 이메일로 조회 (Supabase Auth user → profiles)
-  // 간단 구현: 로그인 시도 전에는 profile 접근이 어려우므로,
-  // 실제 잠금 체크는 auth-middleware에서 처리
-  // 여기서는 로그인 성공 후 profile에서 확인
-  return null;
-}
-
-// ── 로그인 실패 시 카운트 증가 ──
-async function incrementFailCount(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  email: string,
-  type: 'email'
-) {
-  try {
-    // 이메일로 auth.users → profiles 매핑이 필요
-    // service_role 없이는 다른 유저의 profiles를 업데이트할 수 없으므로
-    // 실패 카운트는 별도 API 또는 DB function으로 처리 예정
-    // TODO: Supabase Edge Function 또는 DB trigger로 구현
-    console.log(`[Login Fail] ${email} - 실패 카운트 증가 (구현 예정)`);
-  } catch (err) {
-    console.error('[incrementFailCount]', err);
-  }
 }
 
 // ── 로그인 성공 처리 ──
