@@ -63,32 +63,37 @@ const fmtOverdue = (deadline: string) => {
   return `${m}분`;
 };
 
-/* ─── SVG 4점 스파클 (이모지 대체) ─── */
+/* ─── SVG 트윙클 스파클 (me.talk 시그니처와 동일 형태, 이모지 대체) ─── */
 function Sparkle({ size = 12, color = "#A7F0F7" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true"
       style={{ display: "block", flexShrink: 0 }}>
-      <path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z" fill={color} />
+      <path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill={color} />
     </svg>
   );
 }
 
-/* ─── 미톡 로고 B안 배지 (인디고 알약 + 4점 스파클) ─── */
-/* 기본: 인디고 #4F46E5 알약 / 흰 글자 / 시안 스파클
-   골드 헤더(출차요청중)용 다크변형(dark=true): 흰 알약 / 진회색 글자 / 인디고 스파클 */
-function MetalkBadge({ dark = false }: { dark?: boolean }) {
-  const pillBg = dark ? "rgba(255,255,255,0.92)" : "#4F46E5";
-  const textColor = dark ? "#3A3D4A" : "#fff";
-  const sparkleColor = dark ? "#4F46E5" : "#A7F0F7";
+/* ─── me.talk 시그니처 배지 (원본 1안 트윙클 — mrpark-2.0 MeTalkBadge와 동일 효과) ─── */
+/* 그라데이션 알약 + 흰 글자 "me.talk" + 시안 트윙클(반짝임 애니메이션).
+   알약 자체가 불투명해 어떤 헤더색 위에서도 동일하게 노출(다크변형 불필요) */
+function MetalkBadge() {
+  const starPx = 14;
   return (
-    <div style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      background: pillBg, borderRadius: 999, padding: "5px 13px 5px 11px",
-      boxShadow: dark ? "0 1px 4px rgba(0,0,0,0.12)" : "0 1px 6px rgba(79,70,229,0.35)",
+    <span style={{
+      position: "relative", display: "inline-flex", alignItems: "center",
+      gap: 6, padding: "5px 12px 5px 9px", borderRadius: 10,
+      background: "linear-gradient(135deg, #7B7BF0, #4F46E5)",
+      boxShadow: "0 1px 6px rgba(79,70,229,0.35)",
     }}>
-      <Sparkle size={13} color={sparkleColor} />
-      <span style={{ color: textColor, fontSize: 14, fontWeight: 800, letterSpacing: 0.2 }}>미톡</span>
-    </div>
+      <style>{`@keyframes mtkTw{0%,100%{opacity:.25;transform:scale(.6)}50%{opacity:1;transform:scale(1)}}`}</style>
+      <span style={{ position: "relative", display: "inline-block", width: starPx, height: starPx }}>
+        <svg width={starPx} height={starPx} viewBox="0 0 24 24"
+          style={{ animation: "mtkTw 1.6s ease-in-out infinite" }} aria-hidden="true">
+          <path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#A7F0F7" />
+        </svg>
+      </span>
+      <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>me.talk</span>
+    </span>
   );
 }
 
@@ -347,8 +352,8 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
       {/* 상단 헤더 */}
       <div style={{ background: theme.bg, padding: "32px 20px 28px", textAlign: "center", transition: "background 0.4s" }}>
         <div style={{ display: "inline-flex", marginBottom: 22 }}>
-          {/* 미톡 로고 B안 — 게스트 페이지의 'AI 주차비서' 얼굴. 골드 헤더는 다크변형 */}
-          <MetalkBadge dark={status === "exit_requested"} />
+          {/* me.talk 시그니처 — 게스트 페이지의 'AI 주차비서' 얼굴 */}
+          <MetalkBadge />
         </div>
 
         {/* 상태 아이콘 — CSS 링+점 */}
