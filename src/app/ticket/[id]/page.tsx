@@ -3,15 +3,17 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useCallback } from "react";
+import { formatMaskedPlate } from "@/lib/plate";
 
 /* ─── 상태별 테마 ─── */
+/* 이모지 전면 금지(카톡 인앱브라우저 깨짐). 상태 구분은 헤더 배경색 + CSS 링·점 아이콘으로 표현 */
 const STATUS_THEME = {
-  parking:        { bg: "#1428A0", text: "#fff",     label: "🅿️ 주차중",     sub: "차량이 주차되어 있습니다" },
-  pre_paid:       { bg: "#16A34A", text: "#fff",     label: "✅ 사전정산 완료", sub: "유예시간 내 출차해 주세요" },
-  overdue:        { bg: "#DC2626", text: "#fff",     label: "⚠️ 유예시간 초과", sub: "추가요금 결제 후 출차 가능합니다" },
-  exit_requested: { bg: "#F5B731", text: "#1A1D2B",  label: "🚗 출차 요청중",  sub: "크루가 차량을 준비하고 있습니다" },
-  car_ready:      { bg: "#16A34A", text: "#fff",     label: "🟢 차량 준비 완료", sub: "출구로 이동해 주세요" },
-  completed:      { bg: "#1428A0", text: "#fff",     label: "🏁 출차 완료",    sub: "이용해 주셔서 감사합니다" },
+  parking:        { bg: "#1428A0", text: "#fff",     label: "주차중",       sub: "차량이 주차되어 있습니다" },
+  pre_paid:       { bg: "#16A34A", text: "#fff",     label: "사전정산 완료", sub: "유예시간 내 출차해 주세요" },
+  overdue:        { bg: "#DC2626", text: "#fff",     label: "유예시간 초과", sub: "추가요금 결제 후 출차 가능합니다" },
+  exit_requested: { bg: "#F5B731", text: "#1A1D2B",  label: "출차 요청중",   sub: "크루가 차량을 준비하고 있습니다" },
+  car_ready:      { bg: "#16A34A", text: "#fff",     label: "차량 준비 완료", sub: "출구로 이동해 주세요" },
+  completed:      { bg: "#1428A0", text: "#fff",     label: "출차 완료",     sub: "이용해 주셔서 감사합니다" },
 };
 
 const fmt = (ts: string) => {
@@ -60,6 +62,91 @@ const fmtOverdue = (deadline: string) => {
   const m = Math.ceil(diff / 60000);
   return `${m}분`;
 };
+
+/* ─── SVG 4점 스파클 (이모지 대체) ─── */
+function Sparkle({ size = 12, color = "#A7F0F7" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true"
+      style={{ display: "block", flexShrink: 0 }}>
+      <path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z" fill={color} />
+    </svg>
+  );
+}
+
+/* ─── 미톡 로고 B안 배지 (인디고 알약 + 4점 스파클) ─── */
+/* 기본: 인디고 #4F46E5 알약 / 흰 글자 / 시안 스파클
+   골드 헤더(출차요청중)용 다크변형(dark=true): 흰 알약 / 진회색 글자 / 인디고 스파클 */
+function MetalkBadge({ dark = false }: { dark?: boolean }) {
+  const pillBg = dark ? "rgba(255,255,255,0.92)" : "#4F46E5";
+  const textColor = dark ? "#3A3D4A" : "#fff";
+  const sparkleColor = dark ? "#4F46E5" : "#A7F0F7";
+  return (
+    <div style={{
+      display: "inline-flex", alignItems: "center", gap: 5,
+      background: pillBg, borderRadius: 999, padding: "5px 13px 5px 11px",
+      boxShadow: dark ? "0 1px 4px rgba(0,0,0,0.12)" : "0 1px 6px rgba(79,70,229,0.35)",
+    }}>
+      <Sparkle size={13} color={sparkleColor} />
+      <span style={{ color: textColor, fontSize: 14, fontWeight: 800, letterSpacing: 0.2 }}>미톡</span>
+    </div>
+  );
+}
+
+/* ─── CSS 링+점 상태 아이콘 (이모지 대체) ─── */
+function RingDot({ color = "#fff", size = 40 }: { color?: string; size?: number }) {
+  const ring = Math.max(3, Math.round(size * 0.09));
+  const dot = Math.round(size * 0.32);
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      border: `${ring}px solid ${color}66`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      margin: "0 auto",
+    }}>
+      <div style={{ width: dot, height: dot, borderRadius: "50%", background: color }} />
+    </div>
+  );
+}
+
+/* ─── 네이비 P 배지 (로딩용, 이모지 대체) ─── */
+function PBadge({ size = 48, bg = "#1428A0" }: { size?: number; bg?: string }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: Math.round(size * 0.28), background: bg,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      color: "#fff", fontSize: Math.round(size * 0.52), fontWeight: 900,
+      fontFamily: "'Outfit', sans-serif", margin: "0 auto",
+    }}>P</div>
+  );
+}
+
+/* ─── 회색 ! 배지 (오류용, 이모지 대체) ─── */
+function ErrorBadge({ size = 48 }: { size?: number }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%", background: "#E5E7EB",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      color: "#9AA0AD", fontSize: Math.round(size * 0.55), fontWeight: 900,
+      fontFamily: "'Outfit', sans-serif", margin: "0 auto",
+    }}>!</div>
+  );
+}
+
+/* ─── 차량번호 표기: formatMaskedPlate "12* 3456" + 뒤 4자리만 크게 강조 ─── */
+function PlateDisplay({ raw }: { raw: string }) {
+  const formatted = formatMaskedPlate(raw || "");
+  const m = formatted.match(/^(.*?)(\d{4})$/); // 앞부분 + 뒤 4자리 분리
+  if (!m) {
+    return <span style={{ fontSize: 26, fontWeight: 900, color: "#1A1D2B", letterSpacing: 1.5 }}>{formatted || raw}</span>;
+  }
+  const [, front, last4] = m;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 2 }}>
+      <span style={{ fontSize: 16, fontWeight: 700, color: "#9AA0AD", letterSpacing: 1, fontFamily: "'Outfit', sans-serif" }}>{front.trim()}</span>
+      <span style={{ fontSize: 30, fontWeight: 900, color: "#1A1D2B", letterSpacing: 2, fontFamily: "'Outfit', sans-serif" }}>{last4}</span>
+    </span>
+  );
+}
 
 export default function TicketPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   const [ticketId, setTicketId] = useState<string>("");
@@ -230,7 +317,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
   if (loading) return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8f9fb" }}>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>🅿️</div>
+        <div style={{ marginBottom: 14 }}><PBadge size={48} /></div>
         <div style={{ fontSize: 15, color: "#888" }}>티켓 정보를 불러오는 중...</div>
       </div>
     </div>
@@ -239,7 +326,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
   if (!ticket) return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8f9fb" }}>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 44, marginBottom: 12 }}>❓</div>
+        <div style={{ marginBottom: 14 }}><ErrorBadge size={52} /></div>
         <div style={{ fontSize: 18, fontWeight: 700, color: "#333", marginBottom: 6 }}>티켓을 찾을 수 없습니다</div>
         <div style={{ fontSize: 13, color: "#888" }}>QR 코드를 다시 스캔해 주세요</div>
       </div>
@@ -259,16 +346,14 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
 
       {/* 상단 헤더 */}
       <div style={{ background: theme.bg, padding: "32px 20px 28px", textAlign: "center", transition: "background 0.4s" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 20 }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.15)",
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900,
-          }}>P</div>
-          <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: 700, letterSpacing: 0.5 }}>미팍티켓</span>
+        <div style={{ display: "inline-flex", marginBottom: 22 }}>
+          {/* 미톡 로고 B안 — 게스트 페이지의 'AI 주차비서' 얼굴. 골드 헤더는 다크변형 */}
+          <MetalkBadge dark={status === "exit_requested"} />
         </div>
 
-        <div style={{ fontSize: 36, marginBottom: 8 }}>
-          {isOverdue ? "⚠️" : isPrePaid ? "✅" : status === "car_ready" ? "🟢" : isCompleted ? "✅" : "🅿️"}
+        {/* 상태 아이콘 — CSS 링+점 */}
+        <div style={{ marginBottom: 14 }}>
+          <RingDot color={theme.text} size={42} />
         </div>
         <div style={{ color: theme.text, fontSize: 20, fontWeight: 800, marginBottom: 6 }}>{theme.label}</div>
         <div style={{ color: `${theme.text}cc`, fontSize: 14 }}>{theme.sub}</div>
@@ -280,7 +365,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
             padding: "14px 28px", display: "inline-block",
           }}>
             <div style={{ color: "#1A1D2B", fontSize: 15, fontWeight: 900, letterSpacing: 0.3 }}>
-              🙏 감사합니다! 즐거운 하루 되세요!
+              감사합니다! 즐거운 하루 되세요
             </div>
           </div>
         )}
@@ -333,13 +418,12 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
         }}>
           {/* 차량번호 */}
           <div style={{ textAlign: "center", marginBottom: 20, paddingBottom: 20, borderBottom: "1px solid #f0f0f0" }}>
-            <div style={{ fontSize: 11, color: "#999", marginBottom: 6 }}>차량번호</div>
+            <div style={{ fontSize: 11, color: "#999", marginBottom: 8 }}>차량번호</div>
             <div style={{
-              display: "inline-block", padding: "6px 20px", border: "3px solid #1A1D2B",
-              borderRadius: 8, fontSize: 26, fontWeight: 900, color: "#1A1D2B",
-              fontFamily: "'Outfit', sans-serif", letterSpacing: 1.5,
+              display: "inline-block", padding: "6px 22px", border: "3px solid #1A1D2B",
+              borderRadius: 8,
             }}>
-              {ticket.plate_number as string}
+              <PlateDisplay raw={ticket.plate_number as string} />
             </div>
           </div>
 
@@ -404,7 +488,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
               {isOverdue && additionalFee > 0 && (
                 <>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 13, color: "#DC2626" }}>⚠️ 추가요금</span>
+                    <span style={{ fontSize: 13, color: "#DC2626" }}>추가요금</span>
                     <span style={{ fontSize: 14, fontWeight: 700, color: "#DC2626" }}>
                       {fmtMoney(additionalFee)}
                     </span>
@@ -434,7 +518,11 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
             borderRadius: 14, padding: "16px",
             display: "flex", alignItems: "center", gap: 12,
           }}>
-            <div style={{ fontSize: 32, flexShrink: 0 }}>🆓</div>
+            <div style={{
+              flexShrink: 0, background: "#F5B731", borderRadius: 8,
+              padding: "6px 12px", color: "#1A1D2B", fontSize: 15, fontWeight: 900,
+              fontFamily: "'Outfit', sans-serif", letterSpacing: 0.5,
+            }}>FREE</div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: "#16A34A", marginBottom: 2 }}>
                 무료 처리 차량입니다
@@ -480,7 +568,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
               color: "#fff", fontSize: 17, fontWeight: 800, cursor: exitLoading ? "not-allowed" : "pointer",
             }}
           >
-            {exitLoading ? "요청 중..." : "🚗 출차 요청하기"}
+            {exitLoading ? "요청 중..." : "출차 요청하기"}
           </button>
           <div style={{ textAlign: "center", fontSize: 12, color: "#999", marginTop: 8 }}>
             요청 후 크루가 차량을 준비합니다
@@ -496,7 +584,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
             border: "1px solid #fecaca", marginBottom: 12,
           }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#DC2626", marginBottom: 8 }}>
-              ⚠️ 유예시간이 초과되었습니다
+              유예시간이 초과되었습니다
             </div>
             <div style={{ fontSize: 12, color: "#666", lineHeight: 1.6 }}>
               사전정산 후 {gracePeriod}분이 지났습니다.<br />
@@ -517,7 +605,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
               opacity: payLoading ? 0.7 : 1,
             }}
           >
-            {payLoading ? "결제 연결 중..." : `💳 ${fmtMoney(additionalFee)} 웹 결제`}
+            {payLoading ? "결제 연결 중..." : `${fmtMoney(additionalFee)} 웹 결제`}
           </button>
 
           {/* 키오스크 결제 옵션 (has_kiosk = true) */}
@@ -530,7 +618,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               }}
             >
-              🖥️ 키오스크 현장 결제
+              키오스크 현장 결제
             </button>
           )}
 
@@ -541,10 +629,19 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
       )}
 
       {/* 안내 문구 */}
-      <div style={{ padding: "20px 16px 40px" }}>
+      <div style={{ padding: "20px 16px 36px" }}>
         <div style={{ fontSize: 11, color: "#bbb", textAlign: "center", lineHeight: 1.8 }}>
           문의: {(store as Record<string, unknown>)?.name as string ?? "주차장 관리자"}에 문의해 주세요
-          <br />미팍티켓은 QR 코드로 주차 현황을 실시간으로 확인합니다
+          <br />미톡이 주차 현황을 실시간으로 안내해 드립니다
+        </div>
+        {/* powered by — 게스트엔 미팍티켓을 전면에 노출하지 않고 하단에 작게만 */}
+        <div style={{
+          marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+        }}>
+          <Sparkle size={9} color="#cbcfd6" />
+          <span style={{ fontSize: 10, color: "#c2c6cf", fontWeight: 600, letterSpacing: 0.3 }}>
+            powered by 미팍티켓
+          </span>
         </div>
       </div>
     </div>
