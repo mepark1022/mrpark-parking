@@ -727,13 +727,13 @@ a{text-decoration:none;color:inherit}
 @property --lvp{syntax:'<number>';inherits:false;initial-value:0}
 
 /* --- 텍스트 히어로(중앙형) + 박스 레이아웃 --- */
-.vhero{text-align:center;padding:40px 0 0}
+.vhero{text-align:center;padding:40px 0 140px;background:var(--navy-50)}
 .vh-eyebrow{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:100px;background:#fff;border:1px solid var(--line);box-shadow:0 4px 14px rgba(20,40,160,.07);color:var(--navy);font-size:12.5px;font-weight:700;margin-bottom:14px}
 .vhero h1{font-size:40px;line-height:1.16;font-weight:800;letter-spacing:-.04em;color:var(--t900)}
 .vhero h1 .nv{color:var(--navy)}.vhero h1 .ai{color:var(--indigo)}
 .vhero .sub{margin:13px auto 0;max-width:520px;font-size:16px;line-height:1.6;color:var(--t500)}
 .hbx .mtk-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 15px;border-radius:100px;background:linear-gradient(135deg,var(--indigo-soft),var(--indigo));color:#fff;font-weight:800;font-size:13px;box-shadow:0 12px 24px -10px rgba(79,70,229,.55)}
-.v1c-wrap{max-width:1040px;margin:88px auto 128px;position:relative;padding:0 24px}
+.v1c-wrap{max-width:1040px;margin:88px auto 0;position:relative;padding:0 24px}
 .v1c-box{position:relative;border-radius:24px;padding:54px 22px 26px;background:#fff;border:1px solid #EDEFF6;box-shadow:0 22px 48px -24px rgba(20,40,160,.22)}
 .v1c-badge{position:absolute;top:-15px;left:50%;transform:translateX(-50%)}
 .bx-lead{text-align:center;font-size:12.5px;font-weight:600;color:var(--t500);margin-bottom:16px}.bx-lead b{color:var(--navy);font-weight:800}
@@ -880,7 +880,7 @@ a{text-decoration:none;color:inherit}
 
 /* --- 모바일: 7카드 횡스크롤 스냅 리플로우 ('한 흐름' 유지) --- */
 @media(max-width:720px){
-  .vhero{padding:28px 0 0}
+  .vhero{padding:28px 0 88px}
   .vhero h1{font-size:30px}
   .v1c-wrap{padding:0 16px;margin-top:44px}
   .v1c-box{padding:46px 12px 16px}
