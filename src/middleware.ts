@@ -7,6 +7,11 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get("host")?.replace(/:\d+$/, "") || "";
   const { pathname } = request.nextUrl;
 
+  // ── 공개(비로그인) API: 방문객 위치 취급대장 — 세션 체크 없이 통과 ──
+  if (pathname === "/api/v1/location/log") {
+    return NextResponse.next();
+  }
+
   // ── mepark.kr → 홈페이지 ──
   if (hostname === "mepark.kr" || hostname === "www.mepark.kr") {
     // 루트 → 정적 홈페이지 HTML 서빙
