@@ -356,6 +356,13 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
           <MetalkBadge />
         </div>
 
+        {/* 매장명 — 어느 주차장 티켓인지 즉시 인지 (㉡ 렌더 누락 수정) */}
+        {(store as Record<string, unknown>)?.name ? (
+          <div style={{ color: theme.text, fontSize: 15, fontWeight: 800, marginBottom: 12, opacity: 0.95 }}>
+            {(store as Record<string, unknown>).name as string}
+          </div>
+        ) : null}
+
         {/* 상태 아이콘 — CSS 링+점 */}
         <div style={{ marginBottom: 14 }}>
           <RingDot color={theme.text} size={42} />

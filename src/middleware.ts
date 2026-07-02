@@ -32,6 +32,10 @@ export async function middleware(request: NextRequest) {
 
   // ── ticket.mepark.kr → 티켓/스캔 페이지만 허용 ──
   if (hostname === "ticket.mepark.kr") {
+    // 루트 → 방문객 안내 랜딩 (토스 PG 심사 대비 · URL은 "/" 유지)
+    if (pathname === "/" || pathname === "/ticket-home") {
+      return NextResponse.rewrite(new URL("/ticket-home", request.url));
+    }
     if (
       pathname.startsWith("/ticket/") ||
       pathname.startsWith("/scan/") ||
