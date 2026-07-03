@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   description: "주식회사 미스터팍 — ME.PARK 2.0 스마트 주차운영 관리 플랫폼 · 미팍Ticket",
   icons: {
     icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
       { url: "/favicon.ico", sizes: "any" },
       { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
       { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
