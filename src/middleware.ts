@@ -12,6 +12,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // ── /ticket/* 페이지 → 정본 도메인(ticket.mepark.kr) 영구 이관(308) ──
+  //   카카오 승인 템플릿 버튼이 구주소(vercel.app/ticket/{id})로 고정돼 있어,
+  //   이 앱으로 들어오는 /ticket/* 트래픽을 호스트 무관 전면 리다이렉트한다.
+  //   · /api/* 는 제외(페이지 경로만) — 위 startsWith 로 자연 배제됨.
+  //   · ticket.mepark.kr 은 더 이상 이 앱이 아니므로(mrpark-2.0) 재진입 루프 없음.
+  if (pathname.startsWith("/ticket/")) {
+    return NextResponse.redirect(
+      `https://ticket.mepark.kr${pathname}${request.nextUrl.search}`,
+      308,
+    );
+  }
+
   // ── mepark.kr → 홈페이지 ──
   if (hostname === "mepark.kr" || hostname === "www.mepark.kr") {
     // 루트 → 정적 홈페이지 HTML 서빙
