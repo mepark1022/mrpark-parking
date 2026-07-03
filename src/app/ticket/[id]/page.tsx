@@ -166,6 +166,7 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
   const [overdueMinutes, setOverdueMinutes] = useState(0);
   const [additionalFee, setAdditionalFee] = useState(0);
   const [payLoading, setPayLoading] = useState(false);
+  const [orderLoading, setOrderLoading] = useState(false);
   const [exitLoading, setExitLoading] = useState(false);
   const [hasKiosk, setHasKiosk] = useState(false);
   const [liveFee, setLiveFee] = useState(0); // 실시간 예상 요금
@@ -315,6 +316,51 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
       alert("결제 연동 준비 중입니다. 키오스크를 이용해 주세요.");
     } finally {
       setPayLoading(false);
+    }
+  };
+
+  /* ─── 주차요금 결제 (hr.mepark.kr 중계 → 토스 결제창) ───
+     요금 확정·주문 생성은 전부 서버(mrpark-2.0). 여기는 결제창 호출만.
+     위젯 아님 — tossPayments.payment() 방식. PII 전달 금지, ANONYMOUS 고정. */
+  const handlePayment = async () => {
+    if (orderLoading) return;
+    setOrderLoading(true);
+    try {
+      // 1) 중계 라우트로 주문 생성 (orderId·amount는 서버가 확정)
+      const res = await fetch("/api/toss/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticket_id: ticketId }),
+      });
+      if (!res.ok) {
+        alert("결제 준비 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+      const { orderId, amount } = await res.json();
+      if (!orderId || !amount) {
+        alert("결제할 금액이 없습니다.");
+        return;
+      }
+      // 2) 토스 결제창 호출
+      const { loadTossPayments, ANONYMOUS } = await import("@tosspayments/tosspayments-sdk");
+      const tossPayments = await loadTossPayments(process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY!);
+      const payment = tossPayments.payment({ customerKey: ANONYMOUS });
+      const origin = window.location.origin;
+      await payment.requestPayment({
+        method: "CARD",
+        amount: { value: amount, currency: "KRW" }, // V2는 객체 형태 필수
+        orderId,
+        orderName: "주차요금",
+        // 토스가 code/message(실패) · paymentKey 등(성공)을 뒤에 append.
+        // ticketId는 결과 페이지의 "티켓으로 돌아가기" 복귀용(PII 아님).
+        successUrl: `${origin}/pay/success?ticketId=${ticketId}`,
+        failUrl: `${origin}/pay/fail?ticketId=${ticketId}`,
+        // customerEmail/Name/Phone 전달 금지
+      });
+    } catch (e) {
+      console.error("[toss/pay] error:", e);
+    } finally {
+      setOrderLoading(false);
     }
   };
 
@@ -521,6 +567,27 @@ export default function TicketPage({ params }: { params: Promise<{ id: string }>
           </div>
         </div>
       </div>
+
+      {/* ─── 주차요금 결제 버튼 (미결제 금액이 있을 때) ─── */}
+      {["parking", "exit_requested", "car_ready"].includes(ticket.status as string) && !isFreeTicket && liveFee > 0 && (
+        <div style={{ padding: "20px 16px 0" }}>
+          <button
+            onClick={handlePayment}
+            disabled={orderLoading}
+            style={{
+              width: "100%", padding: "18px", borderRadius: 14, border: "none",
+              background: orderLoading ? "#ccc" : "#1428A0",
+              color: "#fff", fontSize: 17, fontWeight: 800,
+              cursor: orderLoading ? "not-allowed" : "pointer",
+            }}
+          >
+            {orderLoading ? "결제 연결 중..." : `${fmtMoney(liveFee)} 결제하기`}
+          </button>
+          <div style={{ textAlign: "center", fontSize: 12, color: "#999", marginTop: 8 }}>
+            카드 결제 후 자동으로 정산됩니다
+          </div>
+        </div>
+      )}
 
       {/* ─── 무료 처리 차량 안내 배너 ─── */}
       {isFreeTicket && ["parking", "exit_requested", "car_ready"].includes(ticket.status as string) && (
