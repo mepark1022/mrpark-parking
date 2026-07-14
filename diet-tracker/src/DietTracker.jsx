@@ -9,6 +9,31 @@ const NAVY = "#1428A0";
 const GOLD = "#F5B731";
 const STORAGE_KEY = "diet-tracker-data"; // 단일 키 저장
 
+// ─── 안전한 저장소 래퍼 ───
+// localStorage 를 우선 사용하되, 접근이 막힌 환경(아티팩트 샌드박스,
+// 사파리 프라이빗 모드 등)에서는 메모리에 담아 세션 내에서는 동작하게 한다.
+const memoryStore = {};
+const safeStorage = {
+  get(key) {
+    try {
+      const v = localStorage.getItem(key);
+      if (v != null) return v;
+    } catch {
+      /* localStorage 접근 불가 → 메모리 폴백 */
+    }
+    return key in memoryStore ? memoryStore[key] : null;
+  },
+  set(key, val) {
+    memoryStore[key] = val; // 항상 메모리에 보관
+    try {
+      localStorage.setItem(key, val);
+    } catch {
+      /* 저장소가 막혀도 메모리에는 남으므로 UI 는 정상 반영 */
+    }
+    return true;
+  },
+};
+
 // 날짜 포맷 YYYY-MM-DD (로컬 기준)
 const fmtDate = (d) => {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -162,7 +187,7 @@ export default function DietTracker() {
   // ─── 최초 로드 ───
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = safeStorage.get(STORAGE_KEY);
       if (raw) {
         const data = JSON.parse(raw);
         setEntries(Array.isArray(data.entries) ? data.entries : []);
@@ -180,16 +205,10 @@ export default function DietTracker() {
 
   // ─── 저장 (단일 키) ───
   const persist = useCallback((nextEntries, nextGoal) => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ entries: nextEntries, goalWeight: nextGoal })
-      );
-      return true;
-    } catch (e) {
-      showToast("저장에 실패했습니다. 다시 시도해주세요.", false);
-      return false;
-    }
+    return safeStorage.set(
+      STORAGE_KEY,
+      JSON.stringify({ entries: nextEntries, goalWeight: nextGoal })
+    );
   }, []);
 
   // ─── 기록 저장 (같은 날짜 덮어쓰기) ───
