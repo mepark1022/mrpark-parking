@@ -190,7 +190,13 @@ export default function DietTracker() {
       const raw = safeStorage.get(STORAGE_KEY);
       if (raw) {
         const data = JSON.parse(raw);
-        setEntries(Array.isArray(data.entries) ? data.entries : []);
+        const list = Array.isArray(data.entries) ? data.entries : [];
+        setEntries(list);
+        // 오늘 기록이 이미 있으면 폼에 미리 채워서 바로 보이게 한다
+        const todayEntry = list.find((e) => e.date === todayStr());
+        if (todayEntry) {
+          setForm({ ...emptyForm(todayEntry.date), ...todayEntry, weight: String(todayEntry.weight) });
+        }
         if (data.goalWeight != null) {
           setGoalWeight(data.goalWeight);
           setGoalInput(String(data.goalWeight));
@@ -222,7 +228,8 @@ export default function DietTracker() {
     if (persist(next, goalWeight)) {
       setEntries(next);
       showToast(overwritten ? "기록을 덮어썼습니다 ✓" : "기록이 저장되었습니다 ✓");
-      setForm(emptyForm());
+      // 저장 후에도 방금 입력한 내용을 그대로 보여준다 (사라진 것처럼 보이지 않도록)
+      setForm((f) => ({ ...f, weight: String(w) }));
     }
   };
 
@@ -523,7 +530,11 @@ export default function DietTracker() {
       {showCal && (
         <Calendar
           value={form.date}
-          onSelect={(d) => setForm({ ...form, date: d })}
+          onSelect={(d) => {
+            // 고른 날짜에 저장된 기록이 있으면 폼에 불러오고, 없으면 그 날짜의 빈 폼
+            const ex = entries.find((e) => e.date === d);
+            setForm(ex ? { ...emptyForm(d), ...ex, weight: String(ex.weight) } : emptyForm(d));
+          }}
           onClose={() => setShowCal(false)}
         />
       )}
