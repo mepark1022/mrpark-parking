@@ -3,12 +3,17 @@
 -- (mepark-saas-policy §2-7 1번)
 -- 실행 위치: Supabase SQL Editor
 -- 작성일: 2026-07-14
+-- ✅ 라이브 적용·검증 완료 2026-07-14:
+--    idx_tickets_org_store_entry / idx_tickets_active / idx_tickets_org_status_entry
+--    3개 신규 생성(문장별 실행), STEP 3-1 로 indisvalid=true 확인, ANALYZE 완료.
+--    (idx_tickets_collision 은 기존 존재 → IF NOT EXISTS 스킵)
 --
 -- ⚠️⚠️ 실행 규칙 (반드시 준수) ⚠️⚠️
 --  1) CREATE INDEX CONCURRENTLY 는 트랜잭션 블록 밖에서만 동작.
---     → BEGIN/COMMIT 로 감싸지 말 것. SQL Editor 는 문장별 autocommit 이라
---       이 파일을 통째 실행해도 되지만, 실패 시 재개 편의를 위해
---       가급적 CREATE INDEX 문을 "한 문장씩" 순차 실행 권장.
+--     → BEGIN/COMMIT 로 감싸지 말 것. ⚠️ Supabase SQL Editor 는 한 번에 여러
+--       문장을 실행하면 암묵적으로 "하나의 트랜잭션"으로 감싼다 → CONCURRENTLY 가
+--       "cannot run inside a transaction block" 로 전부 실패(= d9b78b8 미적용 원인).
+--       반드시 CREATE INDEX 문을 "에디터에 하나만 남기고 한 문장씩" 개별 Run.
 --     → supabase db push(CLI)는 파일을 1개 트랜잭션으로 감싸므로 이 파일에는
 --       부적합. 이 저장소의 관행(대시보드 SQL Editor 수동 실행)을 따를 것.
 --  2) 실행 전, 진단 [A-3] 로 INVALID 인덱스가 없는지 확인.
