@@ -22,6 +22,127 @@ const emptyForm = (date) => ({
   weight: "", breakfast: "", lunch: "", dinner: "", snack: "", exercise: "", memo: "",
 });
 
+// ─── 날짜 유틸 ───
+const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
+const parseYMD = (s) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return { y, m: m - 1, d };
+};
+// 폼에 표시할 한글 날짜 (예: 2026. 7. 15 (수))
+const fmtDateKorean = (s) => {
+  if (!s) return "";
+  const { y, m, d } = parseYMD(s);
+  const wd = WEEK[new Date(y, m, d).getDay()];
+  return `${y}. ${m + 1}. ${d} (${wd})`;
+};
+
+// ─── 커스텀 달력 (미팍 테마) ───
+function Calendar({ value, onSelect, onClose }) {
+  const init = value ? parseYMD(value) : parseYMD(todayStr());
+  const [view, setView] = useState({ y: init.y, m: init.m }); // m: 0~11
+  const selected = value;
+  const today = todayStr();
+
+  const firstDow = new Date(view.y, view.m, 1).getDay();
+  const daysInMonth = new Date(view.y, view.m + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  const shiftMonth = (delta) =>
+    setView((v) => {
+      const total = v.y * 12 + v.m + delta;
+      return { y: Math.floor(total / 12), m: ((total % 12) + 12) % 12 };
+    });
+
+  const toYMD = (d) =>
+    `${view.y}-${String(view.m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const pick = (d) => {
+    onSelect(toYMD(d));
+    onClose();
+  };
+
+  const headLabel = selected ? fmtDateKorean(selected) : "날짜를 선택하세요";
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-6"
+      onClick={onClose}>
+      <div className="w-full max-w-xs bg-white rounded-3xl overflow-hidden shadow-xl"
+        onClick={(e) => e.stopPropagation()}>
+        {/* 헤더 (네이비) */}
+        <div style={{ backgroundColor: NAVY }} className="px-5 py-4">
+          <p className="text-white text-xs opacity-70">날짜 선택</p>
+          <p className="text-white text-xl font-bold mt-0.5">{headLabel}</p>
+        </div>
+
+        {/* 월 이동 */}
+        <div className="flex items-center justify-between px-5 pt-4">
+          <button type="button" onClick={() => shiftMonth(-1)}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 text-lg">
+            ‹
+          </button>
+          <p className="text-sm font-bold" style={{ color: NAVY }}>
+            {view.y}년 {view.m + 1}월
+          </p>
+          <button type="button" onClick={() => shiftMonth(1)}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 text-lg">
+            ›
+          </button>
+        </div>
+
+        {/* 요일 */}
+        <div className="grid grid-cols-7 gap-1 px-4 mt-3">
+          {WEEK.map((w, i) => (
+            <div key={w} className="text-center text-xs font-semibold py-1"
+              style={{ color: i === 0 ? "#DC2626" : i === 6 ? "#2563EB" : "#9ca3af" }}>
+              {w}
+            </div>
+          ))}
+        </div>
+
+        {/* 날짜 그리드 */}
+        <div className="grid grid-cols-7 gap-1 px-4 pb-3">
+          {cells.map((d, i) => {
+            if (d == null) return <div key={i} />;
+            const ymd = toYMD(d);
+            const isSel = ymd === selected;
+            const isToday = ymd === today;
+            const dow = i % 7;
+            return (
+              <button key={i} type="button" onClick={() => pick(d)}
+                className="aspect-square rounded-full text-sm font-medium flex items-center justify-center transition-colors hover:bg-gray-100"
+                style={isSel
+                  ? { backgroundColor: NAVY, color: "#fff" }
+                  : { color: dow === 0 ? "#DC2626" : dow === 6 ? "#2563EB" : "#374151" }}>
+                <span className="relative flex items-center justify-center">
+                  {d}
+                  {isToday && !isSel && (
+                    <span className="absolute -bottom-1.5 w-1 h-1 rounded-full"
+                      style={{ backgroundColor: GOLD }} />
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 푸터 */}
+        <div className="flex border-t border-gray-100">
+          <button type="button"
+            onClick={() => { onSelect(today); onClose(); }}
+            className="flex-1 py-3 text-sm font-bold" style={{ color: GOLD }}>
+            오늘
+          </button>
+          <button type="button" onClick={onClose}
+            className="flex-1 py-3 text-sm font-semibold text-gray-500 border-l border-gray-100">
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DietTracker() {
   const [entries, setEntries] = useState([]);
   const [goalWeight, setGoalWeight] = useState(null);
@@ -30,6 +151,7 @@ export default function DietTracker() {
   const [tab, setTab] = useState("today"); // today | chart | list
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null); // {msg, ok}
+  const [showCal, setShowCal] = useState(false); // 커스텀 달력 표시
 
   // ─── 토스트 ───
   const showToast = (msg, ok = true) => {
@@ -225,8 +347,13 @@ export default function DietTracker() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-gray-600">날짜</label>
-                  <input type="date" className={inputCls + " mt-1"} value={form.date}
-                    onChange={(e) => setForm({ ...form, date: e.target.value })} />
+                  <button type="button" onClick={() => setShowCal(true)}
+                    className={inputCls + " mt-1 text-left flex items-center justify-between"}>
+                    <span className={form.date ? "" : "text-gray-400"}>
+                      {form.date ? fmtDateKorean(form.date) : "날짜 선택"}
+                    </span>
+                    <span style={{ color: NAVY }}>📅</span>
+                  </button>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-gray-600">체중 (kg)</label>
@@ -372,6 +499,15 @@ export default function DietTracker() {
           </div>
         )}
       </main>
+
+      {/* 커스텀 달력 */}
+      {showCal && (
+        <Calendar
+          value={form.date}
+          onSelect={(d) => setForm({ ...form, date: d })}
+          onClose={() => setShowCal(false)}
+        />
+      )}
 
       {/* 토스트 */}
       {toast && (
