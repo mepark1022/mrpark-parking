@@ -869,7 +869,7 @@ a{text-decoration:none;color:inherit}
 .kalk-time{font-size:11px;color:#9AA0A6;margin-top:7px;padding-left:4px;font-weight:600}
 
 /* --- ② 웹티켓 전환(좌 4단계 설명 · 우 확정폰) --- */
-.wtk2{display:grid;grid-template-columns:1fr 340px;gap:56px;align-items:center;margin-top:14px}
+.wtk2{display:grid;grid-template-columns:1fr 300px;gap:56px;align-items:center;margin-top:0}
 .wtk2-left h3{font-size:29px;font-weight:800;letter-spacing:-.03em;color:var(--t900);line-height:1.32;margin-bottom:14px}
 .wtk2-left .lead{font-size:15.5px;color:var(--t500);line-height:1.7;margin-bottom:24px;max-width:410px}
 .wsteps{display:flex;flex-direction:column;gap:9px}
@@ -882,48 +882,48 @@ a{text-decoration:none;color:inherit}
 .wtk2-right{display:flex;justify-content:center}
 @media(max-width:900px){.wtk2{grid-template-columns:1fr;gap:34px}.wtk2-right{order:-1}}
 
-/* ===== 확정 웹티켓 폰(.rp) — ② 자동전환용 4스크린 스택 변형 ===== */
-.rp{width:298px;border-radius:44px;padding:11px;background:linear-gradient(158deg,#ffffff,#e9edf6);
-  box-shadow:0 52px 96px -34px rgba(20,40,160,.42),0 16px 40px -16px rgba(20,40,160,.24);border:1px solid #E7EAF3}
-.rp-scr{border-radius:34px;overflow:hidden;background:#fff;position:relative}
+/* ===== 확정 웹티켓 폰(.rp) — ② 자동전환 4스크린 스택 (컴팩트: 라이브 clayph 비율 최적화 ~2.05) ===== */
+.rp{width:276px;border-radius:42px;padding:10px;background:linear-gradient(158deg,#ffffff,#e9edf6);
+  box-shadow:0 48px 88px -34px rgba(20,40,160,.42),0 14px 36px -16px rgba(20,40,160,.24);border:1px solid #E7EAF3}
+.rp-scr{border-radius:33px;overflow:hidden;background:#fff;position:relative}
 /* 4스크린 스택: 첫 스크린이 높이 확보(relative), 나머지 absolute 오버레이 */
 .rp-screen{position:absolute;inset:0;opacity:0;transition:opacity .55s ease;pointer-events:none}
 .rp-screen:first-child{position:relative}
 .rp-screen.active{opacity:1;pointer-events:auto}
 .rp-bar{display:flex;align-items:center;justify-content:space-between;color:#fff}
-.rp-bar .tm{font-family:var(--fe);font-size:14.5px;font-weight:700;letter-spacing:.3px}
-.rp-bar .ic{display:flex;align-items:center;gap:7px}
-.rp-top{padding:14px 22px 64px;color:#fff;position:relative}
+.rp-bar .tm{font-family:var(--fe);font-size:13.5px;font-weight:700;letter-spacing:.3px}
+.rp-bar .ic{display:flex;align-items:center;gap:6px}
+.rp-top{padding:12px 19px 44px;color:#fff;position:relative}
 .rp .t0{background:linear-gradient(160deg,#2a44c8 0%,#1428A0 100%)}
 .rp .t1{background:linear-gradient(160deg,#F5A623 0%,#E58E12 100%)}
 .rp .t2{background:linear-gradient(160deg,#25b167 0%,#1a8b4f 100%)}
 .rp .t3{background:linear-gradient(160deg,#464e5d 0%,#333a47 100%)}
-.rp-metalk{margin-top:18px;display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,var(--indigo-soft),var(--indigo));
-  border-radius:100px;padding:6px 13px;font-size:12px;font-weight:800;color:#fff;box-shadow:0 8px 18px -8px rgba(79,70,229,.6)}
-.rp-status{margin-top:22px;text-align:center}
-.rp-pill{display:inline-flex;align-items:center;gap:9px;background:#fff;border-radius:100px;padding:11px 26px;
-  font-size:18px;font-weight:800;color:var(--t900);box-shadow:0 10px 24px -10px rgba(0,0,0,.22)}
-.rp-pill .d{width:10px;height:10px;border-radius:50%}
+.rp-metalk{margin-top:11px;display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,var(--indigo-soft),var(--indigo));
+  border-radius:100px;padding:5px 12px;font-size:11.5px;font-weight:800;color:#fff;box-shadow:0 8px 18px -8px rgba(79,70,229,.6)}
+.rp-status{margin-top:12px;text-align:center}
+.rp-pill{display:inline-flex;align-items:center;gap:8px;background:#fff;border-radius:100px;padding:9px 21px;
+  font-size:16px;font-weight:800;color:var(--t900);box-shadow:0 10px 24px -10px rgba(0,0,0,.22)}
+.rp-pill .d{width:9px;height:9px;border-radius:50%}
 .rp .d-park{background:#2a44c8}.rp .d-req{background:#EF5A5A}.rp .d-ok{background:#22b167}.rp .d-out{background:#9AA0AC}
-.rp-sub{margin-top:13px;text-align:center;font-size:13px;font-weight:600;color:rgba(255,255,255,.94)}
-.rp-card{position:relative;margin:-44px 16px 0;background:#fff;border-radius:22px;padding:20px 20px 18px;
-  box-shadow:0 24px 54px -30px rgba(20,40,160,.28),0 4px 14px -8px rgba(20,40,160,.12);z-index:2}
-.rp-vlabel{text-align:center;font-size:12.5px;color:var(--t400);font-weight:600;margin-bottom:11px}
-.rp-plate{border:1.8px solid #2A3142;border-radius:13px;display:flex;align-items:center;justify-content:center;gap:10px;padding:13px 0;margin-bottom:18px;background:#fff}
-.rp-plate .rg{font-family:var(--fe);font-size:18px;font-weight:700;color:#8A8F9A;letter-spacing:.5px}
-.rp-plate .no{font-family:var(--fe);font-size:27px;font-weight:800;letter-spacing:1.5px;color:#16203a}
-.rp-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:15px}
-.rp-cell{background:var(--soft2);border-radius:12px;padding:12px 13px}
-.rp-cell small{display:block;font-size:11px;color:var(--t400);font-weight:600;margin-bottom:4px}
-.rp-cell b{font-size:13.5px;color:var(--t900);font-weight:700}
-.rp-fee{display:flex;justify-content:space-between;align-items:center;padding:13px 2px 4px;border-top:1px solid var(--line)}
-.rp-fee span{font-size:14px;color:var(--t500);font-weight:700}
-.rp-fee b{font-family:var(--fe);font-size:18px;font-weight:800}
+.rp-sub{margin-top:8px;text-align:center;font-size:12px;font-weight:600;color:rgba(255,255,255,.94)}
+.rp-card{position:relative;margin:-36px 14px 0;background:#fff;border-radius:20px;padding:14px 15px 11px;
+  box-shadow:0 22px 50px -30px rgba(20,40,160,.28),0 4px 14px -8px rgba(20,40,160,.12);z-index:2}
+.rp-vlabel{text-align:center;font-size:11px;color:var(--t400);font-weight:600;margin-bottom:7px}
+.rp-plate{border:1.8px solid #2A3142;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:9px;padding:9px 0;margin-bottom:11px;background:#fff}
+.rp-plate .rg{font-family:var(--fe);font-size:15.5px;font-weight:700;color:#8A8F9A;letter-spacing:.5px}
+.rp-plate .no{font-family:var(--fe);font-size:23px;font-weight:800;letter-spacing:1.3px;color:#16203a}
+.rp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:9px}
+.rp-cell{background:var(--soft2);border-radius:11px;padding:8px 11px}
+.rp-cell small{display:block;font-size:10px;color:var(--t400);font-weight:600;margin-bottom:2px}
+.rp-cell b{font-size:12.5px;color:var(--t900);font-weight:700}
+.rp-fee{display:flex;justify-content:space-between;align-items:center;padding:8px 2px 2px;border-top:1px solid var(--line)}
+.rp-fee span{font-size:13px;color:var(--t500);font-weight:700}
+.rp-fee b{font-family:var(--fe);font-size:16px;font-weight:800}
 .rp-fee b.free{color:#16a34a}
-.rp-note{text-align:center;font-size:10.5px;color:var(--t400);line-height:1.55;padding:14px 6px 4px;font-weight:500}
-.rp-dots{display:flex;gap:5px;justify-content:center;padding:14px 0 16px}
+.rp-note{text-align:center;font-size:10px;color:var(--t400);line-height:1.4;padding:8px 6px 1px;font-weight:500}
+.rp-dots{display:flex;gap:5px;justify-content:center;padding:9px 0 10px}
 .rp-dots i{width:6px;height:6px;border-radius:50%;background:#DEE2EB}
-.rp-dots i.on{background:var(--navy);width:16px;border-radius:3px}
+.rp-dots i.on{background:var(--navy);width:15px;border-radius:3px}
 
 /* --- ④ 실증거(카카오 알림톡 2건) --- */
 .proof2{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;align-items:center}
@@ -1012,7 +1012,9 @@ a{text-decoration:none;color:inherit}
       <div class="relay-cap">② 알림톡 도착<small>미팍티켓이 알림톡으로</small></div>
     </div>
   </div>
+</div></section>
 
+<section class="sec soft" id="flow2"><div class="wrap">
   <div class="wtk2">
     <div class="wtk2-left">
       <h3>웹티켓 한 장으로<br>출차까지 끝나요</h3>
@@ -1088,7 +1090,7 @@ a{text-decoration:none;color:inherit}
   </div>
 </div></section>
 
-<section class="sec soft" id="why"><div class="wrap">
+<section class="sec" id="why"><div class="wrap">
   <div class="sec-head"><span class="eyebrow">WHY MEPARK</span><h2>그래서, 이렇게 편해집니다</h2><p>기다림도, 설치도, 개인정보 걱정도 없이 — 손님이 겪는 건 편함뿐이에요.</p></div>
   <div class="why-grid">
     <div class="why-card"><div class="why-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="why-t">대기 0분</div><div class="why-d">미리 결제·출차 요청으로 차 빼는 대기가 사라져요.</div></div>
@@ -1096,41 +1098,6 @@ a{text-decoration:none;color:inherit}
     <div class="why-card"><div class="why-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div><div class="why-t">알림톡 자동 안내</div><div class="why-d">입차·결제·출차를 알림톡으로 알아서 안내해요.</div></div>
     <div class="why-card"><div class="why-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg></div><div class="why-t">번호 즉시 폐기</div><div class="why-d">방문객 번호는 저장하지 않고 즉시 폐기해요.</div></div>
   </div>
-</div></section>
-
-<section class="sec" id="proof"><div class="wrap">
-  <div class="sec-head"><span class="eyebrow">REAL</span><h2>손님은 기다린 적이 없어요</h2><p>실제 발송된 미팍티켓 알림톡이에요. 출차를 요청하면 크루가 즉시 준비 — 대기 0분.</p></div>
-  <div class="proof2"><div class="kalk">
-  <div class="kalk-sender"><span class="kalk-av"><span>P</span></span><span class="kalk-name">미스터팍 <svg width="14" height="14" viewBox="0 0 24 24" fill="#1428A0"><path d="M12 2l2.4 1.8 3-.2 1 2.8 2.6 1.6-1 2.8 1 2.8-2.6 1.6-1 2.8-3-.2L12 22l-2.4-1.8-3 .2-1-2.8L3 12.2l1-2.8-1-2.8 2.6-1.6 1-2.8 3 .2z"/><path d="M8.5 12l2.3 2.3 4.7-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
-  <div><span class="kalk-tab">알림톡 도착</span>
-    <div class="kalk-card">
-      <div class="kalk-title">[미팍Ticket] 입차 완료</div>
-      <p class="kalk-p">미팍주차타워 주차장에 입차되었습니다.</p>
-      <div class="kalk-li">■ 차량번호: <b>6296</b>
-■ 입차시간: <b>07. 15. 오후 12:30</b>
-■ 주차요금: 아래 버튼에서 확인</div>
-      <p class="kalk-p" style="margin-bottom:0">주차요금 사전정산 및 출차 안내는 아래 버튼을 통해 확인하세요.</p>
-      <div class="kalk-btn">모바일에서 확인해 주세요</div>
-      <p class="kalk-muted" style="margin-top:10px">고객센터: 1899-1871 (평일 09:00~18:00)</p>
-    </div>
-  </div>
-  <div class="kalk-time">오후 12:30</div>
-</div><div class="proof-mid"><div class="gap">0분</div><div class="gl">출차 요청 →<br>즉시 준비</div></div><div class="kalk">
-  <div class="kalk-sender"><span class="kalk-av"><span>P</span></span><span class="kalk-name">미스터팍 <svg width="14" height="14" viewBox="0 0 24 24" fill="#1428A0"><path d="M12 2l2.4 1.8 3-.2 1 2.8 2.6 1.6-1 2.8 1 2.8-2.6 1.6-1 2.8-3-.2L12 22l-2.4-1.8-3 .2-1-2.8L3 12.2l1-2.8-1-2.8 2.6-1.6 1-2.8 3 .2z"/><path d="M8.5 12l2.3 2.3 4.7-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
-  <div><span class="kalk-tab">알림톡 도착</span>
-    <div class="kalk-card">
-      <div class="kalk-title">[미팍Ticket] 차량 준비 완료</div>
-      <p class="kalk-p">6296 차량이 출구에 준비되었습니다.</p>
-      <div class="kalk-li">■ 대기 위치: <b>미팍주차타워</b>
-■ 준비완료: <b>07. 15. 오후 02:30</b></div>
-      <p class="kalk-p" style="margin-bottom:0">지금 바로 출차 가능합니다 🚗</p>
-      <div class="kalk-btn">모바일에서 확인해 주세요</div>
-      <p class="kalk-muted" style="margin-top:10px">고객센터: 1899-1871</p>
-    </div>
-  </div>
-  <div class="kalk-time">오후 2:30</div>
-</div></div>
-  <p style="text-align:center;margin-top:24px;font-size:12px;color:var(--t400)">* 실제 발송 알림톡 내용 · 차량번호는 마스킹 후 표시</p>
 </div></section>
 
 <section class="sec soft" id="branch"><div class="wrap">
