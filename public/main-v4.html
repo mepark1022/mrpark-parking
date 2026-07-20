@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미팍티켓 — QR 한 번으로 시작되는 스마트 주차</title>
+<meta property="og:title" content="미팍티켓 — QR 한 번으로 시작되는 스마트 주차">
+<meta property="og:description" content="QR을 스캔하면 미팍티켓이 알림톡으로 도착해요. 출차 요청과 결제까지 한 번에, 손님은 더 이상 기다리지 않아요.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --navy:#1428A0; --navy-d:#0e1d7a; --navy-50:#EEF1FB; --navy-100:#DEE3FF;
+  --gold:#F5B731; --gold-d:#9A6A0A; --gold-bg:#FFFBF0;
+  --indigo:#4F46E5; --indigo-soft:#7B7BF0; --star:#A7F0F7; --indigo-bg:#EEF0FF;
+  --white:#fff; --soft:#FAFAFB; --soft2:#F5F6FA;
+  --line:#ECECEF; --line2:#E1E2E6; --border:#E5E7EB;
+  --t900:#111827; --t800:#1F2937; --t700:#2E323A; --t500:#6B6F78; --t400:#9CA0A8;
+  --f:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --fe:'Outfit',var(--f);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--f);color:var(--t800);background:var(--white);line-height:1.6;-webkit-font-smoothing:antialiased;word-break:keep-all;line-break:strict}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+.tnum{font-feature-settings:"tnum";font-variant-numeric:tabular-nums}
+
+/* ===== GNB ===== */
+.gnb{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.gnb-in{max-width:1120px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:9px}
+.logo-p{width:30px;height:30px;border-radius:9px;background:#111;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.logo-p span{font-family:var(--fe);font-weight:900;font-size:17px;color:#fff;line-height:1;margin-top:-2px}
+.logo-p::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--gold)}
+.logo-tx{font-size:18px;font-weight:800;letter-spacing:-.02em}
+.logo-tx b{color:#111}
+.logo-tx em{font-family:var(--fe);font-style:normal;font-weight:800;color:var(--gold)}
+.gnb-menu{display:flex;align-items:center;gap:30px}
+.gnb-menu a{font-size:15px;font-weight:600;color:var(--t700);transition:color .15s}
+.gnb-menu a:hover{color:var(--navy)}
+.gnb-cta{display:flex;align-items:center;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;border:none;transition:all .18s;white-space:nowrap}
+.btn-ghost{padding:9px 16px;color:var(--navy);background:transparent}
+.btn-ghost:hover{background:var(--navy-50)}
+.btn-navy{padding:10px 20px;background:var(--navy);color:#fff}
+.btn-navy:hover{background:var(--navy-d);transform:translateY(-1px)}
+.btn-gold{padding:10px 20px;background:var(--gold);color:#1F2937}
+.btn-gold:hover{filter:brightness(1.04);transform:translateY(-1px)}
+.gnb-burger{display:none}
+
+/* ===== HERO ===== */
+.hero{padding:96px 0 110px;background:linear-gradient(180deg,#fff 0%,var(--soft) 100%);overflow:hidden}
+.hero-in{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:100px;background:var(--indigo-bg);color:var(--indigo);font-size:13px;font-weight:700;margin-bottom:22px}
+.hero h1{font-size:50px;line-height:1.2;font-weight:800;letter-spacing:-.035em;color:var(--t900)}
+.hero h1 .nv{color:var(--navy)}
+.hero h1 .ai{position:relative;white-space:nowrap;color:var(--indigo)}
+.hero h1 .ai .shine{background:linear-gradient(110deg,#5B5FE0 0%,#5B5FE0 35%,#fff 50%,#9A4DFF 65%,#9A4DFF 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 2.6s linear infinite}
+@keyframes shimmer{to{background-position:-200% center}}
+.hero p.sub{margin-top:24px;font-size:18px;line-height:1.7;color:var(--t500);font-weight:400;max-width:440px}
+.hero-actions{margin-top:34px;display:flex;align-items:center;gap:12px}
+.hero-actions .btn{font-size:16px;padding:14px 26px;border-radius:14px}
+.hero-note{margin-top:18px;font-size:13.5px;color:var(--t400);display:flex;align-items:center;gap:7px}
+.hero-note b{color:var(--navy);font-weight:700}
+
+/* ===== device mock (hero AI 비서) ===== */
+.hero-visual{position:relative;display:flex;justify-content:center}
+.aibox{width:100%;max-width:420px;background:#fff;border:1px solid var(--border);border-radius:26px;box-shadow:0 30px 70px -28px rgba(17,24,39,.28),0 8px 24px -12px rgba(20,40,160,.12);padding:22px;position:relative;z-index:2}
+.aibox-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.metalk{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 9px;border-radius:10px;background:linear-gradient(135deg,var(--indigo-soft),var(--indigo));color:#fff;font-weight:700;font-size:13px}
+.metalk .star{animation:tw 1.7s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.3;transform:scale(.6)}50%{opacity:1;transform:scale(1)}}
+.aibox-time{font-size:12px;color:var(--t400);font-weight:600}
+.ai-line{display:flex;gap:10px;padding:13px 14px;border-radius:14px;background:var(--soft2);margin-bottom:10px;border:1px solid var(--line)}
+.ai-line .dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none}
+.ai-line.warn .dot{background:var(--gold)}
+.ai-line.ok .dot{background:var(--indigo)}
+.ai-line p{font-size:13.5px;line-height:1.55;color:var(--t700);font-weight:500}
+.ai-line p b{font-weight:700;color:var(--t900)}
+.ai-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}
+.ai-kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 10px;text-align:center}
+.ai-kpi .lb{font-size:11px;color:var(--t500);font-weight:600}
+.ai-kpi .vl{font-family:var(--fe);font-size:19px;font-weight:800;color:var(--navy);margin-top:3px;letter-spacing:-.01em}
+.float{position:absolute;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 14px 34px -16px rgba(17,24,39,.22);padding:10px 13px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:var(--t800);z-index:3}
+.float .ic{width:30px;height:30px;border-radius:9px;background:var(--navy-50);color:var(--navy);display:flex;align-items:center;justify-content:center;flex:none}
+.float.f1{top:-18px;left:-26px;animation:fl1 5s ease-in-out infinite}
+.float.f2{bottom:-16px;right:-6px;animation:fl1 5.6s ease-in-out infinite .4s}
+@keyframes fl1{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+/* ===== section common ===== */
+.sec{padding:130px 0}
+.sec.soft{background:var(--soft)}
+.sec-head{text-align:center;max-width:680px;margin:0 auto 64px}
+.eyebrow{display:inline-block;font-family:var(--fe);font-size:12px;font-weight:800;letter-spacing:1.4px;color:var(--navy);background:var(--navy-50);padding:6px 12px;border-radius:100px;margin-bottom:18px}
+.sec-head h2{font-size:40px;line-height:1.25;font-weight:800;letter-spacing:-.035em;color:var(--t900)}
+.sec-head p{margin-top:16px;font-size:17px;line-height:1.65;color:var(--t500)}
+
+/* ===== feature block (toss-style alternating) ===== */
+.fblock{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;padding:104px 0}
+.fblock.rev .fcopy{order:2}
+.fblock.rev .fvisual{order:1}
+.fcat{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:16px}
+.fcat .tag{font-family:var(--fe);font-size:10px;font-weight:800;letter-spacing:1.2px;background:var(--navy);color:#fff;padding:3px 8px;border-radius:6px}
+.fblock h3{font-size:34px;line-height:1.28;font-weight:800;letter-spacing:-.03em;color:var(--t900)}
+.fblock .fsub{margin-top:18px;font-size:17px;line-height:1.7;color:var(--t500);max-width:430px}
+.fbul{margin-top:24px;display:flex;flex-direction:column;gap:12px}
+.fbul li{list-style:none;display:flex;align-items:flex-start;gap:11px;font-size:15.5px;font-weight:600;color:var(--t700)}
+.fbul .ck{width:22px;height:22px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+.fvisual{display:flex;justify-content:center}
+
+/* phone mock */
+.phone{width:288px;background:#fff;border-radius:34px;border:1px solid var(--border);box-shadow:0 36px 80px -34px rgba(17,24,39,.3),0 6px 20px -10px rgba(20,40,160,.1);padding:14px 12px 16px}
+.phone-notch{width:120px;height:24px;background:#fff;border:1px solid var(--line);border-bottom:none;border-radius:0 0 14px 14px;margin:-14px auto 0;position:relative}
+.phone-notch::after{content:"";width:42px;height:5px;border-radius:5px;background:var(--line2);position:absolute;top:8px;left:50%;transform:translateX(-50%)}
+.scr{background:var(--soft2);border-radius:22px;padding:16px 14px;min-height:430px}
+.scr-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.scr-bar .t{font-size:15px;font-weight:800;color:var(--t900)}
+.scr-bar .badge{font-size:10px;font-weight:800;font-family:var(--fe);letter-spacing:.6px;padding:3px 8px;border-radius:100px;background:var(--navy-50);color:var(--navy)}
+
+/* ticket pay screen */
+.tk-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;text-align:center;margin-bottom:12px}
+.tk-plate{display:inline-block;font-family:var(--fe);font-weight:800;font-size:18px;letter-spacing:1px;border:2px solid var(--t900);border-radius:8px;padding:6px 14px;color:var(--t900);margin-bottom:12px}
+.tk-amt{font-family:var(--fe);font-size:32px;font-weight:800;color:var(--navy);letter-spacing:-.02em}
+.tk-amt small{font-size:16px;color:var(--t500);font-weight:600;margin-left:2px}
+.tk-meta{font-size:11.5px;color:var(--t400);margin-top:6px}
+.tk-pay{margin-top:8px;background:var(--gold);color:#1F2937;border-radius:12px;padding:13px;text-align:center;font-weight:800;font-size:15px}
+.tk-row{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:12.5px;color:var(--t700);font-weight:600;margin-top:8px}
+.tk-row .ck{width:18px;height:18px;border-radius:50%;background:var(--indigo);display:flex;align-items:center;justify-content:center;flex:none}
+
+/* crew ocr screen */
+.ocr-cam{background:#0f1530;border-radius:16px;height:150px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.ocr-frame{width:160px;height:64px;border:2px solid var(--gold);border-radius:8px;position:relative;display:flex;align-items:center;justify-content:center}
+.ocr-frame span{font-family:var(--fe);font-weight:800;font-size:20px;letter-spacing:1.5px;color:#fff}
+.ocr-frame::before,.ocr-frame::after{content:"";position:absolute;width:14px;height:14px;border-color:var(--gold);border-style:solid}
+.ocr-scan{position:absolute;left:14px;right:14px;height:2px;background:var(--star);box-shadow:0 0 10px var(--star);animation:scan 2.2s ease-in-out infinite}
+@keyframes scan{0%,100%{top:24px}50%{top:120px}}
+.ocr-result{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px;display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.ocr-result .ic{width:34px;height:34px;border-radius:10px;background:#E7F8EF;color:#15803D;display:flex;align-items:center;justify-content:center;flex:none}
+.ocr-result .tx b{display:block;font-size:14px;font-weight:800;color:var(--t900)}
+.ocr-result .tx small{font-size:11.5px;color:var(--t500)}
+.ocr-alim{background:var(--navy-50);border-radius:12px;padding:11px 13px;font-size:12px;color:var(--navy);font-weight:600;display:flex;gap:8px;align-items:center}
+
+/* admin dashboard mock */
+.dash{width:100%;max-width:480px;background:#fff;border:1px solid var(--border);border-radius:22px;box-shadow:0 34px 78px -34px rgba(17,24,39,.28),0 6px 20px -10px rgba(20,40,160,.1);overflow:hidden}
+.dash-top{display:flex;align-items:center;gap:8px;padding:13px 18px;border-bottom:1px solid var(--line);background:#fff}
+.dash-top .dt{font-size:13.5px;font-weight:800;color:var(--t900)}
+.dash-top .dots{display:flex;gap:5px;margin-left:auto}
+.dash-top .dots i{width:9px;height:9px;border-radius:50%;background:var(--line2);display:inline-block}
+.dash-body{padding:18px;background:var(--soft2)}
+.dash-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.dk{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 11px}
+.dk .lb{font-size:10.5px;color:var(--t500);font-weight:600}
+.dk .vl{font-family:var(--fe);font-size:18px;font-weight:800;color:var(--navy);margin-top:3px;letter-spacing:-.01em}
+.dk .vl.sm{font-size:14px}
+.cal{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+.cal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-hd .m{font-size:13px;font-weight:800;color:var(--t900)}
+.cal-hd .lg{display:flex;gap:11px;font-size:10.5px;color:var(--t500);font-weight:600}
+.cal-hd .lg i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:middle}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cd{aspect-ratio:1;border-radius:8px;background:var(--soft2);border:1px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-family:var(--fe);font-size:11px;font-weight:700;color:var(--t700);position:relative}
+.cd .pips{display:flex;gap:2px;height:5px}
+.cd .pips i{width:5px;height:5px;border-radius:50%}
+.cd.today{border-color:var(--gold);background:var(--gold-bg)}
+.cd.sel{background:var(--navy);color:#fff}
+
+/* metalk insight card (block4) */
+.insight{width:100%;max-width:430px;background:#fff;border:1px solid #ECEBFB;border-radius:22px;box-shadow:0 30px 70px -32px rgba(79,70,229,.3),0 6px 20px -12px rgba(17,24,39,.1);padding:22px}
+.insight-hd{display:flex;align-items:center;gap:9px;margin-bottom:16px}
+.insight-hd .ti{font-size:14px;font-weight:800;color:var(--t900)}
+.imsg{display:flex;gap:11px;padding:14px;border-radius:16px;background:var(--soft);border:1px solid var(--line);margin-bottom:11px}
+.imsg .av{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--indigo-soft),var(--indigo));flex:none;display:flex;align-items:center;justify-content:center}
+.imsg p{font-size:13.5px;line-height:1.55;color:var(--t700);font-weight:500}
+.imsg p b{color:var(--t900);font-weight:800}
+.imsg .tagchip{display:inline-block;font-size:10.5px;font-weight:700;color:var(--gold-d);background:var(--gold-bg);border:1px solid var(--gold);border-radius:100px;padding:2px 8px;margin-top:7px}
+
+/* ===== trust ===== */
+.trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:8px}
+.tcard{text-align:center;padding:36px 18px;background:#fff;border:1px solid var(--border);border-radius:20px}
+.tcard .n{font-family:var(--fe);font-size:46px;font-weight:800;color:var(--navy);letter-spacing:-.02em;line-height:1}
+.tcard .n em{font-style:normal;font-size:24px;font-weight:700;color:var(--navy)}
+.tcard .l{margin-top:12px;font-size:14.5px;font-weight:600;color:var(--t500)}
+
+/* ===== pricing ===== */
+.pv2{max-width:560px;margin:0 auto}
+.pv2-card{background:#fff;border:1.5px solid var(--border);border-radius:26px;padding:48px 44px;box-shadow:0 20px 56px -30px rgba(20,40,160,.16)}
+.pv2-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--navy-50);border-radius:100px;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:22px}
+.pv2-row{display:flex;justify-content:space-between;align-items:baseline;padding:18px 0;border-bottom:1px solid var(--line)}
+.pv2-row .lb{font-size:16px;font-weight:700;color:var(--t800)}
+.pv2-row .vl{font-family:var(--fe);font-weight:800;color:var(--t900)}
+.pv2-row.zero .vl{font-size:40px;line-height:1}
+.pv2-row .vl small{font-size:16px;color:var(--t500);font-weight:600;margin-left:3px;font-family:var(--f)}
+.pv2-row .vl.tx{font-size:22px;font-family:var(--f)}
+.pv2-hl{display:flex;justify-content:space-between;align-items:center;background:rgba(245,183,49,.1);border:1.5px solid rgba(245,183,49,.4);border-radius:16px;padding:20px 22px;margin-top:14px}
+.pv2-hl .lb b{display:block;font-size:16px;font-weight:800;color:var(--t900)}
+.pv2-hl .lb small{font-size:12px;color:var(--t500);font-weight:500}
+.pv2-hl .vl{font-family:var(--fe);font-size:42px;font-weight:800;color:var(--t900);line-height:1;text-align:right}
+.pv2-hl .vl span{font-size:20px}
+.pv2-hl .vl small{display:block;font-size:11px;color:var(--t500);font-weight:500;font-family:var(--f);margin-top:5px}
+.pv2-foot{text-align:center;margin-top:22px;font-size:13px;color:var(--t500);line-height:1.65}
+.pv2-cta{margin-top:30px;display:flex;justify-content:center}
+.pv2-cta .btn{padding:16px 44px;font-size:16px;border-radius:14px}
+
+/* ===== CTA island ===== */
+.cta-sec{padding:90px 0 120px}
+.cta-island{background:var(--navy);border-radius:32px;padding:72px 40px;text-align:center;position:relative;overflow:hidden}
+.cta-island::before{content:"";position:absolute;top:-60px;right:-40px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(79,70,229,.5),transparent 70%)}
+.cta-island::after{content:"";position:absolute;bottom:-80px;left:-30px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(245,183,49,.18),transparent 70%)}
+.cta-island h2{position:relative;font-size:38px;font-weight:800;letter-spacing:-.035em;color:#fff;line-height:1.3}
+.cta-island p{position:relative;margin-top:16px;font-size:17px;color:#C9D0F0;font-weight:500}
+.cta-actions{position:relative;margin-top:34px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.cta-actions .btn{font-size:16px;padding:15px 30px;border-radius:14px}
+.cta-actions .btn-white{background:#fff;color:var(--navy)}
+.cta-actions .btn-white:hover{transform:translateY(-1px);box-shadow:0 12px 30px -10px rgba(0,0,0,.3)}
+.cta-tel{position:relative;margin-top:22px;font-family:var(--fe);font-size:15px;color:#fff;font-weight:600;opacity:.9}
+.cta-tel b{font-size:18px;font-weight:800}
+
+/* ===== footer ===== */
+.foot{background:var(--soft);border-top:1px solid var(--line);padding:56px 0 40px}
+.foot-top{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px;margin-bottom:36px}
+.foot h4{font-size:13px;font-weight:800;color:var(--t900);margin-bottom:14px}
+.foot ul li{list-style:none;margin-bottom:9px}
+.foot ul a{font-size:13.5px;color:var(--t500);font-weight:500}
+.foot ul a:hover{color:var(--navy)}
+.foot-brand p{margin-top:14px;font-size:13px;color:var(--t500);line-height:1.7;max-width:280px}
+.foot-bot{border-top:1px solid var(--line);padding-top:22px;font-size:12.5px;color:var(--t400);line-height:1.8}
+
+/* ===== responsive ===== */
+@media(max-width:980px){
+  .hero-in,.fblock{grid-template-columns:1fr;gap:44px}
+  .fblock.rev .fcopy{order:1}.fblock.rev .fvisual{order:2}
+  .fcopy{text-align:center}.fbul{align-items:center;display:inline-flex;text-align:left}
+  .hero{padding:64px 0 72px}.hero .fcopy,.hero-actions,.hero-note{justify-content:center}
+  .hero-eyebrow{margin-left:auto;margin-right:auto}
+  .hero p.sub{margin-left:auto;margin-right:auto}
+  .trust-grid{grid-template-columns:repeat(2,1fr)}
+  .foot-top{grid-template-columns:1fr 1fr}
+}
+@media(max-width:680px){
+  .gnb-menu,.gnb-cta .btn-ghost{display:none}
+  .sec{padding:84px 0}.fblock{padding:60px 0}
+  .hero h1{font-size:34px}.sec-head h2{font-size:28px}.fblock h3{font-size:26px}
+  .hero p.sub,.sec-head p{font-size:15.5px}
+  .cta-island{padding:54px 24px;border-radius:24px}.cta-island h2{font-size:27px}
+  .pv2-card{padding:34px 22px}.pv2-row.zero .vl{font-size:32px}.pv2-hl .vl{font-size:32px}
+  .tcard .n{font-size:38px}
+  .float{display:none}
+}
+
+/* ============ 3D 오브제 재질 시스템 (히어로필드에서 이식) ============ */
+/* --- 공통: 오브제 래퍼 / 접지그림자 --- */
+.hf-o{position:absolute}
+.hf-grd{position:absolute;left:50%;bottom:-13px;width:84%;height:18px;transform:translateX(-50%);
+  background:radial-gradient(ellipse at 54% 40%,rgba(40,55,110,.26),rgba(40,55,110,0) 70%);
+  filter:blur(5px);z-index:-1}
+.hf-float{animation:hfFloat 6s ease-in-out infinite}
+.hf-float2{animation:hfFloat 6.8s ease-in-out infinite .6s}
+@keyframes hfFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+
+/* --- THICK 두께 시스템 (정면판 + 측면 깊이) --- */
+.thk{position:relative}
+.thk .dep{position:absolute;inset:0;border-radius:inherit}   /* 측면 깊이 = 어두운 틴트, 오프셋 적용 */
+.thk .fc{position:relative;border-radius:inherit;overflow:hidden}
+/* 정면판 상단 림광 + 하단 AO + 스펙큘러는 face별로 */
+
+/* 서리유리 face 레시피 */
+.fc-white{background:linear-gradient(158deg,#ffffff 0%,#f2f5ff 54%,#e6edfb 100%);
+  border:1px solid rgba(255,255,255,.8);
+  box-shadow:inset 0 3px 4px rgba(255,255,255,.95),inset 0 -13px 18px rgba(36,52,108,.15)}
+.fc-white::before{content:"";position:absolute;left:7%;top:5%;width:46%;height:38%;border-radius:50%;
+  background:radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.95),rgba(255,255,255,0) 70%);filter:blur(1px);pointer-events:none}
+.fc-navy{background:linear-gradient(158deg,#3147cb 0%,#1d31a2 54%,#142a86 100%);
+  border:1px solid rgba(120,140,230,.42);
+  box-shadow:inset 0 3px 5px rgba(255,255,255,.4),inset 0 -13px 20px rgba(8,16,70,.5)}
+.fc-navy::before{content:"";position:absolute;left:8%;top:6%;width:44%;height:34%;border-radius:50%;
+  background:radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.5),rgba(255,255,255,0) 70%);filter:blur(1px);pointer-events:none}
+.fc-indigo{background:linear-gradient(158deg,#8585f2 0%,#5d54ea 54%,#473dd0 100%);
+  border:1px solid rgba(160,160,250,.45);
+  box-shadow:inset 0 3px 5px rgba(255,255,255,.45),inset 0 -13px 20px rgba(40,30,140,.5)}
+.fc-indigo::before{content:"";position:absolute;left:8%;top:6%;width:44%;height:34%;border-radius:50%;
+  background:radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.6),rgba(255,255,255,0) 70%);filter:blur(1px);pointer-events:none}
+
+/* ============ ① AI 코어 오브 (중앙 시그니처, 170) ============ */
+.o-core{z-index:6}
+.orb{width:152px;height:152px;border-radius:50%;position:relative;
+  background:radial-gradient(circle at 33% 28%,#9a93ff 0%,#6a5cf0 38%,#4a3fd6 66%,#3a2fbe 100%);
+  box-shadow:0 24px 48px -18px rgba(74,63,214,.58),inset 0 -15px 28px rgba(30,20,110,.5),inset 0 8px 18px rgba(255,255,255,.32)}
+.orb::before{content:"";position:absolute;left:20%;top:14%;width:40%;height:34%;border-radius:50%;
+  background:radial-gradient(ellipse at 32% 30%,rgba(255,255,255,.92),rgba(255,255,255,0) 70%);filter:blur(.5px)}
+.orb::after{content:"";position:absolute;inset:-16px;border-radius:50%;
+  background:radial-gradient(circle,rgba(123,123,240,.34),rgba(123,123,240,0) 66%);z-index:-1}
+.orbit{position:absolute;inset:-13px;border-radius:50%;border:1.5px dashed rgba(123,123,240,.5);
+  animation:spin 18s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.orbit::after{content:"";position:absolute;top:-4px;left:50%;width:7px;height:7px;border-radius:50%;background:var(--star);box-shadow:0 0 8px var(--star)}
+.orb-talk{position:absolute;left:50%;bottom:-15px;transform:translateX(-50%);white-space:nowrap;
+  display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:100px;
+  background:linear-gradient(135deg,var(--indigo-soft),var(--indigo));color:#fff;font-weight:700;font-size:13px;
+  box-shadow:0 8px 20px -8px rgba(79,70,229,.7)}
+.orb-talk .tw{animation:tw 1.7s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.35;transform:scale(.6)}50%{opacity:1;transform:scale(1)}}
+
+/* ============ ⑮ 마이크 (AI 음성인식 — AI 패밀리 인디고, 72) ============ */
+.o-mic{z-index:6}
+.mic-cap{width:46px;height:62px;border-radius:23px;position:relative;margin:0 auto;
+  background:linear-gradient(158deg,#3a52c8,#1428A0 58%,#0e1d7a);
+  box-shadow:inset 0 3px 5px rgba(255,255,255,.5),inset 0 -10px 16px rgba(10,20,75,.55),0 14px 26px -12px rgba(20,40,160,.5);
+  border:1px solid rgba(120,140,230,.5)}
+.mic-cap i{position:absolute;left:11px;right:11px;height:2.5px;border-radius:2px;background:rgba(255,255,255,.34)}
+.mic-cap i:nth-child(1){top:16px}.mic-cap i:nth-child(2){top:24px}.mic-cap i:nth-child(3){top:32px}.mic-cap i:nth-child(4){top:40px}
+.mic-cradle{width:60px;height:30px;border:3px solid #1428A0;border-top:none;border-radius:0 0 30px 30px;margin:-6px auto 0;opacity:.8}
+.mic-stem{width:4px;height:13px;background:linear-gradient(#22379f,#0e1d7a);margin:0 auto;border-radius:2px}
+.mic-base{width:30px;height:7px;border-radius:4px;background:linear-gradient(#2c41b0,#0e1d7a);margin:0 auto;box-shadow:0 6px 12px -6px rgba(20,40,160,.5)}
+.mic-wave{position:absolute;top:24px;width:14px;height:30px}
+.mic-wave.l{left:-16px}.mic-wave.r{right:-16px}
+.mic-wave span{position:absolute;bottom:0;width:3px;border-radius:2px;background:var(--star)}
+
+/* ============ ⑦ 캘린더 (매출마감, 100 — JUN 영문) ============ */
+.o-cal{z-index:2}
+.ocal{width:100px}
+.ocal .dep{background:#aeb9da;transform:translate(3px,14px)}
+.ocal .fc{padding:0}
+.ocal-hd{background:linear-gradient(160deg,#2a40c4,#16277f);color:#fff;text-align:center;padding:7px 0 6px;position:relative}
+.ocal-hd .m{font-family:var(--fe);font-weight:800;font-size:13px;letter-spacing:1px}
+.ocal-hd::after{content:"";position:absolute;left:22px;right:22px;top:-4px;height:7px;border-radius:0 0 6px 6px;background:rgba(255,255,255,.18)}
+.ocal-bd{padding:9px 9px 13px;background:transparent}
+.ocal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.ocal-grid b{height:13px;border-radius:3px;background:#dde3f5;display:block}
+.ocal-grid b.g{background:#34c77b}.ocal-grid b.y{background:var(--gold)}.ocal-grid b.r{background:#ef5a5a}.ocal-grid b.nv{background:var(--navy)}
+
+/* ============ ⑥ OCR 카메라 (CREW, 92) ============ */
+.o-cam{z-index:4}
+.cam{width:92px;height:68px}
+.cam .dep{background:#aeb9da;transform:translate(3px,14px)}
+.cam .fc{display:flex;align-items:center;justify-content:center}
+.cam-lens{width:50px;height:50px;border-radius:50%;position:relative;
+  background:radial-gradient(circle at 38% 34%,#3a4660 0%,#1a2236 60%,#0c111f 100%);
+  box-shadow:inset 0 4px 7px rgba(0,0,0,.6),inset 0 -3px 5px rgba(90,200,230,.3),0 1px 2px rgba(255,255,255,.5)}
+.cam-lens::before{content:"";position:absolute;left:12px;top:9px;width:15px;height:11px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(167,240,247,.85),rgba(167,240,247,0) 72%)}
+.cam-lens::after{content:"";position:absolute;left:50%;top:50%;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,#0b0f1a,#05070d)}
+.cam-flash{position:absolute;top:9px;right:9px;width:9px;height:9px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe9a8,var(--gold));box-shadow:0 0 8px rgba(245,183,49,.7)}
+
+/* scan beam (카메라 → 번호판) */
+.o-beam{z-index:1;pointer-events:none}
+.beam{width:64px;height:78px;position:relative}
+.beam::before{content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);
+  width:46px;height:78px;clip-path:polygon(30% 0,70% 0,100% 100%,0 100%);
+  background:linear-gradient(180deg,rgba(167,240,247,.7),rgba(167,240,247,.06));filter:blur(.5px)}
+.beam-line{position:absolute;left:6px;right:6px;height:2px;background:var(--star);border-radius:2px;box-shadow:0 0 9px var(--star);
+  animation:scan 2.2s ease-in-out infinite}
+@keyframes scan{0%,100%{top:8px;opacity:.4}50%{top:64px;opacity:1}}
+
+/* ============ ⑭ 번호판 (코어필드, 114 — 232조6080) ============ */
+.o-plate{z-index:3}
+.plate{width:128px;height:50px}
+.plate .dep{background:#0d1a63;transform:translate(3px,11px)}
+.plate .fc{display:flex;align-items:center;justify-content:center;padding:5px;height:100%}
+.plate-inner{width:100%;height:100%;border-radius:6px;background:linear-gradient(160deg,#fbfdff,#eef2fc);
+  border:1px solid rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;position:relative;
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.9),inset 0 -5px 8px rgba(36,52,108,.16)}
+.plate-no{font-family:var(--fe);font-weight:800;font-size:16.5px;letter-spacing:.4px;color:#16203a;white-space:nowrap}
+.plate-bolt{position:absolute;top:6px;width:5px;height:5px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#9aa6c4)}
+.plate-bolt.l{left:7px}.plate-bolt.r{right:7px}
+.plate-inner::after{content:"";position:absolute;inset:0;border-radius:6px;
+  background:linear-gradient(120deg,transparent 40%,rgba(255,255,255,.5) 50%,transparent 60%)}
+
+/* ============ ② 차 — 실사 3D 렌더 PNG 슬롯 (placeholder 유지) ============ */
+.o-car{z-index:2}
+.car-slot{width:168px;height:98px;border-radius:18px;position:relative;
+  background:linear-gradient(158deg,#f4f7ff,#e7edfb);border:1.5px dashed rgba(20,40,160,.28);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  box-shadow:inset 0 3px 5px rgba(255,255,255,.9),inset 0 -10px 16px rgba(36,52,108,.1)}
+.car-slot svg{opacity:.5}
+.car-slot small{font-size:10.5px;font-weight:700;color:var(--navy);opacity:.62;letter-spacing:.2px}
+
+/* ============ ⑫ 결제 카드 (152 가로) ============ */
+.o-pay{z-index:3}
+.pay{width:152px;height:96px}
+.pay .dep{background:#0d1a63;transform:translate(3px,9px)}
+.pay .fc{padding:0;position:relative;height:100%}
+.pay-chip{position:absolute;left:14px;top:30px;width:26px;height:20px;border-radius:5px;
+  background:linear-gradient(150deg,#ffe9a8,var(--gold) 60%,#d99a18);box-shadow:inset 0 1px 1px rgba(255,255,255,.7)}
+.pay-chip::after{content:"";position:absolute;inset:4px 6px;border:1px solid rgba(120,80,10,.4);border-radius:2px}
+.pay-wave{position:absolute;left:46px;top:31px}
+.pay-no{position:absolute;left:14px;bottom:18px;font-family:var(--fe);font-weight:700;font-size:13px;letter-spacing:1.5px;color:rgba(255,255,255,.92)}
+.pay-p{position:absolute;right:12px;bottom:12px;width:22px;height:22px;border-radius:6px;background:#111;display:flex;align-items:center;justify-content:center}
+.pay-p span{font-family:var(--fe);font-weight:900;font-size:12px;color:#fff;line-height:1}
+.pay-p::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--gold)}
+.pay .fc::after{content:"";position:absolute;inset:0;background:linear-gradient(118deg,transparent 42%,rgba(255,255,255,.22) 50%,transparent 58%)}
+
+/* ============ ⑬ 회계 영수증 (롱 리시트, 컬+드롭섀도) ============ */
+.o-rcpt{z-index:2;position:relative}
+.rcpt{width:82px;position:relative;
+  background:linear-gradient(165deg,#f7faff 0%,#e9f0fb 52%,#dde7f5 100%);border-radius:7px 7px 0 0;
+  padding:10px 9px 18px;
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 5px),88% 100%,75% calc(100% - 5px),62% 100%,50% calc(100% - 5px),38% 100%,25% calc(100% - 5px),12% 100%,0 calc(100% - 5px));
+  filter:drop-shadow(0 0 .7px rgba(138,156,205,.95)) drop-shadow(0 8px 12px rgba(36,52,108,.26))}
+.rcpt-hd{height:8px;border-radius:3px;background:var(--navy);margin-bottom:8px}
+.rcpt-li{display:flex;justify-content:space-between;margin-bottom:5px}
+.rcpt-li b{height:5px;width:30px;border-radius:2px;background:#b6c2e6;display:block}
+.rcpt-li b.v{width:16px;background:#9aa8d8}
+.rcpt-dash{border-top:1.5px dashed #aab6e0;margin:7px 0}
+.rcpt-sum{height:9px;border-radius:3px;background:var(--navy);width:66%;margin-left:auto}
+.rcpt-stamp{position:absolute;right:-11px;bottom:14px;width:38px;height:38px;border-radius:50%;
+  background:radial-gradient(circle at 35% 28%,#FCD96E,#F5B731 52%,#DD9410 100%);
+  border:1.5px solid #fff;color:#5C3A06;display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:900;font-family:var(--fe);line-height:1;
+  box-shadow:0 6px 13px -4px rgba(221,148,16,.75),inset 0 1px 2px rgba(255,255,255,.85),inset 0 -2px 4px rgba(120,80,10,.4)}
+.rcpt-stamp::after{content:"";position:absolute;inset:3px;border-radius:50%;border:1px solid rgba(255,255,255,.45)}
+
+/* ============ ⑪ 전자서명 (문서 + fold + 서명 mepark2.0 + 도장 + 펜) ============ */
+.o-sign{z-index:4}
+.sign{width:112px;height:128px}
+.sign .dep{background:#aeb9da;transform:translate(3px,14px)}
+.sign .fc{padding:13px 12px;height:100%}
+.sign .fc::after{content:"";position:absolute;top:0;right:0;width:20px;height:20px;
+  background:linear-gradient(225deg,#dbe2f4 0%,#dbe2f4 50%,transparent 50%);
+  box-shadow:-1px 1px 2px rgba(36,52,108,.15)}
+.sign-l{height:4px;border-radius:2px;background:#d7ddef;margin-bottom:7px}
+.sign-l.w70{width:70%}.sign-l.w90{width:90%}.sign-l.w55{width:55%}
+.sign-area{margin-top:14px;border-top:1.5px dashed #c3cce8;padding-top:6px;position:relative;height:32px}
+.sign-ink{font-family:var(--fsig);font-weight:700;font-size:15px;color:var(--gold-d);
+  transform:rotate(-5deg);position:absolute;left:4px;top:6px;text-shadow:0 1px 2px rgba(0,0,0,.12);white-space:nowrap}
+.sign-stamp{position:absolute;right:-2px;top:8px;width:21px;height:21px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#ffe9a8,var(--gold));display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 9px -3px rgba(245,183,49,.7);transform:rotate(-8deg)}
+.sign-pen{position:absolute;right:-12px;bottom:-6px;width:62px;height:11px;border-radius:6px;transform:rotate(-38deg);
+  background:linear-gradient(90deg,#1d31a2 0%,#1d31a2 62%,var(--gold) 62%,var(--gold) 72%,#c4cad6 72%,#c4cad6 86%,#9aa3b3 86%);
+  box-shadow:0 6px 12px -5px rgba(36,52,108,.5)}
+.sign-pen::after{content:"";position:absolute;right:-7px;top:1px;border-left:8px solid #9aa3b3;border-top:4.5px solid transparent;border-bottom:4.5px solid transparent}
+
+/* ============ ⑤ P 표지판 (DoF 후경, 약블러) ============ */
+.o-psign{z-index:1;filter:blur(2.8px);opacity:.82;transform:scale(.8)}
+.psign{width:80px;height:80px}
+.psign .dep{background:#0d1a63;transform:translate(3px,15px)}
+.psign .fc{display:flex;align-items:center;justify-content:center}
+.psign .p{font-family:var(--fe);font-weight:900;font-size:46px;color:#fff;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,.25)}
+
+/* ===== 오브제 = 기능 섹션 로고 슬롯 ===== */
+.flogo{position:relative;height:92px;display:flex;align-items:flex-end;gap:12px;margin-bottom:20px}
+.flogo .hf-o{position:relative}
+.flogo .hf-grd{bottom:-6px}
+.flogo .o-pay  {transform:scale(.60);transform-origin:bottom left}
+.flogo .o-cam  {transform:scale(.94);transform-origin:bottom left}
+.flogo .o-cal  {transform:scale(.80);transform-origin:bottom left}
+.flogo .o-mic  {transform:scale(.66);transform-origin:bottom left;margin-left:14px}
+.flogo .o-rcpt {transform:scale(.84);transform-origin:bottom left}
+.flogo .o-sign {transform:scale(.60);transform-origin:bottom left}
+.flogo .o-psign{filter:none;opacity:1;transform:scale(.86);transform-origin:bottom left}
+.flogo .o-core{transform:scale(.50);transform-origin:bottom left;margin-left:6px}
+
+
+/* ===== 주요 기능 요약 카드 (횡대열) ===== */
+.fsum{padding:6px 0 60px}
+.fsum-lead{text-align:center;font-size:13px;color:var(--t500);margin-bottom:22px;font-weight:600}
+.fsum-row{display:flex;gap:12px}
+.fsum-card{flex:1 1 0;min-width:0;background:var(--white);border:1px solid var(--line);border-radius:18px;padding:20px 12px 16px;display:flex;flex-direction:column;align-items:center;text-align:center;text-decoration:none;transition:transform .18s,box-shadow .18s,border-color .18s}
+.fsum-card:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(20,40,160,.10);border-color:transparent}
+.fsum-ico{height:64px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:14px}
+.fsum-ico .hf-o{position:relative}
+.fsum-ico .hf-grd{display:none}
+.fsum-t{font-weight:800;font-size:14.5px;color:var(--navy);letter-spacing:-.2px;margin-bottom:5px}
+.fsum-d{font-size:11.5px;color:var(--t500);line-height:1.5;word-break:keep-all}
+.fsum-chips{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:1px}
+.fchip{font-size:9px;font-weight:700;color:var(--navy);background:var(--navy-50);border-radius:6px;
+  padding:2.5px 5.5px;line-height:1;white-space:nowrap;letter-spacing:-.3px}
+.fsum-ico .o-cam{transform:scale(.52);transform-origin:bottom center}
+.fsum-ico .o-pay{transform:scale(.40) translateY(-22px);transform-origin:bottom center}
+.fsum-ico .o-sign{transform:scale(.43);transform-origin:bottom center}
+.fsum-ico .o-cal{transform:scale(.47);transform-origin:bottom center}
+.fsum-ico .o-rcpt{transform:scale(.60);transform-origin:bottom center}
+.fsum-ico .o-psign{transform:scale(.56);transform-origin:bottom center;filter:none;opacity:1}
+.fsum-ico .o-work{transform:scale(.52);transform-origin:bottom center}
+
+/* ============ ⑯ 출퇴근 — 미니맵 체크인 배지 (확정 D · navy/gold · 사람-인-핀) ============ */
+.o-work{z-index:2}
+.wk-mc{width:88px;height:106px;border-radius:18px}
+.wk-mc .dep{background:#aeb9da;transform:translate(3px,12px)}
+.wk-mc .fc{height:100%;border:1px solid rgba(255,255,255,.8);
+  box-shadow:inset 0 3px 4px rgba(255,255,255,.9),inset 0 -13px 18px rgba(36,52,108,.16)}
+.wk-map{position:absolute;inset:0;background:linear-gradient(158deg,#eef2fb 0%,#e3e9f6 60%,#dbe3f3 100%)}
+.wk-blk{position:absolute;background:rgba(255,255,255,.55);border-radius:3px}
+.wk-road{position:absolute;background:#fff;border-radius:3px;box-shadow:0 0 0 1px rgba(180,192,224,.4)}
+.wk-road.t{background:#dde4f3}
+.wk-glow{position:absolute;left:7%;top:4%;width:46%;height:30%;border-radius:50%;z-index:3;
+  background:radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.8),rgba(255,255,255,0) 70%);filter:blur(1px)}
+.wk-band{position:absolute;left:0;right:0;bottom:0;height:22px;background:linear-gradient(180deg,#1d31a2,var(--navy));
+  display:flex;align-items:center;justify-content:center;gap:5px;z-index:6}
+.wk-band span{font-family:var(--fe);font-size:11px;font-weight:800;color:#fff;letter-spacing:.4px}
+.wk-band i{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 6px rgba(245,183,49,.9)}
+.wk-pinp{position:absolute;left:50%;top:50%;transform:translate(-50%,-60%);z-index:5;filter:drop-shadow(0 5px 7px rgba(20,30,90,.4))}
+.wk-lab{position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:6;white-space:nowrap;
+  background:#fffdf6;border:1px solid #f0dca8;border-radius:8px;padding:2px 7px;font-size:9.5px;font-weight:800;color:var(--gold-d);
+  box-shadow:0 4px 9px -4px rgba(20,30,90,.3);display:flex;align-items:center;gap:3px}
+.wk-lab::after{content:"";position:absolute;left:50%;bottom:-4px;transform:translateX(-50%) rotate(45deg);
+  width:7px;height:7px;background:#fffdf6;border-right:1px solid #f0dca8;border-bottom:1px solid #f0dca8}
+
+/* ============ ⑰ 실시간 현황 — 라이브 게이지 보드 (신규 · 만공차 도넛 + LIVE 펄스) ============ */
+.o-live{z-index:3}
+.lv-tile{width:100px;height:108px;border-radius:22px}
+.lv-tile .dep{background:#b9c3e0;transform:translate(3px,12px)}
+.lv-tile .fc{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.lv-pill{display:flex;align-items:center;gap:4px;background:linear-gradient(180deg,#1d31a2,var(--navy));
+  border-radius:20px;padding:3px 9px 3px 7px;box-shadow:0 4px 9px -4px rgba(20,30,90,.55)}
+.lv-pill span{font-family:var(--fe);font-size:9px;font-weight:800;letter-spacing:1.2px;color:#fff}
+.lv-dot{width:6px;height:6px;border-radius:50%;background:#16a34a;animation:lvpulse 1.4s ease-in-out infinite}
+@keyframes lvpulse{0%,100%{opacity:1;box-shadow:0 0 5px 1px rgba(22,163,74,.75)}50%{opacity:.4;box-shadow:0 0 2px 0 rgba(22,163,74,.25)}}
+.lv-ring{position:relative;width:58px;height:58px}
+.lv-gauge{position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(var(--gold) 0 76%,#d8e0f2 76% 100%);
+  -webkit-mask:radial-gradient(circle,transparent 60%,#000 61%);mask:radial-gradient(circle,transparent 60%,#000 61%);
+  filter:drop-shadow(0 3px 5px rgba(20,30,90,.14))}
+.lv-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.lv-num b{font-family:var(--fe);font-size:17px;font-weight:900;color:var(--navy);line-height:1;display:flex;align-items:baseline}
+.lv-num b i{font-size:9px;font-weight:700;font-style:normal;margin-left:1px;color:var(--gold-d)}
+
+.fsum-ico .o-mic{transform:scale(.50);transform-origin:bottom center}
+.fsum-ico .o-live{transform:scale(.51);transform-origin:bottom center}
+
+.fsum-ico .pay-no{display:none}            /* 작은 크기 판독 불가 카드번호 숨김 */
+.fsum-ico .lv-pill span{display:none}      /* LIVE 글자 숨김 — 펄스 닷이 실시간 신호 */
+.fsum-ico .lv-pill{padding:4px;gap:0}
+.fsum-ico .lv-dot{width:7px;height:7px}
+.fsum-ico .o-pay .pay-chip{box-shadow:0 0 0 .5px rgba(120,80,10,.25)}  /* 칩 윤곽 또렷 */
+
+/* ===== 컴팩트 기능 블록 (Tier 2 — 시그니처 오브제가 비주얼) ===== */
+.fblock{scroll-margin-top:84px}
+.fcompact{display:grid;grid-template-columns:1fr 330px;gap:48px;align-items:center;scroll-margin-top:84px;
+  background:var(--soft);border:1px solid var(--line);border-radius:26px;padding:46px 50px;margin:22px 0}
+.fcompact.rev .fc-copy{order:2}.fcompact.rev .fc-vis{order:1}
+.fcompact h3{font-size:25px;line-height:1.32;font-weight:800;letter-spacing:-.03em;color:var(--t900);margin-bottom:12px}
+.fcompact .fsub{font-size:14.5px;line-height:1.65;color:var(--t500);max-width:430px;margin-bottom:16px}
+.fcompact .fbul{margin-top:6px;gap:9px}
+.fcompact .fbul li{font-size:13.5px}
+.fc-vis{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:206px;padding:24px 18px 20px;
+  background:radial-gradient(120% 120% at 50% 0,#fff,var(--soft2));border:1px solid var(--line);border-radius:22px;overflow:hidden}
+.fc-vis .hf-o{position:relative}
+.fc-vis .o-work{transform:scale(1);transform-origin:center}
+.fc-vis .o-sign{transform:scale(1);transform-origin:center}
+.fc-vis .o-rcpt{transform:scale(.92);transform-origin:center}
+.fc-vis .o-psign{filter:none;opacity:1;transform:scale(1);transform-origin:center}
+.fc-vis .o-live{transform:scale(1.08);transform-origin:center}
+.fc-cap{font-size:11.5px;font-weight:700;color:var(--t400);text-align:center}
+
+@media(max-width:920px){
+  .fcompact{grid-template-columns:1fr;gap:26px;padding:34px 24px;text-align:center}
+  .fcompact.rev .fc-copy{order:1}.fcompact.rev .fc-vis{order:2}
+  .fcompact .fbul{align-items:center;display:inline-flex;text-align:left}
+  .fcompact .fsub{margin-left:auto;margin-right:auto}
+}
+@media(max-width:920px){
+  .fsum-row{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;scroll-snap-type:x mandatory}
+  .fsum-card{flex:0 0 152px;scroll-snap-align:start}
+}
+
+
+/* ===================================================== */
+/* ===== TOSS-BENCH SCENE 전체 시안 ===== */
+/* ===================================================== */
+.refnote{max-width:1120px;margin:0 auto;padding:30px 24px 4px;font-size:12px;font-weight:700;color:var(--t400);letter-spacing:.2px}
+.refnote b{color:var(--navy)}
+.refbg{padding:18px 0 90px}
+.scene{display:grid;grid-template-columns:1.05fr .95fr;gap:64px;align-items:center;max-width:1120px;margin:0 auto;padding:56px 24px}
+.scene.rev .scene-text{order:2}.scene.rev .scene-mock{order:1}
+
+/* 텍스트 위치 */
+.scene-eyebrow{display:inline-flex;align-items:center;gap:7px;margin-bottom:20px;
+  background:#fff;border:1px solid var(--line);padding:6px 15px 6px 6px;border-radius:100px;
+  box-shadow:0 4px 14px rgba(20,40,160,.07)}
+.eb-obj{position:relative;width:30px;height:36px;flex:none}
+.eb-obj .hf-o{position:absolute;left:50%;bottom:-1px;transform-origin:bottom center}
+.eb-obj .pay-no{display:none}.eb-obj .lv-pill span{display:none}.eb-obj .lv-pill{padding:2px;gap:0}
+.eb-obj .wk-lab,.eb-obj .wk-band span{display:none}
+.is-mic  .hf-o{transform:translateX(-50%) scale(.30)}
+.is-pay  {width:50px}.is-pay  .hf-o{transform:translateX(-50%) scale(.30)}
+.is-work .hf-o{transform:translateX(-50%) scale(.28)}
+.is-sign .hf-o{transform:translateX(-50%) scale(.25)}
+.is-cal  {width:34px}.is-cal  .hf-o{transform:translateX(-50%) scale(.31)}
+.is-rcpt {width:26px}.is-rcpt .hf-o{transform:translateX(-50%) scale(.27)}
+.is-live {width:32px}.is-live .hf-o{transform:translateX(-50%) scale(.28)}
+.is-core {width:42px}.is-core .hf-o{transform:translateX(-50%) scale(.20)}
+.eb-tx{font-size:14.5px;font-weight:700;color:var(--navy);letter-spacing:-.2px}
+.scene-h{font-size:34px;line-height:1.3;font-weight:800;letter-spacing:-.035em;color:var(--t900)}
+.scene-p{margin-top:20px;font-size:17px;line-height:1.72;color:var(--t500);max-width:430px}
+.scene-link{margin-top:26px;display:inline-flex;align-items:center;gap:6px;font-size:16px;font-weight:700;color:var(--navy);transition:gap .18s}
+.scene-link:hover{gap:11px}
+
+/* 카드 + 목업(제작예정) */
+.scene-mock{display:flex;justify-content:center;align-items:center}
+.mock-card{position:relative;width:100%;max-width:440px;aspect-ratio:1/1;
+  background:#fff;display:flex;align-items:center;justify-content:center}
+.mock-tag{position:absolute;top:18px;left:18px;z-index:3;font-family:var(--fe);font-size:10px;font-weight:800;letter-spacing:1px;
+  background:#fff;color:var(--navy);padding:5px 10px;border-radius:7px;box-shadow:0 4px 10px rgba(20,40,160,.12)}
+.mock-badge{position:absolute;z-index:4;bottom:24px;left:50%;transform:translateX(-50%);
+  background:rgba(20,40,160,.94);color:#fff;font-size:12px;font-weight:700;letter-spacing:-.2px;
+  padding:8px 16px;border-radius:100px;display:inline-flex;align-items:center;gap:7px;box-shadow:0 10px 22px -6px rgba(20,40,160,.5)}
+.mock-badge i{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:bpulse 1.6s ease-in-out infinite}
+@keyframes bpulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sk{background:linear-gradient(90deg,#eef1fa 0%,#e1e8f6 50%,#eef1fa 100%);background-size:200% 100%;animation:mshim 1.9s linear infinite}
+@keyframes mshim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* 클레이폰(고객/CREW) */
+.clayph{position:relative;width:210px;height:428px;border-radius:40px;padding:11px;
+  background:linear-gradient(158deg,#fcfdff,#e6ecf8);
+  box-shadow:0 34px 64px -22px rgba(20,40,160,.34),0 10px 22px -10px rgba(20,40,160,.22),
+    inset 0 2px 5px rgba(255,255,255,.95),inset 0 -4px 10px rgba(20,40,160,.10)}
+.clayph-scr{position:relative;width:100%;height:100%;border-radius:30px;overflow:hidden;
+  background:linear-gradient(180deg,#fff,#f5f8fe);box-shadow:inset 0 0 0 1px rgba(20,40,160,.06)}
+.clayph-notch{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:52px;height:7px;border-radius:5px;background:#dfe5f3;z-index:2}
+.mskel{position:absolute;inset:0;padding:38px 22px;display:flex;flex-direction:column;gap:13px}
+.mskel i{display:block;border-radius:9px}
+.mskel .b1{height:58px;border-radius:14px}.mskel .b2{height:13px;width:72%}.mskel .b3{height:13px;width:48%}
+.mskel .b4{height:92px;border-radius:14px;margin-top:8px}.mskel .b5{height:13px;width:62%}
+
+/* 클레이 모니터(운영자/ADMIN) */
+.claymon{position:relative;width:370px;max-width:90%;border-radius:20px;padding:10px;
+  background:linear-gradient(158deg,#fcfdff,#e6ecf8);
+  box-shadow:0 34px 64px -22px rgba(20,40,160,.34),0 10px 22px -10px rgba(20,40,160,.22),
+    inset 0 2px 5px rgba(255,255,255,.95),inset 0 -4px 10px rgba(20,40,160,.10)}
+.claymon-scr{border-radius:13px;overflow:hidden;background:#fff;box-shadow:inset 0 0 0 1px rgba(20,40,160,.06)}
+.claymon-bar{height:30px;display:flex;align-items:center;gap:6px;padding:0 13px;border-bottom:1px solid #eef1fa}
+.claymon-bar i{width:8px;height:8px;border-radius:50%;background:#dfe5f3}
+.cm-body{padding:16px;display:flex;flex-direction:column;gap:12px}
+.cm-kpis{display:flex;gap:9px}
+.cm-kpis i{flex:1;height:40px;border-radius:9px}
+.cm-chart{height:110px;border-radius:11px}
+
+/* ===== GNB 여백 보정 ===== */
+.gnb{position:sticky;top:0;z-index:50}
+/* ===== HERO (텍스트 전용) ===== */
+.hero2{text-align:center;padding:92px 0 74px;background:linear-gradient(180deg,#fff 0%,var(--soft) 100%)}
+.hero2 .wrap{max-width:840px}
+.hero2-eyebrow{display:inline-flex;align-items:center;gap:7px;padding:7px 16px;border-radius:100px;background:#fff;border:1px solid var(--line);box-shadow:0 4px 14px rgba(20,40,160,.07);color:var(--navy);font-size:13.5px;font-weight:700;margin-bottom:26px}
+.hero2 h1{font-size:54px;line-height:1.18;font-weight:800;letter-spacing:-.04em;color:var(--t900)}
+.hero2 h1 .nv{color:var(--navy)}.hero2 h1 .ai{color:var(--indigo)}
+.hero2 .sub{margin:26px auto 0;max-width:560px;font-size:19px;line-height:1.7;color:var(--t500);font-weight:400}
+.hero2-actions{margin-top:34px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.hero2-actions .btn{font-size:16px;padding:14px 26px;border-radius:14px}
+.hero2-note{margin-top:20px;font-size:13.5px;color:var(--t400)}
+.hero2-note b{color:var(--navy);font-weight:700}
+@media(max-width:860px){.hero2{padding:58px 0 46px}.hero2 h1{font-size:33px}.hero2 .sub{font-size:16px}}
+
+@media(max-width:860px){
+  .scene{grid-template-columns:1fr;gap:34px;text-align:center;padding:40px 22px}
+  .scene.rev .scene-text{order:1}.scene.rev .scene-mock{order:2}
+  .scene-eyebrow{margin-left:auto;margin-right:auto}
+  .scene-h{font-size:28px}.scene-p{margin-left:auto;margin-right:auto;font-size:15.5px}
+  .mock-card{max-width:330px;aspect-ratio:4/4.4}
+  .clayph{width:186px;height:380px}.claymon{width:300px}
+}
+
+
+/* ======================================================================
+   히어로 오브제 박스(1-C) 이식 — 전부 .hbx 스코프 격리 (8씬 무영향)
+   ====================================================================== */
+@property --lvp{syntax:'<number>';inherits:false;initial-value:0}
+
+/* --- 텍스트 히어로(중앙형) + 박스 레이아웃 --- */
+.vhero{text-align:center;padding:40px 0 0}
+.vh-eyebrow{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:100px;background:#fff;border:1px solid var(--line);box-shadow:0 4px 14px rgba(20,40,160,.07);color:var(--navy);font-size:12.5px;font-weight:700;margin-bottom:14px}
+.vhero h1{font-size:40px;line-height:1.16;font-weight:800;letter-spacing:-.04em;color:var(--t900)}
+.vhero h1 .nv{color:var(--navy)}.vhero h1 .ai{color:var(--indigo)}
+.vhero .sub{margin:13px auto 0;max-width:520px;font-size:16px;line-height:1.6;color:var(--t500)}
+.hbx .mtk-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 15px;border-radius:100px;background:linear-gradient(135deg,var(--indigo-soft),var(--indigo));color:#fff;font-weight:800;font-size:13px;box-shadow:0 12px 24px -10px rgba(79,70,229,.55)}
+.v1c-wrap{max-width:1040px;margin:88px auto 72px;position:relative;padding:0 24px}
+.v1c-box{position:relative;border-radius:24px;padding:54px 22px 26px;background:#fff;border:1px solid #EDEFF6;box-shadow:0 22px 48px -24px rgba(20,40,160,.22)}
+.v1c-badge{position:absolute;top:-15px;left:50%;transform:translateX(-50%)}
+.bx-lead{text-align:center;font-size:12.5px;font-weight:600;color:var(--t500);margin-bottom:16px}.bx-lead b{color:var(--navy);font-weight:800}
+.v1c-row{display:flex;gap:10px}
+.v1c-card{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center}
+.v1c-ico{position:relative;width:100%;aspect-ratio:1/1;background:#fff;border-radius:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:9px;box-shadow:0 10px 22px -12px rgba(20,40,160,.24)}
+.v1c-ico .flo{display:flex;align-items:center;justify-content:center}
+.v1c-t{font-weight:800;font-size:12.5px;color:var(--navy);margin-bottom:1px}
+.v1c-d{font-size:10px;color:var(--t500);line-height:1.4}
+.v1c-ico .o-mic{transform:scale(0.59);transform-origin:center}
+.v1c-ico .o-pay{transform:scale(0.491) translateY(2px);transform-origin:center}
+.v1c-ico .o-work{transform:scale(0.614);transform-origin:center}
+.v1c-ico .o-sign{transform:scale(0.507);transform-origin:center}
+.v1c-ico .o-cal{transform:scale(0.561);transform-origin:center}
+.v1c-ico .o-acc{transform:scale(0.602);transform-origin:center}
+.v1c-ico .o-live{transform:scale(0.571);transform-origin:center}
+/* 면적 균일화: card1 복합(번호판+마이크) 전체 1.187배 업스케일 */
+.v1c-ico .mp-mini{transform:scale(1.187);transform-origin:center}
+.v1c-ico .pay-no{display:none}.v1c-ico .lv-pill span{display:none}.v1c-ico .lv-pill{padding:3px;gap:0}
+.hbx .mtk-badge .tw{animation:tw 1.6s ease-in-out infinite}
+
+/* --- 카드 오브제 부유(박스 전용 키프레임 hbxFloat) --- */
+.hbx .flo{animation:hbxFloat 4.6s ease-in-out infinite}
+.hbx .flo.f2{animation-duration:5.2s;animation-delay:.45s}
+@keyframes hbxFloat{0%,100%{transform:translateY(4px)}50%{transform:translateY(-11px)}}
+
+/* --- ① 음성입차: 마이크 + 번호판 E(숫자만 강조) --- */
+.mp-mini{position:relative;width:78px;height:108px}
+.v1c-ico .mp-mini .o-mic{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%) scale(.44);transform-origin:center}
+.v1c-ico .mp-mini .o-plate{position:absolute;left:50%;top:0;transform:translateX(-50%) scale(.4);transform-origin:center;z-index:3}
+.mp-mini .o-plate .dep{display:none}
+.mp-mini .plate{box-shadow:none}
+.mp-mini .plate .fc{padding:0;background:transparent;box-shadow:none}
+.mp-mini .plate .fc::before{display:none}
+.mp-mini .plate-inner{background:#fff;border:1.6px solid var(--navy);box-shadow:none}
+.mp-mini .plate-inner::after{display:none}
+.mp-mini .plate-no{color:var(--navy);font-weight:800;font-size:18px;letter-spacing:-.3px}
+.v1c-ico .o-sign{transform:scale(.496) translate(-3px,-7px)!important}
+
+/* --- ⑥ 회계 엑셀표(신규) --- */
+.acc-mc{width:90px;height:108px;border-radius:16px}
+.acc-mc .dep{background:#aeb9da;transform:translate(3px,12px)}
+.acc-mc .fc{height:100%;border:1px solid rgba(255,255,255,.8);padding:11px 10px 9px;display:flex;flex-direction:column;position:relative}
+.acc-sheet{display:flex;flex-direction:column;gap:4px;height:100%}
+.acc-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px}
+.acc-row i{height:11px;border-radius:3px;background:#e6ebf7;border:1px solid #dde4f3}
+.acc-hd i{background:linear-gradient(180deg,#27379f,var(--navy));border:none;height:12px}
+.acc-row i.vg{background:var(--gold);border:none}.acc-row i.vn{background:#5566d6;border:none}
+.acc-bars{margin-top:auto;display:flex;align-items:flex-end;gap:5px;height:34px;padding-top:4px;border-top:1px solid #e3e9f6}
+.acc-bars b{flex:1;border-radius:3px 3px 0 0;background:#9fb0e8;height:8%}
+.acc-bars b.g{background:var(--gold)}
+.hbx .acc-bars b{animation:barup 2.2s ease-in-out infinite}
+.hbx .acc-bars b:nth-child(2){animation-delay:.2s}.hbx .acc-bars b:nth-child(3){animation-delay:.4s}.hbx .acc-bars b:nth-child(4){animation-delay:.6s}
+@keyframes barup{0%{height:8%}45%{height:var(--h)}80%,100%{height:var(--h)}}
+.acc-xls{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);width:31px;height:27px;border-radius:6px;background:linear-gradient(150deg,#2bbb6a,#0e7a3c);color:#fff;font-family:var(--fe);font-weight:900;font-size:11.5px;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px -4px rgba(16,124,65,.6);z-index:9}
+.hbx .acc-xls{animation:xlfade 2.6s ease-in-out infinite}
+@keyframes xlfade{0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.66)}40%,72%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+
+/* === 신규 06/25 액션효과 — 전역(박스 + 하단 씬 아이브로 공통 적용) === */
+/* 골드 음성 파동 */
+.mic-wave span{transform-origin:bottom;animation:vwave .9s ease-in-out infinite;background:var(--gold)!important}
+@keyframes vwave{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1.4)}}
+.mic-wave.l span:nth-child(1){animation-delay:0s}.mic-wave.l span:nth-child(2){animation-delay:.15s}.mic-wave.l span:nth-child(3){animation-delay:.3s}
+.mic-wave.r span:nth-child(1){animation-delay:.1s}.mic-wave.r span:nth-child(2){animation-delay:.25s}.mic-wave.r span:nth-child(3){animation-delay:.4s}
+/* 결제 골드 비접촉 + sheen 스윕 */
+.pay-wave path{stroke:#F5B731!important;stroke-width:2.7!important}
+.pay-wave{filter:drop-shadow(0 0 2.5px rgba(245,183,49,.7));transform-origin:left center;animation:cwave 1.4s ease-in-out infinite}
+@keyframes cwave{0%,100%{opacity:.5;transform:translateX(-2px) scale(.94)}50%{opacity:1;transform:translateX(0) scale(1.04)}}
+.o-pay .fc{overflow:hidden;position:relative}
+.o-pay .fc::after{content:"";position:absolute;top:0;left:0;width:38%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.4),transparent);animation:sheen 3.6s ease-in-out infinite;pointer-events:none;z-index:5}
+@keyframes sheen{0%{transform:translateX(-150%) skewX(-20deg)}55%,100%{transform:translateX(260%) skewX(-20deg)}}
+/* GPS 골드 레이더(핀 꼭지점 top:62%) */
+.wk-radar{position:absolute;left:50%;top:62%;width:14px;height:14px;z-index:4;pointer-events:none}
+.wk-radar span{position:absolute;left:50%;top:50%;width:14px;height:14px;border-radius:50%;border:2.6px solid var(--gold);box-shadow:0 0 7px rgba(245,183,49,.75);transform:translate(-50%,-50%) scale(.25);opacity:0;animation:radar 2s ease-out infinite}
+.wk-radar span:nth-child(2){animation-delay:.66s}.wk-radar span:nth-child(3){animation-delay:1.32s}
+@keyframes radar{0%{transform:translate(-50%,-50%) scale(.25);opacity:.95}100%{transform:translate(-50%,-50%) scale(3.2);opacity:0}}
+/* 전자서명 필기 + 펜 이동 + 도장 팝 */
+.sign-ink{font-family:'Dancing Script',cursive!important;font-size:20px!important;display:inline-block;animation:write 3.2s ease-in-out infinite}
+@keyframes write{0%{clip-path:inset(0 100% 0 0)}42%{clip-path:inset(0 0 0 0)}82%{clip-path:inset(0 0 0 0)}100%{clip-path:inset(0 100% 0 0)}}
+.sign-pen{right:auto!important;left:6px!important;bottom:3px!important;width:46px!important;height:9px!important;z-index:7;animation:penwrite 3.2s ease-in-out infinite}
+@keyframes penwrite{0%{transform:rotate(-30deg) translateX(-10px)}42%{transform:rotate(-30deg) translateX(20px)}82%{transform:rotate(-30deg) translateX(20px)}100%{transform:rotate(-30deg) translateX(-10px)}}
+.sign-stamp{animation:stamppop 3.2s ease-in-out infinite}
+@keyframes stamppop{0%,72%,100%{transform:scale(1) rotate(-8deg)}84%{transform:scale(1.3) rotate(-14deg)}}
+/* 캘린더 셀 차오름 */
+.ocal-grid b{animation:cfill 2.6s ease-in-out infinite}
+@keyframes cfill{0%,100%{opacity:.28;transform:scale(.72)}50%{opacity:1;transform:scale(1)}}
+.ocal-grid b:nth-child(1){animation-delay:0s}.ocal-grid b:nth-child(2){animation-delay:.12s}.ocal-grid b:nth-child(3){animation-delay:.24s}.ocal-grid b:nth-child(4){animation-delay:.36s}.ocal-grid b:nth-child(5){animation-delay:.48s}.ocal-grid b:nth-child(6){animation-delay:.6s}.ocal-grid b:nth-child(7){animation-delay:.72s}.ocal-grid b:nth-child(8){animation-delay:.84s}.ocal-grid b:nth-child(9){animation-delay:.96s}.ocal-grid b:nth-child(10){animation-delay:1.08s}.ocal-grid b:nth-child(11){animation-delay:1.2s}.ocal-grid b:nth-child(12){animation-delay:1.32s}
+/* 실시간 게이지 0→76% 채움 + 녹색 점멸(lvpulse2) */
+.lv-gauge{background:conic-gradient(var(--gold) calc(var(--lvp)*1%),#d8e0f2 0)!important;animation:lvfill 3s ease-in-out infinite}
+@keyframes lvfill{0%{--lvp:0}45%{--lvp:76}85%{--lvp:76}100%{--lvp:0}}
+.lv-dot{width:9px!important;height:9px!important;background:#22c55e!important;animation:lvpulse2 1.1s ease-in-out infinite}
+@keyframes lvpulse2{0%,100%{box-shadow:0 0 0 2px rgba(34,197,94,.4),0 0 6px rgba(34,197,94,.8);opacity:.75}50%{box-shadow:0 0 0 5px rgba(34,197,94,0),0 0 12px rgba(34,197,94,1);opacity:1}}
+
+/* ======================================================================
+   하단 기능 씬 아이브로: 알약(칸) 제거 + 오브제 확대·균일화
+   ====================================================================== */
+.scene-eyebrow{background:none!important;border:none!important;box-shadow:none!important;padding:0!important;gap:11px}
+/* 아이브로 오브제 컨테이너 확대 (효과가 보이도록) */
+.eb-obj{width:52px;height:54px}
+.is-pay{width:64px!important}.is-cal{width:54px!important}.is-rcpt{width:42px!important}.is-acc{width:50px!important}.is-live{width:50px!important}.is-core{width:56px!important}
+/* 오브제를 컨테이너 정중앙에 앵커 → 라벨과 수직 중앙정렬 */
+.eb-obj .hf-o{top:50%!important;bottom:auto!important;transform-origin:center!important}
+.is-mic  .hf-o{transform:translate(-50%,-50%) scale(.50)!important}
+.is-pay  .hf-o{transform:translate(-50%,-50%) scale(.39)!important}
+.is-work .hf-o{transform:translate(-50%,-50%) scale(.46)!important}
+.is-sign .hf-o{transform:translate(-50%,-50%) scale(.40)!important}
+.is-cal  .hf-o{transform:translate(-50%,-50%) scale(.45)!important}
+.is-acc  .hf-o{transform:translate(-50%,-50%) scale(.42)!important}
+.is-live .hf-o{transform:translate(-50%,-50%) scale(.46)!important}
+.is-core .hf-o{transform:translate(-50%,-50%) scale(.32)!important}
+.eb-tx{font-size:15px;white-space:nowrap}
+.eb-obj{flex:none}
+
+/* ======================================================================
+   자세히 보기 → me.talk 상세 카드 (이미지3 형식, 클릭 토글)
+   ====================================================================== */
+.scene-link{cursor:pointer}
+.scene-link .arr{transition:transform .25s}
+.scene-link.on .arr{transform:rotate(90deg)}
+.mtk-detail{max-height:0;overflow:hidden;opacity:0;margin-top:0;
+  transition:max-height .4s cubic-bezier(.4,0,.2,1),opacity .3s ease,margin-top .3s ease}
+.mtk-detail.open{max-height:340px;opacity:1;margin-top:18px}
+.mtk-dcard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;
+  box-shadow:0 16px 34px -20px rgba(20,40,160,.22);max-width:438px;text-align:left}
+.mtk-dhd{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.mtk-dbadge{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:100px;
+  background:linear-gradient(135deg,var(--indigo-soft),var(--indigo));color:#fff;font-weight:800;font-size:12px;white-space:nowrap}
+.mtk-dbadge .tw{animation:tw 1.6s ease-in-out infinite}
+.mtk-dctx{font-size:12.5px;font-weight:700;color:var(--navy)}
+.mtk-drow{display:flex;gap:12px;align-items:flex-start}
+.mtk-dav{width:38px;height:38px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--indigo-soft),var(--indigo));box-shadow:0 8px 18px -8px rgba(79,70,229,.5)}
+.mtk-dtx{font-size:13.5px;line-height:1.64;color:var(--t700);font-weight:500}
+.mtk-dtx b{color:var(--t900);font-weight:800;display:block;margin-bottom:4px;font-size:14.5px}
+@media(max-width:920px){.mtk-dcard{margin:0 auto}}
+
+/* --- 모바일: 7카드 횡스크롤 스냅 리플로우 ('한 흐름' 유지) --- */
+@media(max-width:720px){
+  .vhero{padding:28px 0 0}
+  .vhero h1{font-size:30px}
+  .v1c-wrap{padding:0 16px;margin-top:44px}
+  .v1c-box{padding:46px 12px 16px}
+  .hbx .v1c-row{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;gap:9px;padding:2px 2px 10px;margin:0 -2px;scrollbar-width:none}
+  .hbx .v1c-row::-webkit-scrollbar{display:none}
+  .hbx .v1c-card{flex:0 0 31%;min-width:116px;scroll-snap-align:start}
+  .hbx .v1c-t{font-size:12px}
+  .hbx .v1c-d{font-size:9.5px}
+}
+@media(max-width:420px){
+  .hbx .v1c-card{flex:0 0 40%;min-width:124px}
+}
+
+
+
+/* ===================== 공통메인 v4 ===================== */
+.hero h1 .nv{color:var(--navy)}
+/* --- 미팍 QR 스탠드(히어로, 실QR) --- */
+.qrstand{width:300px;margin:0 auto;border-radius:26px;padding:30px 24px 26px;text-align:center;background:linear-gradient(160deg,#1428A0 0%,#3730C8 55%,#6D5BF0 100%);box-shadow:0 30px 64px -28px rgba(20,40,160,.5)}
+.qrs-logo{display:inline-flex;align-items:center;gap:7px;font-family:var(--fe);font-size:17px;font-weight:800;color:#fff}
+.qrs-logo i{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,#6366F1,#4F46E5);display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:12px}
+.qrs-h{margin-top:18px;font-size:24px;font-weight:900;color:#fff;line-height:1.35;letter-spacing:-.02em}
+.qrs-h em{font-style:normal;color:var(--gold)}
+.qrs-s{margin-top:8px;font-size:13px;color:#C7D2FE;font-weight:600}
+.qrs-card{margin-top:18px;background:#fff;border-radius:18px;padding:16px 16px 12px}
+.qrs-scan{font-size:13.5px;font-weight:800;color:var(--navy);background:var(--navy-50);border-radius:10px;padding:8px 0}
+.qrs-img{width:170px;height:170px;display:block;margin:14px auto 8px;border-radius:6px}
+.qrs-tip{font-size:11.5px;color:var(--t400);font-weight:600;padding-bottom:4px}
+.qrs-foot{margin-top:14px;font-size:12px;font-weight:700;color:#E0E7FF}
+.qrs-foot b{color:var(--gold)}
+
+/* --- ② 릴레이: QR 카드(사이즈 매칭) → 카카오 알림톡 --- */
+.relay{display:flex;align-items:center;justify-content:center;gap:26px;flex-wrap:wrap}
+.relay-col{display:flex;flex-direction:column;align-items:center;gap:15px}
+.relay-cap{font-size:15px;font-weight:800;color:var(--t900);text-align:center}
+.relay-cap small{display:block;font-size:12.5px;color:var(--t500);font-weight:600;margin-top:3px}
+.relay-arr{font-size:30px;color:var(--navy);opacity:.4;font-weight:800;flex:none}
+.qrscan{width:272px;background:linear-gradient(160deg,#1428A0,#4F46E5);border-radius:24px;padding:24px 22px 20px;text-align:center;box-shadow:0 30px 64px -30px rgba(20,40,160,.5)}
+.qrscan-h{font-family:var(--fe);font-size:12px;font-weight:800;letter-spacing:1.5px;color:#fff;margin-bottom:3px}
+.qrscan-s{font-size:12px;color:#C7D2FE;font-weight:600;margin-bottom:16px}
+.qrscan-card{background:#fff;border-radius:18px;padding:16px}
+.qrscan-card img{width:100%;display:block;border-radius:6px}
+.qrscan-foot{margin-top:14px;font-size:11.5px;color:#E0E7FF;font-weight:700}
+.qrscan-foot b{color:var(--gold)}
+@media(max-width:860px){.relay-arr{transform:rotate(90deg);margin:2px 0}}
+
+/* --- 카카오 노란 알림톡(실내용) --- */
+.kalk{width:100%;max-width:334px}
+.kalk-sender{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-left:2px}
+.kalk-av{width:36px;height:36px;border-radius:12px;background:#111;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;flex:none}
+.kalk-av span{font-family:var(--fe);font-weight:900;font-size:17px;color:#fff;margin-top:-2px}
+.kalk-av::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--gold)}
+.kalk-name{font-size:13.5px;font-weight:700;color:#3A3A3A;display:flex;align-items:center;gap:4px}
+.kalk-name svg{flex:none}
+.kalk-tab{display:inline-block;background:#FEE500;color:#3C1E1E;font-size:12px;font-weight:800;padding:7px 14px 10px;border-radius:12px 12px 0 0}
+.kalk-card{background:#fff;border:1px solid #ECECEC;border-radius:0 14px 14px 14px;box-shadow:0 22px 46px -28px rgba(0,0,0,.32);padding:16px 17px;text-align:left;margin-top:-3px;position:relative;z-index:2}
+.kalk-title{font-size:14px;font-weight:800;color:#111;margin-bottom:11px}
+.kalk-p{font-size:12.5px;color:#333;line-height:1.55;margin-bottom:11px}
+.kalk-li{font-size:12.5px;color:#222;line-height:1.95;margin-bottom:11px;white-space:pre-line}
+.kalk-li b{font-weight:800}
+.kalk-muted{font-size:11.5px;color:#9A9A9A;line-height:1.5}
+.kalk-btn{margin-top:12px;background:#F5F6F8;border:1px solid #E8E9ED;border-radius:9px;text-align:center;padding:11px;font-size:12.5px;font-weight:700;color:#444}
+.kalk-time{font-size:11px;color:#9AA0A6;margin-top:7px;padding-left:4px;font-weight:600}
+
+/* --- ② 웹티켓 전환(좌 4단계 설명 · 우 확정폰) --- */
+.wtk2{display:grid;grid-template-columns:1fr 340px;gap:56px;align-items:center;margin-top:14px}
+.wtk2-left h3{font-size:29px;font-weight:800;letter-spacing:-.03em;color:var(--t900);line-height:1.32;margin-bottom:14px}
+.wtk2-left .lead{font-size:15.5px;color:var(--t500);line-height:1.7;margin-bottom:24px;max-width:410px}
+.wsteps{display:flex;flex-direction:column;gap:9px}
+.wstep{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-radius:16px;border:1px solid transparent;transition:background .3s,border-color .3s,box-shadow .3s}
+.wstep.on{background:#fff;border-color:var(--line);box-shadow:0 16px 32px -20px rgba(20,40,160,.22)}
+.wstep .wn{width:28px;height:28px;border-radius:50%;background:var(--navy-50);color:var(--navy);font-family:var(--fe);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none;transition:background .3s,color .3s}
+.wstep.on .wn{background:var(--navy);color:#fff}
+.wstep b{font-size:15.5px;font-weight:800;color:var(--t900);display:block;margin-bottom:2px}
+.wstep small{font-size:13px;color:var(--t500);line-height:1.5}
+.wtk2-right{display:flex;justify-content:center}
+@media(max-width:900px){.wtk2{grid-template-columns:1fr;gap:34px}.wtk2-right{order:-1}}
+
+/* ===== 확정 웹티켓 폰(.rp) — ② 자동전환용 4스크린 스택 변형 ===== */
+.rp{width:298px;border-radius:44px;padding:11px;background:linear-gradient(158deg,#ffffff,#e9edf6);
+  box-shadow:0 52px 96px -34px rgba(20,40,160,.42),0 16px 40px -16px rgba(20,40,160,.24);border:1px solid #E7EAF3}
+.rp-scr{border-radius:34px;overflow:hidden;background:#fff;position:relative}
+/* 4스크린 스택: 첫 스크린이 높이 확보(relative), 나머지 absolute 오버레이 */
+.rp-screen{position:absolute;inset:0;opacity:0;transition:opacity .55s ease;pointer-events:none}
+.rp-screen:first-child{position:relative}
+.rp-screen.active{opacity:1;pointer-events:auto}
+.rp-bar{display:flex;align-items:center;justify-content:space-between;color:#fff}
+.rp-bar .tm{font-family:var(--fe);font-size:14.5px;font-weight:700;letter-spacing:.3px}
+.rp-bar .ic{display:flex;align-items:center;gap:7px}
+.rp-top{padding:14px 22px 64px;color:#fff;position:relative}
+.rp .t0{background:linear-gradient(160deg,#2a44c8 0%,#1428A0 100%)}
+.rp .t1{background:linear-gradient(160deg,#F5A623 0%,#E58E12 100%)}
+.rp .t2{background:linear-gradient(160deg,#25b167 0%,#1a8b4f 100%)}
+.rp .t3{background:linear-gradient(160deg,#464e5d 0%,#333a47 100%)}
+.rp-metalk{margin-top:18px;display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,var(--indigo-soft),var(--indigo));
+  border-radius:100px;padding:6px 13px;font-size:12px;font-weight:800;color:#fff;box-shadow:0 8px 18px -8px rgba(79,70,229,.6)}
+.rp-status{margin-top:22px;text-align:center}
+.rp-pill{display:inline-flex;align-items:center;gap:9px;background:#fff;border-radius:100px;padding:11px 26px;
+  font-size:18px;font-weight:800;color:var(--t900);box-shadow:0 10px 24px -10px rgba(0,0,0,.22)}
+.rp-pill .d{width:10px;height:10px;border-radius:50%}
+.rp .d-park{background:#2a44c8}.rp .d-req{background:#EF5A5A}.rp .d-ok{background:#22b167}.rp .d-out{background:#9AA0AC}
+.rp-sub{margin-top:13px;text-align:center;font-size:13px;font-weight:600;color:rgba(255,255,255,.94)}
+.rp-card{position:relative;margin:-44px 16px 0;background:#fff;border-radius:22px;padding:20px 20px 18px;
+  box-shadow:0 24px 54px -30px rgba(20,40,160,.28),0 4px 14px -8px rgba(20,40,160,.12);z-index:2}
+.rp-vlabel{text-align:center;font-size:12.5px;color:var(--t400);font-weight:600;margin-bottom:11px}
+.rp-plate{border:1.8px solid #2A3142;border-radius:13px;display:flex;align-items:center;justify-content:center;gap:10px;padding:13px 0;margin-bottom:18px;background:#fff}
+.rp-plate .rg{font-family:var(--fe);font-size:18px;font-weight:700;color:#8A8F9A;letter-spacing:.5px}
+.rp-plate .no{font-family:var(--fe);font-size:27px;font-weight:800;letter-spacing:1.5px;color:#16203a}
+.rp-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:15px}
+.rp-cell{background:var(--soft2);border-radius:12px;padding:12px 13px}
+.rp-cell small{display:block;font-size:11px;color:var(--t400);font-weight:600;margin-bottom:4px}
+.rp-cell b{font-size:13.5px;color:var(--t900);font-weight:700}
+.rp-fee{display:flex;justify-content:space-between;align-items:center;padding:13px 2px 4px;border-top:1px solid var(--line)}
+.rp-fee span{font-size:14px;color:var(--t500);font-weight:700}
+.rp-fee b{font-family:var(--fe);font-size:18px;font-weight:800}
+.rp-fee b.free{color:#16a34a}
+.rp-note{text-align:center;font-size:10.5px;color:var(--t400);line-height:1.55;padding:14px 6px 4px;font-weight:500}
+.rp-dots{display:flex;gap:5px;justify-content:center;padding:14px 0 16px}
+.rp-dots i{width:6px;height:6px;border-radius:50%;background:#DEE2EB}
+.rp-dots i.on{background:var(--navy);width:16px;border-radius:3px}
+
+/* --- ④ 실증거(카카오 알림톡 2건) --- */
+.proof2{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;align-items:center}
+.proof-mid{display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 6px}
+.proof-mid .gap{font-family:var(--fe);font-size:36px;font-weight:800;color:var(--navy);line-height:1}
+.proof-mid .gl{font-size:12px;font-weight:700;color:var(--t500);white-space:nowrap;text-align:center}
+@media(max-width:860px){.proof-mid{flex-direction:row;gap:8px}.proof-mid .gap{font-size:26px}}
+
+/* --- ③ 왜 편한가 / ⑤ 분기 --- */
+.why-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.why-card{background:#fff;border:1px solid var(--border);border-radius:20px;padding:32px 22px;text-align:center}
+.why-ic{width:56px;height:56px;border-radius:16px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;background:var(--navy-50);color:var(--navy)}
+.why-t{font-size:16.5px;font-weight:800;color:var(--t900);margin-bottom:9px;letter-spacing:-.01em}
+.why-d{font-size:13.5px;color:var(--t500);line-height:1.6}
+@media(max-width:860px){.why-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.why-grid{grid-template-columns:1fr}}
+.branch-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.branch-card{position:relative;background:#fff;border:1.5px solid var(--border);border-radius:26px;padding:38px 34px;display:flex;flex-direction:column;transition:transform .18s,box-shadow .18s,border-color .18s}
+.branch-card:hover{transform:translateY(-5px);box-shadow:0 28px 58px -30px rgba(20,40,160,.3);border-color:transparent}
+.branch-ic{width:60px;height:60px;border-radius:18px;display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.branch-card.a .branch-ic{background:var(--navy-50);color:var(--navy)}
+.branch-card.b .branch-ic{background:var(--gold-bg);color:var(--gold-d)}
+.branch-tag{font-family:var(--fe);font-size:11px;font-weight:800;letter-spacing:1.2px;color:var(--t400);margin-bottom:9px}
+.branch-h{font-size:23px;font-weight:800;color:var(--t900);letter-spacing:-.025em;margin-bottom:12px}
+.branch-p{font-size:14.5px;color:var(--t500);line-height:1.66;margin-bottom:20px}
+.branch-bul{margin-bottom:26px;display:flex;flex-direction:column;gap:10px}
+.branch-bul li{list-style:none;display:flex;align-items:flex-start;gap:10px;font-size:14px;font-weight:600;color:var(--t700)}
+.branch-bul .ck{width:20px;height:20px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+.branch-card.a .branch-bul .ck{background:var(--navy)}
+.branch-go{margin-top:auto;font-size:15px;font-weight:800;color:var(--navy);display:inline-flex;align-items:center;gap:7px;transition:gap .18s}
+.branch-card:hover .branch-go{gap:12px}
+.branch-card.b .branch-go{color:var(--gold-d)}
+@media(max-width:860px){.branch-grid{grid-template-columns:1fr}.branch-card{padding:32px 26px}}
+
+</style></head>
+<body>
+
+<nav class="gnb"><div class="gnb-in">
+  <a class="logo" href="#"><span class="logo-p"><span>P</span></span><span class="logo-tx"><b>미팍</b><em>Ticket</em></span></a>
+  <div class="gnb-menu"><a href="#flow">이용 흐름</a><a href="#why">왜 편한가</a><a href="#branch">사업주 안내</a><a href="#cta">도입 문의</a></div>
+  <div class="gnb-cta"><a class="btn btn-ghost" href="#branch">사업주이신가요?</a><a class="btn btn-navy" href="#cta">도입 문의</a></div>
+</div></nav>
+
+<header class="hero"><div class="wrap"><div class="hero-in">
+  <div class="fcopy">
+    <span class="hero-eyebrow">✦ QR 한 번으로 시작되는 스마트 주차</span>
+    <h1><span class="nv">스캔 한 번</span>,<br>기다림이 사라집니다</h1>
+    <p class="sub">주차장·매장의 미팍 QR을 스캔하면, 미팍티켓이 알림톡으로 도착해요. 출차 요청과 결제까지 한 번에 — 손님은 더 이상 기다리지 않아요.</p>
+    <div class="hero-actions"><a class="btn btn-navy" href="#cta">도입 문의</a><a class="btn btn-ghost" href="#flow">이용 흐름 보기 ↓</a></div>
+    <div class="hero-note"><b>앱 설치·회원가입 없이</b> 웹티켓으로 바로 이용</div>
+  </div>
+  <div class="hero-visual"><div class="qrstand">
+  <span class="qrs-logo"><i>✦</i>미팍Ticket</span>
+  <div class="qrs-h">QR 스캔하면<br><em>모바일 주차권</em> 발급</div>
+  <div class="qrs-s">앱 설치도, 회원가입도 없이 바로</div>
+  <div class="qrs-card"><div class="qrs-scan">여기를 스캔해 주세요</div><img class="qrs-img" src="data:image/png;base64,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" alt="미팍 QR"><div class="qrs-tip">카메라 앱을 켜고 위 QR을 비추세요</div></div>
+  <div class="qrs-foot">✓ 정식 QR — 주소 <b>mepark.kr</b> 확인</div>
+</div></div>
+</div></div></header>
+
+<section class="sec" id="flow"><div class="wrap">
+  <div class="sec-head"><span class="eyebrow">HOW IT WORKS</span><h2>스캔 한 번,<br>알림톡으로 이어집니다</h2><p>QR을 스캔하면 미팍티켓이 알림톡으로 도착하고, 웹티켓 한 장이 출차까지 상태를 따라 바뀌어요.</p></div>
+  <div class="relay">
+    <div class="relay-col">
+      <div class="qrscan"><div class="qrscan-h">미팍 QR</div><div class="qrscan-s">여기를 스캔해 주세요</div><div class="qrscan-card"><img src="data:image/png;base64,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" alt="미팍 QR"></div><div class="qrscan-foot">✓ 정식 QR — <b>mepark.kr</b></div></div>
+      <div class="relay-cap">① QR 스캔<small>주차장·매장 QR을 한 번</small></div>
+    </div>
+    <div class="relay-arr">→</div>
+    <div class="relay-col">
+      <div class="kalk">
+  <div class="kalk-sender"><span class="kalk-av"><span>P</span></span><span class="kalk-name">미스터팍 <svg width="14" height="14" viewBox="0 0 24 24" fill="#1428A0"><path d="M12 2l2.4 1.8 3-.2 1 2.8 2.6 1.6-1 2.8 1 2.8-2.6 1.6-1 2.8-3-.2L12 22l-2.4-1.8-3 .2-1-2.8L3 12.2l1-2.8-1-2.8 2.6-1.6 1-2.8 3 .2z"/><path d="M8.5 12l2.3 2.3 4.7-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+  <div><span class="kalk-tab">알림톡 도착</span>
+    <div class="kalk-card">
+      <div class="kalk-title">[미팍Ticket] 입차 완료</div>
+      <p class="kalk-p">미팍주차타워 주차장에 입차되었습니다.</p>
+      <div class="kalk-li">■ 차량번호: <b>6296</b>
+■ 입차시간: <b>07. 15. 오후 12:30</b>
+■ 주차요금: 아래 버튼에서 확인</div>
+      <p class="kalk-p" style="margin-bottom:0">주차요금 사전정산 및 출차 안내는 아래 버튼을 통해 확인하세요.</p>
+      <div class="kalk-btn">모바일에서 확인해 주세요</div>
+      <p class="kalk-muted" style="margin-top:10px">고객센터: 1899-1871 (평일 09:00~18:00)</p>
+    </div>
+  </div>
+  <div class="kalk-time">오후 12:30</div>
+</div>
+      <div class="relay-cap">② 알림톡 도착<small>미팍티켓이 알림톡으로</small></div>
+    </div>
+  </div>
+
+  <div class="wtk2">
+    <div class="wtk2-left">
+      <h3>웹티켓 한 장으로<br>출차까지 끝나요</h3>
+      <p class="lead">화면 한 장이 주차중부터 출차까지 상태를 따라 바뀌어요. 손님은 버튼만 누르면 대기 없이 빠져나가요.</p>
+      <div class="wsteps">
+        <div class="wstep on" data-s="0"><span class="wn">1</span><div><b>주차중</b><small>차가 주차되면 알림톡으로 웹티켓이 도착해요</small></div></div>
+        <div class="wstep" data-s="1"><span class="wn">2</span><div><b>출차 요청</b><small>버튼 한 번이면 크루가 차를 준비해요</small></div></div>
+        <div class="wstep" data-s="2"><span class="wn">3</span><div><b>준비 완료</b><small>차가 준비되면 실시간으로 알려드려요</small></div></div>
+        <div class="wstep" data-s="3"><span class="wn">4</span><div><b>출차 완료</b><small>결제·정산까지 한 화면에서 끝나요</small></div></div>
+      </div>
+    </div>
+    <div class="wtk2-right"><div class="rp"><div class="rp-scr"><div class="rp-screen active" data-s="0">
+  <div class="rp-top t0">
+    <div class="rp-bar"><span class="tm">14:30</span><span class="ic"><svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"><path d="M1.2 4.2a11 11 0 0 1 14.6 0"/><path d="M3.8 6.9a7 7 0 0 1 9.4 0"/><path d="M6.3 9.4a3.3 3.3 0 0 1 4.4 0"/></svg><span style="display:inline-block;width:3px;height:3px;border-radius:50%;background:#fff;margin-left:-9px;margin-bottom:1px"></span><svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x="1" y="1" width="21" height="11" rx="3.2" stroke="#fff" stroke-width="1.3" opacity=".55"/><rect x="3" y="3" width="16" height="7" rx="1.6" fill="#fff"/><rect x="23.4" y="4.3" width="2" height="4.4" rx="1" fill="#fff" opacity=".55"/></svg></span></div>
+    <span class="rp-metalk"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#A7F0F7"/></svg> me.talk</span>
+    <div class="rp-status"><span class="rp-pill"><span class="d d-park"></span>주차중</span></div>
+    <div class="rp-sub">차량이 안전하게 주차되었습니다</div>
+  </div>
+  <div class="rp-card">
+    <div class="rp-vlabel">차량번호</div>
+    <div class="rp-plate"><span class="rg">123＊</span><span class="no">6296</span></div>
+    <div class="rp-grid"><div class="rp-cell"><small>주차장명</small><b>미팍주차타워</b></div><div class="rp-cell"><small>입차 시간</small><b>12:30</b></div><div class="rp-cell"><small>유형</small><b>발렛</b></div><div class="rp-cell"><small>주차위치</small><b>B2 · 14</b></div></div>
+    <div class="rp-fee"><span>예상 요금</span><b class="free">무료</b></div>
+    <div class="rp-note">미팍티켓은 앱 설치·회원가입 없이 이용하는<br>전자주차권입니다 · 상태는 실시간 업데이트</div>
+    <div class="rp-dots"><i class="on"></i><i></i><i></i><i></i></div>
+  </div>
+</div><div class="rp-screen" data-s="1">
+  <div class="rp-top t1">
+    <div class="rp-bar"><span class="tm">14:30</span><span class="ic"><svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"><path d="M1.2 4.2a11 11 0 0 1 14.6 0"/><path d="M3.8 6.9a7 7 0 0 1 9.4 0"/><path d="M6.3 9.4a3.3 3.3 0 0 1 4.4 0"/></svg><span style="display:inline-block;width:3px;height:3px;border-radius:50%;background:#fff;margin-left:-9px;margin-bottom:1px"></span><svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x="1" y="1" width="21" height="11" rx="3.2" stroke="#fff" stroke-width="1.3" opacity=".55"/><rect x="3" y="3" width="16" height="7" rx="1.6" fill="#fff"/><rect x="23.4" y="4.3" width="2" height="4.4" rx="1" fill="#fff" opacity=".55"/></svg></span></div>
+    <span class="rp-metalk"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#A7F0F7"/></svg> me.talk</span>
+    <div class="rp-status"><span class="rp-pill"><span class="d d-req"></span>출차 요청중</span></div>
+    <div class="rp-sub">크루가 차량을 준비하고 있습니다</div>
+  </div>
+  <div class="rp-card">
+    <div class="rp-vlabel">차량번호</div>
+    <div class="rp-plate"><span class="rg">123＊</span><span class="no">6296</span></div>
+    <div class="rp-grid"><div class="rp-cell"><small>주차장명</small><b>미팍주차타워</b></div><div class="rp-cell"><small>입차 시간</small><b>12:30</b></div><div class="rp-cell"><small>유형</small><b>발렛</b></div><div class="rp-cell"><small>주차위치</small><b>B2 · 14</b></div></div>
+    <div class="rp-fee"><span>예상 요금</span><b class="free">무료</b></div>
+    <div class="rp-note">미팍티켓은 앱 설치·회원가입 없이 이용하는<br>전자주차권입니다 · 상태는 실시간 업데이트</div>
+    <div class="rp-dots"><i></i><i class="on"></i><i></i><i></i></div>
+  </div>
+</div><div class="rp-screen" data-s="2">
+  <div class="rp-top t2">
+    <div class="rp-bar"><span class="tm">14:30</span><span class="ic"><svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"><path d="M1.2 4.2a11 11 0 0 1 14.6 0"/><path d="M3.8 6.9a7 7 0 0 1 9.4 0"/><path d="M6.3 9.4a3.3 3.3 0 0 1 4.4 0"/></svg><span style="display:inline-block;width:3px;height:3px;border-radius:50%;background:#fff;margin-left:-9px;margin-bottom:1px"></span><svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x="1" y="1" width="21" height="11" rx="3.2" stroke="#fff" stroke-width="1.3" opacity=".55"/><rect x="3" y="3" width="16" height="7" rx="1.6" fill="#fff"/><rect x="23.4" y="4.3" width="2" height="4.4" rx="1" fill="#fff" opacity=".55"/></svg></span></div>
+    <span class="rp-metalk"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#A7F0F7"/></svg> me.talk</span>
+    <div class="rp-status"><span class="rp-pill"><span class="d d-ok"></span>출차 준비완료</span></div>
+    <div class="rp-sub">차량이 출구에 준비되었습니다</div>
+  </div>
+  <div class="rp-card">
+    <div class="rp-vlabel">차량번호</div>
+    <div class="rp-plate"><span class="rg">123＊</span><span class="no">6296</span></div>
+    <div class="rp-grid"><div class="rp-cell"><small>주차장명</small><b>미팍주차타워</b></div><div class="rp-cell"><small>입차 시간</small><b>12:30</b></div><div class="rp-cell"><small>유형</small><b>발렛</b></div><div class="rp-cell"><small>대기 위치</small><b>출구 앞</b></div></div>
+    <div class="rp-fee"><span>예상 요금</span><b class="free">무료</b></div>
+    <div class="rp-note">미팍티켓은 앱 설치·회원가입 없이 이용하는<br>전자주차권입니다 · 상태는 실시간 업데이트</div>
+    <div class="rp-dots"><i></i><i></i><i class="on"></i><i></i></div>
+  </div>
+</div><div class="rp-screen" data-s="3">
+  <div class="rp-top t3">
+    <div class="rp-bar"><span class="tm">14:30</span><span class="ic"><svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"><path d="M1.2 4.2a11 11 0 0 1 14.6 0"/><path d="M3.8 6.9a7 7 0 0 1 9.4 0"/><path d="M6.3 9.4a3.3 3.3 0 0 1 4.4 0"/></svg><span style="display:inline-block;width:3px;height:3px;border-radius:50%;background:#fff;margin-left:-9px;margin-bottom:1px"></span><svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x="1" y="1" width="21" height="11" rx="3.2" stroke="#fff" stroke-width="1.3" opacity=".55"/><rect x="3" y="3" width="16" height="7" rx="1.6" fill="#fff"/><rect x="23.4" y="4.3" width="2" height="4.4" rx="1" fill="#fff" opacity=".55"/></svg></span></div>
+    <span class="rp-metalk"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#A7F0F7"/></svg> me.talk</span>
+    <div class="rp-status"><span class="rp-pill"><span class="d d-out"></span>출차 완료</span></div>
+    <div class="rp-sub">이용해 주셔서 감사합니다</div>
+  </div>
+  <div class="rp-card">
+    <div class="rp-vlabel">차량번호</div>
+    <div class="rp-plate"><span class="rg">123＊</span><span class="no">6296</span></div>
+    <div class="rp-grid"><div class="rp-cell"><small>주차장명</small><b>미팍주차타워</b></div><div class="rp-cell"><small>입차 시간</small><b>12:30</b></div><div class="rp-cell"><small>출차 시간</small><b>14:30</b></div><div class="rp-cell"><small>결제 금액</small><b>무료·0원</b></div></div>
+    <div class="rp-fee"><span>결제 금액</span><b class="free">무료 · 0원</b></div>
+    <div class="rp-note">미팍티켓은 앱 설치·회원가입 없이 이용하는<br>전자주차권입니다 · 상태는 실시간 업데이트</div>
+    <div class="rp-dots"><i></i><i></i><i></i><i class="on"></i></div>
+  </div>
+</div></div></div></div>
+  </div>
+</div></section>
+
+<section class="sec soft" id="why"><div class="wrap">
+  <div class="sec-head"><span class="eyebrow">WHY MEPARK</span><h2>그래서, 이렇게 편해집니다</h2><p>기다림도, 설치도, 개인정보 걱정도 없이 — 손님이 겪는 건 편함뿐이에요.</p></div>
+  <div class="why-grid">
+    <div class="why-card"><div class="why-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="why-t">대기 0분</div><div class="why-d">미리 결제·출차 요청으로 차 빼는 대기가 사라져요.</div></div>
+    <div class="why-card"><div class="why-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M9 18h6"/><path d="M4 4l16 16" stroke-width="2.2"/></svg></div><div class="why-t">앱·회원가입 없음</div><div class="why-d">설치도 가입도 없이 웹티켓으로 바로 이용해요.</div></div>
+    <div class="why-card"><div class="why-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div><div class="why-t">알림톡 자동 안내</div><div class="why-d">입차·결제·출차를 알림톡으로 알아서 안내해요.</div></div>
+    <div class="why-card"><div class="why-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg></div><div class="why-t">번호 즉시 폐기</div><div class="why-d">방문객 번호는 저장하지 않고 즉시 폐기해요.</div></div>
+  </div>
+</div></section>
+
+<section class="sec" id="proof"><div class="wrap">
+  <div class="sec-head"><span class="eyebrow">REAL</span><h2>손님은 기다린 적이 없어요</h2><p>실제 발송된 미팍티켓 알림톡이에요. 출차를 요청하면 크루가 즉시 준비 — 대기 0분.</p></div>
+  <div class="proof2"><div class="kalk">
+  <div class="kalk-sender"><span class="kalk-av"><span>P</span></span><span class="kalk-name">미스터팍 <svg width="14" height="14" viewBox="0 0 24 24" fill="#1428A0"><path d="M12 2l2.4 1.8 3-.2 1 2.8 2.6 1.6-1 2.8 1 2.8-2.6 1.6-1 2.8-3-.2L12 22l-2.4-1.8-3 .2-1-2.8L3 12.2l1-2.8-1-2.8 2.6-1.6 1-2.8 3 .2z"/><path d="M8.5 12l2.3 2.3 4.7-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+  <div><span class="kalk-tab">알림톡 도착</span>
+    <div class="kalk-card">
+      <div class="kalk-title">[미팍Ticket] 입차 완료</div>
+      <p class="kalk-p">미팍주차타워 주차장에 입차되었습니다.</p>
+      <div class="kalk-li">■ 차량번호: <b>6296</b>
+■ 입차시간: <b>07. 15. 오후 12:30</b>
+■ 주차요금: 아래 버튼에서 확인</div>
+      <p class="kalk-p" style="margin-bottom:0">주차요금 사전정산 및 출차 안내는 아래 버튼을 통해 확인하세요.</p>
+      <div class="kalk-btn">모바일에서 확인해 주세요</div>
+      <p class="kalk-muted" style="margin-top:10px">고객센터: 1899-1871 (평일 09:00~18:00)</p>
+    </div>
+  </div>
+  <div class="kalk-time">오후 12:30</div>
+</div><div class="proof-mid"><div class="gap">0분</div><div class="gl">출차 요청 →<br>즉시 준비</div></div><div class="kalk">
+  <div class="kalk-sender"><span class="kalk-av"><span>P</span></span><span class="kalk-name">미스터팍 <svg width="14" height="14" viewBox="0 0 24 24" fill="#1428A0"><path d="M12 2l2.4 1.8 3-.2 1 2.8 2.6 1.6-1 2.8 1 2.8-2.6 1.6-1 2.8-3-.2L12 22l-2.4-1.8-3 .2-1-2.8L3 12.2l1-2.8-1-2.8 2.6-1.6 1-2.8 3 .2z"/><path d="M8.5 12l2.3 2.3 4.7-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+  <div><span class="kalk-tab">알림톡 도착</span>
+    <div class="kalk-card">
+      <div class="kalk-title">[미팍Ticket] 차량 준비 완료</div>
+      <p class="kalk-p">6296 차량이 출구에 준비되었습니다.</p>
+      <div class="kalk-li">■ 대기 위치: <b>미팍주차타워</b>
+■ 준비완료: <b>07. 15. 오후 02:30</b></div>
+      <p class="kalk-p" style="margin-bottom:0">지금 바로 출차 가능합니다 🚗</p>
+      <div class="kalk-btn">모바일에서 확인해 주세요</div>
+      <p class="kalk-muted" style="margin-top:10px">고객센터: 1899-1871</p>
+    </div>
+  </div>
+  <div class="kalk-time">오후 2:30</div>
+</div></div>
+  <p style="text-align:center;margin-top:24px;font-size:12px;color:var(--t400)">* 실제 발송 알림톡 내용 · 차량번호는 마스킹 후 표시</p>
+</div></section>
+
+<section class="sec soft" id="branch"><div class="wrap">
+  <div class="sec-head"><span class="eyebrow">FOR OWNERS</span><h2>어떤 사업주이신가요?</h2><p>운영 형태에 맞는 페이지로 안내해드려요.</p></div>
+  <div class="branch-grid">
+    <a class="branch-card a" href="/parking">
+      <div class="branch-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 16V8h3a2.5 2.5 0 0 1 0 5H9"/></svg></div><div class="branch-tag">PARKING OWNER</div><div class="branch-h">주차장을 운영하세요</div>
+      <p class="branch-p">유료 주차장의 입차·결제·정산·근태까지, 운영에 필요한 모든 걸 미팍 하나로 처리하세요.</p>
+      <ul class="branch-bul"><li><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>무인·유인 결제 자동화</li><li><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>매출·정산 한 화면 마감</li><li><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>크루 근태·급여 관리</li></ul>
+      <span class="branch-go">주차장 솔루션 보기 →</span>
+    </a>
+    <a class="branch-card b" href="/stores">
+      <div class="branch-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l1.5-4.5A1 1 0 0 1 6.4 4h11.2a1 1 0 0 1 .9.5L20 9"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/></svg></div><div class="branch-tag">STORE OWNER</div><div class="branch-h">매장에 주차장이 있어요</div>
+      <p class="branch-p">식당·병원·카페·호텔 — 방문 손님의 주차 편의를 미톡 안내와 미팍 QR로 완성하세요.</p>
+      <ul class="branch-bul"><li><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1F2937" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>오는 길 미톡 주차 안내</li><li><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1F2937" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>나가는 길 대기 0분</li><li><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1F2937" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>방문 데이터 리포트</li></ul>
+      <span class="branch-go">매장 솔루션 보기 →</span>
+    </a>
+  </div>
+</div></section>
+
+<section class="sec"><div class="wrap">
+  <div class="sec-head"><h2>17년, 200여 곳이<br>미팍과 함께합니다</h2></div>
+  <div class="trust-grid">
+    <div class="tcard"><div class="n">17<em>년</em></div><div class="l">주차 운영 노하우</div></div>
+    <div class="tcard"><div class="n">200<em>여 곳</em></div><div class="l">전국 운영 현장</div></div>
+    <div class="tcard"><div class="n">100<em>만+</em></div><div class="l">누적 입출차 처리</div></div>
+    <div class="tcard"><div class="n">0<em>분</em></div><div class="l">출차 대기 시간</div></div>
+  </div>
+</div></section>
+
+<section class="cta-sec" id="cta"><div class="wrap"><div class="cta-island">
+  <h2>기다림 없는 주차,<br>미팍으로 시작하세요</h2>
+  <p>도입 상담부터 현장 세팅까지 도와드려요.</p>
+  <div class="cta-actions"><a class="btn btn-white" href="#branch">사업주 유형 확인</a><a class="btn btn-gold" href="#flow">이용 흐름 다시 보기</a></div>
+  <div class="cta-tel">전화 상담 <b>1899-1871</b></div>
+</div></div></section>
+
+<footer class="foot"><div class="wrap">
+  <div class="foot-top">
+    <div class="foot-brand"><a class="logo" href="#"><span class="logo-p"><span>P</span></span><span class="logo-tx"><b>미팍</b><em>Ticket</em></span></a>
+      <p>주식회사 미스터팍 · QR 한 번으로 시작되는 스마트 주차. 방문객은 앱 없이 웹티켓으로, 사업주는 미팍 하나로.</p></div>
+    <div><h4>서비스</h4><ul><li><a href="#flow">이용 흐름</a></li><li><a href="#why">왜 편한가</a></li><li><a href="/parking">주차장 운영</a></li><li><a href="/stores">매장 운영</a></li></ul></div>
+    <div><h4>도입</h4><ul><li><a href="#cta">도입 문의</a></li><li><a href="#branch">사업주 안내</a></li><li><a href="#">요금 안내</a></li></ul></div>
+    <div><h4>고객지원</h4><ul><li><a href="tel:1899-1871">1899-1871</a></li><li><a href="#">공지사항</a></li><li><a href="#">자주 묻는 질문</a></li></ul></div>
+  </div>
+  <div class="foot-bot">주식회사 미스터팍 · 대표 문의 1899-1871<br>© 2026 Mr.Park Co., Ltd. All rights reserved.</div>
+</div></footer>
+
+
+<script>
+(function(){
+  var scr=document.querySelectorAll('.rp-screen'), stp=document.querySelectorAll('.wstep'), n=scr.length, i=0;
+  window.__setW=function(k){i=k;scr.forEach(function(e,x){e.classList.toggle('active',x===k);});stp.forEach(function(e,x){e.classList.toggle('on',x===k);});};
+  var timer=setInterval(function(){__setW((i+1)%n);},2400);
+  window.__stopW=function(){clearInterval(timer);};
+})();
+</script>
+
+</body></html>
