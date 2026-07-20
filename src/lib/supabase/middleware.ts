@@ -16,6 +16,8 @@ const PUBLIC_PATHS = [
   "/api/demo",     // 가상체험 데모 API (비로그인 허용)
   "/api/ticket",   // 고객 티켓 레거시 API (check-overdue, additional-payment 등)
   "/homepage",  // 홈페이지 (mepark.kr)
+  "/stores.html",   // 매장 사장님 랜딩 A (마케팅 정적 — 프리뷰/직접 접근 공개, admin /stores 라우트와 무관)
+  "/stores-lp",     // 매장 사장님 랜딩 C (광고 착지 — /stores-lp 및 /stores-lp.html 공개)
 ];
 
 /** 공개 허용되는 티켓 v1 API 정규식

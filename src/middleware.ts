@@ -30,6 +30,13 @@ export async function middleware(request: NextRequest) {
     if (pathname === "/") {
       return NextResponse.rewrite(new URL("/homepage.html", request.url));
     }
+    // 매장 사장님 트랙 마케팅 페이지 (클린 URL → 정적 HTML, mepark.kr 호스트 전용)
+    if (pathname === "/stores" || pathname === "/stores.html") {
+      return NextResponse.rewrite(new URL("/stores.html", request.url));
+    }
+    if (pathname === "/stores-lp" || pathname === "/stores-lp.html") {
+      return NextResponse.rewrite(new URL("/stores-lp.html", request.url));
+    }
     // 데모 페이지 → 인증 없이 바로 통과 (비로그인 방문자용)
     if (pathname.startsWith("/demo")) {
       return NextResponse.next();

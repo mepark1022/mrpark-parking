@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미팍 2.0 — 손님은 기다린 적이 없어요 (시안 C · 증거형 랜딩)</title>
+<style>
+:root{
+  --navy:#1428A0; --navy-d:#0E1D7A; --gold:#F5B731; --navy50:#EEF1FB; --navy100:#DEE3FF;
+  --gold-l:#FFF8E6; --gold-d:#D89C1C; --soft:#FAFAFB; --line:#ECECEF; --green:#16A34A;
+  --t900:#111827; --t700:#2E323A; --t500:#6B6F78; --t400:#9CA0A8;
+  --fk:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;
+  --fe:'Outfit',var(--fk);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--fk);color:var(--t900);background:#fff;-webkit-font-smoothing:antialiased;word-break:keep-all}
+.wrap{max-width:860px;margin:0 auto;padding:0 24px}
+section{padding:76px 0}
+.eyebrow{font-family:var(--fe);font-size:13px;font-weight:800;letter-spacing:.12em;color:var(--t500);text-transform:uppercase;margin-bottom:14px}
+.h2{font-size:30px;font-weight:800;line-height:1.35;letter-spacing:-.02em}
+.sub{font-size:16px;color:var(--t500);margin-top:12px;line-height:1.65}
+.top{padding:20px 0;text-align:center}
+.top a{font-family:var(--fe);font-size:19px;font-weight:800;color:var(--navy);text-decoration:none}
+
+/* Hero — 3분 증거 */
+.hero{padding:56px 0 66px;text-align:center;background:linear-gradient(180deg,#fff,var(--soft))}
+.hero .big{font-family:var(--fe);font-size:104px;font-weight:800;color:var(--navy);line-height:1;letter-spacing:-.03em}
+.hero .big small{font-size:44px;font-weight:800}
+.hero .h1{font-size:30px;font-weight:800;margin-top:14px;line-height:1.4}
+.hero-sub{font-size:16px;color:var(--t500);margin-top:12px;line-height:1.65}
+.btn-navy{display:inline-block;background:var(--navy);color:#fff;font-size:16px;font-weight:800;
+  border-radius:14px;padding:16px 30px;text-decoration:none;margin-top:28px}
+.hero-tel{margin-top:14px;font-size:14px;color:var(--t500)}
+.hero-tel b{font-family:var(--fe);color:var(--t700)}
+
+/* 타임라인 */
+.tl{margin:44px auto 0;max-width:640px;text-align:left}
+.tl-row{display:flex;gap:16px;position:relative;padding-bottom:26px}
+.tl-row:last-child{padding-bottom:0}
+.tl-row::before{content:'';position:absolute;left:17px;top:38px;bottom:0;width:2px;background:var(--navy100)}
+.tl-row:last-child::before{display:none}
+.tl-dot{flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#fff;border:2px solid var(--navy100);
+  display:flex;align-items:center;justify-content:center;font-family:var(--fe);font-size:13px;font-weight:800;color:var(--navy);z-index:1}
+.tl-row.hot .tl-dot{background:var(--gold);border-color:var(--gold);color:var(--t900)}
+.tl-body{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;flex:1}
+.tl-row.hot .tl-body{background:var(--gold-l);border-color:var(--gold)}
+.tl-time{font-family:var(--fe);font-size:13px;font-weight:800;color:var(--t400)}
+.tl-t{font-size:16px;font-weight:800;margin-top:3px}
+.tl-p{font-size:14px;color:var(--t700);margin-top:4px;line-height:1.55}
+
+/* 알림 실문안 */
+.msg{background:var(--soft)}
+.msg-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:36px}
+.msg-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px}
+.msg-from{display:flex;align-items:center;gap:9px;margin-bottom:13px}
+.msg-from .mp{width:32px;height:32px;border-radius:9px;background:var(--navy);color:#fff;font-weight:900;
+  display:flex;align-items:center;justify-content:center;font-size:15px}
+.msg-from b{font-size:14px}
+.msg-from .vf{color:var(--navy);font-size:13px}
+.msg-from span.tag{font-size:11px;color:var(--t400);font-weight:700;margin-left:auto;background:var(--soft);border-radius:100px;padding:4px 10px}
+.msg-body{font-size:13.5px;color:var(--t700);line-height:1.7}
+.msg-body b{color:var(--t900)}
+.msg-time{margin-top:10px;font-size:12px;color:var(--t400);font-weight:600;font-family:var(--fe)}
+
+/* 3기둥 압축 */
+.pil{padding:76px 0}
+.pil-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:36px}
+.pil-card{border:1px solid var(--line);border-radius:18px;padding:24px 22px;background:var(--soft)}
+.pil-tag{display:inline-block;font-family:var(--fe);font-size:11.5px;font-weight:800;letter-spacing:.08em;
+  color:var(--navy);background:#fff;border:1px solid var(--navy100);border-radius:100px;padding:4px 11px;margin-bottom:12px}
+.pil-kw{font-size:17px;font-weight:800;margin-bottom:6px}
+.pil-p{font-size:13.5px;color:var(--t700);line-height:1.6}
+.pill-free{display:inline-block;font-size:13px;font-weight:800;color:var(--gold-d);background:var(--gold-l);
+  border:1px solid var(--gold);border-radius:100px;padding:7px 16px;margin-top:22px}
+
+/* CTA */
+.cta{background:linear-gradient(160deg,var(--navy),#3730C8);text-align:center;padding:80px 0}
+.cta .h2{color:#fff}
+.cta .sub{color:#C7D2FE}
+.cta-btn{display:inline-block;background:#fff;color:var(--navy);font-size:17px;font-weight:800;
+  border-radius:14px;padding:17px 34px;text-decoration:none;margin-top:26px}
+.cta-tel{margin-top:14px;font-size:14px;color:#C7D2FE}
+.cta-tel b{color:#fff;font-family:var(--fe)}
+.foot{padding:30px 0}
+.foot p{font-size:12.5px;color:var(--t400);text-align:center}
+
+@media (max-width:768px){
+  section{padding:56px 0}
+  .hero .big{font-size:76px}
+  .hero .big small{font-size:34px}
+  .hero .h1{font-size:24px}
+  .h2{font-size:24px}
+  .msg-grid,.pil-grid{grid-template-columns:1fr}
+  .btn-navy,.cta-btn{width:100%;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<div class="top"><a href="https://www.mepark.kr">미팍2.0</a></div>
+
+<!-- Hero -->
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Real Story · 갯벌타워(본사)</div>
+    <div class="big">3<small>분</small></div>
+    <h1 class="h1">출차 요청부터 차량 준비까지.<br>손님은 기다린 적이 없어요.</h1>
+    <p class="hero-sub">주차관리자 한 분만 계시면 됩니다 — 손님 편의로 주차를 제공하는 매장을 위한 솔루션이에요.</p>
+
+    <div class="tl">
+      <div class="tl-row">
+        <div class="tl-dot">1</div>
+        <div class="tl-body">
+          <div class="tl-time">오후 5:43</div>
+          <div class="tl-t">입차 완료 알림</div>
+          <div class="tl-p">손님 휴대폰으로 입차 알림이 도착해요 — 차량번호·입차시간·출차 안내 버튼까지.</div>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-dot">2</div>
+        <div class="tl-body">
+          <div class="tl-t">나가기 전, 버튼 한 번</div>
+          <div class="tl-p">손님이 일어나기 전에 출차 요청 — 기계식 주차기는 미리 돌리고, 이중주차는 미리 해소돼요.</div>
+        </div>
+      </div>
+      <div class="tl-row hot">
+        <div class="tl-dot">3</div>
+        <div class="tl-body">
+          <div class="tl-time">오후 5:46</div>
+          <div class="tl-t">차량 준비 완료 — 대기 0분</div>
+          <div class="tl-p">"지금 바로 출차 가능합니다" — 손님이 나오면 차가 기다리고 있어요.</div>
+        </div>
+      </div>
+    </div>
+
+    <a class="btn-navy" href="#cta">미톡으로 시작하기 →</a>
+    <div class="hero-tel">도입 문의 <b>1899-1871</b></div>
+  </div>
+</header>
+
+<!-- 알림 실문안 -->
+<section class="msg">
+  <div class="wrap">
+    <div class="eyebrow">Real Message</div>
+    <h2 class="h2">그날의 실제 알림, 그대로예요</h2>
+    <div class="msg-grid">
+      <div class="msg-card">
+        <div class="msg-from"><span class="mp">P</span><b>미스터팍</b><span class="vf">✓</span><span class="tag">알림 메시지</span></div>
+        <div class="msg-body">[미팍Ticket] <b>입차 완료</b><br><br>갯벌타워(본사) 주차장에 입차되었습니다.<br><br>차량번호: 6296<br>입차시간: 오후 05:43<br>주차요금 사전정산 및 출차 안내는 버튼을 통해 확인하세요.</div>
+        <div class="msg-time">오후 5:43</div>
+      </div>
+      <div class="msg-card">
+        <div class="msg-from"><span class="mp">P</span><b>미스터팍</b><span class="vf">✓</span><span class="tag">알림 메시지</span></div>
+        <div class="msg-body">[미팍Ticket] <b>차량 준비 완료</b><br><br>6296 차량이 출구에 준비되었습니다.<br><br>대기 위치: 갯벌타워(본사)<br>준비완료: 오후 05:46<br><br><b>지금 바로 출차 가능합니다 🚗</b></div>
+        <div class="msg-time">오후 5:46</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3기둥 압축 -->
+<section class="pil">
+  <div class="wrap">
+    <div class="eyebrow">How It Works</div>
+    <h2 class="h2">손님의 주차, 세 가지가 달라져요</h2>
+    <div class="pil-grid">
+      <div class="pil-card">
+        <span class="pil-tag">오는 길 · 미톡</span>
+        <div class="pil-kw">헤매지 않고 도착</div>
+        <p class="pil-p">주차 위치·길안내, 만차 시 근처 주차장까지 — 주차 문의 전화가 줄어요.</p>
+      </div>
+      <div class="pil-card">
+        <span class="pil-tag">나가는 길 · 미팍 QR</span>
+        <div class="pil-kw">기다리지 않고 출발</div>
+        <p class="pil-p">QR로 주차권 발급, 미리 출차 요청 — 대기 시간이 사라져요.</p>
+      </div>
+      <div class="pil-card">
+        <span class="pil-tag">사장님께 · 데이터</span>
+        <div class="pil-kw">언제 몰리는지 보여요</div>
+        <p class="pil-p">요일·시간대별 입출차 패턴 — 인력 배치와 예약 운영의 근거.</p>
+      </div>
+    </div>
+    <span class="pill-free">📱 손님은 앱 설치 · 회원가입 없음 — 링크와 QR이면 끝</span>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta" id="cta">
+  <div class="wrap">
+    <h2 class="h2">우리 매장 손님도<br>기다리지 않게 해주세요</h2>
+    <p class="sub">신청 5분 · 확인 전화 1통이면 시작돼요.</p>
+    <a class="cta-btn" href="#">미톡으로 시작하기 →</a>
+    <p class="cta-tel">도입 문의 <b>1899-1871</b> · 평일 09:00~18:00</p>
+  </div>
+</section>
+
+<footer class="foot"><p><b>주식회사 미스터팍</b> · 17년 주차·발렛 운영 노하우 · © 2026 Mr.Park Inc.</p></footer>
+
+</body>
+</html>
