@@ -386,12 +386,17 @@ a{text-decoration:none;color:inherit}
 .branch-card.b .branch-go{color:var(--gold-d)}
 @media(max-width:860px){.branch-grid{grid-template-columns:1fr}.branch-card{padding:32px 26px}}
 
+
+.logo20{display:flex;align-items:center;gap:9px}
+.logo20-sq{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#7B7BF0,#4F46E5);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px -6px rgba(79,70,229,.5);flex:none}
+.logo20-tx{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--navy)}
+.logo20-tx em{font-style:normal;font-family:var(--fe);color:var(--indigo,#4F46E5);margin-left:3px}
 </style></head>
 <body>
 
 <nav class="gnb"><div class="gnb-in">
-  <a class="logo" href="#"><span class="logo-p"><span>P</span></span><span class="logo-tx"><b>미팍</b><em>Ticket</em></span></a>
-  <div class="gnb-menu"><a href="/">홈</a><a href="/about">회사소개</a><a href="/parking">주차장운영</a><a href="/stores">매장운영</a><a href="/cases">도입사례</a><a href="/faq">자주하는질문</a></div>
+  <a class="logo20" href="main-v4.html"><span class="logo20-sq"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#fff"/></svg></span><span class="logo20-tx">미팍 <em>2.0</em></span></a>
+  <div class="gnb-menu"><a class="on" href="main-v4.html">홈</a><a href="about.html">회사소개</a><a href="/">주차장운영</a><a href="stores-pricing.html">매장운영</a><a title="준비중" href="#">도입사례</a><a title="준비중" href="#">자주하는질문</a></div>
   <div class="gnb-cta"><a class="btn btn-navy" href="#cta">도입 문의</a></div>
 </div></nav>
 
@@ -531,13 +536,13 @@ a{text-decoration:none;color:inherit}
 <section class="sec soft" id="branch"><div class="wrap">
   <div class="sec-head"><span class="eyebrow">FOR OWNERS</span><h2>어떤 사업주이신가요?</h2><p>운영 형태에 맞는 페이지로 안내해드려요.</p></div>
   <div class="branch-grid">
-    <a class="branch-card a" href="/parking">
+    <a class="branch-card a" href="/">
       <div class="branch-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 16V8h3a2.5 2.5 0 0 1 0 5H9"/></svg></div><div class="branch-tag">PARKING OWNER</div><div class="branch-h">주차장을 운영하세요</div>
       <p class="branch-p">유료 주차장의 입차·결제·정산·근태까지, 운영에 필요한 모든 걸 미팍 하나로 처리하세요.</p>
       <ul class="branch-bul"><li><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>무인·유인 결제 자동화</li><li><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>매출·정산 한 화면 마감</li><li><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>크루 근태·급여 관리</li></ul>
       <span class="branch-go">주차장운영 보기 →</span>
     </a>
-    <a class="branch-card b" href="/stores">
+    <a class="branch-card b" href="stores-pricing.html">
       <div class="branch-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l1.5-4.5A1 1 0 0 1 6.4 4h11.2a1 1 0 0 1 .9.5L20 9"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/></svg></div><div class="branch-tag">STORE OWNER</div><div class="branch-h">매장에 주차장이 있어요</div>
       <p class="branch-p">식당·병원·카페·호텔 — 방문 손님의 주차 편의를 미톡 안내와 미팍 QR로 완성하세요.</p>
       <ul class="branch-bul"><li><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1F2937" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>오는 길 미톡 주차 안내</li><li><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1F2937" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>나가는 길 대기 0분</li><li><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1F2937" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>방문 데이터 리포트</li></ul>
@@ -567,8 +572,8 @@ a{text-decoration:none;color:inherit}
   <div class="foot-top">
     <div class="foot-brand"><a class="logo" href="#"><span class="logo-p"><span>P</span></span><span class="logo-tx"><b>미팍</b><em>Ticket</em></span></a>
       <p>주식회사 미스터팍 · QR 한 번으로 시작되는 스마트 주차. 방문객은 앱 없이 웹티켓으로, 사업주는 미팍 하나로.</p></div>
-    <div><h4>서비스</h4><ul><li><a href="/about">회사소개</a></li><li><a href="/parking">주차장운영</a></li><li><a href="/stores">매장운영</a></li></ul></div>
-    <div><h4>도입</h4><ul><li><a href="#cta">도입 문의</a></li><li><a href="/cases">도입사례</a></li><li><a href="/faq">자주하는질문</a></li></ul></div>
+    <div><h4>서비스</h4><ul><li><a href="about.html">회사소개</a></li><li><a href="/">주차장운영</a></li><li><a href="stores-pricing.html">매장운영</a></li></ul></div>
+    <div><h4>도입</h4><ul><li><a href="#cta">도입 문의</a></li><li><a href="#" title="준비중">도입사례</a></li><li><a href="#" title="준비중">자주하는질문</a></li></ul></div>
     <div><h4>고객지원</h4><ul><li><a href="tel:1899-1871">1899-1871</a></li><li><a href="#">공지사항</a></li><li><a href="#">자주 묻는 질문</a></li></ul></div>
   </div>
   <div class="foot-bot">주식회사 미스터팍 · 대표 문의 1899-1871<br>© 2026 Mr.Park Co., Ltd. All rights reserved.</div>

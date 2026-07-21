@@ -43,8 +43,23 @@ a{text-decoration:none;color:inherit}
 @media(max-width:680px){.sec{padding:76px 0}.sec-head h2{font-size:26px}
 .sp-card{padding:34px 22px;border-radius:20px}.sp-row{padding:14px 0}.sp-row .lb{font-size:14px}
 .sp-hl{padding:20px 16px}.sp-hl .vl{font-size:34px}.sp-hl .vl span{font-size:16px}.sp-btn{width:100%;justify-content:center}}
+
+.gnb{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.gnb-in{max-width:1120px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between}
+.gnb-menu{display:flex;align-items:center;gap:26px}
+.gnb-menu a{font-size:15px;font-weight:600;color:var(--t700)}
+.gnb-menu a:hover{color:var(--navy)}
+.gnb-menu a.on{color:var(--navy);font-weight:800}
+.btn-gnb{display:inline-flex;align-items:center;padding:10px 20px;border-radius:12px;font-weight:700;font-size:15px;background:var(--navy);color:#fff;white-space:nowrap}
+@media(max-width:680px){.gnb-menu{display:none}}
+
+.logo20{display:flex;align-items:center;gap:9px}
+.logo20-sq{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#7B7BF0,#4F46E5);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px -6px rgba(79,70,229,.5);flex:none}
+.logo20-tx{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--navy)}
+.logo20-tx em{font-style:normal;font-family:var(--fe);color:var(--indigo,#4F46E5);margin-left:3px}
 </style></head>
 <body>
+<nav class="gnb"><div class="gnb-in"><a class="logo20" href="main-v4.html"><span class="logo20-sq"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#fff"/></svg></span><span class="logo20-tx">미팍 <em>2.0</em></span></a><div class="gnb-menu"><a href="main-v4.html">홈</a><a href="about.html">회사소개</a><a href="/">주차장운영</a><a class="on" href="stores-pricing.html">매장운영</a><a title="준비중" href="#">도입사례</a><a title="준비중" href="#">자주하는질문</a></div><a class="btn-gnb" href="#cta">도입 문의</a></div></nav>
 
 <section class="sec" id="pricing"><div class="wrap">
   <div class="sec-head">
