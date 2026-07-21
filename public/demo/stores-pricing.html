@@ -71,39 +71,53 @@ a{text-decoration:none;color:inherit}
 .hero-trust span{font-size:13.5px;font-weight:700;color:var(--t500)}
 .hero-trust b{color:var(--navy);font-family:var(--fe)}
 
-/* ── 히어로 우측 · 불편 형상화(B-2 잠금화면 알림 스택, 미팍 가이드 톤) ── */
+/* ── 히어로 우측 · 불편 형상화(B-2 오브제 폰 + 메시지 스태킹, 반사효과 없음) ── */
 .hb2-wrap{width:300px;margin:0 auto;text-align:center}
-.hb2{background:linear-gradient(170deg,var(--navy) 0%,#0F1B66 60%,var(--navy-d) 100%);border-radius:34px;padding:22px 15px 19px;box-shadow:0 26px 56px rgba(20,40,160,.32);text-align:left}
-.hb2-time{text-align:center;font-family:var(--fe);font-size:40px;font-weight:800;color:#fff;line-height:1}
+.hb2-sc{position:relative;margin-top:16px}
+.hb2-ring{position:absolute;left:50%;top:-26px;transform:translateX(-50%);width:120px;height:40px;overflow:hidden;z-index:0}
+.hb2-ring i{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);width:64px;height:64px;border:3px solid rgba(245,183,49,.85);border-radius:50%;clip-path:inset(0 0 52% 0);font-style:normal;animation:hb2ringp 5s ease-in-out infinite}
+.hb2-ring i.r2{width:100px;height:100px;border-width:2.5px;border-color:rgba(245,183,49,.4);animation-delay:.12s}
+@keyframes hb2ringp{0%,12%{opacity:1}20%,100%{opacity:.35}}
+.hb2-obj{position:relative;z-index:1;animation:hb2Float 3.8s ease-in-out infinite}
+@keyframes hb2Float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.hb2-grd{position:absolute;left:50%;bottom:-30px;transform:translateX(-50%);width:82%;height:20px;border-radius:50%;background:radial-gradient(closest-side,rgba(20,34,110,.34),transparent 78%);filter:blur(6px)}
+.hb2-dep{position:absolute;inset:0;border-radius:36px;transform:translate(5px,16px);background:#0d1a63}
+.hb2{position:relative;border-radius:36px;background:linear-gradient(158deg,#3a50d6 0%,#1f36ad 48%,#142a86 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.35), inset 0 -10px 22px rgba(6,12,60,.42);padding:24px 16px 20px;text-align:left}
+.hb2-shake{animation:hb2shk 5s ease-in-out infinite}
+@keyframes hb2shk{0%,100%{transform:rotate(0)}2%{transform:rotate(-1deg)}4%{transform:rotate(1deg)}6%{transform:rotate(-.7deg)}8%{transform:rotate(.7deg)}10%{transform:rotate(0)}}
+.hb2-time{text-align:center;font-family:var(--fe);font-size:40px;font-weight:800;color:#fff;line-height:1;text-shadow:0 2px 8px rgba(6,12,60,.4)}
 .hb2-time i{font-style:normal;animation:hb2colon 2s steps(1) infinite}
 @keyframes hb2colon{0%,100%{opacity:1}50%{opacity:.25}}
 .hb2-date{text-align:center;font-size:11.5px;color:#C7D2FE;margin:5px 0 15px;font-weight:600}
-.hb2-badge{display:flex;justify-content:center;margin-bottom:12px}
-.hb2-badge span{display:inline-flex;align-items:center;gap:6px;background:rgba(245,183,49,.16);border:1px solid rgba(245,183,49,.55);color:var(--gold);font-size:12px;font-weight:800;border-radius:100px;padding:5px 13px}
+.hb2-badge{display:flex;justify-content:center;margin-bottom:13px}
+.hb2-badge span{display:inline-flex;align-items:center;gap:6px;background:rgba(245,183,49,.16);border:1px solid rgba(245,183,49,.6);color:var(--gold);font-size:12px;font-weight:800;border-radius:100px;padding:5px 13px;box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 3px 10px rgba(6,12,60,.3);transition:transform .14s ease}
 .hb2-badge svg{width:12px;height:12px;flex:none}
 .hb2-badge .tx{display:inline}
 .hb2-badge b{font-family:var(--fe);color:var(--gold)}
-.hb2-noti{background:rgba(255,255,255,.96);border-radius:14px;padding:10px 12px;margin-bottom:8px;opacity:0;transform:translateY(-16px) scale(.98);animation:hb2drop .45s cubic-bezier(.2,.8,.3,1.1) forwards}
-.hb2-noti.n1{animation-delay:.15s}
-.hb2-noti.n2{animation-delay:.3s;opacity:0}
-.hb2-noti.n3{animation-delay:.45s;opacity:0}
-@keyframes hb2drop{to{opacity:1;transform:translateY(0) scale(1)}}
-.hb2-noti.n2{--dim:.84}.hb2-noti.n3{--dim:.68}
-.hb2-noti.n2,.hb2-noti.n3{animation-name:hb2dropDim}
-@keyframes hb2dropDim{to{opacity:var(--dim);transform:translateY(0) scale(.97)}}
-.hb2-noti.n1{animation-name:hb2drop,hb2pulse;animation-duration:.45s,2.4s;animation-delay:.15s,.8s;animation-iteration-count:1,infinite;animation-fill-mode:forwards,none}
-@keyframes hb2pulse{0%,100%{box-shadow:0 0 0 0 rgba(245,183,49,0)}45%{box-shadow:0 0 0 5px rgba(245,183,49,.22)}}
-.hb2-noti .hd{display:flex;align-items:center;gap:6px;margin-bottom:3px}
-.hb2-noti .hd i{font-style:normal;width:18px;height:18px;border-radius:5px;background:var(--navy);display:inline-flex;align-items:center;justify-content:center;flex:none}
-.hb2-noti .hd i svg{width:10px;height:10px}
-.hb2-noti .hd b{font-size:11px;font-weight:800;color:var(--t900)}
-.hb2-noti .hd span{margin-left:auto;font-family:var(--fe);font-size:9.5px;font-weight:700;color:var(--t400)}
-.hb2-noti p{font-size:12.5px;font-weight:700;color:var(--t700);line-height:1.45}
-.hb2-foot{margin-top:11px;text-align:center;font-size:11px;font-weight:700;color:#C7D2FE}
+.hb2-foot{margin-top:12px;text-align:center;font-size:11px;font-weight:700;color:#C7D2FE}
 .hb2-foot b{color:var(--gold);font-family:var(--fe)}
-.hb2-shake{animation:hb2shk 5s ease-in-out infinite}
-@keyframes hb2shk{0%,100%{transform:rotate(0)}2%{transform:rotate(-1deg)}4%{transform:rotate(1deg)}6%{transform:rotate(-.7deg)}8%{transform:rotate(.7deg)}10%{transform:rotate(0)}}
-@media (prefers-reduced-motion:reduce){.hb2-shake,.hb2-time i,.hb2-noti,.hb2-noti.n1{animation:none;opacity:1;transform:none}}
+/* 알림 카드 — 프로스티드 면(::before) + 두께(::after) 분리(가독성 확보) */
+.hbn{position:relative;border-radius:15px;margin-bottom:9px;padding:11px 14px;max-height:120px;
+  transition:transform .45s cubic-bezier(.2,.8,.3,1),opacity .45s ease,max-height .45s ease,margin .45s ease,padding .45s ease}
+.hbn::before{content:'';position:absolute;inset:0;border-radius:15px;z-index:0;
+  background:linear-gradient(158deg,#ffffff 0%,#f8faff 62%,#eff3fd 100%);
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95), inset 0 -4px 8px rgba(96,116,184,.07), 0 8px 18px rgba(6,12,60,.28)}
+.hbn::after{content:'';position:absolute;inset:0;border-radius:15px;transform:translate(2.5px,8px);background:#aeb9da;z-index:-1}
+.hbn .hd,.hbn p{position:relative;z-index:1}
+.hbn:nth-child(2){transform:scale(.975)}
+.hbn:nth-child(2)::before{box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95), inset 0 -4px 8px rgba(96,116,184,.07), 0 5px 12px rgba(6,12,60,.2)}
+.hbn:nth-child(3){transform:scale(.95)}
+.hbn:nth-child(3)::before{box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95), inset 0 -4px 8px rgba(96,116,184,.07), 0 3px 8px rgba(6,12,60,.16)}
+.hbn .hd{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.hbn .hd i{font-style:normal;width:18px;height:18px;border-radius:5px;background:linear-gradient(158deg,#3147cb,#142a86);display:inline-flex;align-items:center;justify-content:center;flex:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+.hbn .hd i svg{width:10px;height:10px}
+.hbn .hd b{font-size:11.5px;font-weight:800;color:var(--t900)}
+.hbn .hd span{margin-left:auto;font-family:var(--fe);font-size:10px;font-weight:700;color:var(--t500)}
+.hbn p{font-size:13.5px;font-weight:800;color:var(--t900);line-height:1.5;letter-spacing:-.01em}
+.hbn.pre,.hbn.out{overflow:hidden}
+.hbn.pre{opacity:0;transform:translateY(-16px);max-height:0;margin-bottom:0;padding-top:0;padding-bottom:0}
+.hbn.out{opacity:0;transform:translateY(8px) scale(.94);max-height:0;margin-bottom:0;padding-top:0;padding-bottom:0}
+@media (prefers-reduced-motion:reduce){.hb2-obj,.hb2-shake,.hb2-time i,.hb2-ring i{animation:none}}
 
 /* QR 스탠드 (CSS 재현) */
 .qrstand{width:300px;margin:0 auto;border-radius:26px;padding:30px 24px 26px;text-align:center;background:linear-gradient(160deg,#1428A0 0%,#3730C8 55%,#6D5BF0 100%);box-shadow:0 24px 54px rgba(20,40,160,.32)}
@@ -377,23 +391,23 @@ a{text-decoration:none;color:inherit}
     </div>
     <div>
       <div class="hb2-wrap">
-        <div class="hb2 hb2-shake">
-          <div class="hb2-time">12<i>:</i>31</div>
-          <div class="hb2-date">7월 21일 화요일 · 점심 피크</div>
-          <div class="hb2-badge"><span><svg viewBox="0 0 24 24" fill="#F5B731"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg><span class="tx">오늘 주차 문의 <b id="hb2n">8</b>통</span></span></div>
-          <div class="hb2-noti n1">
-            <div class="hd"><i><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></i><b>전화 · 손님</b><span>지금</span></div>
-            <p>"주차 어떻게 해야 해요??"</p>
+        <div class="hb2-sc">
+          <div class="hb2-ring"><i></i><i class="r2"></i></div>
+          <div class="hb2-obj">
+            <div class="hb2-grd"></div>
+            <div class="hb2-dep"></div>
+            <div class="hb2 hb2-shake">
+              <div class="hb2-time">12<i>:</i>31</div>
+              <div class="hb2-date">7월 21일 화요일 · 점심 피크</div>
+              <div class="hb2-badge"><span><svg viewBox="0 0 24 24" fill="#F5B731"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg><span class="tx">오늘 주차 문의 <b id="hb2n">8</b>통</span></span></div>
+              <div id="hb2stack">
+                <div class="hbn"><div class="hd"><i><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></i><b>전화 · 손님</b><span>지금</span></div><p>"주차 어떻게 해야 해요??"</p></div>
+                <div class="hbn"><div class="hd"><i><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></i><b>전화 · 손님</b><span>방금 전</span></div><p>"만차던데 어디에 대요?"</p></div>
+                <div class="hbn"><div class="hd"><i><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></i><b>전화 · 손님</b><span>조금 전</span></div><p>"발렛 되나요? 입구가 어디예요?"</p></div>
+              </div>
+              <div class="hb2-foot">밀린 전화 <b>9건</b> 더 있음</div>
+            </div>
           </div>
-          <div class="hb2-noti n2">
-            <div class="hd"><i><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></i><b>전화 · 손님</b><span>17분 전</span></div>
-            <p>"만차던데 어디에 대요?"</p>
-          </div>
-          <div class="hb2-noti n3">
-            <div class="hd"><i><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></i><b>전화 · 손님</b><span>21분 전</span></div>
-            <p>"발렛 되나요? 입구가 어디예요?"</p>
-          </div>
-          <div class="hb2-foot">밀린 전화 <b>9건</b> 더 있음</div>
         </div>
         <p class="mock-cap">바쁜 시간, 같은 질문이 매일 쌓여요 — 수치는&nbsp;※&nbsp;예시</p>
       </div>
@@ -753,19 +767,31 @@ function drawQR(id, n){
 }
 drawQR('qrgrid2',12);
 
-// 히어로 카운터 카운트업 (8→12, 1회)
+// 히어로 — 메시지 스태킹 루프 + 카운터 (reduced-motion 시 정지)
 (function(){
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    var el0=document.getElementById('hb2n'); if(el0) el0.textContent='12'; return;
-  }
-  var el=document.getElementById('hb2n'); if(!el) return;
-  var v=8, t=setInterval(function(){
-    v++; el.textContent=v;
-    el.parentElement.style.transform='scale(1.06)';
-    setTimeout(function(){ el.parentElement.style.transform='scale(1)'; },120);
-    if(v>=12) clearInterval(t);
-  }, 260);
-  el.parentElement.style.transition='transform .12s ease';
+  var stack=document.getElementById('hb2stack'), cnt=document.getElementById('hb2n');
+  if(!stack||!cnt) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){ cnt.textContent='12'; return; }
+  var ICON='<svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg>';
+  var QS=["주차 어떻게 해야 해요??","만차던데 어디에 대요?","발렛 되나요? 입구가 어디예요?","입구가 어디예요? 골목이 헷갈려서요","전기차 충전도 되나요?"];
+  var qi=3, n=8;
+  setInterval(function(){
+    var d=document.createElement('div'); d.className='hbn pre';
+    d.innerHTML='<div class="hd"><i>'+ICON+'</i><b>전화 · 손님</b><span>지금</span></div><p>"'+QS[qi++%QS.length]+'"</p>';
+    stack.insertBefore(d, stack.firstChild);
+    var cards=stack.children;
+    if(cards[1]) cards[1].querySelector('.hd span').textContent='방금 전';
+    if(cards[2]) cards[2].querySelector('.hd span').textContent='조금 전';
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ d.classList.remove('pre'); }); });
+    if(cards.length>3){
+      var last=cards[cards.length-1]; last.classList.add('out');
+      setTimeout(function(){ if(last.parentNode) last.parentNode.removeChild(last); }, 480);
+    }
+    if(n<12){ n++; cnt.textContent=n;
+      var bp=cnt.closest('span').parentElement===null?null:cnt.closest('.hb2-badge').querySelector('span');
+      if(bp){ bp.style.transform='scale(1.08)'; setTimeout(function(){ bp.style.transform='scale(1)'; },140); }
+    }
+  }, 3200);
 })();
 </script>
 </body></html>
