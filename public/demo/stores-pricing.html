@@ -310,26 +310,40 @@ a{text-decoration:none;color:inherit}
 .dt-chip{font-size:12px;font-weight:700;color:var(--navy);background:var(--navy-50);border-radius:100px;padding:6px 12px}
 .dt-chip.g{color:var(--gold-d);background:var(--gold-l)}
 
-/* ── 요금 (pv2 계승) ── */
-.sp-wrap{max-width:640px;margin:0 auto}
-.sp-card{background:#fff;border-radius:24px;padding:52px 46px;border:1.5px solid var(--border);box-shadow:0 8px 30px rgba(20,40,160,.05)}
-.sp-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--navy-50);border-radius:100px;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:22px}
-.sp-rows{display:flex;flex-direction:column}
-.sp-row{display:flex;justify-content:space-between;align-items:center;padding:17px 0;border-bottom:1px solid var(--line)}
-.sp-row .lb{font-size:15.5px;font-weight:700;color:var(--t900)}
-.sp-row .lb small{display:block;font-size:12px;font-weight:500;color:var(--t500);margin-top:2px}
-.sp-row .vl{font-size:15px;font-weight:800;color:var(--navy);display:inline-flex;align-items:center;gap:7px}
-.sp-row .vl .ck{width:20px;height:20px;border-radius:50%;background:var(--navy);display:inline-flex;align-items:center;justify-content:center;flex:none}
-.sp-hl{display:flex;justify-content:space-between;align-items:center;background:rgba(245,183,49,.08);border:1.5px solid rgba(245,183,49,.4);border-radius:16px;padding:22px 24px;margin-top:16px}
-.sp-hl .lb b{display:block;font-size:16px;font-weight:800;color:var(--t900)}
-.sp-hl .lb small{font-size:12px;color:var(--t500);font-weight:500}
-.sp-hl .vl{font-family:var(--fe);font-size:44px;font-weight:800;color:var(--t900);line-height:1;text-align:right;letter-spacing:-.01em}
-.sp-hl .vl span{font-size:20px;font-family:var(--f);font-weight:700}
-.sp-hl .vl small{display:block;font-size:11px;color:var(--t500);font-weight:500;font-family:var(--f);margin-top:6px;letter-spacing:0}
-.sp-foot{text-align:center;margin-top:22px;font-size:13px;color:var(--t500);line-height:1.7}
-.sp-cta{margin-top:30px;display:flex;justify-content:center}
-.sp-btn{padding:16px 44px;border-radius:14px;font-size:16px;font-weight:800;background:var(--navy);color:#fff;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
-.sp-btn:hover{background:var(--navy-d);transform:translateY(-2px)}
+/* ── 요금 (주차장운영 pv3 카드 문법 통일) ── */
+.pv3-wrap{display:flex;justify-content:center}
+.pv3-card{width:100%;max-width:368px;background:#fff;border:1.5px solid var(--border);border-radius:24px;overflow:hidden;display:flex;flex-direction:column;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.pv3-card:hover{transform:translateY(-7px);border-color:var(--navy);box-shadow:0 26px 52px -22px rgba(20,40,160,.34)}
+.pv3-card.reco{border:2px solid var(--navy);box-shadow:0 20px 48px -26px rgba(20,40,160,.25)}
+.pv3-top{padding:28px 28px 24px;flex:1}
+.pv3-thead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pv3-tag{display:inline-flex;align-items:center;padding:7px 16px;border-radius:100px;font-size:14.5px;font-weight:900;letter-spacing:.2px;background:linear-gradient(135deg,#1428A0,#2C42D8);color:#fff}
+.pv3-rec{display:inline-flex;align-items:center;background:#FFF3D6;color:#A9740B;font-size:11.5px;font-weight:900;padding:5px 11px;border-radius:100px}
+.pv3-name{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--t900);margin-top:14px;line-height:1.4;word-break:keep-all}
+.pv3-lead{margin-top:12px;display:flex;gap:7px;align-items:flex-start;background:#F0F3FF;border:1px solid #D8DEFF;border-radius:12px;padding:11px 13px;font-size:12.5px;font-weight:600;color:var(--t500);line-height:1.5;word-break:keep-all;line-break:strict}
+.pv3-lead svg{flex:none;margin-top:2px}
+.pv3-lead b{color:var(--navy);font-weight:800}
+.pv3-price{font-size:29px;font-weight:900;letter-spacing:-.02em;color:var(--t900);margin-top:18px}
+.pv3-cond{font-size:13.5px;color:var(--t500);margin-top:8px;font-weight:600;line-height:1.55}
+.pv3-fw{margin-top:18px;padding-top:16px;border-top:1px solid #D8DEFF;display:flex;flex-wrap:wrap;gap:6px}
+.pv3-fw-l{width:100%;font-size:11px;font-weight:800;color:var(--t400);letter-spacing:.4px;margin-bottom:2px}
+.pv3-mchip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px 5px 6px;border-radius:100px;background:#fff;border:1px solid #E7E8F6;font-size:11.5px;font-weight:700;white-space:nowrap}
+.pv3-mchip .pv3-tl{width:15px;height:15px;border-radius:5px;flex:none;display:flex;align-items:center;justify-content:center}
+.pv3-tl-gold{background:linear-gradient(125deg,#E5A11E,#FFC94D)}
+.pv3-tl-cyan{background:linear-gradient(125deg,#0E9FC4,#27C3DE)}
+.pv3-tl-navy{background:linear-gradient(125deg,#1428A0,#2C42D8)}
+.pv3-tl-blue{background:linear-gradient(125deg,#2563EB,#5B91F7)}
+.pv3-c-gold{color:#A9740B}.pv3-c-cyan{color:#0B7E9C}.pv3-c-navy{color:#152A9A}.pv3-c-blue{color:#1E50C2}
+.pv3-band{background:#F0F3FF;border-top:1px solid #D8DEFF;padding:15px 30px;font-size:14.5px;font-weight:800;color:var(--navy)}
+.pv3-band small{display:block;font-size:12px;font-weight:600;color:var(--t500);margin-bottom:1px}
+.pln-note{margin-top:30px;text-align:center;font-size:14px;color:var(--t500);line-height:1.7}
+.pln-cta{margin-top:26px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.pln-cta .btn{padding:15px 28px;font-size:15.5px;border-radius:14px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;transition:all .2s}
+.btn-kakao{background:#FEE500;color:#191600}
+.btn-kakao:hover{filter:brightness(.98);transform:translateY(-1px)}
+.btn-tel{background:var(--navy);color:#fff;flex-direction:column;gap:1px;line-height:1.15}
+.btn-tel:hover{background:var(--navy-d);transform:translateY(-1px)}
+.btn-tel b{font-family:var(--fe);font-size:12px;font-weight:700;opacity:.8;letter-spacing:.02em}
 
 /* ── FAQ ── */
 .faq-list{margin:0 auto;max-width:860px}
@@ -382,10 +396,6 @@ a{text-decoration:none;color:inherit}
   .gst-flow{grid-template-columns:1fr}
   .gst-mock{max-width:300px}
   .mtk{width:100%;max-width:330px}
-  .sp-card{padding:34px 22px;border-radius:20px}
-  .sp-row{padding:14px 0}.sp-row .lb{font-size:14px}
-  .sp-hl{padding:20px 16px}.sp-hl .vl{font-size:34px}.sp-hl .vl span{font-size:16px}
-  .sp-btn{width:100%;justify-content:center}
   .cta{padding:80px 0}
   .cta-btn{width:calc(100% - 0px)}
 }
@@ -685,22 +695,24 @@ a{text-decoration:none;color:inherit}
       <h2>매장 주차비서, <em>월 29,000원</em></h2>
       <p>미톡과 미팍 QR을 하나의 패키지로 — 커피 몇 잔 값으로 주차 응대가 사라집니다.</p>
     </div>
-    <div class="sp-wrap"><div class="sp-card">
-      <span class="sp-badge">미팍 매장 요금제 — 패키지 일괄</span>
-      <div class="sp-rows">
-        <div class="sp-row"><span class="lb">미톡 주차 안내 페이지<small>오는 길 안내 · 만차 시 근처 주차장 안내</small></span><span class="vl"><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>포함</span></div>
-        <div class="sp-row"><span class="lb">웹티켓 출차 요청<small>손님이 QR로 직접 — 대기 0분</small></span><span class="vl"><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>포함</span></div>
-        <div class="sp-row"><span class="lb">카카오 알림톡 자동 안내<small>입차 · 출차 준비 · 결제</small></span><span class="vl"><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>포함</span></div>
-        <div class="sp-row"><span class="lb">입출차 데이터 리포트<small>요일별 · 시간대별 패턴</small></span><span class="vl"><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>포함</span></div>
-        <div class="sp-row"><span class="lb">방문객 앱 설치<small>회원가입도 없이 웹티켓으로</small></span><span class="vl">불필요</span></div>
+    <div class="pv3-wrap">
+      <div class="pv3-card reco">
+        <div class="pv3-top">
+          <div class="pv3-thead"><span class="pv3-tag">패키지형</span><span class="pv3-rec">미톡 + 미팍 QR 일괄</span></div>
+          <div class="pv3-name">주차 안내부터<br>출차·결제까지 한&nbsp;번에</div>
+          <div class="pv3-lead"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1428A0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-11"/></svg><span>손님은 <b>앱 설치·회원가입 없이</b> 웹티켓으로 — 매장은 QR 비치가 전부예요</span></div>
+          <div class="pv3-price">월 29,000원</div>
+          <div class="pv3-cond">매장 1곳 기준 · VAT 별도</div>
+          <div class="pv3-fw"><span class="pv3-fw-l">포함 기능</span><span class="pv3-mchip pv3-c-gold"><span class="pv3-tl pv3-tl-gold"><svg width="9" height="9" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#fff"/></svg></span>미톡 안내 페이지</span><span class="pv3-mchip pv3-c-gold"><span class="pv3-tl pv3-tl-gold"><svg width="9" height="9" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#fff"/></svg></span>만차 시 주차장 안내</span><span class="pv3-mchip pv3-c-gold"><span class="pv3-tl pv3-tl-gold"><svg width="9" height="9" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#fff"/></svg></span>AI FAQ 응답</span><span class="pv3-mchip pv3-c-cyan"><span class="pv3-tl pv3-tl-cyan"><svg width="9" height="9" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#fff"/></svg></span>웹티켓 출차 요청</span><span class="pv3-mchip pv3-c-cyan"><span class="pv3-tl pv3-tl-cyan"><svg width="9" height="9" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#fff"/></svg></span>알림톡 자동 안내</span><span class="pv3-mchip pv3-c-navy"><span class="pv3-tl pv3-tl-navy"><svg width="9" height="9" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#fff"/></svg></span>모바일 주차비 결제</span><span class="pv3-mchip pv3-c-blue"><span class="pv3-tl pv3-tl-blue"><svg width="9" height="9" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#fff"/></svg></span>입출차 데이터 리포트</span></div>
+        </div>
+        <div class="pv3-band"><small>주차가 무료인 매장도</small>같은 요금으로 전 기능 이용</div>
       </div>
-      <div class="sp-hl">
-        <span class="lb"><b>월 요금</b><small>매장 1곳 기준</small></span>
-        <span class="vl">29,000<span>원</span><small>VAT 별도</small></span>
-      </div>
-      <p class="sp-foot">* 주차요금 결제 이용 시 PG 수수료는 PG사 정책에 따라 별도 부과됩니다</p>
-      <div class="sp-cta"><a class="sp-btn" href="#cta">도입 문의하기 →</a></div>
-    </div></div>
+    </div>
+    <p class="pln-note">전 금액 VAT 별도 · 주차요금 결제 이용 시 PG 수수료는 PG사 정책에 따라 별도 부과됩니다</p>
+    <div class="pln-cta">
+      <a class="btn btn-tel" href="tel:1899-1871">도입 문의<b>1899-1871</b></a>
+      <a class="btn btn-kakao" href="https://pf.kakao.com/_Nuxdtxb" target="_blank" rel="noopener">카카오톡 상담</a>
+    </div>
   </div>
 </section>
 
