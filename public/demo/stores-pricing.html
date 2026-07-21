@@ -83,8 +83,6 @@ a{text-decoration:none;color:inherit}
 .hb2-grd{position:absolute;left:50%;bottom:-30px;transform:translateX(-50%);width:82%;height:20px;border-radius:50%;background:radial-gradient(closest-side,rgba(20,34,110,.34),transparent 78%);filter:blur(6px)}
 .hb2-dep{position:absolute;inset:0;border-radius:36px;transform:translate(5px,16px);background:#0d1a63}
 .hb2{position:relative;border-radius:36px;background:linear-gradient(158deg,#3a50d6 0%,#1f36ad 48%,#142a86 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.35), inset 0 -10px 22px rgba(6,12,60,.42);padding:24px 16px 20px;text-align:left}
-.hb2-shake{animation:hb2shk 5s ease-in-out infinite}
-@keyframes hb2shk{0%,100%{transform:rotate(0)}2%{transform:rotate(-1deg)}4%{transform:rotate(1deg)}6%{transform:rotate(-.7deg)}8%{transform:rotate(.7deg)}10%{transform:rotate(0)}}
 .hb2-time{text-align:center;font-family:var(--fe);font-size:40px;font-weight:800;color:#fff;line-height:1;text-shadow:0 2px 8px rgba(6,12,60,.4)}
 .hb2-time i{font-style:normal;animation:hb2colon 2s steps(1) infinite}
 @keyframes hb2colon{0%,100%{opacity:1}50%{opacity:.25}}
@@ -120,7 +118,7 @@ a{text-decoration:none;color:inherit}
 .hbn.pre,.hbn.out{overflow:hidden}
 .hbn.pre{opacity:0;transform:translateY(-16px);max-height:0;margin-bottom:0;padding-top:0;padding-bottom:0}
 .hbn.out{opacity:0;transform:translateY(8px) scale(.94);max-height:0;margin-bottom:0;padding-top:0;padding-bottom:0}
-@media (prefers-reduced-motion:reduce){.hb2-obj,.hb2-shake,.hb2-time i,.hb2-ring i{animation:none}}
+@media (prefers-reduced-motion:reduce){.hb2-obj,.hb2-time i,.hb2-ring i{animation:none}}
 
 /* QR 스탠드 (CSS 재현) */
 .qrstand{width:300px;margin:0 auto;border-radius:26px;padding:30px 24px 26px;text-align:center;background:linear-gradient(160deg,#1428A0 0%,#3730C8 55%,#6D5BF0 100%);box-shadow:0 24px 54px rgba(20,40,160,.32)}
@@ -399,7 +397,7 @@ a{text-decoration:none;color:inherit}
           <div class="hb2-obj">
             <div class="hb2-grd"></div>
             <div class="hb2-dep"></div>
-            <div class="hb2 hb2-shake">
+            <div class="hb2">
               <div class="hb2-time">12<i>:</i>31</div>
               <div class="hb2-date">7월 21일 화요일 · 점심 피크</div>
               <div class="hb2-badge"><span><svg viewBox="0 0 24 24" fill="#1428A0"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg><span class="tx">오늘 주차 문의 <b id="hb2n">8</b>통</span></span></div>
