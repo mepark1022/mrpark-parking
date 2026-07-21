@@ -315,7 +315,7 @@ a{text-decoration:none;color:inherit}
 .dtr-ct b{font-size:13px;font-weight:800;color:var(--t900)}
 .dtr-ct span{font-size:10px;font-weight:700;color:var(--t400);background:var(--soft);border-radius:100px;padding:3px 9px}
 .dtr-bars{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
-.dtr-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:150px}
+.dtr-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:132px}
 .dtr-col em{font-style:normal;font-family:var(--fe);font-size:9.5px;font-weight:800;color:var(--navy)}
 .dtr-col.pk em{color:var(--gold-d)}
 .dtr-bar{width:100%;max-width:24px;border-radius:6px 6px 2px 2px;background:var(--navy)}
@@ -325,6 +325,46 @@ a{text-decoration:none;color:inherit}
 .dtr-day b{display:block;font-size:10.5px;font-weight:800;color:var(--t700)}
 .dtr-col.pk .dtr-day b{color:var(--gold-d)}
 .dtr-day small{font-family:var(--fe);font-size:8.5px;font-weight:600;color:var(--t400)}
+
+.dt-card{max-width:480px}
+.dtr-title{font-size:21px;font-weight:800;color:var(--t900);letter-spacing:-.02em;border-bottom:2.5px solid var(--navy);padding-bottom:10px;margin-bottom:13px}
+.dtr-store small{display:block;font-family:var(--fe);font-size:9.5px;font-weight:600;color:var(--t400);margin-top:1px}
+.dtr-sub{display:grid;grid-template-columns:1.2fr 1fr 1.4fr;gap:0;border:1px solid var(--line);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.dtr-sub>div{padding:9px 12px;border-right:1px solid var(--line)}
+.dtr-sub>div:last-child{border-right:0}
+.dtr-sub small{display:block;font-size:9.5px;font-weight:700;color:var(--t400);margin-bottom:2px}
+.dtr-sub b{font-size:12px;font-weight:800;color:var(--t900);white-space:nowrap}
+.dtr-box{border:1px solid var(--line);border-radius:14px;padding:14px 15px 12px;margin-bottom:12px}
+.dtr-bt{font-size:12.5px;font-weight:800;color:var(--t900);margin-bottom:10px}
+.dtr-hist{display:flex;align-items:flex-end;gap:3px;height:64px}
+.dtr-hist i{font-style:normal;flex:1;border-radius:3px 3px 1px 1px;background:#AEB9EA}
+.dtr-hist i.g{background:linear-gradient(180deg,var(--gold),#E8A61F)}
+.dtr-hx{display:flex;justify-content:space-between;margin-top:5px;font-family:var(--fe);font-size:8.5px;font-weight:600;color:var(--t400)}
+.dtr-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.dtr-2col .dtr-box{margin-bottom:0}
+.dtr-dn{display:flex;align-items:center;gap:12px}
+.dtr-donut{width:78px;height:78px;border-radius:50%;background:conic-gradient(var(--navy) 0 99.6%,var(--gold) 99.6% 100%);position:relative;flex:none}
+.dtr-donut::after{content:'';position:absolute;inset:13px;border-radius:50%;background:#fff}
+.dtr-donut b{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;font-family:var(--fe);font-size:15px;font-weight:800;color:var(--t900);line-height:1.1}
+.dtr-donut b small{font-family:var(--f);font-size:7.5px;font-weight:700;color:var(--t400)}
+.dtr-lg{flex:1;display:flex;flex-direction:column;gap:5px}
+.dtr-lg span{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:var(--t700)}
+.dtr-lg i{font-style:normal;width:8px;height:8px;border-radius:3px;flex:none}
+.dtr-lg b{margin-left:auto;font-family:var(--fe);font-size:10px;color:var(--t900)}
+.dtr-lg em{font-style:normal;font-family:var(--fe);font-size:9px;color:var(--t400)}
+.dtr-dist{display:flex;flex-direction:column;gap:8px}
+.dtr-dr{display:flex;align-items:center;gap:8px}
+.dtr-dr .lb{width:74px;font-size:10px;font-weight:700;color:var(--t700);flex:none}
+.dtr-dr .tr{flex:1;height:9px;border-radius:100px;background:var(--navy-50);overflow:hidden}
+.dtr-dr .tr i{font-style:normal;display:block;height:100%;border-radius:100px;background:var(--navy)}
+.dtr-dr.l2 .tr i{background:#3D53C9}.dtr-dr.l3 .tr i{background:#8B9AE0}.dtr-dr.l4 .tr i{background:#C3CCF0}
+.dtr-dr b{font-family:var(--fe);font-size:10px;font-weight:800;color:var(--t900);flex:none}
+.dtr-dr em{font-style:normal;font-family:var(--fe);font-size:9px;color:var(--t400);flex:none}
+.dtr-foot{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);text-align:center;font-size:9px;color:var(--t400);font-weight:600}
+@media(max-width:680px){.dtr-2col{grid-template-columns:1fr}
+.dtr-sub{grid-template-columns:1fr}
+.dtr-sub>div{border-right:0;border-bottom:1px solid var(--line)}
+.dtr-sub>div:last-child{border-bottom:0}}
 
 /* ── 요금 (주차장운영 pv3 카드 문법 통일) ── */
 .pv3-wrap{display:flex;justify-content:center}
@@ -685,18 +725,54 @@ a{text-decoration:none;color:inherit}
     <div class="pain-vis">
       <div class="dt-card">
         <div class="dtr-brand"><span class="dtr-logo">미</span><span>미팍 2.0 · 입차량 분석 리포트</span></div>
-        <div class="dtr-store"><b>미팍 도산사거리점</b><span>2026-07-15 ~ 07-21</span></div>
-        <div class="dtr-ai"><span class="pill">me.talk</span><p>이 기간 입차가 가장 몰린 시간대는 <b>오후 4~6시</b>입니다. 평균 주차시간은 <b>1시간 19분</b>입니다.</p></div>
+        <div class="dtr-store"><div><b style="font-size:21px;letter-spacing:-.02em">입차량 분석</b></div><div style="text-align:right"><b style="font-size:13px">미팍 도산사거리점</b><small>2026-07-15 ~ 2026-07-21 · 생성일 2026.07.21</small></div></div>
+        <div style="height:2.5px;background:var(--navy);border-radius:2px;margin:6px 0 14px"></div>
+        <div class="dtr-ai"><span class="pill">me.talk</span><p>이 기간 입차가 가장 몰린 시간대는 <b>오후 4~6시</b>입니다. 평균 주차시간은 <b>1시간 19분</b>입니다. 기간 후반부 입차가 전반부보다 27% 줄며 하락세를 보였습니다.</p></div>
         <div class="dtr-kpis">
           <div class="dtr-kpi"><small>총 입차</small><b>723<i> 대</i></b></div>
           <div class="dtr-kpi"><small>일평균 입차</small><b>103.3<i> 대</i></b></div>
           <div class="dtr-kpi"><small>피크 시간대</small><b><i style="font-size:14px;color:var(--navy);font-weight:800">오후 4~6시</i></b></div>
           <div class="dtr-kpi"><small>평균 주차시간</small><b>1<i>시간</i> 19<i>분</i></b></div>
         </div>
-        <div class="dtr-ct"><b>일별 입차 추이</b><span>최다 7.17(금) · 150대</span></div>
-        <div class="dtr-bars"><div class="dtr-col lo"><em>76</em><div class="dtr-bar" style="height:56px"></div><div class="dtr-day"><b>수</b><small>7.15</small></div></div><div class="dtr-col lo"><em>81</em><div class="dtr-bar" style="height:59px"></div><div class="dtr-day"><b>목</b><small>7.16</small></div></div><div class="dtr-col pk"><em>150</em><div class="dtr-bar" style="height:110px"></div><div class="dtr-day"><b>금</b><small>7.17</small></div></div><div class="dtr-col "><em>97</em><div class="dtr-bar" style="height:71px"></div><div class="dtr-day"><b>토</b><small>7.18</small></div></div><div class="dtr-col "><em>137</em><div class="dtr-bar" style="height:100px"></div><div class="dtr-day"><b>일</b><small>7.19</small></div></div><div class="dtr-col "><em>118</em><div class="dtr-bar" style="height:87px"></div><div class="dtr-day"><b>월</b><small>7.20</small></div></div><div class="dtr-col lo"><em>64</em><div class="dtr-bar" style="height:47px"></div><div class="dtr-day"><b>화</b><small>7.21</small></div></div></div>
+        <div class="dtr-sub">
+          <div><small>최다 입차일</small><b>7.17(금) · 150대</b></div>
+          <div><small>최대 동시 주차</small><b>36대</b></div>
+          <div><small>주차 유형 비중</small><b>발렛 100% · 월주차 0%</b></div>
+        </div>
+        <div class="dtr-box">
+          <div class="dtr-bt">일별 입차 추이</div>
+          <div class="dtr-bars"><div class="dtr-col lo"><em>76</em><div class="dtr-bar" style="height:50px"></div><div class="dtr-day"><b>수</b><small>7.15</small></div></div><div class="dtr-col lo"><em>81</em><div class="dtr-bar" style="height:54px"></div><div class="dtr-day"><b>목</b><small>7.16</small></div></div><div class="dtr-col pk"><em>150</em><div class="dtr-bar" style="height:100px"></div><div class="dtr-day"><b>금</b><small>7.17</small></div></div><div class="dtr-col "><em>97</em><div class="dtr-bar" style="height:65px"></div><div class="dtr-day"><b>토</b><small>7.18</small></div></div><div class="dtr-col "><em>137</em><div class="dtr-bar" style="height:91px"></div><div class="dtr-day"><b>일</b><small>7.19</small></div></div><div class="dtr-col "><em>118</em><div class="dtr-bar" style="height:79px"></div><div class="dtr-day"><b>월</b><small>7.20</small></div></div><div class="dtr-col lo"><em>64</em><div class="dtr-bar" style="height:43px"></div><div class="dtr-day"><b>화</b><small>7.21</small></div></div></div>
+        </div>
+        <div class="dtr-2col">
+          <div class="dtr-box">
+            <div class="dtr-bt">시간대별 분포</div>
+            <div class="dtr-hist"><i class="" style="height:8px"></i><i class="" style="height:12px"></i><i class="" style="height:18px"></i><i class="" style="height:26px"></i><i class="" style="height:34px"></i><i class="" style="height:30px"></i><i class="" style="height:26px"></i><i class="" style="height:22px"></i><i class="" style="height:28px"></i><i class="" style="height:34px"></i><i class="" style="height:44px"></i><i class="" style="height:58px"></i><i class="g" style="height:64px"></i><i class="" style="height:52px"></i><i class="" style="height:34px"></i><i class="" style="height:22px"></i><i class="" style="height:14px"></i><i class="" style="height:8px"></i></div>
+            <div class="dtr-hx"><span>0시</span><span>6시</span><span>12시</span><span>18시</span><span>23시</span></div>
+          </div>
+          <div class="dtr-box">
+            <div class="dtr-bt">주차 유형</div>
+            <div class="dtr-dn">
+              <div class="dtr-donut"><b>723<small>총 대수</small></b></div>
+              <div class="dtr-lg">
+                <span><i style="background:var(--navy)"></i>발렛<b>100%</b><em>722대</em></span>
+                <span><i style="background:#6D7FDB"></i>자주식<b>0%</b><em>1대</em></span>
+                <span><i style="background:var(--gold)"></i>월주차<b>0%</b><em>0대</em></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="dtr-box">
+          <div class="dtr-bt">주차시간 분포</div>
+          <div class="dtr-dist">
+            <div class="dtr-dr"><span class="lb">30분 이하</span><span class="tr"><i style="width:30%"></i></span><b>30%</b><em>(215)</em></div>
+            <div class="dtr-dr l2"><span class="lb">30분 ~ 1시간</span><span class="tr"><i style="width:36%"></i></span><b>36%</b><em>(254)</em></div>
+            <div class="dtr-dr l3"><span class="lb">1 ~ 2시간</span><span class="tr"><i style="width:16%"></i></span><b>16%</b><em>(117)</em></div>
+            <div class="dtr-dr l4"><span class="lb">2시간 이상</span><span class="tr"><i style="width:17%"></i></span><b>17%</b><em>(124)</em></div>
+          </div>
+        </div>
+        <div class="dtr-foot">주식회사 미스터팍 · 미팍티켓  |  본 리포트는 미팍 2.0이 선택 기간·매장 데이터로 자동 생성했습니다.</div>
       </div>
-      <p class="mock-cap">미팍 2.0 입차량 분석 리포트 — 실제 리포트 화면 재구성 (매장명은 예시)</p>
+      <p class="mock-cap">미팍 2.0 입차량 분석 리포트 — 실제 리포트 전체 화면 (매장명은 예시)</p>
     </div>
   </div>
 </section>
