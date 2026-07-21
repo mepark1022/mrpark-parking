@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>매장운영 요금제 — 미팍티켓</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1428A0;--navy-d:#0e1d7a;--navy-50:#EEF1FB;--gold:#F5B731;--gold-d:#9A6A0A;
+--soft:#F7F8FC;--soft2:#F5F6FA;--line:#ECECEF;--border:#E5E7EB;
+--t900:#111827;--t800:#1F2937;--t700:#2E323A;--t500:#6B6F78;--t400:#9CA0A8;
+--f:'Noto Sans KR',-apple-system,system-ui,sans-serif;--fe:'Outfit',var(--f)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--f);color:var(--t800);background:#fff;line-height:1.6;-webkit-font-smoothing:antialiased;word-break:keep-all;line-break:strict}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+.sec{padding:110px 0;background:var(--soft)}
+.sec-head{text-align:center;max-width:680px;margin:0 auto 52px}
+.eyebrow{display:inline-block;font-family:var(--fe);font-size:12px;font-weight:800;letter-spacing:1.4px;color:var(--navy);background:#fff;border:1px solid var(--line);padding:6px 12px;border-radius:100px;margin-bottom:18px}
+.sec-head h2{font-size:36px;line-height:1.25;font-weight:800;letter-spacing:-.035em;color:var(--t900)}
+.sec-head h2 em{font-style:normal;color:var(--navy)}
+.sec-head p{margin-top:14px;font-size:16px;line-height:1.65;color:var(--t500)}
+/* 요금 카드 (라이브 pv2 스타일 계승) */
+.sp-wrap{max-width:640px;margin:0 auto}
+.sp-card{background:#fff;border-radius:24px;padding:52px 46px;border:1.5px solid var(--border);box-shadow:0 8px 30px rgba(20,40,160,.05)}
+.sp-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--navy-50);border-radius:100px;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:22px}
+.sp-rows{display:flex;flex-direction:column}
+.sp-row{display:flex;justify-content:space-between;align-items:center;padding:17px 0;border-bottom:1px solid var(--line)}
+.sp-row .lb{font-size:15.5px;font-weight:700;color:var(--t900)}
+.sp-row .lb small{display:block;font-size:12px;font-weight:500;color:var(--t500);margin-top:2px}
+.sp-row .vl{font-size:15px;font-weight:800;color:var(--navy);display:inline-flex;align-items:center;gap:7px}
+.sp-row .vl .ck{width:20px;height:20px;border-radius:50%;background:var(--navy);display:inline-flex;align-items:center;justify-content:center;flex:none}
+/* 강조행 — 월 요금 (골드 워시) */
+.sp-hl{display:flex;justify-content:space-between;align-items:center;background:rgba(245,183,49,.08);border:1.5px solid rgba(245,183,49,.4);border-radius:16px;padding:22px 24px;margin-top:16px}
+.sp-hl .lb b{display:block;font-size:16px;font-weight:800;color:var(--t900)}
+.sp-hl .lb small{font-size:12px;color:var(--t500);font-weight:500}
+.sp-hl .vl{font-family:var(--fe);font-size:44px;font-weight:800;color:var(--t900);line-height:1;text-align:right;letter-spacing:-.01em}
+.sp-hl .vl span{font-size:20px;font-family:var(--f);font-weight:700}
+.sp-hl .vl small{display:block;font-size:11px;color:var(--t500);font-weight:500;font-family:var(--f);margin-top:6px;letter-spacing:0}
+.sp-foot{text-align:center;margin-top:22px;font-size:13px;color:var(--t500);line-height:1.7}
+.sp-cta{margin-top:30px;display:flex;justify-content:center}
+.sp-btn{padding:16px 44px;border-radius:14px;font-size:16px;font-weight:800;background:var(--navy);color:#fff;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
+.sp-btn:hover{background:var(--navy-d);transform:translateY(-2px)}
+@media(max-width:680px){.sec{padding:76px 0}.sec-head h2{font-size:26px}
+.sp-card{padding:34px 22px;border-radius:20px}.sp-row{padding:14px 0}.sp-row .lb{font-size:14px}
+.sp-hl{padding:20px 16px}.sp-hl .vl{font-size:34px}.sp-hl .vl span{font-size:16px}.sp-btn{width:100%;justify-content:center}}
+</style></head>
+<body>
+
+<section class="sec" id="pricing"><div class="wrap">
+  <div class="sec-head">
+    <span class="eyebrow">PRICING</span>
+    <h2>매장 주차비서, <em>월 29,000원</em></h2>
+    <p>주차 안내부터 출차 요청·결제까지 — 커피 몇 잔 값으로 주차 응대가 사라집니다.</p>
+  </div>
+  <div class="sp-wrap"><div class="sp-card">
+    <span class="sp-badge">미팍 매장 요금제</span>
+    <div class="sp-rows">
+      <div class="sp-row"><span class="lb">미톡 주차 안내 페이지<small>오는 길 안내 · 만차 시 근처 주차장 안내</small></span><span class="vl"><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>포함</span></div>
+      <div class="sp-row"><span class="lb">웹티켓 출차 요청<small>손님이 QR로 직접 — 대기 0분</small></span><span class="vl"><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>포함</span></div>
+      <div class="sp-row"><span class="lb">카카오 알림톡 자동 안내<small>입차 · 출차 준비 · 결제</small></span><span class="vl"><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg></span>포함</span></div>
+      <div class="sp-row"><span class="lb">방문객 앱 설치<small>회원가입도 없이 웹티켓으로</small></span><span class="vl">불필요</span></div>
+    </div>
+    <div class="sp-hl">
+      <span class="lb"><b>월 요금</b><small>매장 1곳 기준</small></span>
+      <span class="vl">29,000<span>원</span><small>VAT 별도</small></span>
+    </div>
+    <p class="sp-foot">* 주차요금 결제 이용 시 PG 수수료는 PG사 정책에 따라 별도 부과됩니다</p>
+    <div class="sp-cta"><a class="sp-btn" href="#cta">도입 문의하기 →</a></div>
+  </div></div>
+</div></section>
+
+</body></html>
