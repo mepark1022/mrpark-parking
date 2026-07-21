@@ -457,11 +457,111 @@ a{text-decoration:none;color:inherit}
   .cta{padding:80px 0}
   .cta-btn{width:calc(100% - 0px)}
 }
+
+/* ── 문제제기 섹션 (V2 콜로그) ── */
+.sp2{background:linear-gradient(180deg,#fff 0%,var(--soft) 100%);padding:96px 24px 84px;text-align:center;overflow:hidden}
+.sp2 .wrap{max-width:1120px;margin:0 auto}
+.sp2-h{font-size:44px;line-height:1.3;font-weight:800;letter-spacing:-.035em;color:var(--t900)}
+.sp2-h em{font-style:normal;background:linear-gradient(110deg,#12228F 15%,#4F46E5 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sp2-sub{margin-top:14px;font-size:17px;color:var(--t500);font-weight:600}
+
+/* 오브제 콜로그 폰 */
+.cl-sc{position:relative;width:320px;margin:52px auto 0}
+.cl-ring{position:absolute;left:50%;top:-26px;transform:translateX(-50%);width:120px;height:40px;overflow:hidden;z-index:0}
+.cl-ring i{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);width:64px;height:64px;border:3px solid rgba(245,183,49,.85);border-radius:50%;clip-path:inset(0 0 52% 0);font-style:normal;animation:clRing 5s ease-in-out infinite}
+.cl-ring i.r2{width:100px;height:100px;border-width:2.5px;border-color:rgba(245,183,49,.4);animation-delay:.12s}
+@keyframes clRing{0%,12%{opacity:1}20%,100%{opacity:.35}}
+.cl-obj{position:relative;z-index:1}
+.cl-grd{position:absolute;left:50%;bottom:-30px;transform:translateX(-50%);width:82%;height:20px;border-radius:50%;background:radial-gradient(closest-side,rgba(20,34,110,.34),transparent 78%);filter:blur(6px)}
+.cl-dep{position:absolute;inset:0;border-radius:36px;transform:translate(5px,16px);background:#0d1a63}
+.cl{position:relative;border-radius:36px;background:linear-gradient(158deg,#3a50d6 0%,#1f36ad 48%,#142a86 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.35), inset 0 -10px 22px rgba(6,12,60,.42);padding:24px 16px 20px;text-align:left}
+.cl-time{text-align:center;font-family:var(--fe);font-size:40px;font-weight:800;color:#fff;line-height:1;text-shadow:0 2px 8px rgba(6,12,60,.4)}
+.cl-time i{font-style:normal;animation:clColon 2s steps(1) infinite}
+@keyframes clColon{0%,100%{opacity:1}50%{opacity:.25}}
+.cl-date{text-align:center;font-size:11.5px;color:#C7D2FE;margin:5px 0 15px;font-weight:600}
+.cl-badge{display:flex;justify-content:center;margin-bottom:13px}
+.cl-badge>span{position:relative;display:inline-flex;align-items:center;gap:6px;color:var(--navy);font-size:12px;font-weight:800;border-radius:100px;padding:6px 14px}
+.cl-badge>span::before{content:'';position:absolute;inset:0;border-radius:100px;z-index:0;background:linear-gradient(158deg,#ffffff 0%,#f8faff 62%,#eff3fd 100%);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95), 0 6px 13px rgba(6,12,60,.3)}
+.cl-badge>span::after{content:'';position:absolute;inset:0;border-radius:100px;transform:translate(2px,6px);background:#aeb9da;z-index:-1}
+.cl-badge svg,.cl-badge .tx{position:relative;z-index:1}
+.cl-badge b{font-family:var(--fe);color:var(--gold-d)}
+.cln{position:relative;border-radius:15px;margin-bottom:9px;padding:11px 14px}
+.cln::before{content:'';position:absolute;inset:0;border-radius:15px;z-index:0;background:linear-gradient(158deg,#ffffff 0%,#f8faff 62%,#eff3fd 100%);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95), inset 0 -4px 8px rgba(96,116,184,.07), 0 8px 18px rgba(6,12,60,.28)}
+.cln::after{content:'';position:absolute;inset:0;border-radius:15px;transform:translate(2.5px,8px);background:#aeb9da;z-index:-1}
+.cln .hd,.cln p{position:relative;z-index:1}
+.cln:nth-child(2){transform:scale(.975)}
+.cln:nth-child(3){transform:scale(.955)}
+.cln:nth-child(4){transform:scale(.935)}
+.cln .hd{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.cln .hd i{font-style:normal;width:18px;height:18px;border-radius:5px;background:linear-gradient(158deg,#3147cb,#142a86);display:inline-flex;align-items:center;justify-content:center;flex:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+.cln .hd i svg{width:10px;height:10px}
+.cln .hd b{font-size:11.5px;font-weight:800;color:var(--t900)}
+.cln .hd span{margin-left:auto;font-family:var(--fe);font-size:10px;font-weight:700;color:var(--t500)}
+.cln p{font-size:13.5px;font-weight:800;color:var(--t900);line-height:1.5;letter-spacing:-.01em}
+.cl-foot{margin-top:12px;text-align:center;font-size:11px;font-weight:700;color:#C7D2FE}
+.cl-foot b{color:var(--gold);font-family:var(--fe)}
+.cl-cap{margin-top:44px;font-size:12.5px;color:var(--t400)}
+
+/* 사장님 클라이맥스 */
+.sp2-boss{margin:44px auto 0;max-width:600px}
+.sp2-bub{display:inline-block;position:relative;background:linear-gradient(158deg,#F5F5FF,#EDECFE);border:2px solid #C7C9F5;border-radius:22px;padding:19px 30px;font-size:20.5px;font-weight:700;color:var(--t900);letter-spacing:-.012em;box-shadow:0 6px 14px rgba(79,70,229,.08), 0 22px 46px rgba(79,70,229,.16)}
+.sp2-bub .no{display:inline-flex;font-family:var(--fe);font-size:10.5px;font-weight:800;letter-spacing:.6px;color:#fff;background:linear-gradient(110deg,#4F46E5,#7C3AED);border-radius:100px;padding:3px 10px;margin-bottom:7px}
+.sp2-bub em{font-style:normal;font-weight:900;font-size:1.12em;letter-spacing:-.02em;background:linear-gradient(110deg,#12228F 15%,#4F46E5 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* 클로징 F3 */
+.sp2-close{margin-top:48px;font-size:30px;line-height:1.42;font-weight:900;letter-spacing:-.03em;background:linear-gradient(110deg,#12228F 5%,#4F46E5 55%,#7C3AED 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sp2-close small{display:block;font-family:var(--f);font-size:14px;font-weight:700;color:var(--t500);-webkit-text-fill-color:var(--t500);margin-top:10px;letter-spacing:0}
+.sp2-cue{margin-top:26px;display:inline-flex;width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;align-items:center;justify-content:center;font-size:17px;animation:cueBob 1.6s ease-in-out infinite;box-shadow:0 8px 18px rgba(20,40,160,.3)}
+@keyframes cueBob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+@media(prefers-reduced-motion:reduce){.cl-ring i,.cl-time i,.sp2-cue{animation:none}}
+@media(max-width:680px){
+  .sp2{padding:64px 20px 60px}
+  .sp2-h{font-size:29px}
+  .sp2-sub{font-size:14.5px}
+  .cl-sc{width:100%;max-width:320px;margin-top:40px}
+  .sp2-bub{font-size:16.5px;padding:15px 20px}
+  .sp2-close{font-size:22px}
+}
+
 </style></head>
 <body>
 
 <!-- GNB -->
 <nav class="gnb"><div class="gnb-in"><a class="mp2-logo mp2-md" href="main-v4.html" aria-label="미팍 2.0"><span class="mp2-tile"><svg class="mp2-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#fff"/></svg></span><span class="mp2-words"><span class="mp2-w ko"><span class="mp2-ko">미팍</span><span class="mp2-ver">2.0</span></span><span class="mp2-w en" aria-hidden="true"><span class="mp2-ko">mepark</span><span class="mp2-ver">2.0</span></span></span></a><div class="gnb-menu"><a href="main-v4.html">홈</a><a href="about.html">회사소개</a><a href="parking.html">주차장운영</a><a class="on" href="stores-pricing.html">매장운영</a><a title="준비중" href="#">도입사례</a><a title="준비중" href="#">자주하는질문</a></div><a class="btn-gnb" href="#cta">도입 문의</a></div></nav>
+
+<section class="sp2" id="store-pain">
+  <div class="wrap">
+    <h2 class="sp2-h">카운터 전화가 울릴 때마다,<br><em>주차 문의</em>입니다</h2>
+    <p class="sp2-sub">식당 · 병원 · 카페 · 호텔 — 바쁜 시간일수록 더 울립니다.</p>
+
+    <div class="cl-sc">
+      <div class="cl-ring"><i></i><i class="r2"></i></div>
+      <div class="cl-obj">
+        <div class="cl-grd"></div>
+        <div class="cl-dep"></div>
+        <div class="cl">
+          <div class="cl-time">12<i>:</i>31</div>
+          <div class="cl-date">7월 21일 화요일 · 점심 피크</div>
+          <div class="cl-badge"><span><svg viewBox="0 0 24 24" fill="#1428A0" width="12" height="12"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg><span class="tx">오늘 주차 문의 <b>12</b>통</span></span></div>
+          <div class="cln"><div class="hd"><i><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></i><b>전화 · 손님</b><span>지금</span></div><p>"주차 어떻게 해야 해요??"</p></div>
+          <div class="cln"><div class="hd"><i><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></i><b>전화 · 손님</b><span>방금 전</span></div><p>"만차던데 어디에 대요?"</p></div>
+          <div class="cln"><div class="hd"><i><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></i><b>전화 · 손님</b><span>조금 전</span></div><p>"발렛 되나요? 입구가 어디예요?"</p></div>
+          <div class="cln"><div class="hd"><i><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></i><b>전화 · 손님</b><span>12분 전</span></div><p>"입구가 어디예요? 골목이 헷갈려서요"</p></div>
+          <div class="cl-foot">밀린 전화 <b>9건</b> 더 있음</div>
+        </div>
+      </div>
+    </div>
+    <p class="cl-cap">바쁜 시간, 같은 질문이 매일 쌓여요 — 수치는&nbsp;※&nbsp;예시</p>
+
+    <div class="sp2-boss">
+      <div class="sp2-bub"><span class="no">사장님의 한 마디</span><br>"손님 주차, <em>대신 맡아줄 곳</em> 없을까?"</div>
+    </div>
+
+    <div class="sp2-close">카운터 주차 문의는<br>저희가 해결하겠습니다.<small>미톡과 미팍 QR이 카운터 대신 답합니다</small></div>
+    <div><span class="sp2-cue">↓</span></div>
+  </div>
+</section>
+
 
 <!-- ① Hero -->
 <header class="hero">
