@@ -965,6 +965,64 @@ a{text-decoration:none;color:inherit}
 .preban .preban-l2 b{color:#F5B731;font-weight:700}
 .preban .preban-arr{color:#F5B731;margin-left:6px;font-weight:800}
 .preban:hover .preban-l2 b{text-decoration:underline}
+
+/* ── 문제제기 섹션 (parking.html 최상단 실장용 · v2 디테일판) ── */
+.pain0{background:linear-gradient(180deg,#fff 0%,var(--soft) 100%);padding:96px 24px 80px;text-align:center;overflow:hidden;position:relative}
+.pain0 .wrap{max-width:1120px;margin:0 auto;position:relative}
+/* 은은한 세로 가이드라인 — 대화가 흘러내리는 축 */
+.p0-axis{position:absolute;left:50%;top:236px;bottom:150px;width:2px;transform:translateX(-50%);
+  background:repeating-linear-gradient(180deg,var(--navy-100) 0 6px,transparent 6px 14px);opacity:.55}
+.p0-eyebrow{display:inline-flex;align-items:center;margin-bottom:20px;--mp2-tile:26px;--mp2-star:14px;--mp2-word:18px}
+.p0-h{font-size:44px;line-height:1.3;font-weight:800;letter-spacing:-.035em;color:var(--t900)}
+.p0-h em{font-style:normal;background:linear-gradient(110deg,#1428A0 15%,#4F46E5 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.p0-list{max-width:680px;margin:56px auto 0;display:flex;flex-direction:column;gap:18px;position:relative}
+.p0-row{display:flex;opacity:0;transform:translateY(-16px);animation:p0drop .5s cubic-bezier(.2,.8,.3,1.05) forwards}
+.p0-row.i1{animation-delay:.1s}
+.p0-row.i2{animation-delay:.24s;justify-content:flex-end}
+.p0-row.i3{animation-delay:.38s}
+.p0-row.i4{animation-delay:.52s;justify-content:flex-end}
+.p0-row.i5{animation-delay:.66s}
+.p0-row.i6{animation-delay:.8s;justify-content:flex-end}
+.p0-row.i7{animation-delay:1.05s;justify-content:center;margin-top:12px}
+@keyframes p0drop{to{opacity:1;transform:translateY(0)}}
+.p0-bub{position:relative;background:#fff;border:1.5px solid var(--line);border-radius:22px;padding:17px 24px;
+  font-size:18px;font-weight:700;color:var(--t900);letter-spacing:-.012em;line-height:1.55;
+  box-shadow:0 3px 8px rgba(17,24,39,.04), 0 14px 34px rgba(17,24,39,.07);text-align:left;max-width:540px}
+/* 말꼬리 (아바타 대체) */
+.p0-row.l .p0-bub{border-bottom-left-radius:6px}
+.p0-row.l .p0-bub::after{content:'';position:absolute;left:-9px;bottom:12px;width:16px;height:16px;background:#fff;
+  border-left:1.5px solid var(--line);border-bottom:1.5px solid var(--line);border-bottom-left-radius:5px;transform:rotate(45deg) skew(8deg,8deg)}
+.p0-row.r .p0-bub{border-bottom-right-radius:6px}
+.p0-row.r .p0-bub::after{content:'';position:absolute;right:-9px;bottom:12px;width:16px;height:16px;background:#fff;
+  border-right:1.5px solid var(--line);border-bottom:1.5px solid var(--line);border-bottom-right-radius:5px;transform:rotate(-45deg) skew(-8deg,-8deg)}
+/* 번호 필 */
+.p0-bub .no{display:inline-flex;align-items:center;font-family:var(--fe);font-size:10.5px;font-weight:800;letter-spacing:.6px;
+  color:var(--navy);background:var(--navy-50);border-radius:100px;padding:3px 10px;margin-bottom:7px}
+/* 키워드 — 대비 높인 2색 그라데이션 + 소폭 확대 */
+.p0-kw{font-style:normal;font-weight:900;font-size:1.12em;letter-spacing:-.02em;
+  background:linear-gradient(110deg,#12228F 15%,#4F46E5 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
+/* ⑦ 클라이맥스 */
+.p0-bub.hot{border:2px solid #C7C9F5;background:linear-gradient(158deg,#F5F5FF,#EDECFE);
+  box-shadow:0 6px 14px rgba(79,70,229,.08), 0 22px 46px rgba(79,70,229,.16)}
+.p0-bub.hot .no{color:#fff;background:linear-gradient(110deg,#4F46E5,#7C3AED)}
+.p0-row.i7 .p0-bub{font-size:20.5px;padding:21px 30px;max-width:600px;border-bottom-left-radius:22px;border-bottom-right-radius:22px}
+.p0-row.i7 .p0-bub::after{display:none}
+.p0-cue{margin-top:52px;display:inline-flex;flex-direction:column;align-items:center;gap:16px;opacity:0;animation:p0drop .5s ease forwards;animation-delay:1.4s}
+.p0-close{font-size:27px;line-height:1.45;font-weight:900;letter-spacing:-.03em;
+  background:linear-gradient(110deg,#12228F 5%,#4F46E5 55%,#7C3AED 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.p0-cue i{font-style:normal;width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;animation:p0bob 1.6s ease-in-out infinite;box-shadow:0 8px 18px rgba(20,40,160,.3)}
+@keyframes p0bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+@media(prefers-reduced-motion:reduce){.p0-row,.p0-cue{animation:none;opacity:1;transform:none}.p0-cue i{animation:none}}
+@media(max-width:680px){
+  .pain0{padding:64px 20px 60px}
+  .p0-axis{display:none}
+  .p0-h{font-size:29px}
+  .p0-list{margin-top:42px;gap:14px}
+  .p0-bub{font-size:15.5px;padding:14px 18px;max-width:88%}
+  .p0-row.i7 .p0-bub{font-size:17.5px;padding:17px 22px;max-width:100%}
+  .p0-close{font-size:20px}
+}
+
 </style>
 </head>
 <body>
@@ -973,6 +1031,25 @@ a{text-decoration:none;color:inherit}
   <a class="mp2-logo mp2-md" href="main-v4.html" aria-label="미팍 2.0"><span class="mp2-tile"><svg class="mp2-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#fff"/></svg></span><span class="mp2-words"><span class="mp2-w ko"><span class="mp2-ko">미팍</span><span class="mp2-ver">2.0</span></span><span class="mp2-w en" aria-hidden="true"><span class="mp2-ko">mepark</span><span class="mp2-ver">2.0</span></span></span></a>
   <div class="gnb-menu"><a href="main-v4.html">홈</a><a href="about.html">회사소개</a><a class="on" href="parking.html" style="color:#1428A0;font-weight:800">주차장운영</a><a href="stores-pricing.html">매장운영</a><a href="#" title="준비중">도입사례</a><a href="#" title="준비중">자주하는질문</a></div>
 </div></nav>
+
+<section class="pain0" id="pain">
+  <div class="wrap">
+    <div class="p0-axis"></div>
+    <span class="p0-eyebrow"><span class="mp2-logo"><span class="mp2-tile"><svg class="mp2-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#fff"/></svg></span><span class="mp2-words"><span class="mp2-w ko"><span class="mp2-ko">미팍</span><span class="mp2-ver">2.0</span></span><span class="mp2-w en" aria-hidden="true"><span class="mp2-ko">mepark</span><span class="mp2-ver">2.0</span></span></span></span></span>
+    <h2 class="p0-h">주차장 사장님이라면 누구나 겪습니다.<br>하루에도 몇 번씩, <em>이런 생각</em> 하시지요?</h2>
+    <div class="p0-list">
+      <div class="p0-row l i1"><div class="p0-bub"><span class="no">01</span><br>"주차장은 좁은데… <em class="p0-kw">저 차 언제 나가지?</em>"</div></div>
+      <div class="p0-row r i2"><div class="p0-bub"><span class="no">02</span><br>"이제는 현금결제에서 <em class="p0-kw">카드결제</em>로 바꿔야 하는데, 뭐가 좋을까?"</div></div>
+      <div class="p0-row l i3"><div class="p0-bub"><span class="no">03</span><br>"직원 마감보고… <em class="p0-kw">100% 믿어도 될까?</em>"</div></div>
+      <div class="p0-row r i4"><div class="p0-bub"><span class="no">04</span><br>"<em class="p0-kw">근태</em>는 체크할 방법도 없고, <em class="p0-kw">비용도 비싸고</em>."</div></div>
+      <div class="p0-row l i5"><div class="p0-bub"><span class="no">05</span><br>"직원들이 편한 <em class="p0-kw">주차운영앱</em> 없을까?"</div></div>
+      <div class="p0-row r i6"><div class="p0-bub"><span class="no">06</span><br>"<em class="p0-kw">월주차 자동관리</em> 안 될까?"</div></div>
+      <div class="p0-row i7"><div class="p0-bub hot"><span class="no">07</span><br>"우리 주차장에 <em class="p0-kw">최적화된 프로그램</em>, 뭐 없을까?"</div></div>
+    </div>
+    <div class="p0-cue"><div class="p0-close">실제 사장이 사장님의 마음으로<br>개발하였습니다.</div><i>↓</i></div>
+  </div>
+</section>
+
 <header class="vhero hbx">
   <span class="vh-eyebrow">✦ 17년·200여 곳이 선택한 유인주차장 솔루션</span>
   <h1><span class="nv">주차장 운영</span>,<br><span class="ai">미팍 AI</span>가 한 흐름으로</h1>
