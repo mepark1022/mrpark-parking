@@ -294,21 +294,37 @@ a{text-decoration:none;color:inherit}
 .mk-qr .qr i{border-radius:1px}
 .gst-note{margin-top:22px;font-size:13px;color:var(--t400);text-align:center}
 
-/* ── 데이터 리포트 ── */
-.dt-card{width:100%;max-width:420px;margin:0 auto;background:#fff;border:1px solid var(--border);border-radius:20px;padding:24px;box-shadow:0 8px 30px rgba(20,40,160,.07)}
-.dt-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.dt-head b{font-size:14px;font-weight:800;color:var(--t900)}
-.dt-head span{font-size:11px;font-weight:700;color:var(--t400);background:var(--soft);border-radius:100px;padding:4px 10px}
-.dt-bars{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;align-items:end;height:150px}
-.dt-col{display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
-.dt-bar{width:100%;max-width:26px;border-radius:7px 7px 3px 3px;background:var(--navy-100)}
-.dt-bar.hi{background:linear-gradient(180deg,var(--gold),#E8A61F)}
-.dt-bar.md{background:var(--navy)}
-.dt-col small{font-size:11px;font-weight:700;color:var(--t500);font-family:var(--fe)}
-.dt-col.pk small{color:var(--gold-d);font-weight:800}
-.dt-foot{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
-.dt-chip{font-size:12px;font-weight:700;color:var(--navy);background:var(--navy-50);border-radius:100px;padding:6px 12px}
-.dt-chip.g{color:var(--gold-d);background:var(--gold-l)}
+/* ── 데이터 리포트 (실제 미팍 2.0 리포트 재구성) ── */
+.dt-card{width:100%;max-width:440px;margin:0 auto;background:#fff;border:1px solid var(--border);border-radius:20px;padding:22px 22px 20px;box-shadow:0 8px 30px rgba(20,40,160,.07);text-align:left}
+.dtr-brand{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.dtr-logo{width:24px;height:24px;border-radius:7px;background:var(--navy);color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.dtr-brand span{font-size:11.5px;font-weight:700;color:var(--t500)}
+.dtr-store{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+.dtr-store b{font-size:16px;font-weight:800;color:var(--t900)}
+.dtr-store span{font-family:var(--fe);font-size:10.5px;font-weight:700;color:var(--t400);white-space:nowrap}
+.dtr-ai{display:flex;gap:9px;align-items:flex-start;background:var(--navy-50);border-radius:12px;padding:11px 13px;margin-bottom:14px}
+.dtr-ai .pill{flex:none;background:var(--navy);color:#fff;font-family:var(--fe);font-size:10px;font-weight:800;border-radius:100px;padding:4px 10px;margin-top:1px}
+.dtr-ai p{font-size:11.5px;color:var(--t700);line-height:1.55;font-weight:600}
+.dtr-ai p b{color:var(--navy)}
+.dtr-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.dtr-kpi{border:1px solid var(--line);border-radius:12px;padding:9px 12px}
+.dtr-kpi small{display:block;font-size:10px;font-weight:700;color:var(--t400);margin-bottom:2px}
+.dtr-kpi b{font-size:15px;font-weight:800;color:var(--navy);font-family:var(--fe);letter-spacing:-.01em}
+.dtr-kpi b i{font-style:normal;font-family:var(--f);font-size:11px;color:var(--t500);font-weight:700}
+.dtr-ct{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.dtr-ct b{font-size:13px;font-weight:800;color:var(--t900)}
+.dtr-ct span{font-size:10px;font-weight:700;color:var(--t400);background:var(--soft);border-radius:100px;padding:3px 9px}
+.dtr-bars{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.dtr-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:150px}
+.dtr-col em{font-style:normal;font-family:var(--fe);font-size:9.5px;font-weight:800;color:var(--navy)}
+.dtr-col.pk em{color:var(--gold-d)}
+.dtr-bar{width:100%;max-width:24px;border-radius:6px 6px 2px 2px;background:var(--navy)}
+.dtr-col.lo .dtr-bar{background:var(--navy-100)}
+.dtr-col.pk .dtr-bar{background:linear-gradient(180deg,var(--gold),#E8A61F);box-shadow:0 3px 10px rgba(245,183,49,.35)}
+.dtr-day{text-align:center}
+.dtr-day b{display:block;font-size:10.5px;font-weight:800;color:var(--t700)}
+.dtr-col.pk .dtr-day b{color:var(--gold-d)}
+.dtr-day small{font-family:var(--fe);font-size:8.5px;font-weight:600;color:var(--t400)}
 
 /* ── 요금 (주차장운영 pv3 카드 문법 통일) ── */
 .pv3-wrap{display:flex;justify-content:center}
@@ -668,22 +684,19 @@ a{text-decoration:none;color:inherit}
     </div>
     <div class="pain-vis">
       <div class="dt-card">
-        <div class="dt-head"><b>요일별 입차</b><span>최근 4주 평균</span></div>
-        <div class="dt-bars">
-          <div class="dt-col"><div class="dt-bar" style="height:38%"></div><small>월</small></div>
-          <div class="dt-col"><div class="dt-bar" style="height:44%"></div><small>화</small></div>
-          <div class="dt-col"><div class="dt-bar" style="height:41%"></div><small>수</small></div>
-          <div class="dt-col"><div class="dt-bar md" style="height:58%"></div><small>목</small></div>
-          <div class="dt-col"><div class="dt-bar md" style="height:74%"></div><small>금</small></div>
-          <div class="dt-col pk"><div class="dt-bar hi" style="height:100%"></div><small>토</small></div>
-          <div class="dt-col"><div class="dt-bar md" style="height:66%"></div><small>일</small></div>
+        <div class="dtr-brand"><span class="dtr-logo">미</span><span>미팍 2.0 · 입차량 분석 리포트</span></div>
+        <div class="dtr-store"><b>미팍 도산사거리점</b><span>2026-07-15 ~ 07-21</span></div>
+        <div class="dtr-ai"><span class="pill">me.talk</span><p>이 기간 입차가 가장 몰린 시간대는 <b>오후 4~6시</b>입니다. 평균 주차시간은 <b>1시간 19분</b>입니다.</p></div>
+        <div class="dtr-kpis">
+          <div class="dtr-kpi"><small>총 입차</small><b>723<i> 대</i></b></div>
+          <div class="dtr-kpi"><small>일평균 입차</small><b>103.3<i> 대</i></b></div>
+          <div class="dtr-kpi"><small>피크 시간대</small><b><i style="font-size:14px;color:var(--navy);font-weight:800">오후 4~6시</i></b></div>
+          <div class="dtr-kpi"><small>평균 주차시간</small><b>1<i>시간</i> 19<i>분</i></b></div>
         </div>
-        <div class="dt-foot">
-          <span class="dt-chip g">피크 토요일 13시</span>
-          <span class="dt-chip">주간 입차 412대</span>
-        </div>
+        <div class="dtr-ct"><b>일별 입차 추이</b><span>최다 7.17(금) · 150대</span></div>
+        <div class="dtr-bars"><div class="dtr-col lo"><em>76</em><div class="dtr-bar" style="height:56px"></div><div class="dtr-day"><b>수</b><small>7.15</small></div></div><div class="dtr-col lo"><em>81</em><div class="dtr-bar" style="height:59px"></div><div class="dtr-day"><b>목</b><small>7.16</small></div></div><div class="dtr-col pk"><em>150</em><div class="dtr-bar" style="height:110px"></div><div class="dtr-day"><b>금</b><small>7.17</small></div></div><div class="dtr-col "><em>97</em><div class="dtr-bar" style="height:71px"></div><div class="dtr-day"><b>토</b><small>7.18</small></div></div><div class="dtr-col "><em>137</em><div class="dtr-bar" style="height:100px"></div><div class="dtr-day"><b>일</b><small>7.19</small></div></div><div class="dtr-col "><em>118</em><div class="dtr-bar" style="height:87px"></div><div class="dtr-day"><b>월</b><small>7.20</small></div></div><div class="dtr-col lo"><em>64</em><div class="dtr-bar" style="height:47px"></div><div class="dtr-day"><b>화</b><small>7.21</small></div></div></div>
       </div>
-      <p class="mock-cap">관리자 리포트 화면 구성 — 수치는 ※ 예시</p>
+      <p class="mock-cap">미팍 2.0 입차량 분석 리포트 — 실제 리포트 화면 재구성 (매장명은 예시)</p>
     </div>
   </div>
 </section>
