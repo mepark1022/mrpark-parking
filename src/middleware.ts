@@ -38,6 +38,10 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith("/api/") || pathname.startsWith("/crew")) {
       return await updateSession(request);
     }
+    // 정적 HTML 페이지(약관·개인정보처리방침 등) → 그대로 서빙
+    if (pathname.endsWith(".html")) {
+      return NextResponse.next();
+    }
     // 그 외 경로 → admin으로 리다이렉트
     return NextResponse.redirect(`https://admin.mepark.kr${pathname}`);
   }
