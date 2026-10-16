@@ -24,7 +24,7 @@
   "redirects": [
     {
       "source": "/pre",
-      "destination": "https://hr.mepark.kr/pre-register"
+      "destination": "https://hr.mepark.kr/signup"
     }
   ],
   "headers": [
