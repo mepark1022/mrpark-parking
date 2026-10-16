@@ -943,6 +943,13 @@ a{text-decoration:none;color:inherit}
 .hbx .mt2-grid .mt2-t{font-size:15.5px}
 @media(max-width:760px){.hbx .mt2-flow{flex-direction:column;align-items:center}.hbx .mt2-flow .mt2-card{max-width:100%;width:100%}.hbx .mt2-arrow{transform:rotate(90deg);margin:2px 0}.hbx .mt2-grid{grid-template-columns:repeat(2,1fr)}}
 /* 사전가입 이벤트 공지바(preban 네임스페이스) — 네이비 배경 + 골드 포인트. body 최상단, gnb 위. C안: 2줄형 */
+/* 403 무료로 시작하기 → 회원가입 */
+.su-gnb{display:flex;align-items:center;gap:26px}
+.su-gnb .btn-navy{padding:9px 18px;font-size:14.5px;border-radius:11px}
+.su-act{margin-top:24px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.su-act .btn{font-size:16px;padding:14px 26px;border-radius:14px}
+.su-free{margin-top:10px;text-align:center;font-size:14px;font-weight:700;color:var(--navy);word-break:keep-all;line-break:strict}
+@media(max-width:680px){.su-gnb .btn-navy{padding:8px 14px;font-size:13.5px}.su-act .btn{font-size:15px;padding:13px 22px}}
 .preban{display:flex;flex-direction:column;align-items:center;gap:3px;background:#1428A0;color:#fff;text-decoration:none;text-align:center;letter-spacing:-.01em;padding:14px 16px 15px}
 .preban .preban-l1{font-size:14px;font-weight:600}
 .preban .preban-l2{font-size:12.5px;color:rgba(255,255,255,.85)}
@@ -955,12 +962,13 @@ a{text-decoration:none;color:inherit}
 <a class="preban" href="/pre?src=home"><span class="preban-l1">🎉 미팍 2.0 사전가입 이벤트</span><span class="preban-l2"><b>티켓시스템 기본료(5만원) 3개월 면제</b> · 지금 신청하기<span class="preban-arr" aria-hidden="true">→</span></span></a>
 <nav class="gnb"><div class="gnb-in">
   <a href="#" aria-label="mepark 2.0"><img class="sa-logo sa-logo-gnb" src="/brand/MEPARK_Primary_2.0_RGB.svg" alt="mepark 2.0"></a>
-  <div class="gnb-menu"><a href="#s1">서비스</a><a href="#s5">기능</a><a href="#pricing">요금</a><a href="#cta">도입 문의</a></div>
+  <div class="su-gnb"><div class="gnb-menu"><a href="#s1">서비스</a><a href="#s5">기능</a><a href="#pricing">요금</a><a href="#cta">도입 문의</a></div><a class="btn btn-navy" href="https://hr.mepark.kr/signup">무료로 시작하기</a></div>
 </div></nav>
 <header class="vhero hbx">
   <span class="vh-eyebrow">✦ 17년·200여 곳이 선택한 유인주차장 솔루션</span>
   <h1><span class="nv">주차장 운영</span>,<br><span class="ai">미팍 AI</span>가 한 흐름으로</h1>
   <p class="sub">입차부터 결제·근태·정산까지, 미팍 AI 비서가 처리합니다.</p>
+  <div class="su-act"><a class="btn btn-navy" href="https://hr.mepark.kr/signup">무료로 시작하기</a><a class="btn btn-gw" href="#cta">도입 문의</a></div>
   <div class="v1c-wrap"><div class="v1c-box">
     <span class="v1c-badge"><span class="mtk-badge"><svg class="tw" width="14" height="14" viewBox="0 0 24 24"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#A7F0F7"/></svg>me.talk AI</span></span>
 <div class="bx-lead"><b>me.talk</b>이 입차부터 정산까지 — 한 흐름으로</div>
@@ -1324,6 +1332,7 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
     <p class="pln-note">전 금액 VAT 별도 · PG 수수료 2% 별도(토스 직접차감)<br>혼합 매장 = 결제 티켓 3% + 무료 티켓 대당 50원 (기본료 면제)</p>
+    <p class="su-free">가입월 + 다음 달까지 무료 · 카드 등록 필요 · 언제든 해지</p>
     <div class="pln-cta">
       <a class="btn btn-tel" href="tel:1899-1871">도입 문의<b>1899-1871</b></a>
       <a class="btn btn-kakao" href="https://pf.kakao.com/_Nuxdtxb" target="_blank" rel="noopener">카카오톡 상담</a>
@@ -1338,6 +1347,7 @@ a{text-decoration:none;color:inherit}
       <span class="cta-pin"><svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1C13 8.5 15.5 11 23 12 15.5 13 13 15.5 12 23 11 15.5 8.5 13 1 12 8.5 11 11 8.5 12 1Z" fill="#F5B731"/></svg>지금 도입하기 좋은 때</span>
       <h2>유인주차장 운영,<br>지금 <b>미팍</b>으로 <span class="pt">바꿔보세요</span></h2>
       <p>도입 상담부터 운영까지 — 부담 없이 먼저 확인해 보세요.</p>
+      <div class="cta-actions"><a class="btn btn-white" href="https://hr.mepark.kr/signup">무료로 시작하기</a><a class="btn btn-gw" href="tel:1899-1871">도입 문의 1899-1871</a></div>
     </div>
   </div>
 </section>
